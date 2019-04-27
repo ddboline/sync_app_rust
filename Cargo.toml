@@ -1,0 +1,16 @@
+[package]
+name = "sync_app_rust"
+version = "0.1.0"
+authors = ["Daniel Boline <ddboline@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+google-drive3-fork = "1.0.10"
+onedrive-api = "0.4.0"
+rusoto_core = {version = "0.38", default_features = false, features=["rustls"]}
+rusoto_s3 = {version = "0.38", default_features = false, features=["rustls"]}
+reqwest = "0.9"
+dotenv = "0.13"
+diesel = {version="1.4", features=["postgres"]}
+failure = "0.1"
+subprocess = "0.1"
