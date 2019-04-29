@@ -14,3 +14,5 @@ dotenv = "0.13"
 diesel = {version="1.4", features=["postgres"]}
 failure = "0.1"
 subprocess = "0.1"
+walkdir = "2.2"
+rayon = "1.0"
