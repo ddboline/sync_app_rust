@@ -2,7 +2,7 @@ use failure::{err_msg, Error};
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum FileService {
     Local,
     GDrive,

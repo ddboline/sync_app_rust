@@ -3,31 +3,31 @@ use diesel::prelude::*;
 use diesel::result::Error;
 use reqwest::Url;
 use std::convert::Into;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use crate::file_service::FileService;
 use crate::models::{FileInfoCache, InsertFileInfoCache};
 use crate::schema::file_info_cache;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FileStat {
     pub st_mtime: u32,
     pub st_size: u32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Md5Sum(pub String);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Sha1Sum(pub String);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ServiceId(pub String);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ServiceSession(pub String);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct FileInfo {
     pub filename: String,
     pub filepath: Option<PathBuf>,
