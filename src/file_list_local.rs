@@ -91,7 +91,16 @@ mod tests {
 
         println!("{:?}", result);
 
-        assert!(result.filepath.as_ref().unwrap().ends_with("file_list_local.rs"));
-        assert!(result.urlname.as_ref().unwrap().as_str().ends_with("file_list_local.rs"));
+        assert!(result
+            .filepath
+            .as_ref()
+            .unwrap()
+            .ends_with("file_list_local.rs"));
+        assert!(result
+            .urlname
+            .as_ref()
+            .unwrap()
+            .as_str()
+            .ends_with("file_list_local.rs"));
     }
 }
