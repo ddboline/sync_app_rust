@@ -1,12 +1,13 @@
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use diesel::result::Error;
+use failure::{err_msg, Error};
 use reqwest::Url;
 use std::convert::Into;
 use std::path::PathBuf;
+use std::string::ToString;
 
 use crate::file_service::FileService;
 use crate::models::{FileInfoCache, InsertFileInfoCache};
+use crate::pgpool::PgPool;
 use crate::schema::file_info_cache;
 
 #[derive(Copy, Clone, Debug)]
@@ -99,24 +100,34 @@ impl From<FileInfoCache> for FileInfo {
     }
 }
 
-pub fn cache_file_info(conn: &PgConnection, finfo: &FileInfo) -> Result<FileInfoCache, Error> {
-    let finfo_cache = InsertFileInfoCache {
-        filename: &finfo.filename,
-        filepath: match finfo.filepath.as_ref() {
-            Some(f) => f.to_str(),
-            None => None,
-        },
-        urlname: finfo.urlname.as_ref().map(Url::as_str),
-        md5sum: finfo.md5sum.as_ref().map(|m| m.0.as_str()),
-        sha1sum: finfo.sha1sum.as_ref().map(|s| s.0.as_str()),
-        filestat_st_mtime: finfo.filestat.map(|f| f.st_mtime as i32),
-        filestat_st_size: finfo.filestat.map(|f| f.st_size as i32),
-        serviceid: finfo.serviceid.as_ref().map(|s| s.0.as_str()),
-        servicetype: &finfo.servicetype.to_string(),
-        servicesession: finfo.servicesession.as_ref().map(|s| s.0.as_str()),
-    };
+impl FileInfo {
+    pub fn get_cache_info(&self) -> Result<InsertFileInfoCache, Error> {
+        let finfo_cache = InsertFileInfoCache {
+            filename: self.filename.clone(),
+            filepath: match self.filepath.as_ref() {
+                Some(f) => f.to_str().map(ToString::to_string),
+                None => None,
+            },
+            urlname: self.urlname.as_ref().map(Url::to_string),
+            md5sum: self.md5sum.as_ref().map(|m| m.0.clone()),
+            sha1sum: self.sha1sum.as_ref().map(|s| s.0.clone()),
+            filestat_st_mtime: self.filestat.map(|f| f.st_mtime as i32),
+            filestat_st_size: self.filestat.map(|f| f.st_size as i32),
+            serviceid: self.serviceid.as_ref().map(|s| s.0.clone()),
+            servicetype: self.servicetype.to_string(),
+            servicesession: self.servicesession.as_ref().map(|s| s.0.clone()),
+        };
+        Ok(finfo_cache)
+    }
+}
+
+pub fn cache_file_info(pool: &PgPool, finfo: &FileInfo) -> Result<FileInfoCache, Error> {
+    let conn = pool.get()?;
+
+    let finfo_cache = finfo.get_cache_info()?;
 
     diesel::insert_into(file_info_cache::table)
         .values(&finfo_cache)
-        .get_result(conn)
+        .get_result(&conn)
+        .map_err(err_msg)
 }
