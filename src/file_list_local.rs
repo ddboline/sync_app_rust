@@ -51,7 +51,7 @@ impl FileListTrait for FileListLocalConf {
 #[cfg(test)]
 mod tests {
     use reqwest::Url;
-    use std::collections::HashSet;
+    use std::collections::HashMap;
 
     use crate::file_list_local::{FileListLocalConf, FileListTrait};
     use crate::file_service::FileService;
@@ -79,8 +79,19 @@ mod tests {
             println!("{:?}", entry);
         }
 
-        let fset: HashSet<_> = flist.filelist.iter().map(|f| f.filename.clone()).collect();
+        let fset: HashMap<_, _> = flist
+            .filelist
+            .iter()
+            .map(|f| (f.filename.clone(), f.clone()))
+            .collect();
 
-        assert_eq!(fset.contains("file_list_local.rs"), true);
+        assert_eq!(fset.contains_key("file_list_local.rs"), true);
+
+        let result = fset.get("file_list_local.rs").unwrap();
+
+        println!("{:?}", result);
+
+        assert!(result.filepath.as_ref().unwrap().ends_with("file_list_local.rs"));
+        assert!(result.urlname.as_ref().unwrap().as_str().ends_with("file_list_local.rs"));
     }
 }
