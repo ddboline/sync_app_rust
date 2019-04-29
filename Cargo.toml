@@ -11,7 +11,8 @@ rusoto_core = {version = "0.38", default_features = false, features=["rustls"]}
 rusoto_s3 = {version = "0.38", default_features = false, features=["rustls"]}
 reqwest = "0.9"
 dotenv = "0.13"
-diesel = {version="1.4", features=["postgres"]}
+r2d2 = "*"
+diesel = {version="1.4", features=["postgres", "r2d2"]}
 failure = "0.1"
 subprocess = "0.1"
 walkdir = "2.2"
