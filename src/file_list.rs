@@ -4,18 +4,38 @@ use rayon::prelude::*;
 use reqwest::Url;
 use std::path::PathBuf;
 
-use crate::file_info::{FileInfo, ServiceSession};
+use crate::file_info::{FileInfo, ServiceId, ServiceSession};
 use crate::file_service::FileService;
 use crate::map_result_vec;
 use crate::models::FileInfoCache;
 use crate::pgpool::PgPool;
 use crate::schema::file_info_cache;
 
+#[derive(Debug)]
 pub struct FileListConf {
     pub basedir: PathBuf,
     pub baseurl: Url,
     pub servicetype: FileService,
     pub servicesession: ServiceSession,
+    pub serviceid: ServiceId,
+}
+
+impl FileListConf {
+    pub fn new(
+        basedir: &str,
+        baseurl: &str,
+        servicetype: &str,
+        servicesession: &str,
+        serviceid: &str,
+    ) -> Result<FileListConf, Error> {
+        Ok(FileListConf {
+            basedir: basedir.into(),
+            baseurl: baseurl.parse()?,
+            servicetype: servicetype.parse()?,
+            servicesession: servicesession.parse()?,
+            serviceid: serviceid.to_string().into(),
+        })
+    }
 }
 
 pub struct FileList {

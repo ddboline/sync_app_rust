@@ -8,7 +8,9 @@ use std::time::SystemTime;
 use subprocess::Exec;
 use walkdir::DirEntry;
 
-use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, ServiceId, Sha1Sum};
+use crate::file_info::{
+    FileInfo, FileInfoTrait, FileStat, Md5Sum, ServiceId, ServiceSession, Sha1Sum,
+};
 use crate::file_service::FileService;
 
 pub struct FileInfoLocal(pub FileInfo);
@@ -98,7 +100,11 @@ fn _get_stat(p: &Path) -> Result<FileStat, Error> {
 }
 
 impl FileInfoLocal {
-    pub fn from_direntry(item: DirEntry) -> Result<FileInfoLocal, Error> {
+    pub fn from_direntry(
+        item: DirEntry,
+        serviceid: Option<ServiceId>,
+        servicesession: Option<ServiceSession>,
+    ) -> Result<FileInfoLocal, Error> {
         if item.file_type().is_dir() {
             return Err(err_msg("Is a directory, skipping"));
         }
@@ -138,9 +144,9 @@ impl FileInfoLocal {
             md5sum,
             sha1sum,
             filestat,
-            serviceid: None,
+            serviceid,
             servicetype: FileService::Local,
-            servicesession: None,
+            servicesession,
         };
         Ok(FileInfoLocal(finfo))
     }
