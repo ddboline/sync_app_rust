@@ -133,7 +133,8 @@ impl FileInfoLocal {
         let filestr = filepath
             .to_str()
             .ok_or_else(|| err_msg("Failed to parse path"))?;
-        let fileurl: Url = format!("file://{}", filestr).parse().unwrap();
+        let fileurl =
+            Url::from_file_path(filepath.clone()).map_err(|_| err_msg("Failed to parse url"))?;
         let md5sum = _get_md5sum(filestr).ok().map(Md5Sum);
         let sha1sum = _get_sha1sum(filestr).ok().map(Sha1Sum);
 

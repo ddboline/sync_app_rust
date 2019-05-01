@@ -25,7 +25,8 @@ impl FileListLocalConf {
             .to_str()
             .ok_or_else(|| err_msg("Failed to parse path"))?
             .to_string();
-        let baseurl: Url = format!("file://{}", basestr).parse()?;
+        let baseurl =
+            Url::from_file_path(basepath.clone()).map_err(|_| err_msg("Failed to parse url"))?;
         let conf = FileListConf {
             basedir: basepath,
             baseurl,
