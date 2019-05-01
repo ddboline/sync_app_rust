@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate diesel;
 
+pub mod config;
 pub mod file_info;
 pub mod file_info_local;
 pub mod file_list;

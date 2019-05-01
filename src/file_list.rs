@@ -11,7 +11,7 @@ use crate::models::FileInfoCache;
 use crate::pgpool::PgPool;
 use crate::schema::file_info_cache;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileListConf {
     pub basedir: PathBuf,
     pub baseurl: Url,
@@ -20,31 +20,14 @@ pub struct FileListConf {
     pub serviceid: ServiceId,
 }
 
-impl FileListConf {
-    pub fn new(
-        basedir: &str,
-        baseurl: &str,
-        servicetype: &str,
-        servicesession: &str,
-        serviceid: &str,
-    ) -> Result<FileListConf, Error> {
-        Ok(FileListConf {
-            basedir: basedir.into(),
-            baseurl: baseurl.parse()?,
-            servicetype: servicetype.parse()?,
-            servicesession: servicesession.parse()?,
-            serviceid: serviceid.to_string().into(),
-        })
-    }
-}
-
+#[derive(Debug)]
 pub struct FileList {
     pub conf: FileListConf,
     pub filelist: Vec<FileInfo>,
 }
 
 pub trait FileListTrait {
-    fn fill_file_list(conf: FileListConf) -> Result<FileList, Error>;
+    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error>;
 }
 
 pub fn cache_file_list(pool: &PgPool, flist: &FileList) -> Result<Vec<FileInfoCache>, Error> {
@@ -64,5 +47,18 @@ pub fn cache_file_list(pool: &PgPool, flist: &FileList) -> Result<Vec<FileInfoCa
     diesel::insert_into(file_info_cache::table)
         .values(&flist_cache)
         .get_results(&conn)
+        .map_err(err_msg)
+}
+
+pub fn load_file_list(pool: &PgPool, conf: &FileListConf) -> Result<Vec<FileInfoCache>, Error> {
+    use crate::schema::file_info_cache::dsl::*;
+
+    let conn = pool.get()?;
+
+    file_info_cache
+        .filter(serviceid.eq(conf.serviceid.0.clone()))
+        .filter(servicesession.eq(conf.servicesession.0.clone()))
+        .filter(servicetype.eq(conf.servicetype.to_string()))
+        .load::<FileInfoCache>(&conn)
         .map_err(err_msg)
 }
