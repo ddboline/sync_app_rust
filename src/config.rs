@@ -11,7 +11,7 @@ impl Config {
 
         let home_dir = env::var("HOME").expect("No HOME directory...");
 
-        let default_fname = format!("{}/.config/garmin_rust/config.env", home_dir);
+        let default_fname = format!("{}/.config/sync_app_rust/config.env", home_dir);
 
         let env_file = if Path::new(fname).exists() {
             fname.to_string()
