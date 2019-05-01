@@ -1,0 +1,9 @@
+FROM rust_stable:latest
+MAINTAINER Daniel Boline
+
+WORKDIR /sync_app_rust
+
+ADD Cargo.toml /sync_app_rust
+ADD src /sync_app_rust/src
+ADD scripts /sync_app_rust/scripts
+ADD Makefile /sync_app_rust
