@@ -8,7 +8,7 @@ use walkdir::WalkDir;
 
 use crate::file_info::FileInfo;
 use crate::file_info_local::FileInfoLocal;
-use crate::file_list::{load_file_list, FileList, FileListConf, FileListTrait};
+use crate::file_list::{FileList, FileListConf, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
 
@@ -38,9 +38,17 @@ impl FileListLocalConf {
 }
 
 impl FileListTrait for FileListLocal {
+    fn get_conf(&self) -> &FileListConf {
+        &self.0.conf
+    }
+
+    fn get_filelist(&self) -> &[FileInfo] {
+        &self.0.filelist
+    }
+
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
         let flist = match pool {
-            Some(pool) => load_file_list(&pool, &self.0.conf)?,
+            Some(pool) => self.load_file_list(&pool)?,
             None => Vec::new(),
         };
         let flist_dict: HashMap<_, _> = flist
@@ -115,7 +123,7 @@ mod tests {
 
     use crate::config::Config;
     use crate::file_info::FileInfo;
-    use crate::file_list::{cache_file_list, FileList};
+    use crate::file_list::FileList;
     use crate::file_list_local::{FileListLocal, FileListLocalConf, FileListTrait};
     use crate::file_service::FileService;
     use crate::models::FileInfoCache;
@@ -196,6 +204,18 @@ mod tests {
             filelist: flist,
         });
 
-        cache_file_list(&pool, &flist.0).unwrap();
+        flist.cache_file_list(&pool).unwrap();
+
+        let new_flist = flist.load_file_list(&pool).unwrap();
+
+        assert_eq!(new_flist.len(), flist.0.filelist.len());
+
+        assert!(new_flist.len() != 0);
+
+        flist.clear_file_list(&pool).unwrap();
+
+        let new_flist = flist.load_file_list(&pool).unwrap();
+
+        assert_eq!(new_flist.len(), 0);
     }
 }
