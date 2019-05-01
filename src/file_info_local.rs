@@ -1,6 +1,7 @@
 use failure::{err_msg, Error};
 use reqwest::Url;
 use std::fs;
+use std::fs::Metadata;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::Path;
@@ -44,7 +45,7 @@ impl FileInfoTrait for FileInfoLocal {
     }
 
     fn get_service_id(&self) -> Option<ServiceId> {
-        self.0.get_service_id()
+        self.0.serviceid.clone()
     }
 }
 
@@ -100,23 +101,23 @@ fn _get_stat(p: &Path) -> Result<FileStat, Error> {
 }
 
 impl FileInfoLocal {
-    pub fn from_direntry(
-        item: DirEntry,
+    pub fn from_path_and_metadata(
+        path: &Path,
+        metadata: Option<Metadata>,
         serviceid: Option<ServiceId>,
         servicesession: Option<ServiceSession>,
     ) -> Result<FileInfoLocal, Error> {
-        if item.file_type().is_dir() {
+        if path.is_dir() {
             return Err(err_msg("Is a directory, skipping"));
         }
-        let filename = item
-            .path()
+        let filename = path
             .file_name()
             .ok_or_else(|| err_msg("Parse failure"))?
             .to_os_string()
             .into_string()
             .map_err(|_| err_msg("Parse failure"))?;
-        let filestat = match item.metadata() {
-            Ok(metadata) => {
+        let filestat = match metadata {
+            Some(metadata) => {
                 let modified = metadata
                     .modified()?
                     .duration_since(SystemTime::UNIX_EPOCH)?
@@ -127,9 +128,10 @@ impl FileInfoLocal {
                     st_size: size as u32,
                 })
             }
-            _ => None,
+            None => None,
         };
-        let filepath = item.path().canonicalize()?;
+
+        let filepath = path.canonicalize()?;
         let filestr = filepath
             .to_str()
             .ok_or_else(|| err_msg("Failed to parse path"))?;
@@ -150,5 +152,30 @@ impl FileInfoLocal {
             servicesession,
         };
         Ok(FileInfoLocal(finfo))
+    }
+
+    pub fn from_path(
+        path: &Path,
+        serviceid: Option<ServiceId>,
+        servicesession: Option<ServiceSession>,
+    ) -> Result<FileInfoLocal, Error> {
+        if path.is_dir() {
+            return Err(err_msg("Is a directory, skipping"));
+        }
+        let metadata = path.metadata().ok();
+        FileInfoLocal::from_path_and_metadata(&path, metadata, serviceid, servicesession)
+    }
+
+    pub fn from_direntry(
+        item: DirEntry,
+        serviceid: Option<ServiceId>,
+        servicesession: Option<ServiceSession>,
+    ) -> Result<FileInfoLocal, Error> {
+        if item.file_type().is_dir() {
+            return Err(err_msg("Is a directory, skipping"));
+        }
+        let path = item.path();
+        let metadata = item.metadata().ok();
+        FileInfoLocal::from_path_and_metadata(&path, metadata, serviceid, servicesession)
     }
 }

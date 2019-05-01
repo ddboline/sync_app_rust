@@ -92,24 +92,6 @@ pub trait FileInfoTrait {
     fn get_service_id(&self) -> Option<ServiceId>;
 }
 
-impl FileInfoTrait for FileInfo {
-    fn get_md5(&self) -> Option<Md5Sum> {
-        self.md5sum.clone()
-    }
-
-    fn get_sha1(&self) -> Option<Sha1Sum> {
-        self.sha1sum.clone()
-    }
-
-    fn get_stat(&self) -> Option<FileStat> {
-        self.filestat
-    }
-
-    fn get_service_id(&self) -> Option<ServiceId> {
-        None
-    }
-}
-
 pub fn map_parse<T>(x: Option<String>) -> Result<Option<T>, Error>
 where
     T: FromStr,
