@@ -47,6 +47,7 @@ impl FileListTrait for FileListLocal {
     }
 
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+        let conf = self.get_conf();
         let flist = match pool {
             Some(pool) => self.load_file_list(&pool)?,
             None => Vec::new(),
@@ -68,7 +69,7 @@ impl FileListTrait for FileListLocal {
             })
             .collect();
 
-        let wdir = WalkDir::new(&self.0.conf.basedir).same_file_system(true);
+        let wdir = WalkDir::new(&conf.basedir).same_file_system(true);
 
         let entries: Vec<_> = wdir.into_iter().filter_map(|entry| entry.ok()).collect();
 
@@ -103,8 +104,8 @@ impl FileListTrait for FileListLocal {
                 };
                 FileInfoLocal::from_direntry(
                     entry,
-                    Some(self.0.conf.serviceid.clone()),
-                    Some(self.0.conf.servicesession.clone()),
+                    Some(conf.serviceid.clone()),
+                    Some(conf.servicesession.clone()),
                 )
                 .ok()
                 .map(|x| x.0)
@@ -207,6 +208,12 @@ mod tests {
         flist.cache_file_list(&pool).unwrap();
 
         let new_flist = flist.load_file_list(&pool).unwrap();
+
+        assert_eq!(new_flist.len(), flist.0.filelist.len());
+
+        assert!(new_flist.len() != 0);
+
+        let new_flist = flist.fill_file_list(Some(&pool)).unwrap();
 
         assert_eq!(new_flist.len(), flist.0.filelist.len());
 
