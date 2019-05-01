@@ -33,7 +33,7 @@ pub trait FileListTrait {
 
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error>;
 
-    fn cache_file_list(&self, pool: &PgPool) -> Result<Vec<FileInfoCache>, Error> {
+    fn cache_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
         let conn = pool.get()?;
 
         let flist_cache: Vec<Result<_, Error>> = self
@@ -49,7 +49,7 @@ pub trait FileListTrait {
 
         diesel::insert_into(file_info_cache::table)
             .values(&flist_cache)
-            .get_results(&conn)
+            .execute(&conn)
             .map_err(err_msg)
     }
 
