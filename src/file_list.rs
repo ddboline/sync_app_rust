@@ -26,6 +26,15 @@ pub struct FileList {
     pub filelist: Vec<FileInfo>,
 }
 
+impl FileList {
+    pub fn from_conf(conf: FileListConf) -> FileList {
+        FileList {
+            conf,
+            filelist: Vec::new(),
+        }
+    }
+}
+
 pub trait FileListTrait {
     fn get_conf(&self) -> &FileListConf;
 
@@ -81,5 +90,31 @@ pub trait FileListTrait {
         )
         .execute(&conn)
         .map_err(err_msg)
+    }
+}
+
+impl FileListTrait for FileList {
+    fn get_conf(&self) -> &FileListConf {
+        &self.conf
+    }
+
+    fn get_filelist(&self) -> &[FileInfo] {
+        &self.filelist
+    }
+
+    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+        match pool {
+            Some(pool) => match self.load_file_list(&pool) {
+                Ok(v) => {
+                    let result: Vec<Result<_, Error>> = v
+                        .into_iter()
+                        .map(|i| FileInfo::from_cache_info(i))
+                        .collect();
+                    map_result_vec(result)
+                }
+                Err(e) => Err(e),
+            },
+            None => Ok(Vec::new()),
+        }
     }
 }
