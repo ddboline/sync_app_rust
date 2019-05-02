@@ -64,7 +64,7 @@ impl FromStr for ServiceSession {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() == 0 {
+        if s.is_empty() {
             Err(err_msg("Session name must not be empty"))
         } else {
             Ok(Self(s.to_string()))

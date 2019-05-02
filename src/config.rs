@@ -1,6 +1,7 @@
 use std::env;
 use std::path::Path;
 
+#[derive(Default)]
 pub struct Config {
     pub database_url: String,
 }

@@ -106,10 +106,8 @@ impl FileListTrait for FileList {
         match pool {
             Some(pool) => match self.load_file_list(&pool) {
                 Ok(v) => {
-                    let result: Vec<Result<_, Error>> = v
-                        .into_iter()
-                        .map(|i| FileInfo::from_cache_info(i))
-                        .collect();
+                    let result: Vec<Result<_, Error>> =
+                        v.into_iter().map(FileInfo::from_cache_info).collect();
                     map_result_vec(result)
                 }
                 Err(e) => Err(e),

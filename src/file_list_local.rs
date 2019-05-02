@@ -3,6 +3,7 @@ use rayon::prelude::*;
 use reqwest::Url;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::string::ToString;
 use std::time::SystemTime;
 use walkdir::WalkDir;
 
@@ -72,7 +73,7 @@ impl FileListTrait for FileListLocal {
 
         let wdir = WalkDir::new(&conf.basedir).same_file_system(true);
 
-        let entries: Vec<_> = wdir.into_iter().filter_map(|entry| entry.ok()).collect();
+        let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
         let flist = entries
             .into_par_iter()
@@ -81,7 +82,7 @@ impl FileListTrait for FileListLocal {
                     .path()
                     .canonicalize()
                     .ok()
-                    .and_then(|s| s.to_str().map(|x| x.to_string()))
+                    .and_then(|s| s.to_str().map(ToString::to_string))
                     .unwrap_or_else(|| "".to_string());
                 let (modified, size) = entry
                     .metadata()
