@@ -1,12 +1,11 @@
+use checksums::{hash_file, Algorithm};
 use failure::{err_msg, Error};
 use reqwest::Url;
 use std::fs;
+use std::fs::File;
 use std::fs::Metadata;
-use std::io::BufRead;
-use std::io::BufReader;
 use std::path::Path;
 use std::time::SystemTime;
-use subprocess::Exec;
 use walkdir::DirEntry;
 
 use crate::file_info::{
@@ -19,20 +18,14 @@ pub struct FileInfoLocal(pub FileInfo);
 impl FileInfoTrait for FileInfoLocal {
     fn get_md5(&self) -> Option<Md5Sum> {
         match self.0.filepath.as_ref() {
-            Some(p) => match p.to_str() {
-                Some(f) => _get_md5sum(f).ok().map(Md5Sum),
-                None => None,
-            },
+            Some(p) => _get_md5sum(&p).ok().map(Md5Sum),
             None => None,
         }
     }
 
     fn get_sha1(&self) -> Option<Sha1Sum> {
         match self.0.filepath.as_ref() {
-            Some(p) => match p.to_str() {
-                Some(f) => _get_sha1sum(f).ok().map(Sha1Sum),
-                None => None,
-            },
+            Some(p) => _get_sha1sum(&p).ok().map(Sha1Sum),
             None => None,
         }
     }
@@ -49,40 +42,18 @@ impl FileInfoTrait for FileInfoLocal {
     }
 }
 
-fn _get_md5sum(filename: &str) -> Result<String, Error> {
-    let command = format!("md5sum {}", filename);
-
-    let stream = Exec::shell(command).stream_stdout()?;
-
-    let reader = BufReader::new(stream);
-
-    if let Some(line) = reader.lines().next() {
-        if let Some(entry) = line?.split_whitespace().next() {
-            Ok(entry.to_string())
-        } else {
-            Ok("".to_string())
-        }
-    } else {
-        Ok("".to_string())
+fn _get_md5sum(path: &Path) -> Result<String, Error> {
+    {
+        File::open(path)?;
     }
+    Ok(hash_file(path, Algorithm::MD5))
 }
 
-fn _get_sha1sum(filename: &str) -> Result<String, Error> {
-    let command = format!("sha1sum {}", filename);
-
-    let stream = Exec::shell(command).stream_stdout()?;
-
-    let reader = BufReader::new(stream);
-
-    if let Some(line) = reader.lines().next() {
-        if let Some(entry) = line?.split_whitespace().next() {
-            Ok(entry.to_string())
-        } else {
-            Ok("".to_string())
-        }
-    } else {
-        Ok("".to_string())
+fn _get_sha1sum(path: &Path) -> Result<String, Error> {
+    {
+        File::open(path)?;
     }
+    Ok(hash_file(path, Algorithm::SHA1))
 }
 
 fn _get_stat(p: &Path) -> Result<FileStat, Error> {
@@ -132,13 +103,10 @@ impl FileInfoLocal {
         };
 
         let filepath = path.canonicalize()?;
-        let filestr = filepath
-            .to_str()
-            .ok_or_else(|| err_msg("Failed to parse path"))?;
         let fileurl =
             Url::from_file_path(filepath.clone()).map_err(|_| err_msg("Failed to parse url"))?;
-        let md5sum = _get_md5sum(filestr).ok().map(Md5Sum);
-        let sha1sum = _get_sha1sum(filestr).ok().map(Sha1Sum);
+        let md5sum = _get_md5sum(&filepath).ok().map(Md5Sum);
+        let sha1sum = _get_sha1sum(&filepath).ok().map(Sha1Sum);
 
         let finfo = FileInfo {
             filename,
