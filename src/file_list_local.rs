@@ -29,7 +29,6 @@ impl FileListLocalConf {
         let baseurl =
             Url::from_file_path(basepath.clone()).map_err(|_| err_msg("Failed to parse url"))?;
         let conf = FileListConf {
-            basedir: basepath,
             baseurl,
             servicetype: FileService::Local,
             servicesession: basestr.parse()?,
@@ -50,28 +49,13 @@ impl FileListTrait for FileListLocal {
 
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
         let conf = self.get_conf();
-        let flist = match pool {
-            Some(pool) => self.load_file_list(&pool)?,
-            None => Vec::new(),
+        let basedir = conf.baseurl.path();
+        let flist_dict = match pool {
+            Some(pool) => self.get_file_list_dict(&pool)?,
+            None => HashMap::new(),
         };
-        let flist_dict: HashMap<_, _> = flist
-            .into_par_iter()
-            .filter_map(|entry| {
-                if entry.filepath.is_none() {
-                    None
-                } else {
-                    let key = entry.filepath.as_ref().unwrap().to_string();
-                    let val = FileInfo::from_cache_info(entry);
-                    if val.is_err() {
-                        None
-                    } else {
-                        Some((key, val.unwrap()))
-                    }
-                }
-            })
-            .collect();
 
-        let wdir = WalkDir::new(&conf.basedir).same_file_system(true);
+        let wdir = WalkDir::new(&basedir).same_file_system(true);
 
         let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 

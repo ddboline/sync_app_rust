@@ -7,9 +7,11 @@ pub mod file_info_local;
 pub mod file_info_s3;
 pub mod file_list;
 pub mod file_list_local;
+pub mod file_list_s3;
 pub mod file_service;
 pub mod models;
 pub mod pgpool;
+pub mod s3_instance;
 pub mod schema;
 
 use failure::{err_msg, Error};

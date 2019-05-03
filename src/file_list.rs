@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use failure::{err_msg, Error};
 use rayon::prelude::*;
 use reqwest::Url;
-use std::path::PathBuf;
+use std::collections::HashMap;
 
 use crate::file_info::{FileInfo, ServiceId, ServiceSession};
 use crate::file_service::FileService;
@@ -13,7 +13,6 @@ use crate::schema::file_info_cache;
 
 #[derive(Debug, Clone)]
 pub struct FileListConf {
-    pub basedir: PathBuf,
     pub baseurl: Url,
     pub servicetype: FileService,
     pub servicesession: ServiceSession,
@@ -74,6 +73,27 @@ pub trait FileListTrait {
             .filter(servicetype.eq(conf.servicetype.to_string()))
             .load::<FileInfoCache>(&conn)
             .map_err(err_msg)
+    }
+
+    fn get_file_list_dict(&self, pool: &PgPool) -> Result<HashMap<String, FileInfo>, Error> {
+        let flist_dict: HashMap<_, _> = self
+            .load_file_list(&pool)?
+            .into_par_iter()
+            .filter_map(|entry| {
+                if entry.filepath.is_none() {
+                    None
+                } else {
+                    let key = entry.filepath.as_ref().unwrap().to_string();
+                    let val = FileInfo::from_cache_info(entry);
+                    if val.is_err() {
+                        None
+                    } else {
+                        Some((key, val.unwrap()))
+                    }
+                }
+            })
+            .collect();
+        Ok(flist_dict)
     }
 
     fn clear_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
