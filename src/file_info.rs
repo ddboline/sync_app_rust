@@ -2,12 +2,12 @@ use diesel::prelude::*;
 use failure::{err_msg, Error};
 use reqwest::Url;
 use std::convert::Into;
-use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
 
 use crate::file_service::FileService;
+use crate::map_parse;
 use crate::models::{FileInfoCache, InsertFileInfoCache};
 use crate::pgpool::PgPool;
 use crate::schema::file_info_cache;
@@ -92,14 +92,21 @@ pub trait FileInfoTrait {
     fn get_service_id(&self) -> Option<ServiceId>;
 }
 
-pub fn map_parse<T>(x: Option<String>) -> Result<Option<T>, Error>
-where
-    T: FromStr,
-    <T as std::str::FromStr>::Err: 'static + Send + Sync + fmt::Debug + fmt::Display,
-{
-    match x {
-        Some(y) => Ok(Some(y.parse::<T>().map_err(err_msg)?)),
-        None => Ok(None),
+impl FileInfoTrait for FileInfo {
+    fn get_md5(&self) -> Option<Md5Sum> {
+        self.md5sum.clone()
+    }
+
+    fn get_sha1(&self) -> Option<Sha1Sum> {
+        self.sha1sum.clone()
+    }
+
+    fn get_stat(&self) -> Option<FileStat> {
+        self.filestat.clone()
+    }
+
+    fn get_service_id(&self) -> Option<ServiceId> {
+        self.serviceid.clone()
     }
 }
 

@@ -4,6 +4,7 @@ extern crate diesel;
 pub mod config;
 pub mod file_info;
 pub mod file_info_local;
+pub mod file_info_s3;
 pub mod file_list;
 pub mod file_list_local;
 pub mod file_service;
@@ -12,6 +13,8 @@ pub mod pgpool;
 pub mod schema;
 
 use failure::{err_msg, Error};
+use std::fmt;
+use std::str::FromStr;
 
 pub fn map_result_vec<T>(input: Vec<Result<T, Error>>) -> Result<Vec<T>, Error> {
     let mut output: Vec<T> = Vec::new();
@@ -26,5 +29,16 @@ pub fn map_result_vec<T>(input: Vec<Result<T, Error>>) -> Result<Vec<T>, Error> 
         Err(err_msg(errors.join("\n")))
     } else {
         Ok(output)
+    }
+}
+
+pub fn map_parse<T>(x: Option<String>) -> Result<Option<T>, Error>
+where
+    T: FromStr,
+    <T as std::str::FromStr>::Err: 'static + Send + Sync + fmt::Debug + fmt::Display,
+{
+    match x {
+        Some(y) => Ok(Some(y.parse::<T>().map_err(err_msg)?)),
+        None => Ok(None),
     }
 }
