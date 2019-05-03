@@ -1,6 +1,6 @@
 use chrono::DateTime;
 use failure::{err_msg, Error};
-use rusoto_s3::{Bucket, Object};
+use rusoto_s3::Object;
 
 use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, ServiceId, Sha1Sum};
 use crate::file_service::FileService;
@@ -61,7 +61,7 @@ impl FileInfoS3 {
 
 #[cfg(test)]
 mod tests {
-    use rusoto_s3::{Bucket, Object, Owner};
+    use rusoto_s3::{Object, Owner};
 
     use crate::file_info_s3::FileInfoS3;
 

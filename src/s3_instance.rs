@@ -1,6 +1,6 @@
-use failure::Error;
+use failure::{err_msg, Error};
 use rusoto_core::Region;
-use rusoto_s3::{ListObjectsV2Request, Object, S3Client, S3};
+use rusoto_s3::{Bucket, ListObjectsV2Request, Object, S3Client, S3};
 
 pub struct S3Instance {
     s3_client: S3Client,
@@ -16,6 +16,14 @@ impl S3Instance {
         Self {
             s3_client: S3Client::new(region),
         }
+    }
+
+    pub fn get_list_of_buckets(&self) -> Result<Vec<Bucket>, Error> {
+        self.s3_client
+            .list_buckets()
+            .sync()
+            .map(|l| l.buckets.unwrap_or(Vec::new()))
+            .map_err(err_msg)
     }
 
     pub fn get_list_of_keys(&self, bucket: &str) -> Result<Vec<Object>, Error> {
@@ -49,8 +57,29 @@ impl S3Instance {
                 Some(_) => (),
                 None => break,
             };
+            if list_of_keys.len() > 100 {
+                break;
+            }
         }
 
         Ok(list_of_keys)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::s3_instance::S3Instance;
+
+    #[test]
+    fn test_list_buckets() {
+        let s3_instance = S3Instance::new(None);
+        let blist = s3_instance.get_list_of_buckets().unwrap();
+        let bucket = blist
+            .get(0)
+            .and_then(|b| b.name.clone())
+            .unwrap_or_else(|| "".to_string());
+        let klist = s3_instance.get_list_of_keys(&bucket).unwrap();
+        println!("{}", klist.len());
+        assert_eq!(klist.len(), 1000);
     }
 }
