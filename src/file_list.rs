@@ -22,14 +22,24 @@ pub struct FileListConf {
 #[derive(Debug)]
 pub struct FileList {
     pub conf: FileListConf,
-    pub filelist: Vec<FileInfo>,
+    pub filemap: HashMap<String, FileInfo>,
 }
 
 impl FileList {
     pub fn from_conf(conf: FileListConf) -> FileList {
         FileList {
             conf,
-            filelist: Vec::new(),
+            filemap: HashMap::new(),
+        }
+    }
+
+    pub fn with_list(&self, filelist: &[FileInfo]) -> FileList {
+        FileList {
+            conf: self.conf.clone(),
+            filemap: filelist
+                .iter()
+                .map(|f| (f.filename.clone(), f.clone()))
+                .collect(),
         }
     }
 }
@@ -37,17 +47,22 @@ impl FileList {
 pub trait FileListTrait {
     fn get_conf(&self) -> &FileListConf;
 
-    fn get_filelist(&self) -> &[FileInfo];
+    fn get_filemap(&self) -> &HashMap<String, FileInfo>;
 
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error>;
+
+    fn upload_file(&self, finfo_local: &FileInfo, finfo_remote: &FileInfo) -> Result<(), Error>;
+
+    fn download_file(&self, finfo_remote: &FileInfo, finfo_local: &FileInfo)
+        -> Result<bool, Error>;
 
     fn cache_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
         let conn = pool.get()?;
 
         let flist_cache: Vec<Result<_, Error>> = self
-            .get_filelist()
+            .get_filemap()
             .par_iter()
-            .map(|f| {
+            .map(|(_, f)| {
                 let finfo_cache = f.get_cache_info()?;
                 Ok(finfo_cache)
             })
@@ -118,8 +133,8 @@ impl FileListTrait for FileList {
         &self.conf
     }
 
-    fn get_filelist(&self) -> &[FileInfo] {
-        &self.filelist
+    fn get_filemap(&self) -> &HashMap<String, FileInfo> {
+        &self.filemap
     }
 
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
@@ -134,5 +149,13 @@ impl FileListTrait for FileList {
             },
             None => Ok(Vec::new()),
         }
+    }
+
+    fn upload_file(&self, _: &FileInfo, _: &FileInfo) -> Result<(), Error> {
+        Err(err_msg("Not implemented for base FileInfo"))
+    }
+
+    fn download_file(&self, _: &FileInfo, _: &FileInfo) -> Result<bool, Error> {
+        Err(err_msg("Not implemented for base FileInfo"))
     }
 }

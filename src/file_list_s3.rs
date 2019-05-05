@@ -26,6 +26,13 @@ impl FileListS3 {
             s3,
         }
     }
+
+    pub fn with_list(&self, filelist: &[FileInfo]) -> FileListS3 {
+        FileListS3 {
+            flist: self.flist.with_list(&filelist),
+            s3: self.s3.clone(),
+        }
+    }
 }
 
 pub struct FileListS3Conf(pub FileListConf);
@@ -49,8 +56,8 @@ impl FileListTrait for FileListS3 {
         &self.flist.conf
     }
 
-    fn get_filelist(&self) -> &[FileInfo] {
-        &self.flist.filelist
+    fn get_filemap(&self) -> &HashMap<String, FileInfo> {
+        &self.flist.filemap
     }
 
     fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
@@ -70,11 +77,92 @@ impl FileListTrait for FileListS3 {
 
         Ok(flist)
     }
+
+    fn upload_file(&self, finfo_local: &FileInfo, finfo_remote: &FileInfo) -> Result<(), Error> {
+        if finfo_local.servicetype != FileService::Local
+            || finfo_remote.servicetype != FileService::S3
+        {
+            return Err(err_msg(format!(
+                "Wrong fileinfo types {} {}",
+                finfo_local.servicetype, finfo_remote.servicetype
+            )));
+        }
+        let local_file = finfo_local
+            .filepath
+            .clone()
+            .ok_or_else(|| err_msg("No local path"))?
+            .canonicalize()?
+            .to_str()
+            .ok_or_else(|| err_msg("Failed to parse path"))?
+            .to_string();
+        let remote_url = finfo_remote
+            .urlname
+            .clone()
+            .ok_or_else(|| err_msg("No s3 url"))?;
+        let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
+        let key = remote_url.path();
+        self.s3.upload(&local_file, &bucket, &key)
+    }
+
+    fn download_file(
+        &self,
+        finfo_remote: &FileInfo,
+        finfo_local: &FileInfo,
+    ) -> Result<bool, Error> {
+        if finfo_local.servicetype != FileService::Local
+            || finfo_remote.servicetype != FileService::S3
+        {
+            return Err(err_msg(format!(
+                "Wrong fileinfo types {} {}",
+                finfo_local.servicetype, finfo_remote.servicetype
+            )));
+        }
+        let local_file = finfo_local
+            .filepath
+            .clone()
+            .ok_or_else(|| err_msg("No local path"))?
+            .canonicalize()?
+            .to_str()
+            .ok_or_else(|| err_msg("Failed to parse path"))?
+            .to_string();
+        let remote_url = finfo_remote
+            .urlname
+            .clone()
+            .ok_or_else(|| err_msg("No s3 url"))?;
+        let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
+        let key = remote_url.path();
+        let md5sum = self.s3.download(&bucket, &key, &local_file)?;
+        if md5sum
+            != finfo_local
+                .md5sum
+                .clone()
+                .map(|u| u.0)
+                .unwrap_or_else(|| "".to_string())
+        {
+            println!(
+                "Multipart upload? {} {}",
+                finfo_local
+                    .urlname
+                    .clone()
+                    .map(|u| u.into_string())
+                    .unwrap_or_else(|| "".to_string()),
+                finfo_remote
+                    .urlname
+                    .clone()
+                    .map(|u| u.into_string())
+                    .unwrap_or_else(|| "".to_string())
+            );
+        }
+        Ok(true)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::file_list_s3::{FileListS3, FileListS3Conf, FileListTrait};
+    use crate::config::Config;
+    use crate::file_list::FileListTrait;
+    use crate::file_list_s3::{FileListS3, FileListS3Conf};
+    use crate::pgpool::PgPool;
     use crate::s3_instance::S3Instance;
 
     #[test]
@@ -91,7 +179,19 @@ mod tests {
 
         let new_flist = flist.fill_file_list(None).unwrap();
 
-        println!("{:?}", new_flist.len());
-        assert_eq!(new_flist.len(), 1000);
+        println!("{} {:?}", bucket, new_flist.get(0));
+        assert!(new_flist.len() > 0);
+
+        let config = Config::new();
+        let pool = PgPool::new(&config.database_url);
+        let flist = flist.with_list(&new_flist);
+
+        flist.cache_file_list(&pool).unwrap();
+
+        let new_flist = flist.load_file_list(&pool).unwrap();
+
+        assert_eq!(flist.flist.filemap.len(), new_flist.len());
+
+        flist.clear_file_list(&pool).unwrap();
     }
 }

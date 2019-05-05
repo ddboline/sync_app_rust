@@ -2,7 +2,7 @@ use chrono::DateTime;
 use failure::{err_msg, Error};
 use rusoto_s3::Object;
 
-use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, ServiceId, Sha1Sum};
+use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
 use crate::file_service::FileService;
 
 pub struct FileInfoS3(pub FileInfo);
@@ -19,16 +19,15 @@ impl FileInfoTrait for FileInfoS3 {
     fn get_stat(&self) -> Option<FileStat> {
         self.0.filestat.clone()
     }
-
-    fn get_service_id(&self) -> Option<ServiceId> {
-        self.0.serviceid.clone()
-    }
 }
 
 impl FileInfoS3 {
     pub fn from_object(bucket: &str, item: Object) -> Result<FileInfoS3, Error> {
         let key = item.key.as_ref().ok_or_else(|| err_msg("No key"))?.clone();
-        let md5sum = item.e_tag.clone().and_then(|m| m.parse().ok());
+        let md5sum = item
+            .e_tag
+            .clone()
+            .and_then(|m| m.trim_matches('"').parse().ok());
         let st_mtime = DateTime::parse_from_rfc3339(
             item.last_modified
                 .as_ref()

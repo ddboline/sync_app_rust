@@ -2,6 +2,7 @@ use failure::{err_msg, Error};
 use rayon::prelude::*;
 use reqwest::Url;
 use std::collections::HashMap;
+use std::fs::copy;
 use std::path::PathBuf;
 use std::string::ToString;
 use std::time::SystemTime;
@@ -15,6 +16,19 @@ use crate::pgpool::PgPool;
 
 #[derive(Debug)]
 pub struct FileListLocal(pub FileList);
+
+impl FileListLocal {
+    pub fn from_conf(conf: FileListLocalConf) -> FileListLocal {
+        FileListLocal(FileList {
+            conf: conf.0,
+            filemap: HashMap::new(),
+        })
+    }
+
+    pub fn with_list(&self, filelist: &[FileInfo]) -> FileListLocal {
+        FileListLocal(self.0.with_list(&filelist))
+    }
+}
 
 #[derive(Debug)]
 pub struct FileListLocalConf(pub FileListConf);
@@ -43,8 +57,8 @@ impl FileListTrait for FileListLocal {
         &self.0.conf
     }
 
-    fn get_filelist(&self) -> &[FileInfo] {
-        &self.0.filelist
+    fn get_filemap(&self) -> &HashMap<String, FileInfo> {
+        &self.0.filemap
     }
 
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
@@ -100,6 +114,56 @@ impl FileListTrait for FileListLocal {
 
         Ok(flist)
     }
+
+    fn upload_file(&self, finfo_local: &FileInfo, finfo_remote: &FileInfo) -> Result<(), Error> {
+        if finfo_local.servicetype != FileService::Local
+            || finfo_remote.servicetype != FileService::Local
+        {
+            return Err(err_msg(format!(
+                "Wrong fileinfo types {} {}",
+                finfo_local.servicetype, finfo_remote.servicetype
+            )));
+        }
+        let local_file = finfo_local
+            .filepath
+            .clone()
+            .ok_or_else(|| err_msg("No local path"))?
+            .canonicalize()?;
+        let remote_file = finfo_remote
+            .filepath
+            .clone()
+            .ok_or_else(|| err_msg("No local path"))?
+            .canonicalize()?;
+        copy(&local_file, &remote_file)?;
+        Ok(())
+    }
+
+    fn download_file(
+        &self,
+        finfo_remote: &FileInfo,
+        finfo_local: &FileInfo,
+    ) -> Result<bool, Error> {
+        if finfo_local.servicetype != FileService::Local
+            || finfo_remote.servicetype != FileService::Local
+        {
+            return Err(err_msg(format!(
+                "Wrong fileinfo types {} {}",
+                finfo_local.servicetype, finfo_remote.servicetype
+            )));
+        }
+        let local_file = finfo_local
+            .filepath
+            .clone()
+            .ok_or_else(|| err_msg("No local path"))?
+            .canonicalize()?;
+        let remote_file = finfo_remote
+            .filepath
+            .clone()
+            .ok_or_else(|| err_msg("No local path"))?
+            .canonicalize()?;
+        copy(&remote_file, &local_file)?;
+        Ok(true)
+    }
 }
 
 #[cfg(test)]
@@ -140,16 +204,16 @@ mod tests {
         let conf = FileListLocalConf::new(basepath).unwrap();
         let flist = FileListLocal(FileList {
             conf: conf.0.clone(),
-            filelist: Vec::new(),
+            filemap: HashMap::new(),
         });
 
-        let flist = flist.fill_file_list(None).unwrap();
+        let new_flist = flist.fill_file_list(None).unwrap();
 
-        for entry in &flist {
-            println!("{:?}", entry);
-        }
+        // for entry in &new_flist {
+        //     println!("{:?}", entry);
+        // }
 
-        let fset: HashMap<_, _> = flist
+        let fset: HashMap<_, _> = new_flist
             .iter()
             .map(|f| (f.filename.clone(), f.clone()))
             .collect();
@@ -186,23 +250,22 @@ mod tests {
         let config = Config::new();
         let pool = PgPool::new(&config.database_url);
 
-        let flist = FileListLocal(FileList {
-            conf: conf.0,
-            filelist: flist,
-        });
+        let flist = FileListLocal::from_conf(conf).with_list(&new_flist);
 
         flist.cache_file_list(&pool).unwrap();
 
         let new_flist = flist.load_file_list(&pool).unwrap();
 
-        assert_eq!(new_flist.len(), flist.0.filelist.len());
+        assert_eq!(new_flist.len(), flist.0.filemap.len());
 
+        println!("{}", new_flist.len());
         assert!(new_flist.len() != 0);
 
         let new_flist = flist.fill_file_list(Some(&pool)).unwrap();
 
-        assert_eq!(new_flist.len(), flist.0.filelist.len());
+        assert_eq!(new_flist.len(), flist.0.filemap.len());
 
+        println!("{}", new_flist.len());
         assert!(new_flist.len() != 0);
 
         flist.clear_file_list(&pool).unwrap();

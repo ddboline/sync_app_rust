@@ -36,10 +36,6 @@ impl FileInfoTrait for FileInfoLocal {
             None => None,
         }
     }
-
-    fn get_service_id(&self) -> Option<ServiceId> {
-        self.0.serviceid.clone()
-    }
 }
 
 fn _get_md5sum(path: &Path) -> Result<String, Error> {

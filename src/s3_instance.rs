@@ -1,6 +1,11 @@
 use failure::{err_msg, Error};
 use rusoto_core::Region;
-use rusoto_s3::{Bucket, ListObjectsV2Request, Object, S3Client, S3};
+use rusoto_s3::{
+    Bucket, CreateBucketRequest, DeleteBucketRequest, GetObjectRequest, ListObjectsV2Request,
+    Object, PutObjectRequest, S3Client, S3,
+};
+use s4::S4;
+use std::path::Path;
 
 pub struct S3Instance {
     s3_client: S3Client,
@@ -23,6 +28,60 @@ impl S3Instance {
             .list_buckets()
             .sync()
             .map(|l| l.buckets.unwrap_or(Vec::new()))
+            .map_err(err_msg)
+    }
+
+    pub fn create_bucket(&self, bucket_name: &str) -> Result<String, Error> {
+        self.s3_client
+            .create_bucket(CreateBucketRequest {
+                bucket: bucket_name.to_string(),
+                ..Default::default()
+            })
+            .sync()?
+            .location
+            .ok_or_else(|| err_msg("Failed to create bucket"))
+    }
+
+    pub fn delete_bucket(&self, bucket_name: &str) -> Result<(), Error> {
+        self.s3_client
+            .delete_bucket(DeleteBucketRequest {
+                bucket: bucket_name.to_string(),
+            })
+            .sync()
+            .map_err(err_msg)
+    }
+
+    pub fn upload(&self, fname: &str, bucket_name: &str, key_name: &str) -> Result<(), Error> {
+        if Path::new(&fname).exists() {
+            return Err(err_msg("File doesn't exist"));
+        }
+        self.s3_client.upload_from_file(
+            &fname,
+            PutObjectRequest {
+                bucket: bucket_name.to_string(),
+                key: key_name.to_string(),
+                ..Default::default()
+            },
+        )?;
+        Ok(())
+    }
+
+    pub fn download(
+        &self,
+        bucket_name: &str,
+        key_name: &str,
+        fname: &str,
+    ) -> Result<String, Error> {
+        self.s3_client
+            .download_to_file(
+                GetObjectRequest {
+                    bucket: bucket_name.to_string(),
+                    key: key_name.to_string(),
+                    ..Default::default()
+                },
+                &fname,
+            )
+            .map(|x| x.e_tag.unwrap_or_else(|| "".to_string()))
             .map_err(err_msg)
     }
 
@@ -79,7 +138,7 @@ mod tests {
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
         let klist = s3_instance.get_list_of_keys(&bucket).unwrap();
-        println!("{}", klist.len());
-        assert_eq!(klist.len(), 1000);
+        println!("{} {}", bucket, klist.len());
+        assert!(klist.len() > 0);
     }
 }
