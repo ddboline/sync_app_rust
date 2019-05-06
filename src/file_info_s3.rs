@@ -8,6 +8,10 @@ use crate::file_service::FileService;
 pub struct FileInfoS3(pub FileInfo);
 
 impl FileInfoTrait for FileInfoS3 {
+    fn get_finfo(&self) -> &FileInfo {
+        &self.0
+    }
+
     fn get_md5(&self) -> Option<Md5Sum> {
         self.0.md5sum.clone()
     }

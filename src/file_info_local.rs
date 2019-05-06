@@ -13,9 +13,14 @@ use crate::file_info::{
 };
 use crate::file_service::FileService;
 
+#[derive(Debug, Clone)]
 pub struct FileInfoLocal(pub FileInfo);
 
 impl FileInfoTrait for FileInfoLocal {
+    fn get_finfo(&self) -> &FileInfo {
+        &self.0
+    }
+
     fn get_md5(&self) -> Option<Md5Sum> {
         match self.0.filepath.as_ref() {
             Some(p) => _get_md5sum(&p).ok().map(Md5Sum),

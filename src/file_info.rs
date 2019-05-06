@@ -86,12 +86,17 @@ pub struct FileInfo {
 }
 
 pub trait FileInfoTrait {
+    fn get_finfo(&self) -> &FileInfo;
     fn get_md5(&self) -> Option<Md5Sum>;
     fn get_sha1(&self) -> Option<Sha1Sum>;
     fn get_stat(&self) -> Option<FileStat>;
 }
 
 impl FileInfoTrait for FileInfo {
+    fn get_finfo(&self) -> &FileInfo {
+        &self
+    }
+
     fn get_md5(&self) -> Option<Md5Sum> {
         self.md5sum.clone()
     }

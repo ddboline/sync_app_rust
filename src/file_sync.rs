@@ -3,24 +3,31 @@ use rayon::prelude::*;
 use std::fs::File;
 use std::io::Write;
 
-use crate::file_info::FileInfo;
+use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::FileListTrait;
 use crate::file_service::FileService;
 use crate::map_result_vec;
 
+#[derive(Debug)]
 pub enum FileSyncMode {
     OutputFile(String),
     Full,
 }
 
+impl Default for FileSyncMode {
+    fn default() -> FileSyncMode {
+        FileSyncMode::Full
+    }
+}
+
+#[derive(Default, Debug)]
 pub struct FileSync {
     pub mode: FileSyncMode,
-    pub use_sha1: bool,
 }
 
 impl FileSync {
-    pub fn new(mode: FileSyncMode, use_sha1: bool) -> FileSync {
-        FileSync { mode, use_sha1 }
+    pub fn new(mode: FileSyncMode) -> FileSync {
+        FileSync { mode }
     }
 
     pub fn compare_lists<T, U>(&self, flist0: &T, flist1: &U) -> Result<(), Error>
@@ -35,7 +42,7 @@ impl FileSync {
             .iter()
             .filter_map(|(k, finfo0)| match flist1.get_filemap().get(k) {
                 Some(finfo1) => {
-                    if self.compare_objects(&finfo0, &finfo1) {
+                    if self.compare_objects(finfo0, finfo1) {
                         Some((finfo0.clone(), finfo1.clone()))
                     } else {
                         None
@@ -113,7 +120,16 @@ impl FileSync {
         Ok(())
     }
 
-    pub fn compare_objects(&self, finfo0: &FileInfo, finfo1: &FileInfo) -> bool {
+    pub fn compare_objects<T, U>(&self, finfo0: &T, finfo1: &U) -> bool
+    where
+        T: FileInfoTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync,
+    {
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+
+        let use_sha1 = (finfo0.servicetype == FileService::OneDrive)
+            || (finfo1.servicetype == FileService::OneDrive);
         if finfo0.filename != finfo1.filename {
             return false;
         }
@@ -127,7 +143,7 @@ impl FileSync {
                 }
             }
         }
-        if self.use_sha1 {
+        if use_sha1 {
             if let Some(sha0) = finfo0.sha1sum.as_ref() {
                 if let Some(sha1) = finfo1.sha1sum.as_ref() {
                     if sha0 == sha1 {
@@ -145,5 +161,36 @@ impl FileSync {
             }
         }
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use crate::file_info::{FileInfo, ServiceId, ServiceSession};
+    use crate::file_info_local::FileInfoLocal;
+    use crate::file_info_s3::FileInfoS3;
+    use crate::file_sync::{FileSync, FileSyncMode};
+
+    #[test]
+    fn test_compare_objects() {
+        let outfile = "/tmp/.test_outfile.txt".to_string();
+        let fsync = FileSync::new(FileSyncMode::OutputFile(outfile));
+
+        let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
+        let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
+        let servicesession: ServiceSession = filepath.to_str().unwrap().parse().unwrap();
+        let finfo0 =
+            FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
+        println!("{:?}", finfo0);
+        let mut finfo1 = finfo0.clone();
+        finfo1.0.md5sum = Some("51e3cc2c6f64d24ff55fae262325edee".parse().unwrap());
+        let mut fstat = finfo1.0.filestat.unwrap();
+        fstat.st_mtime += 100;
+        fstat.st_size += 100;
+        finfo1.0.filestat = Some(fstat);
+        println!("{:?}", finfo1);
+        assert!(fsync.compare_objects(&finfo0, &finfo1));
     }
 }
