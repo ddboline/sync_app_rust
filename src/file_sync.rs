@@ -2,15 +2,16 @@ use failure::Error;
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 
 use crate::file_info::{FileInfo, FileInfoTrait};
-use crate::file_list::FileListTrait;
+use crate::file_list::{replace_baseurl, FileListTrait};
 use crate::file_service::FileService;
 use crate::map_result_vec;
 
 #[derive(Debug)]
 pub enum FileSyncMode {
-    OutputFile(String),
+    OutputFile(PathBuf),
     Full,
 }
 
@@ -37,6 +38,7 @@ impl FileSync {
     {
         let conf0 = flist0.get_conf();
         let conf1 = flist1.get_conf();
+        println!("{:?} {:?}", conf0.baseurl, conf1.baseurl);
         let list_a_not_b: Vec<_> = flist0
             .get_filemap()
             .iter()
@@ -49,14 +51,28 @@ impl FileSync {
                     }
                 }
                 None => {
-                    let finfo1 = FileInfo {
-                        filename: k.clone(),
-                        servicesession: Some(conf1.servicesession.clone()),
-                        servicetype: conf1.servicetype.clone(),
-                        serviceid: Some(conf1.serviceid.clone()),
-                        ..Default::default()
-                    };
-                    Some((finfo0.clone(), finfo1.clone()))
+                    if let Some(url0) = finfo0.urlname.as_ref() {
+                        if let Ok(url1) = replace_baseurl(&url0, &conf0.baseurl, &conf1.baseurl) {
+                            if url1.as_str().contains(conf1.baseurl.as_str()) {
+                                let finfo1 = FileInfo {
+                                    filename: k.clone(),
+                                    urlname: Some(url1),
+                                    servicesession: Some(conf1.servicesession.clone()),
+                                    servicetype: conf1.servicetype.clone(),
+                                    serviceid: Some(conf1.serviceid.clone()),
+                                    ..Default::default()
+                                };
+                                println!("{:?}", conf1.baseurl);
+                                Some((finfo0.clone(), finfo1.clone()))
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
                 }
             })
             .collect();
@@ -66,14 +82,28 @@ impl FileSync {
             .filter_map(|(k, finfo1)| match flist0.get_filemap().get(k) {
                 Some(_) => None,
                 None => {
-                    let finfo0 = FileInfo {
-                        filename: k.clone(),
-                        servicesession: Some(conf0.servicesession.clone()),
-                        servicetype: conf0.servicetype.clone(),
-                        serviceid: Some(conf0.serviceid.clone()),
-                        ..Default::default()
-                    };
-                    Some((finfo0.clone(), finfo1.clone()))
+                    if let Some(url1) = finfo1.urlname.as_ref() {
+                        if let Ok(url0) = replace_baseurl(&url1, &conf1.baseurl, &conf0.baseurl) {
+                            if url0.as_str().contains(conf0.baseurl.as_str()) {
+                                let finfo0 = FileInfo {
+                                    filename: k.clone(),
+                                    urlname: Some(url0),
+                                    servicesession: Some(conf0.servicesession.clone()),
+                                    servicetype: conf0.servicetype.clone(),
+                                    serviceid: Some(conf0.serviceid.clone()),
+                                    ..Default::default()
+                                };
+                                println!("{:?}", conf0.baseurl);
+                                Some((finfo0.clone(), finfo1.clone()))
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
                 }
             })
             .collect();
@@ -109,6 +139,8 @@ impl FileSync {
             FileSyncMode::OutputFile(fname) => {
                 let mut f = File::create(fname)?;
                 for (f0, f1) in list_a_not_b.iter().chain(list_b_not_a.iter()) {
+                    println!("{:?}", f0);
+                    println!("{:?}", f1);
                     if let Some(u0) = f0.urlname.as_ref() {
                         if let Some(u1) = f1.urlname.as_ref() {
                             write!(f, "{} {}\n", u0, u1)?;
@@ -166,17 +198,24 @@ impl FileSync {
 
 #[cfg(test)]
 mod tests {
+    use rusoto_s3::{Object, Owner};
+    use std::env::current_dir;
+    use std::io::Read;
+    use std::io::{Seek, SeekFrom};
     use std::path::Path;
+    use tempfile::NamedTempFile;
 
     use crate::file_info::{FileInfo, ServiceId, ServiceSession};
     use crate::file_info_local::FileInfoLocal;
     use crate::file_info_s3::FileInfoS3;
+    use crate::file_list_local::{FileListLocal, FileListLocalConf};
+    use crate::file_list_s3::{FileListS3, FileListS3Conf};
     use crate::file_sync::{FileSync, FileSyncMode};
 
     #[test]
     fn test_compare_objects() {
-        let outfile = "/tmp/.test_outfile.txt".to_string();
-        let fsync = FileSync::new(FileSyncMode::OutputFile(outfile));
+        let outfile = NamedTempFile::new().unwrap();
+        let fsync = FileSync::new(FileSyncMode::OutputFile(outfile.path().to_path_buf()));
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
         let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
@@ -192,5 +231,59 @@ mod tests {
         finfo1.0.filestat = Some(fstat);
         println!("{:?}", finfo1);
         assert!(fsync.compare_objects(&finfo0, &finfo1));
+
+        let test_owner = Owner {
+            display_name: Some("me".to_string()),
+            id: Some("8675309".to_string()),
+        };
+        let test_object = Object {
+            e_tag: Some(r#""6f90ebdaabef92a9f76be131037f593b""#.to_string()),
+            key: Some("src/file_sync.rs".to_string()),
+            last_modified: Some("2019-05-01T00:00:00+00:00".to_string()),
+            owner: Some(test_owner),
+            size: Some(100),
+            storage_class: Some("Standard".to_string()),
+        };
+
+        let finfo2 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
+        println!("{:?}", finfo2);
+        assert!(fsync.compare_objects(&finfo0, &finfo2));
+    }
+
+    #[test]
+    fn test_compare_lists() {
+        let mut outfile = NamedTempFile::new().unwrap();
+        let fsync = FileSync::new(FileSyncMode::OutputFile(outfile.path().to_path_buf()));
+
+        let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
+        let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
+        let servicesession: ServiceSession = filepath.to_str().unwrap().parse().unwrap();
+        let finfo0 =
+            FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
+        println!("{:?}", finfo0);
+
+        let flist0conf = FileListLocalConf::new(current_dir().unwrap()).unwrap();
+        let flist0 = FileListLocal::from_conf(flist0conf).with_list(&[finfo0.0]);
+
+        let flist1conf = FileListS3Conf::new("test_bucket").unwrap();
+        let flist1 = FileListS3::from_conf(flist1conf.0, None, None);
+
+        fsync.compare_lists(&flist0, &flist1).unwrap();
+
+        outfile.seek(SeekFrom::Start(0)).unwrap();
+        let mut buffer = String::new();
+        let bytes_read = outfile.read_to_string(&mut buffer).unwrap();
+
+        assert!(bytes_read > 0);
+
+        println!("{}", buffer.trim());
+        println!("{}", current_dir().unwrap().to_str().unwrap());
+        assert_eq!(
+            buffer.trim(),
+            format!(
+                "file://{}/src/file_sync.rs s3://test_bucket/src/file_sync.rs",
+                current_dir().unwrap().to_str().unwrap()
+            )
+        );
     }
 }

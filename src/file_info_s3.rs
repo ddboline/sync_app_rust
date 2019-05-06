@@ -1,10 +1,12 @@
 use chrono::DateTime;
 use failure::{err_msg, Error};
 use rusoto_s3::Object;
+use std::path::Path;
 
 use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
 use crate::file_service::FileService;
 
+#[derive(Debug, Default)]
 pub struct FileInfoS3(pub FileInfo);
 
 impl FileInfoTrait for FileInfoS3 {
@@ -28,6 +30,13 @@ impl FileInfoTrait for FileInfoS3 {
 impl FileInfoS3 {
     pub fn from_object(bucket: &str, item: Object) -> Result<FileInfoS3, Error> {
         let key = item.key.as_ref().ok_or_else(|| err_msg("No key"))?.clone();
+        let filepath = Path::new(&key);
+        let filename = filepath
+            .file_name()
+            .ok_or_else(|| err_msg("Parse failure"))?
+            .to_os_string()
+            .into_string()
+            .map_err(|_| err_msg("Parse failure"))?;
         let md5sum = item
             .e_tag
             .clone()
@@ -44,8 +53,8 @@ impl FileInfoS3 {
         let servicesession = Some(bucket.parse()?);
 
         let finfo = FileInfo {
-            filename: key,
-            filepath: None,
+            filename,
+            filepath: Some(filepath.to_path_buf()),
             urlname: Some(fileurl),
             md5sum,
             sha1sum: None,

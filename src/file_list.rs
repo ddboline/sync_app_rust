@@ -158,3 +158,11 @@ impl FileListTrait for FileList {
         Err(err_msg("Not implemented for base FileInfo"))
     }
 }
+
+pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<Url, Error> {
+    let baseurl0 = format!("{}/", baseurl0.as_str().trim_end_matches('/'));
+    let baseurl1 = baseurl1.as_str().trim_end_matches('/');
+
+    let urlstr = format!("{}/{}", baseurl1, urlname.as_str().replace(&baseurl0, ""));
+    Url::parse(&urlstr).map_err(err_msg)
+}

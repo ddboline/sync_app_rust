@@ -23,8 +23,8 @@ pub struct FileListS3 {
 
 impl FileListS3 {
     pub fn from_conf(
-        region_name: Option<&str>,
         conf: FileListConf,
+        region_name: Option<&str>,
         basedir: Option<&str>,
     ) -> FileListS3 {
         let s3 = Arc::new(S3Instance::new(region_name));
@@ -58,7 +58,7 @@ pub struct FileListS3Conf(pub FileListConf);
 
 impl FileListS3Conf {
     pub fn new(bucket: &str) -> Result<FileListS3Conf, Error> {
-        let baseurl: Url = format!("s3://{}/", bucket).parse()?;
+        let baseurl: Url = format!("s3://{}", bucket).parse()?;
 
         let conf = FileListConf {
             baseurl,
@@ -200,7 +200,7 @@ mod tests {
             .unwrap_or_else(|| "".to_string());
 
         let conf = FileListS3Conf::new(&bucket).unwrap();
-        let flist = FileListS3::from_conf(None, conf.0, None);
+        let flist = FileListS3::from_conf(conf.0, None, None);
 
         let new_flist = flist.fill_file_list(None).unwrap();
 
