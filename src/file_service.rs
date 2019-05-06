@@ -10,6 +10,12 @@ pub enum FileService {
     S3,
 }
 
+impl Default for FileService {
+    fn default() -> FileService {
+        FileService::Local
+    }
+}
+
 impl FromStr for FileService {
     type Err = Error;
 

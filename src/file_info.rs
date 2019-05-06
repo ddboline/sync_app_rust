@@ -72,7 +72,7 @@ impl FromStr for ServiceSession {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct FileInfo {
     pub filename: String,
     pub filepath: Option<PathBuf>,

@@ -2,6 +2,9 @@ use failure::{err_msg, Error};
 use rayon::prelude::*;
 use reqwest::Url;
 use std::collections::HashMap;
+use std::env::var;
+use std::fs::create_dir_all;
+use std::path::Path;
 use std::sync::Arc;
 
 use crate::file_info::FileInfo;
@@ -15,15 +18,30 @@ use crate::s3_instance::S3Instance;
 pub struct FileListS3 {
     pub flist: FileList,
     pub s3: Arc<S3Instance>,
+    pub basedir: String,
 }
 
 impl FileListS3 {
-    pub fn from_conf(region_name: Option<&str>, conf: FileListConf) -> FileListS3 {
+    pub fn from_conf(
+        region_name: Option<&str>,
+        conf: FileListConf,
+        basedir: Option<&str>,
+    ) -> FileListS3 {
         let s3 = Arc::new(S3Instance::new(region_name));
+        let basedir = basedir
+            .and_then(|s| {
+                if Path::new(&s).exists() {
+                    Some(s.to_string())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| format!("{}/S3", var("HOME").unwrap_or_else(|_| "/".to_string())));
 
         FileListS3 {
             flist: FileList::from_conf(conf),
             s3,
+            basedir,
         }
     }
 
@@ -31,6 +49,7 @@ impl FileListS3 {
         FileListS3 {
             flist: self.flist.with_list(&filelist),
             s3: self.s3.clone(),
+            basedir: self.basedir.clone(),
         }
     }
 }
@@ -104,11 +123,7 @@ impl FileListTrait for FileListS3 {
         self.s3.upload(&local_file, &bucket, &key)
     }
 
-    fn download_file(
-        &self,
-        finfo_remote: &FileInfo,
-        finfo_local: &FileInfo,
-    ) -> Result<bool, Error> {
+    fn download_file(&self, finfo_remote: &FileInfo, finfo_local: &FileInfo) -> Result<(), Error> {
         if finfo_local.servicetype != FileService::Local
             || finfo_remote.servicetype != FileService::S3
         {
@@ -125,6 +140,16 @@ impl FileListTrait for FileListS3 {
             .to_str()
             .ok_or_else(|| err_msg("Failed to parse path"))?
             .to_string();
+        let parent_dir = finfo_local
+            .filepath
+            .as_ref()
+            .ok_or_else(|| err_msg("No local path"))?
+            .parent()
+            .clone()
+            .ok_or_else(|| err_msg("No parent directory"))?;
+        if !parent_dir.exists() {
+            create_dir_all(&parent_dir)?;
+        }
         let remote_url = finfo_remote
             .urlname
             .clone()
@@ -153,7 +178,7 @@ impl FileListTrait for FileListS3 {
                     .unwrap_or_else(|| "".to_string())
             );
         }
-        Ok(true)
+        Ok(())
     }
 }
 
@@ -175,7 +200,7 @@ mod tests {
             .unwrap_or_else(|| "".to_string());
 
         let conf = FileListS3Conf::new(&bucket).unwrap();
-        let flist = FileListS3::from_conf(None, conf.0);
+        let flist = FileListS3::from_conf(None, conf.0, None);
 
         let new_flist = flist.fill_file_list(None).unwrap();
 

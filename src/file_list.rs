@@ -53,8 +53,7 @@ pub trait FileListTrait {
 
     fn upload_file(&self, finfo_local: &FileInfo, finfo_remote: &FileInfo) -> Result<(), Error>;
 
-    fn download_file(&self, finfo_remote: &FileInfo, finfo_local: &FileInfo)
-        -> Result<bool, Error>;
+    fn download_file(&self, finfo_remote: &FileInfo, finfo_local: &FileInfo) -> Result<(), Error>;
 
     fn cache_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
         let conn = pool.get()?;
@@ -155,7 +154,7 @@ impl FileListTrait for FileList {
         Err(err_msg("Not implemented for base FileInfo"))
     }
 
-    fn download_file(&self, _: &FileInfo, _: &FileInfo) -> Result<bool, Error> {
+    fn download_file(&self, _: &FileInfo, _: &FileInfo) -> Result<(), Error> {
         Err(err_msg("Not implemented for base FileInfo"))
     }
 }

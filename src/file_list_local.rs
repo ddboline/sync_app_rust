@@ -2,7 +2,7 @@ use failure::{err_msg, Error};
 use rayon::prelude::*;
 use reqwest::Url;
 use std::collections::HashMap;
-use std::fs::copy;
+use std::fs::{copy, create_dir_all};
 use std::path::PathBuf;
 use std::string::ToString;
 use std::time::SystemTime;
@@ -40,8 +40,7 @@ impl FileListLocalConf {
             .to_str()
             .ok_or_else(|| err_msg("Failed to parse path"))?
             .to_string();
-        let baseurl =
-            Url::from_file_path(basepath.clone()).map_err(|_| err_msg("Failed to parse url"))?;
+        let baseurl = Url::from_file_path(basepath).map_err(|_| err_msg("Failed to parse url"))?;
         let conf = FileListConf {
             baseurl,
             servicetype: FileService::Local,
@@ -124,25 +123,31 @@ impl FileListTrait for FileListLocal {
                 finfo_local.servicetype, finfo_remote.servicetype
             )));
         }
+        let parent_dir = finfo_local
+            .filepath
+            .as_ref()
+            .ok_or_else(|| err_msg("No local path"))?
+            .parent()
+            .clone()
+            .ok_or_else(|| err_msg("No parent directory"))?;
+        if !parent_dir.exists() {
+            create_dir_all(&parent_dir)?;
+        }
         let local_file = finfo_local
             .filepath
-            .clone()
+            .as_ref()
             .ok_or_else(|| err_msg("No local path"))?
             .canonicalize()?;
         let remote_file = finfo_remote
             .filepath
-            .clone()
+            .as_ref()
             .ok_or_else(|| err_msg("No local path"))?
             .canonicalize()?;
         copy(&local_file, &remote_file)?;
         Ok(())
     }
 
-    fn download_file(
-        &self,
-        finfo_remote: &FileInfo,
-        finfo_local: &FileInfo,
-    ) -> Result<bool, Error> {
+    fn download_file(&self, finfo_remote: &FileInfo, finfo_local: &FileInfo) -> Result<(), Error> {
         if finfo_local.servicetype != FileService::Local
             || finfo_remote.servicetype != FileService::Local
         {
@@ -153,7 +158,7 @@ impl FileListTrait for FileListLocal {
         }
         let local_file = finfo_local
             .filepath
-            .clone()
+            .as_ref()
             .ok_or_else(|| err_msg("No local path"))?
             .canonicalize()?;
         let remote_file = finfo_remote
@@ -161,8 +166,19 @@ impl FileListTrait for FileListLocal {
             .clone()
             .ok_or_else(|| err_msg("No local path"))?
             .canonicalize()?;
+        let parent_dir = finfo_remote
+            .filepath
+            .as_ref()
+            .ok_or_else(|| err_msg("No local path"))?
+            .parent()
+            .clone()
+            .ok_or_else(|| err_msg("No parent directory"))?;
+        if !parent_dir.exists() {
+            create_dir_all(&parent_dir)?;
+        }
+
         copy(&remote_file, &local_file)?;
-        Ok(true)
+        Ok(())
     }
 }
 
@@ -239,8 +255,8 @@ mod tests {
         let cache_info = result.get_cache_info().unwrap();
         println!("{:?}", cache_info);
         assert_eq!(
-            result.md5sum.clone().unwrap().0,
-            cache_info.md5sum.clone().unwrap()
+            &result.md5sum.as_ref().unwrap().0,
+            cache_info.md5sum.as_ref().unwrap()
         );
 
         let cache_info = FileInfoCache::from_insert(cache_info, 5);
