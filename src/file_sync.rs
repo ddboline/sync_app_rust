@@ -1,7 +1,5 @@
 use failure::{err_msg, Error};
 use rayon::prelude::*;
-use reqwest::Url;
-use std::fmt;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;

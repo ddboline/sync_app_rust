@@ -1,11 +1,11 @@
 use failure::{err_msg, Error};
 use rayon::prelude::*;
-use reqwest::Url;
 use std::collections::HashMap;
 use std::fs::{copy, create_dir_all};
 use std::path::PathBuf;
 use std::string::ToString;
 use std::time::SystemTime;
+use url::Url;
 use walkdir::WalkDir;
 
 use crate::file_info::FileInfo;

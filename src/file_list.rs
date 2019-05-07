@@ -1,8 +1,8 @@
 use diesel::prelude::*;
 use failure::{err_msg, Error};
 use rayon::prelude::*;
-use reqwest::Url;
 use std::collections::HashMap;
+use url::Url;
 
 use crate::file_info::{FileInfo, ServiceId, ServiceSession};
 use crate::file_service::FileService;

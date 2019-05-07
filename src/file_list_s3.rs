@@ -1,11 +1,11 @@
 use failure::{err_msg, Error};
 use rayon::prelude::*;
-use reqwest::Url;
 use std::collections::HashMap;
 use std::env::var;
 use std::fs::create_dir_all;
 use std::path::Path;
 use std::sync::Arc;
+use url::Url;
 
 use crate::file_info::FileInfo;
 use crate::file_info_s3::FileInfoS3;

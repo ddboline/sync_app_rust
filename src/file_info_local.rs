@@ -1,11 +1,11 @@
 use checksums::{hash_file, Algorithm};
 use failure::{err_msg, Error};
-use reqwest::Url;
 use std::fs;
 use std::fs::File;
 use std::fs::Metadata;
 use std::path::Path;
 use std::time::SystemTime;
+use url::Url;
 use walkdir::DirEntry;
 
 use crate::file_info::{

@@ -1,10 +1,10 @@
 use diesel::prelude::*;
 use failure::{err_msg, Error};
-use reqwest::Url;
 use std::convert::Into;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
+use url::Url;
 
 use crate::file_service::FileService;
 use crate::map_parse;

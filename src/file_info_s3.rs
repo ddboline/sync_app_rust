@@ -1,8 +1,8 @@
 use chrono::DateTime;
 use failure::{err_msg, Error};
-use reqwest::Url;
 use rusoto_s3::Object;
 use std::path::Path;
+use url::Url;
 
 use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
 use crate::file_service::FileService;
