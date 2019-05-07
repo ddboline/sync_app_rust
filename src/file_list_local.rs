@@ -14,7 +14,7 @@ use crate::file_list::{FileList, FileListConf, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileListLocal(pub FileList);
 
 impl FileListLocal {
@@ -30,7 +30,7 @@ impl FileListLocal {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileListLocalConf(pub FileListConf);
 
 impl FileListLocalConf {
@@ -128,7 +128,6 @@ impl FileListTrait for FileListLocal {
             .as_ref()
             .ok_or_else(|| err_msg("No local path"))?
             .parent()
-            .clone()
             .ok_or_else(|| err_msg("No parent directory"))?;
         if !parent_dir.exists() {
             create_dir_all(&parent_dir)?;
@@ -171,7 +170,6 @@ impl FileListTrait for FileListLocal {
             .as_ref()
             .ok_or_else(|| err_msg("No local path"))?
             .parent()
-            .clone()
             .ok_or_else(|| err_msg("No parent directory"))?;
         if !parent_dir.exists() {
             create_dir_all(&parent_dir)?;

@@ -19,7 +19,7 @@ pub struct FileListConf {
     pub serviceid: ServiceId,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileList {
     pub conf: FileListConf,
     pub filemap: HashMap<String, FileInfo>,

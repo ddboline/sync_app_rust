@@ -106,7 +106,7 @@ impl FileInfoTrait for FileInfo {
     }
 
     fn get_stat(&self) -> Option<FileStat> {
-        self.filestat.clone()
+        self.filestat
     }
 }
 

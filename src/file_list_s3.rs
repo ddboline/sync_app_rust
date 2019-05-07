@@ -15,6 +15,7 @@ use crate::map_result_vec;
 use crate::pgpool::PgPool;
 use crate::s3_instance::S3Instance;
 
+#[derive(Debug, Clone)]
 pub struct FileListS3 {
     pub flist: FileList,
     pub s3: Arc<S3Instance>,
@@ -54,6 +55,7 @@ impl FileListS3 {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct FileListS3Conf(pub FileListConf);
 
 impl FileListS3Conf {
@@ -145,7 +147,6 @@ impl FileListTrait for FileListS3 {
             .as_ref()
             .ok_or_else(|| err_msg("No local path"))?
             .parent()
-            .clone()
             .ok_or_else(|| err_msg("No parent directory"))?;
         if !parent_dir.exists() {
             create_dir_all(&parent_dir)?;
@@ -169,12 +170,12 @@ impl FileListTrait for FileListS3 {
                 finfo_local
                     .urlname
                     .clone()
-                    .map(|u| u.into_string())
+                    .map(Url::into_string)
                     .unwrap_or_else(|| "".to_string()),
                 finfo_remote
                     .urlname
                     .clone()
-                    .map(|u| u.into_string())
+                    .map(Url::into_string)
                     .unwrap_or_else(|| "".to_string())
             );
         }

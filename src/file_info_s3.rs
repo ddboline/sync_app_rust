@@ -1,5 +1,6 @@
 use chrono::DateTime;
 use failure::{err_msg, Error};
+use reqwest::Url;
 use rusoto_s3::Object;
 use std::path::Path;
 
@@ -23,7 +24,7 @@ impl FileInfoTrait for FileInfoS3 {
     }
 
     fn get_stat(&self) -> Option<FileStat> {
-        self.0.filestat.clone()
+        self.0.filestat
     }
 }
 
@@ -67,6 +68,37 @@ impl FileInfoS3 {
             servicesession,
         };
 
+        Ok(FileInfoS3(finfo))
+    }
+
+    pub fn from_url(url: &Url) -> Result<FileInfoS3, Error> {
+        if url.scheme() != "s3" {
+            return Err(err_msg("Invalid URL"));
+        }
+        let bucket = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
+        let key = url.path();
+        let filepath = Path::new(&key);
+        let filename = filepath
+            .file_name()
+            .ok_or_else(|| err_msg("Parse failure"))?
+            .to_os_string()
+            .into_string()
+            .map_err(|_| err_msg("Parse failure"))?;
+        let fileurl = format!("s3://{}/{}", bucket, key).parse()?;
+        let serviceid = Some(bucket.to_string().into());
+        let servicesession = Some(bucket.parse()?);
+
+        let finfo = FileInfo {
+            filename,
+            filepath: Some(filepath.to_path_buf()),
+            urlname: Some(fileurl),
+            md5sum: None,
+            sha1sum: None,
+            filestat: None,
+            serviceid,
+            servicetype: FileService::S3,
+            servicesession,
+        };
         Ok(FileInfoS3(finfo))
     }
 }

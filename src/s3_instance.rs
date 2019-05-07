@@ -5,10 +5,19 @@ use rusoto_s3::{
     Object, PutObjectRequest, S3Client, S3,
 };
 use s4::S4;
+use std::fmt;
 use std::path::Path;
+use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct S3Instance {
-    s3_client: S3Client,
+    s3_client: Arc<S3Client>,
+}
+
+impl fmt::Debug for S3Instance {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Arc<S3Instance>")
+    }
 }
 
 impl S3Instance {
@@ -19,7 +28,7 @@ impl S3Instance {
         }
         .unwrap_or(Region::UsEast1);
         Self {
-            s3_client: S3Client::new(region),
+            s3_client: Arc::new(S3Client::new(region)),
         }
     }
 
@@ -27,7 +36,7 @@ impl S3Instance {
         self.s3_client
             .list_buckets()
             .sync()
-            .map(|l| l.buckets.unwrap_or(Vec::new()))
+            .map(|l| l.buckets.unwrap_or_default())
             .map_err(err_msg)
     }
 

@@ -1,5 +1,7 @@
-use failure::Error;
+use failure::{err_msg, Error};
 use rayon::prelude::*;
+use reqwest::Url;
+use std::fmt;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -58,7 +60,7 @@ impl FileSync {
                                     filename: k.clone(),
                                     urlname: Some(url1),
                                     servicesession: Some(conf1.servicesession.clone()),
-                                    servicetype: conf1.servicetype.clone(),
+                                    servicetype: conf1.servicetype,
                                     serviceid: Some(conf1.serviceid.clone()),
                                     ..Default::default()
                                 };
@@ -89,12 +91,12 @@ impl FileSync {
                                     filename: k.clone(),
                                     urlname: Some(url0),
                                     servicesession: Some(conf0.servicesession.clone()),
-                                    servicetype: conf0.servicetype.clone(),
+                                    servicetype: conf0.servicetype,
                                     serviceid: Some(conf0.serviceid.clone()),
                                     ..Default::default()
                                 };
                                 println!("{:?}", conf0.baseurl);
-                                Some((finfo0.clone(), finfo1.clone()))
+                                Some((finfo1.clone(), finfo0.clone()))
                             } else {
                                 None
                             }
@@ -111,39 +113,20 @@ impl FileSync {
             FileSyncMode::Full => {
                 let result: Vec<Result<_, Error>> = list_a_not_b
                     .par_iter()
-                    .filter_map(|(f0, f1)| {
-                        if conf1.servicetype == FileService::Local {
-                            Some(flist0.download_file(&f0, &f1))
-                        } else if conf0.servicetype == FileService::Local {
-                            Some(flist0.upload_file(&f0, &f1))
-                        } else {
-                            None
-                        }
+                    .chain(list_b_not_a.par_iter())
+                    .filter(|(f0, f1)| {
+                        f0.servicetype == FileService::Local || f1.servicetype == FileService::Local
                     })
-                    .collect();
-                map_result_vec(result)?;
-                let result: Vec<Result<_, Error>> = list_b_not_a
-                    .par_iter()
-                    .filter_map(|(f0, f1)| {
-                        if conf0.servicetype == FileService::Local {
-                            Some(flist1.download_file(&f1, &f0))
-                        } else if conf1.servicetype == FileService::Local {
-                            Some(flist1.upload_file(&f1, &f0))
-                        } else {
-                            None
-                        }
-                    })
+                    .map(|(f0, f1)| self.copy_object(flist0, flist1, &f0, &f1))
                     .collect();
                 map_result_vec(result)?;
             }
             FileSyncMode::OutputFile(fname) => {
                 let mut f = File::create(fname)?;
                 for (f0, f1) in list_a_not_b.iter().chain(list_b_not_a.iter()) {
-                    println!("{:?}", f0);
-                    println!("{:?}", f1);
                     if let Some(u0) = f0.urlname.as_ref() {
                         if let Some(u1) = f1.urlname.as_ref() {
-                            write!(f, "{} {}\n", u0, u1)?;
+                            writeln!(f, "{} {}", u0, u1)?;
                         }
                     }
                 }
@@ -183,16 +166,38 @@ impl FileSync {
                     }
                 }
             }
-        } else {
-            if let Some(md50) = finfo0.md5sum.as_ref() {
-                if let Some(md51) = finfo1.md5sum.as_ref() {
-                    if md50 == md51 {
-                        return false;
-                    }
+        } else if let Some(md50) = finfo0.md5sum.as_ref() {
+            if let Some(md51) = finfo1.md5sum.as_ref() {
+                if md50 == md51 {
+                    return false;
                 }
             }
         }
+
         false
+    }
+
+    pub fn copy_object<T, U>(
+        &self,
+        flist0: &T,
+        flist1: &U,
+        finfo0: &FileInfo,
+        finfo1: &FileInfo,
+    ) -> Result<(), Error>
+    where
+        T: FileListTrait + Send + Sync,
+        U: FileListTrait + Send + Sync,
+    {
+        let t0 = finfo0.servicetype;
+        let t1 = finfo1.servicetype;
+
+        if t1 == FileService::Local {
+            flist0.download_file(&finfo0, &finfo1)
+        } else if t0 == FileService::Local {
+            flist1.upload_file(&finfo0, &finfo1)
+        } else {
+            Err(err_msg("Invalid request"))
+        }
     }
 }
 
@@ -205,7 +210,7 @@ mod tests {
     use std::path::Path;
     use tempfile::NamedTempFile;
 
-    use crate::file_info::{FileInfo, ServiceId, ServiceSession};
+    use crate::file_info::{ServiceId, ServiceSession};
     use crate::file_info_local::FileInfoLocal;
     use crate::file_info_s3::FileInfoS3;
     use crate::file_list_local::{FileListLocal, FileListLocalConf};
@@ -251,7 +256,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compare_lists() {
+    fn test_compare_lists_0() {
         let mut outfile = NamedTempFile::new().unwrap();
         let fsync = FileSync::new(FileSyncMode::OutputFile(outfile.path().to_path_buf()));
 
@@ -282,6 +287,59 @@ mod tests {
             buffer.trim(),
             format!(
                 "file://{}/src/file_sync.rs s3://test_bucket/src/file_sync.rs",
+                current_dir().unwrap().to_str().unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn test_compare_lists_1() {
+        let mut outfile = NamedTempFile::new().unwrap();
+        let fsync = FileSync::new(FileSyncMode::OutputFile(outfile.path().to_path_buf()));
+
+        let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
+        let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
+        let servicesession: ServiceSession = filepath.to_str().unwrap().parse().unwrap();
+
+        let finfo0 =
+            FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
+        println!("{:?}", finfo0);
+
+        let flist0conf = FileListLocalConf::new(current_dir().unwrap()).unwrap();
+        let flist0 = FileListLocal::from_conf(flist0conf);
+
+        let test_owner = Owner {
+            display_name: Some("me".to_string()),
+            id: Some("8675309".to_string()),
+        };
+        let test_object = Object {
+            e_tag: Some(r#""6f90ebdaabef92a9f76be131037f593b""#.to_string()),
+            key: Some("src/file_sync.rs".to_string()),
+            last_modified: Some("2019-05-01T00:00:00+00:00".to_string()),
+            owner: Some(test_owner),
+            size: Some(100),
+            storage_class: Some("Standard".to_string()),
+        };
+
+        let finfo1 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
+
+        let flist1conf = FileListS3Conf::new("test_bucket").unwrap();
+        let flist1 = FileListS3::from_conf(flist1conf.0, None, None).with_list(&[finfo1.0]);
+
+        fsync.compare_lists(&flist0, &flist1).unwrap();
+
+        outfile.seek(SeekFrom::Start(0)).unwrap();
+        let mut buffer = String::new();
+        let bytes_read = outfile.read_to_string(&mut buffer).unwrap();
+
+        assert!(bytes_read > 0);
+
+        println!("{}", buffer.trim());
+        println!("{}", current_dir().unwrap().to_str().unwrap());
+        assert_eq!(
+            buffer.trim(),
+            format!(
+                "s3://test_bucket/src/file_sync.rs file://{}/src/file_sync.rs",
                 current_dir().unwrap().to_str().unwrap()
             )
         );
