@@ -182,7 +182,7 @@ impl FileListTrait for FileListLocal {
 
 #[cfg(test)]
 mod tests {
-    use reqwest::Url;
+    use url::Url;
     use std::collections::HashMap;
     use std::path::PathBuf;
 
