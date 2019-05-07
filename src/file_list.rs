@@ -19,6 +19,12 @@ pub struct FileListConf {
     pub serviceid: ServiceId,
 }
 
+impl FileListConf {
+    pub fn from_url(url: Url) -> FileListConf {
+        
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct FileList {
     pub conf: FileListConf,

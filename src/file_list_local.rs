@@ -182,9 +182,9 @@ impl FileListTrait for FileListLocal {
 
 #[cfg(test)]
 mod tests {
-    use url::Url;
     use std::collections::HashMap;
     use std::path::PathBuf;
+    use url::Url;
 
     use crate::config::Config;
     use crate::file_info::FileInfo;

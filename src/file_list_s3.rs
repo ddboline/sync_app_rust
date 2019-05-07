@@ -70,6 +70,10 @@ impl FileListS3Conf {
         };
         Ok(FileListS3Conf(conf))
     }
+
+    pub fn from_conf(conf: FileListConf) -> FileListS3Conf {
+        
+    }
 }
 
 impl FileListTrait for FileListS3 {

@@ -14,6 +14,7 @@ pub mod models;
 pub mod pgpool;
 pub mod s3_instance;
 pub mod schema;
+pub mod sync_opts;
 
 use failure::{err_msg, Error};
 use std::fmt;

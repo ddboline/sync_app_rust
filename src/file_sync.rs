@@ -1,13 +1,35 @@
 use failure::{err_msg, Error};
 use rayon::prelude::*;
+use std::convert::From;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::{replace_baseurl, FileListTrait};
 use crate::file_service::FileService;
 use crate::map_result_vec;
+
+#[derive(Debug)]
+pub enum FileSyncAction {
+    Sync,
+    Copy,
+    Delete,
+}
+
+impl FromStr for FileSyncAction {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "sync" => Ok(FileSyncAction::Sync),
+            "copy" | "cp" => Ok(FileSyncAction::Copy),
+            "delete" | "rm" => Ok(FileSyncAction::Delete),
+            _ => Err(err_msg("Parse failure")),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum FileSyncMode {
@@ -18,6 +40,17 @@ pub enum FileSyncMode {
 impl Default for FileSyncMode {
     fn default() -> FileSyncMode {
         FileSyncMode::Full
+    }
+}
+
+impl From<&str> for FileSyncMode {
+    fn from(s: &str) -> Self {
+        if s == "full" {
+            FileSyncMode::Full
+        } else {
+            let path = Path::new(&s);
+            FileSyncMode::OutputFile(path.to_path_buf())
+        }
     }
 }
 
