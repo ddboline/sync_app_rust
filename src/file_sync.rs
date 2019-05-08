@@ -3,17 +3,20 @@ use rayon::prelude::*;
 use std::convert::From;
 use std::fs::File;
 use std::io::Write;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use url::Url;
 
 use crate::file_info::{FileInfo, FileInfoTrait};
-use crate::file_list::{replace_baseurl, FileListTrait};
+use crate::file_list::{replace_baseurl, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
 use crate::map_result_vec;
 
 #[derive(Debug)]
 pub enum FileSyncAction {
     Sync,
+    Process,
     Copy,
     Delete,
 }
@@ -24,6 +27,7 @@ impl FromStr for FileSyncAction {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "sync" => Ok(FileSyncAction::Sync),
+            "process" | "proc" => Ok(FileSyncAction::Process),
             "copy" | "cp" => Ok(FileSyncAction::Copy),
             "delete" | "rm" => Ok(FileSyncAction::Delete),
             _ => Err(err_msg("Parse failure")),
@@ -89,13 +93,13 @@ impl FileSync {
                             if url1.as_str().contains(conf1.baseurl.as_str()) {
                                 let finfo1 = FileInfo {
                                     filename: k.clone(),
+                                    filepath: Some(url1.to_file_path().unwrap_or_else(|_| PathBuf::new())),
                                     urlname: Some(url1),
                                     servicesession: Some(conf1.servicesession.clone()),
                                     servicetype: conf1.servicetype,
                                     serviceid: Some(conf1.serviceid.clone()),
                                     ..Default::default()
                                 };
-                                println!("{:?}", conf1.baseurl);
                                 Some((finfo0.clone(), finfo1.clone()))
                             } else {
                                 None
@@ -120,13 +124,13 @@ impl FileSync {
                             if url0.as_str().contains(conf0.baseurl.as_str()) {
                                 let finfo0 = FileInfo {
                                     filename: k.clone(),
+                                    filepath: Some(url0.to_file_path().unwrap_or_else(|_| PathBuf::new())),
                                     urlname: Some(url0),
                                     servicesession: Some(conf0.servicesession.clone()),
                                     servicetype: conf0.servicetype,
                                     serviceid: Some(conf0.serviceid.clone()),
                                     ..Default::default()
                                 };
-                                println!("{:?}", conf0.baseurl);
                                 Some((finfo1.clone(), finfo0.clone()))
                             } else {
                                 None
@@ -148,7 +152,10 @@ impl FileSync {
                     .filter(|(f0, f1)| {
                         f0.servicetype == FileService::Local || f1.servicetype == FileService::Local
                     })
-                    .map(|(f0, f1)| self.copy_object(flist0, flist1, &f0, &f1))
+                    .map(|(f0, f1)| {
+                        println!("{:?} {:?}", f0, f1);
+                        self.copy_object(flist0, flist1, f0, f1)
+                    })
                     .collect();
                 map_result_vec(result)?;
             }
@@ -208,24 +215,50 @@ impl FileSync {
         false
     }
 
-    pub fn copy_object<T, U>(
+    pub fn process_file(&self) -> Result<(), Error> {
+        if let FileSyncMode::OutputFile(fname) = &self.mode {
+            let f = File::open(fname)?;
+            for line in BufReader::new(f).lines() {
+                let v: Vec<_> = line?.split_whitespace().map(|x| x.to_string()).collect();
+                if v.len() < 2 {
+                    continue;
+                }
+                let u0: Url = v[0].parse()?;
+                let u1: Url = v[1].parse()?;
+                let conf0 = FileListConf::from_url(u0.clone())?;
+                let conf1 = FileListConf::from_url(u1.clone())?;
+                let flist0 = FileList::from_conf(conf0);
+                let flist1 = FileList::from_conf(conf1);
+                let finfo0 = FileInfo::from_url(u0.clone())?;
+                let finfo1 = FileInfo::from_url(u1.clone())?;
+                self.copy_object(&flist0, &flist1, &finfo0, &finfo1)?;
+            }
+            Ok(())
+        } else {
+            Err(err_msg("Wrong mode"))
+        }
+    }
+
+    pub fn copy_object<T, U, V, W>(
         &self,
         flist0: &T,
         flist1: &U,
-        finfo0: &FileInfo,
-        finfo1: &FileInfo,
+        finfo0: &V,
+        finfo1: &W,
     ) -> Result<(), Error>
     where
         T: FileListTrait + Send + Sync,
         U: FileListTrait + Send + Sync,
+        V: FileInfoTrait + Send + Sync,
+        W: FileInfoTrait + Send + Sync,
     {
-        let t0 = finfo0.servicetype;
-        let t1 = finfo1.servicetype;
+        let t0 = finfo0.get_finfo().servicetype;
+        let t1 = finfo1.get_finfo().servicetype;
 
         if t1 == FileService::Local {
-            flist0.download_file(&finfo0, &finfo1)
+            flist0.download_file(finfo0, finfo1)
         } else if t0 == FileService::Local {
-            flist1.upload_file(&finfo0, &finfo1)
+            flist1.upload_file(finfo0, finfo1)
         } else {
             Err(err_msg("Invalid request"))
         }
@@ -302,7 +335,7 @@ mod tests {
         let flist0 = FileListLocal::from_conf(flist0conf).with_list(&[finfo0.0]);
 
         let flist1conf = FileListS3Conf::new("test_bucket").unwrap();
-        let flist1 = FileListS3::from_conf(flist1conf.0, None, None);
+        let flist1 = FileListS3::from_conf(flist1conf, None);
 
         fsync.compare_lists(&flist0, &flist1).unwrap();
 
@@ -355,7 +388,7 @@ mod tests {
         let finfo1 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
 
         let flist1conf = FileListS3Conf::new("test_bucket").unwrap();
-        let flist1 = FileListS3::from_conf(flist1conf.0, None, None).with_list(&[finfo1.0]);
+        let flist1 = FileListS3::from_conf(flist1conf, None).with_list(&[finfo1.0]);
 
         fsync.compare_lists(&flist0, &flist1).unwrap();
 

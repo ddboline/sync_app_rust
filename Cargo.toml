@@ -22,3 +22,8 @@ checksums = "0.5"
 chrono = "0.4"
 tempfile = "3.0"
 structopt = "0.2"
+
+[[bin]]
+name = "sync-app-rust"
+path = "src/main.rs"
+doc = false

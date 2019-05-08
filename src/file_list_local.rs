@@ -8,9 +8,9 @@ use std::time::SystemTime;
 use url::Url;
 use walkdir::WalkDir;
 
-use crate::file_info::FileInfo;
+use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_info_local::FileInfoLocal;
-use crate::file_list::{FileList, FileListConf, FileListTrait};
+use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
 
@@ -48,6 +48,29 @@ impl FileListLocalConf {
             serviceid: basestr.into(),
         };
         Ok(FileListLocalConf(conf))
+    }
+}
+
+impl FileListConfTrait for FileListLocalConf {
+    type Conf = FileListLocalConf;
+
+    fn from_url(url: Url) -> Result<FileListLocalConf, Error> {
+        if url.scheme() != "file" {
+            Err(err_msg("Wrong scheme"))
+        } else {
+            let path = url.to_file_path().map_err(|_| err_msg("Parse failure"))?;
+            let basestr = path
+                .to_str()
+                .ok_or_else(|| err_msg("Failed to parse path"))?
+                .to_string();
+            let conf = FileListConf {
+                baseurl: url,
+                servicetype: FileService::Local,
+                servicesession: basestr.parse()?,
+                serviceid: basestr.into(),
+            };
+            Ok(FileListLocalConf(conf))
+        }
     }
 }
 
@@ -114,7 +137,13 @@ impl FileListTrait for FileListLocal {
         Ok(flist)
     }
 
-    fn upload_file(&self, finfo_local: &FileInfo, finfo_remote: &FileInfo) -> Result<(), Error> {
+    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync,
+    {
+        let finfo_local = finfo_local.get_finfo();
+        let finfo_remote = finfo_remote.get_finfo();
         if finfo_local.servicetype != FileService::Local
             || finfo_remote.servicetype != FileService::Local
         {
@@ -146,7 +175,13 @@ impl FileListTrait for FileListLocal {
         Ok(())
     }
 
-    fn download_file(&self, finfo_remote: &FileInfo, finfo_local: &FileInfo) -> Result<(), Error> {
+    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync,
+    {
+        let finfo_local = finfo_local.get_finfo();
+        let finfo_remote = finfo_remote.get_finfo();
         if finfo_local.servicetype != FileService::Local
             || finfo_remote.servicetype != FileService::Local
         {
@@ -158,13 +193,11 @@ impl FileListTrait for FileListLocal {
         let local_file = finfo_local
             .filepath
             .as_ref()
-            .ok_or_else(|| err_msg("No local path"))?
-            .canonicalize()?;
+            .ok_or_else(|| err_msg("No local path"))?;
         let remote_file = finfo_remote
             .filepath
             .clone()
-            .ok_or_else(|| err_msg("No local path"))?
-            .canonicalize()?;
+            .ok_or_else(|| err_msg("No local path"))?;
         let parent_dir = finfo_remote
             .filepath
             .as_ref()

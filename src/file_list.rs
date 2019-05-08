@@ -4,7 +4,9 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 use url::Url;
 
-use crate::file_info::{FileInfo, ServiceId, ServiceSession};
+use crate::file_info::{FileInfo, FileInfoTrait, ServiceId, ServiceSession};
+use crate::file_list_local::{FileListLocal, FileListLocalConf};
+use crate::file_list_s3::{FileListS3, FileListS3Conf};
 use crate::file_service::FileService;
 use crate::map_result_vec;
 use crate::models::FileInfoCache;
@@ -19,9 +21,21 @@ pub struct FileListConf {
     pub serviceid: ServiceId,
 }
 
-impl FileListConf {
-    pub fn from_url(url: Url) -> FileListConf {
-        
+pub trait FileListConfTrait {
+    type Conf;
+
+    fn from_url(url: Url) -> Result<Self::Conf, Error>;
+}
+
+impl FileListConfTrait for FileListConf {
+    type Conf = FileListConf;
+
+    fn from_url(url: Url) -> Result<FileListConf, Error> {
+        match url.scheme() {
+            "file" => FileListLocalConf::from_url(url).map(|f| f.0),
+            "s3" => FileListS3Conf::from_url(url).map(|f| f.0),
+            _ => Err(err_msg("Bad scheme")),
+        }
     }
 }
 
@@ -48,6 +62,22 @@ impl FileList {
                 .collect(),
         }
     }
+
+    pub fn fill_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+        match self.conf.servicetype {
+            FileService::Local => {
+                let fconf = FileListLocalConf(self.conf.clone());
+                let flist = FileListLocal::from_conf(fconf);
+                flist.fill_file_list(pool)
+            }
+            FileService::S3 => {
+                let fconf = FileListS3Conf(self.conf.clone());
+                let flist = FileListS3::from_conf(fconf, None);
+                flist.fill_file_list(pool)
+            }
+            _ => Err(err_msg("Not implemented")),
+        }
+    }
 }
 
 pub trait FileListTrait {
@@ -57,9 +87,15 @@ pub trait FileListTrait {
 
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error>;
 
-    fn upload_file(&self, finfo_local: &FileInfo, finfo_remote: &FileInfo) -> Result<(), Error>;
+    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync;
 
-    fn download_file(&self, finfo_remote: &FileInfo, finfo_local: &FileInfo) -> Result<(), Error>;
+    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync;
 
     fn cache_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
         let conn = pool.get()?;
@@ -156,12 +192,54 @@ impl FileListTrait for FileList {
         }
     }
 
-    fn upload_file(&self, _: &FileInfo, _: &FileInfo) -> Result<(), Error> {
-        Err(err_msg("Not implemented for base FileInfo"))
+    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync,
+    {
+        let finfo_local = finfo_local.get_finfo();
+        let finfo_remote = finfo_remote.get_finfo();
+        if finfo_local.servicetype != FileService::Local {
+            return Err(err_msg(format!(
+                "Wrong fileinfo types {} {}",
+                finfo_local.servicetype, finfo_remote.servicetype
+            )));
+        }
+        if finfo_remote.servicetype == FileService::Local {
+            let f = FileListLocal(self.clone());
+            f.upload_file(finfo_local, finfo_remote)
+        } else if finfo_remote.servicetype == FileService::S3 {
+            let c = FileListS3Conf(self.conf.clone());
+            let f = FileListS3::from_conf(c, None);
+            f.upload_file(finfo_local, finfo_remote)
+        } else {
+            Ok(())
+        }
     }
 
-    fn download_file(&self, _: &FileInfo, _: &FileInfo) -> Result<(), Error> {
-        Err(err_msg("Not implemented for base FileInfo"))
+    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync,
+    {
+        let finfo_local = finfo_local.get_finfo();
+        let finfo_remote = finfo_remote.get_finfo();
+        if finfo_local.servicetype != FileService::Local {
+            return Err(err_msg(format!(
+                "Wrong fileinfo types {} {}",
+                finfo_local.servicetype, finfo_remote.servicetype
+            )));
+        }
+        if finfo_remote.servicetype == FileService::Local {
+            let f = FileListLocal(self.clone());
+            f.download_file(finfo_remote, finfo_local)
+        } else if finfo_remote.servicetype == FileService::S3 {
+            let c = FileListS3Conf(self.conf.clone());
+            let f = FileListS3::from_conf(c, None);
+            f.download_file(finfo_remote, finfo_local)
+        } else {
+            Ok(())
+        }
     }
 }
 

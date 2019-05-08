@@ -71,7 +71,7 @@ impl FileInfoS3 {
         Ok(FileInfoS3(finfo))
     }
 
-    pub fn from_url(url: &Url) -> Result<FileInfoS3, Error> {
+    pub fn from_url(url: Url) -> Result<FileInfoS3, Error> {
         if url.scheme() != "s3" {
             return Err(err_msg("Invalid URL"));
         }

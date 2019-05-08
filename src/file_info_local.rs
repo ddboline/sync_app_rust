@@ -73,6 +73,32 @@ fn _get_stat(p: &Path) -> Result<FileStat, Error> {
 }
 
 impl FileInfoLocal {
+    pub fn from_url(url: Url) -> Result<FileInfoLocal, Error> {
+        if url.scheme() != "file" {
+            Err(err_msg("Wrong scheme"))
+        } else {
+            let path = url.to_file_path().map_err(|_| err_msg("Parse failure"))?;
+            let filename = path
+                .file_name()
+                .ok_or_else(|| err_msg("Parse failure"))?
+                .to_os_string()
+                .into_string()
+                .map_err(|_| err_msg("Parse failure"))?;
+            let finfo = FileInfo {
+                filename,
+                filepath: Some(path),
+                urlname: Some(url),
+                md5sum: None,
+                sha1sum: None,
+                filestat: None,
+                serviceid: None,
+                servicetype: FileService::Local,
+                servicesession: None,
+            };
+            Ok(FileInfoLocal(finfo))
+        }
+    }
+
     pub fn from_path_and_metadata(
         path: &Path,
         metadata: Option<Metadata>,

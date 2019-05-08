@@ -1,8 +1,8 @@
 use failure::{err_msg, Error};
 use rusoto_core::Region;
 use rusoto_s3::{
-    Bucket, CreateBucketRequest, DeleteBucketRequest, GetObjectRequest, ListObjectsV2Request,
-    Object, PutObjectRequest, S3Client, S3,
+    Bucket, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest, GetObjectRequest,
+    ListObjectsV2Request, Object, PutObjectRequest, S3Client, S3,
 };
 use s4::S4;
 use std::fmt;
@@ -57,6 +57,18 @@ impl S3Instance {
                 bucket: bucket_name.to_string(),
             })
             .sync()
+            .map_err(err_msg)
+    }
+
+    pub fn delete_key(&self, bucket_name: &str, key_name: &str) -> Result<(), Error> {
+        self.s3_client
+            .delete_object(DeleteObjectRequest {
+                bucket: bucket_name.to_string(),
+                key: key_name.to_string(),
+                ..Default::default()
+            })
+            .sync()
+            .map(|_| ())
             .map_err(err_msg)
     }
 

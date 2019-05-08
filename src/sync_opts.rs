@@ -1,7 +1,12 @@
+use failure::{err_msg, Error};
 use structopt::StructOpt;
 use url::Url;
 
-use crate::file_sync::{FileSyncAction, FileSyncMode};
+use crate::config::Config;
+use crate::file_info::FileInfo;
+use crate::file_list::{FileList, FileListConf, FileListConfTrait};
+use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
+use crate::pgpool::PgPool;
 
 #[derive(StructOpt, Debug)]
 pub struct SyncOpts {
@@ -11,4 +16,49 @@ pub struct SyncOpts {
     action: FileSyncAction,
     #[structopt(short = "u", long = "urls", parse(try_from_str))]
     urls: Vec<Url>,
+}
+
+impl SyncOpts {
+    pub fn process_args() -> Result<(), Error> {
+        let opts = SyncOpts::from_args();
+
+        match opts.action {
+            FileSyncAction::Sync => {
+                if opts.urls.len() < 2 {
+                    Err(err_msg("Need 2 Urls"))
+                } else {
+                    let config = Config::new();
+                    let pool = PgPool::new(&config.database_url);
+
+                    let fsync = FileSync::new(opts.mode);
+                    let conf0 = FileListConf::from_url(opts.urls[0].clone())?;
+                    let conf1 = FileListConf::from_url(opts.urls[1].clone())?;
+                    let flist0 = FileList::from_conf(conf0);
+                    let flist1 = FileList::from_conf(conf1);
+                    let flist0 = flist0.with_list(&flist0.fill_list(Some(&pool))?);
+                    let flist1 = flist1.with_list(&flist1.fill_list(Some(&pool))?);
+                    fsync.compare_lists(&flist0, &flist1)
+                }
+            }
+            FileSyncAction::Copy => {
+                if opts.urls.len() < 2 {
+                    Err(err_msg("Need 2 Urls"))
+                } else {
+                    let fsync = FileSync::new(opts.mode);
+                    let conf0 = FileListConf::from_url(opts.urls[0].clone())?;
+                    let conf1 = FileListConf::from_url(opts.urls[1].clone())?;
+                    let flist0 = FileList::from_conf(conf0);
+                    let flist1 = FileList::from_conf(conf1);
+                    let finfo0 = FileInfo::from_url(opts.urls[0].clone())?;
+                    let finfo1 = FileInfo::from_url(opts.urls[1].clone())?;
+                    fsync.copy_object(&flist0, &flist1, &finfo0, &finfo1)
+                }
+            }
+            FileSyncAction::Process => {
+                let fsync = FileSync::new(opts.mode);
+                fsync.process_file()
+            }
+            _ => Ok(()),
+        }
+    }
 }

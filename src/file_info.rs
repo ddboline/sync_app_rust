@@ -6,6 +6,8 @@ use std::str::FromStr;
 use std::string::ToString;
 use url::Url;
 
+use crate::file_info_local::FileInfoLocal;
+use crate::file_info_s3::FileInfoS3;
 use crate::file_service::FileService;
 use crate::map_parse;
 use crate::models::{FileInfoCache, InsertFileInfoCache};
@@ -111,6 +113,14 @@ impl FileInfoTrait for FileInfo {
 }
 
 impl FileInfo {
+    pub fn from_url(url: Url) -> Result<FileInfo, Error> {
+        match url.scheme() {
+            "file" => FileInfoLocal::from_url(url).map(|x| x.0),
+            "s3" => FileInfoS3::from_url(url).map(|x| x.0),
+            _ => Err(err_msg("Bad scheme")),
+        }
+    }
+
     pub fn from_cache_info(item: FileInfoCache) -> Result<FileInfo, Error> {
         Ok(FileInfo {
             filename: item.filename,
