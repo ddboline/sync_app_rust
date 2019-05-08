@@ -145,7 +145,6 @@ impl FileListTrait for FileListS3 {
             .filepath
             .clone()
             .ok_or_else(|| err_msg("No local path"))?
-            .canonicalize()?
             .to_str()
             .ok_or_else(|| err_msg("Failed to parse path"))?
             .to_string();
@@ -163,7 +162,7 @@ impl FileListTrait for FileListS3 {
             .clone()
             .ok_or_else(|| err_msg("No s3 url"))?;
         let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
-        let key = remote_url.path();
+        let key = remote_url.path().trim_start_matches('/');
         let md5sum = self.s3.download(&bucket, &key, &local_file)?;
         if md5sum
             != finfo_local

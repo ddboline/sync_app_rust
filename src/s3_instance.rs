@@ -137,9 +137,6 @@ impl S3Instance {
                 Some(_) => (),
                 None => break,
             };
-            if list_of_keys.len() > 100 {
-                break;
-            }
         }
 
         Ok(list_of_keys)

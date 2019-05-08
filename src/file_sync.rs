@@ -75,13 +75,14 @@ impl FileSync {
     {
         let conf0 = flist0.get_conf();
         let conf1 = flist1.get_conf();
-        println!("{:?} {:?}", conf0.baseurl, conf1.baseurl);
         let list_a_not_b: Vec<_> = flist0
             .get_filemap()
             .iter()
             .filter_map(|(k, finfo0)| match flist1.get_filemap().get(k) {
                 Some(finfo1) => {
                     if self.compare_objects(finfo0, finfo1) {
+                        println!("{:?}", finfo0);
+                        println!("{:?}", finfo1);
                         Some((finfo0.clone(), finfo1.clone()))
                     } else {
                         None
@@ -93,7 +94,9 @@ impl FileSync {
                             if url1.as_str().contains(conf1.baseurl.as_str()) {
                                 let finfo1 = FileInfo {
                                     filename: k.clone(),
-                                    filepath: Some(url1.to_file_path().unwrap_or_else(|_| PathBuf::new())),
+                                    filepath: Some(
+                                        url1.to_file_path().unwrap_or_else(|_| PathBuf::new()),
+                                    ),
                                     urlname: Some(url1),
                                     servicesession: Some(conf1.servicesession.clone()),
                                     servicetype: conf1.servicetype,
@@ -124,7 +127,9 @@ impl FileSync {
                             if url0.as_str().contains(conf0.baseurl.as_str()) {
                                 let finfo0 = FileInfo {
                                     filename: k.clone(),
-                                    filepath: Some(url0.to_file_path().unwrap_or_else(|_| PathBuf::new())),
+                                    filepath: Some(
+                                        url0.to_file_path().unwrap_or_else(|_| PathBuf::new()),
+                                    ),
                                     urlname: Some(url0),
                                     servicesession: Some(conf0.servicesession.clone()),
                                     servicetype: conf0.servicetype,
@@ -181,6 +186,8 @@ impl FileSync {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
 
+        let mut do_update = true;
+
         let use_sha1 = (finfo0.servicetype == FileService::OneDrive)
             || (finfo1.servicetype == FileService::OneDrive);
         if finfo0.filename != finfo1.filename {
@@ -189,10 +196,10 @@ impl FileSync {
         if let Some(fstat0) = finfo0.filestat.as_ref() {
             if let Some(fstat1) = finfo1.filestat.as_ref() {
                 if fstat0.st_mtime > fstat1.st_mtime {
-                    return true;
+                    do_update = true;
                 }
                 if fstat0.st_size != fstat1.st_size {
-                    return true;
+                    do_update = true;
                 }
             }
         }
@@ -212,14 +219,14 @@ impl FileSync {
             }
         }
 
-        false
+        do_update
     }
 
     pub fn process_file(&self) -> Result<(), Error> {
         if let FileSyncMode::OutputFile(fname) = &self.mode {
             let f = File::open(fname)?;
             for line in BufReader::new(f).lines() {
-                let v: Vec<_> = line?.split_whitespace().map(|x| x.to_string()).collect();
+                let v: Vec<_> = line?.split_whitespace().map(ToString::to_string).collect();
                 if v.len() < 2 {
                     continue;
                 }

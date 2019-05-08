@@ -4,13 +4,13 @@ use url::Url;
 
 use crate::config::Config;
 use crate::file_info::FileInfo;
-use crate::file_list::{FileList, FileListConf, FileListConfTrait};
+use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
 use crate::pgpool::PgPool;
 
 #[derive(StructOpt, Debug)]
 pub struct SyncOpts {
-    #[structopt(short = "m", long = "mode", parse(from_str))]
+    #[structopt(short = "m", long = "mode", parse(from_str), default_value="full")]
     mode: FileSyncMode,
     #[structopt(parse(try_from_str))]
     action: FileSyncAction,
@@ -37,6 +37,8 @@ impl SyncOpts {
                     let flist1 = FileList::from_conf(conf1);
                     let flist0 = flist0.with_list(&flist0.fill_list(Some(&pool))?);
                     let flist1 = flist1.with_list(&flist1.fill_list(Some(&pool))?);
+                    flist0.cache_file_list(&pool)?;
+                    flist1.cache_file_list(&pool)?;
                     fsync.compare_lists(&flist0, &flist1)
                 }
             }
