@@ -2,7 +2,7 @@ use failure::{err_msg, Error};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use url::Url;
 
 use crate::file_info::{FileInfo, FileInfoTrait};
@@ -62,7 +62,14 @@ impl FileListConfTrait for FileListS3Conf {
             Err(err_msg("Wrong scheme"))
         } else {
             let bucket = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
-            FileListS3Conf::new(bucket)
+            let conf = FileListConf {
+                baseurl: url.clone(),
+                servicetype: FileService::S3,
+                servicesession: bucket.parse()?,
+                serviceid: bucket.to_string().into(),
+            };
+
+            Ok(FileListS3Conf(conf))
         }
     }
 }
@@ -82,14 +89,18 @@ impl FileListTrait for FileListS3 {
             .baseurl
             .host_str()
             .ok_or_else(|| err_msg("Parse error"))?;
+        let prefix = conf.baseurl.path().trim_start_matches('/');
 
-        let flist: Vec<Result<_, Error>> = self
-            .s3
-            .get_list_of_keys(bucket)?
-            .into_par_iter()
-            .map(|f| FileInfoS3::from_object(bucket, f).map(|i| i.0))
-            .collect();
-        let flist = map_result_vec(flist)?;
+        let flist = Arc::new(Mutex::new(Vec::new()));
+
+        let fl = Arc::clone(&flist);
+        self.s3.get_list_of_keys(bucket, Some(prefix), move |f| {
+            fl.lock()
+                .unwrap()
+                .push(FileInfoS3::from_object(bucket, f.clone()))
+        })?;
+        let flist = Mutex::into_inner(&flist)?;
+        let flist: Vec<_> = map_result_vec(flist)?.into_iter().map(|x| x.0).collect();
 
         Ok(flist)
     }

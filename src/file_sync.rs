@@ -18,6 +18,7 @@ pub enum FileSyncAction {
     Sync,
     Process,
     Copy,
+    List,
     Delete,
 }
 
@@ -29,6 +30,7 @@ impl FromStr for FileSyncAction {
             "sync" => Ok(FileSyncAction::Sync),
             "process" | "proc" => Ok(FileSyncAction::Process),
             "copy" | "cp" => Ok(FileSyncAction::Copy),
+            "list" | "ls" => Ok(FileSyncAction::List),
             "delete" | "rm" => Ok(FileSyncAction::Delete),
             _ => Err(err_msg("Parse failure")),
         }

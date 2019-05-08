@@ -62,22 +62,6 @@ impl FileList {
                 .collect(),
         }
     }
-
-    pub fn fill_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
-        match self.conf.servicetype {
-            FileService::Local => {
-                let fconf = FileListLocalConf(self.conf.clone());
-                let flist = FileListLocal::from_conf(fconf);
-                flist.fill_file_list(pool)
-            }
-            FileService::S3 => {
-                let fconf = FileListS3Conf(self.conf.clone());
-                let flist = FileListS3::from_conf(fconf, None);
-                flist.fill_file_list(pool)
-            }
-            _ => Err(err_msg("Not implemented")),
-        }
-    }
 }
 
 pub trait FileListTrait {
@@ -85,7 +69,31 @@ pub trait FileListTrait {
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo>;
 
-    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error>;
+    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+        let conf = self.get_conf();
+        match conf.servicetype {
+            FileService::Local => {
+                let fconf = FileListLocalConf(conf.clone());
+                let flist = FileListLocal::from_conf(fconf);
+                flist.fill_file_list(pool)
+            }
+            FileService::S3 => {
+                let fconf = FileListS3Conf(conf.clone());
+                let flist = FileListS3::from_conf(fconf, None);
+                flist.fill_file_list(pool)
+            }
+            _ => Err(err_msg("Not implemented")),
+        }
+    }
+
+    fn print_list(&self) -> Result<(), Error> {
+        let conf = self.get_conf();
+        match conf.servicetype {
+            FileService::Local => Ok(()),
+            FileService::S3 => Ok(()),
+            _ => Err(err_msg("Not implemented")),
+        }
+    }
 
     fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
     where
