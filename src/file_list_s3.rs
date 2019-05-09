@@ -2,7 +2,7 @@ use failure::{err_msg, Error};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use url::Url;
 
 use crate::file_info::{FileInfo, FileInfoTrait};
@@ -91,18 +91,32 @@ impl FileListTrait for FileListS3 {
             .ok_or_else(|| err_msg("Parse error"))?;
         let prefix = conf.baseurl.path().trim_start_matches('/');
 
-        let flist = Arc::new(Mutex::new(Vec::new()));
-
-        let fl = Arc::clone(&flist);
-        self.s3.get_list_of_keys(bucket, Some(prefix), move |f| {
-            fl.lock()
-                .unwrap()
-                .push(FileInfoS3::from_object(bucket, f.clone()))
-        })?;
-        let flist = Mutex::into_inner(&flist)?;
-        let flist: Vec<_> = map_result_vec(flist)?.into_iter().map(|x| x.0).collect();
+        let flist: Vec<Result<_, Error>> = self
+            .s3
+            .get_list_of_keys(bucket, Some(prefix))?
+            .into_par_iter()
+            .map(|f| FileInfoS3::from_object(bucket, f).map(|i| i.0))
+            .collect();
+        let flist = map_result_vec(flist)?;
 
         Ok(flist)
+    }
+
+    fn print_list(&self) -> Result<(), Error> {
+        let conf = self.get_conf();
+        let bucket = conf
+            .baseurl
+            .host_str()
+            .ok_or_else(|| err_msg("Parse error"))?;
+        let prefix = conf.baseurl.path().trim_start_matches('/');
+
+        self.s3.process_list_of_keys(bucket, Some(prefix), |i| {
+            println!(
+                "s3://{}/{}",
+                bucket,
+                i.key.as_ref().map(String::as_str).unwrap_or_else(|| "")
+            );
+        })
     }
 
     fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>

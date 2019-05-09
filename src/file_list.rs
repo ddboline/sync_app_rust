@@ -89,8 +89,16 @@ pub trait FileListTrait {
     fn print_list(&self) -> Result<(), Error> {
         let conf = self.get_conf();
         match conf.servicetype {
-            FileService::Local => Ok(()),
-            FileService::S3 => Ok(()),
+            FileService::Local => {
+                let fconf = FileListLocalConf(conf.clone());
+                let flist = FileListLocal::from_conf(fconf);
+                flist.print_list()
+            }
+            FileService::S3 => {
+                let fconf = FileListS3Conf(conf.clone());
+                let flist = FileListS3::from_conf(fconf, None);
+                flist.print_list()
+            }
             _ => Err(err_msg("Not implemented")),
         }
     }

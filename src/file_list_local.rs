@@ -137,6 +137,30 @@ impl FileListTrait for FileListLocal {
         Ok(flist)
     }
 
+    fn print_list(&self) -> Result<(), Error> {
+        let conf = self.get_conf();
+        let basedir = conf.baseurl.path();
+
+        let wdir = WalkDir::new(&basedir).same_file_system(true).max_depth(1);
+
+        let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
+
+        let _: Vec<_> = entries
+            .into_par_iter()
+            .map(|entry| {
+                let filepath = entry
+                    .path()
+                    .canonicalize()
+                    .ok()
+                    .and_then(|s| s.to_str().map(ToString::to_string))
+                    .unwrap_or_else(|| "".to_string());
+                println!("{}", filepath);
+            })
+            .collect();
+
+        Ok(())
+    }
+
     fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
     where
         T: FileInfoTrait + Send + Sync,
