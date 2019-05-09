@@ -106,7 +106,46 @@ impl S3Instance {
             .map_err(err_msg)
     }
 
-    pub fn get_list_of_keys<T>(
+    pub fn get_list_of_keys(
+        &self,
+        bucket: &str,
+        prefix: Option<&str>,
+    ) -> Result<Vec<Object>, Error> {
+        let mut continuation_token = None;
+
+        let mut list_of_keys = Vec::new();
+
+        loop {
+            let current_list = self
+                .s3_client
+                .list_objects_v2(ListObjectsV2Request {
+                    bucket: bucket.to_string(),
+                    continuation_token,
+                    prefix: prefix.map(ToString::to_string),
+                    ..Default::default()
+                })
+                .sync()?;
+
+            continuation_token = current_list.next_continuation_token.clone();
+
+            match current_list.key_count {
+                Some(0) => (),
+                Some(_) => {
+                    list_of_keys.extend_from_slice(&current_list.contents.unwrap_or_else(Vec::new));
+                }
+                None => (),
+            };
+
+            match &continuation_token {
+                Some(_) => (),
+                None => break,
+            };
+        }
+
+        Ok(list_of_keys)
+    }
+
+    pub fn process_list_of_keys<T>(
         &self,
         bucket: &str,
         prefix: Option<&str>,
@@ -162,10 +201,7 @@ mod tests {
             .get(0)
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
-        let mut klist = Vec::new();
-        s3_instance
-            .get_list_of_keys(&bucket, None, |i| klist.push(i.clone()))
-            .unwrap();
+        let klist = s3_instance.get_list_of_keys(&bucket, None).unwrap();
         println!("{} {}", bucket, klist.len());
         assert!(klist.len() > 0);
     }
