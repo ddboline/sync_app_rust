@@ -2,7 +2,6 @@ use failure::{err_msg, Error};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
-use std::sync::Arc;
 use url::Url;
 
 use crate::file_info::{FileInfo, FileInfoTrait};
@@ -16,12 +15,12 @@ use crate::s3_instance::S3Instance;
 #[derive(Debug, Clone)]
 pub struct FileListS3 {
     pub flist: FileList,
-    pub s3: Arc<S3Instance>,
+    pub s3: S3Instance,
 }
 
 impl FileListS3 {
     pub fn from_conf(conf: FileListS3Conf, region_name: Option<&str>) -> FileListS3 {
-        let s3 = Arc::new(S3Instance::new(region_name));
+        let s3 = S3Instance::new(region_name);
 
         FileListS3 {
             flist: FileList::from_conf(conf.0),
@@ -34,6 +33,11 @@ impl FileListS3 {
             flist: self.flist.with_list(&filelist),
             s3: self.s3.clone(),
         }
+    }
+
+    pub fn max_keys(mut self, max_keys: usize) -> Self {
+        self.s3 = self.s3.max_keys(max_keys);
+        self
     }
 }
 
@@ -232,7 +236,7 @@ mod tests {
             .unwrap_or_else(|| "".to_string());
 
         let conf = FileListS3Conf::new(&bucket).unwrap();
-        let flist = FileListS3::from_conf(conf, None);
+        let flist = FileListS3::from_conf(conf, None).max_keys(100);
 
         let new_flist = flist.fill_file_list(None).unwrap();
 

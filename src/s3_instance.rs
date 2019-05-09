@@ -12,6 +12,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct S3Instance {
     s3_client: Arc<S3Client>,
+    max_keys: Option<usize>,
 }
 
 impl fmt::Debug for S3Instance {
@@ -29,7 +30,13 @@ impl S3Instance {
         .unwrap_or(Region::UsEast1);
         Self {
             s3_client: Arc::new(S3Client::new(region)),
+            max_keys: None,
         }
+    }
+
+    pub fn max_keys(mut self, max_keys: usize) -> Self {
+        self.max_keys = Some(max_keys);
+        self
     }
 
     pub fn get_list_of_buckets(&self) -> Result<Vec<Bucket>, Error> {
@@ -140,6 +147,12 @@ impl S3Instance {
                 Some(_) => (),
                 None => break,
             };
+            if let Some(max_keys) = self.max_keys {
+                if list_of_keys.len() > max_keys {
+                    list_of_keys.resize(max_keys, Default::default());
+                    break;
+                }
+            }
         }
 
         Ok(list_of_keys)
@@ -195,7 +208,7 @@ mod tests {
 
     #[test]
     fn test_list_buckets() {
-        let s3_instance = S3Instance::new(None);
+        let s3_instance = S3Instance::new(None).max_keys(100);
         let blist = s3_instance.get_list_of_buckets().unwrap();
         let bucket = blist
             .get(0)
