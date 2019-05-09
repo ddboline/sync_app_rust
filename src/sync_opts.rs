@@ -60,17 +60,10 @@ impl SyncOpts {
                 if opts.urls.len() < 1 {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
-                    let config = Config::new();
-                    let pool = PgPool::new(&config.database_url);
-
                     for url in opts.urls {
                         let conf = FileListConf::from_url(url.clone())?;
                         let flist = FileList::from_conf(conf);
-                        let flist = flist.with_list(&flist.fill_file_list(Some(&pool))?);
-                        flist.cache_file_list(&pool)?;
-                        for f in flist.get_filemap().values() {
-                            println!("{:?}", f);
-                        }
+                        flist.print_list()?;
                     }
                     Ok(())
                 }
