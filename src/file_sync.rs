@@ -234,12 +234,12 @@ impl FileSync {
                 }
                 let u0: Url = v[0].parse()?;
                 let u1: Url = v[1].parse()?;
-                let conf0 = FileListConf::from_url(u0.clone())?;
-                let conf1 = FileListConf::from_url(u1.clone())?;
+                let conf0 = FileListConf::from_url(&u0)?;
+                let conf1 = FileListConf::from_url(&u1)?;
                 let flist0 = FileList::from_conf(conf0);
                 let flist1 = FileList::from_conf(conf1);
-                let finfo0 = FileInfo::from_url(u0.clone())?;
-                let finfo1 = FileInfo::from_url(u1.clone())?;
+                let finfo0 = FileInfo::from_url(&u0)?;
+                let finfo1 = FileInfo::from_url(&u1)?;
                 self.copy_object(&flist0, &flist1, &finfo0, &finfo1)?;
             }
             Ok(())

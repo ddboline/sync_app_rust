@@ -87,7 +87,12 @@ pub struct FileInfo {
     pub servicesession: Option<ServiceSession>,
 }
 
-pub trait FileInfoTrait {
+pub trait FileInfoTrait
+where
+    Self: Sized + Send + Sync,
+{
+    fn from_url(url: &Url) -> Result<Self, Error>;
+
     fn get_finfo(&self) -> &FileInfo;
     fn get_md5(&self) -> Option<Md5Sum>;
     fn get_sha1(&self) -> Option<Sha1Sum>;
@@ -95,6 +100,14 @@ pub trait FileInfoTrait {
 }
 
 impl FileInfoTrait for FileInfo {
+    fn from_url(url: &Url) -> Result<FileInfo, Error> {
+        match url.scheme() {
+            "file" => FileInfoLocal::from_url(url).map(|x| x.0),
+            "s3" => FileInfoS3::from_url(url).map(|x| x.0),
+            _ => Err(err_msg("Bad scheme")),
+        }
+    }
+
     fn get_finfo(&self) -> &FileInfo {
         &self
     }
@@ -113,14 +126,6 @@ impl FileInfoTrait for FileInfo {
 }
 
 impl FileInfo {
-    pub fn from_url(url: Url) -> Result<FileInfo, Error> {
-        match url.scheme() {
-            "file" => FileInfoLocal::from_url(url).map(|x| x.0),
-            "s3" => FileInfoS3::from_url(url).map(|x| x.0),
-            _ => Err(err_msg("Bad scheme")),
-        }
-    }
-
     pub fn from_cache_info(item: FileInfoCache) -> Result<FileInfo, Error> {
         Ok(FileInfo {
             filename: item.filename,

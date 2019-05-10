@@ -21,16 +21,15 @@ pub struct FileListConf {
     pub serviceid: ServiceId,
 }
 
-pub trait FileListConfTrait {
-    type Conf;
-
-    fn from_url(url: Url) -> Result<Self::Conf, Error>;
+pub trait FileListConfTrait
+where
+    Self: Sized + Send + Sync,
+{
+    fn from_url(url: &Url) -> Result<Self, Error>;
 }
 
 impl FileListConfTrait for FileListConf {
-    type Conf = FileListConf;
-
-    fn from_url(url: Url) -> Result<FileListConf, Error> {
+    fn from_url(url: &Url) -> Result<FileListConf, Error> {
         match url.scheme() {
             "file" => FileListLocalConf::from_url(url).map(|f| f.0),
             "s3" => FileListS3Conf::from_url(url).map(|f| f.0),

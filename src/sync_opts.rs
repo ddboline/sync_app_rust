@@ -3,7 +3,7 @@ use structopt::StructOpt;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::FileInfo;
+use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
 use crate::pgpool::PgPool;
@@ -31,8 +31,8 @@ impl SyncOpts {
                     let pool = PgPool::new(&config.database_url);
 
                     let fsync = FileSync::new(opts.mode);
-                    let conf0 = FileListConf::from_url(opts.urls[0].clone())?;
-                    let conf1 = FileListConf::from_url(opts.urls[1].clone())?;
+                    let conf0 = FileListConf::from_url(&opts.urls[0])?;
+                    let conf1 = FileListConf::from_url(&opts.urls[1])?;
                     let flist0 = FileList::from_conf(conf0);
                     let flist1 = FileList::from_conf(conf1);
                     let flist0 = flist0.with_list(&flist0.fill_file_list(Some(&pool))?);
@@ -47,21 +47,21 @@ impl SyncOpts {
                     Err(err_msg("Need 2 Urls"))
                 } else {
                     let fsync = FileSync::new(opts.mode);
-                    let conf0 = FileListConf::from_url(opts.urls[0].clone())?;
-                    let conf1 = FileListConf::from_url(opts.urls[1].clone())?;
+                    let conf0 = FileListConf::from_url(&opts.urls[0])?;
+                    let conf1 = FileListConf::from_url(&opts.urls[1])?;
                     let flist0 = FileList::from_conf(conf0);
                     let flist1 = FileList::from_conf(conf1);
-                    let finfo0 = FileInfo::from_url(opts.urls[0].clone())?;
-                    let finfo1 = FileInfo::from_url(opts.urls[1].clone())?;
+                    let finfo0 = FileInfo::from_url(&opts.urls[0])?;
+                    let finfo1 = FileInfo::from_url(&opts.urls[1])?;
                     fsync.copy_object(&flist0, &flist1, &finfo0, &finfo1)
                 }
             }
             FileSyncAction::List => {
-                if opts.urls.len() < 1 {
+                if opts.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
                     for url in opts.urls {
-                        let conf = FileListConf::from_url(url.clone())?;
+                        let conf = FileListConf::from_url(&url)?;
                         let flist = FileList::from_conf(conf);
                         flist.print_list()?;
                     }

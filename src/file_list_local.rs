@@ -52,9 +52,7 @@ impl FileListLocalConf {
 }
 
 impl FileListConfTrait for FileListLocalConf {
-    type Conf = FileListLocalConf;
-
-    fn from_url(url: Url) -> Result<FileListLocalConf, Error> {
+    fn from_url(url: &Url) -> Result<FileListLocalConf, Error> {
         if url.scheme() != "file" {
             Err(err_msg("Wrong scheme"))
         } else {
@@ -64,7 +62,7 @@ impl FileListConfTrait for FileListLocalConf {
                 .ok_or_else(|| err_msg("Failed to parse path"))?
                 .to_string();
             let conf = FileListConf {
-                baseurl: url,
+                baseurl: url.clone(),
                 servicetype: FileService::Local,
                 servicesession: basestr.parse()?,
                 serviceid: basestr.into(),

@@ -11,6 +11,37 @@ use crate::file_service::FileService;
 pub struct FileInfoS3(pub FileInfo);
 
 impl FileInfoTrait for FileInfoS3 {
+    fn from_url(url: &Url) -> Result<FileInfoS3, Error> {
+        if url.scheme() != "s3" {
+            return Err(err_msg("Invalid URL"));
+        }
+        let bucket = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
+        let key = url.path();
+        let filepath = Path::new(&key);
+        let filename = filepath
+            .file_name()
+            .ok_or_else(|| err_msg("Parse failure"))?
+            .to_os_string()
+            .into_string()
+            .map_err(|_| err_msg("Parse failure"))?;
+        let fileurl = format!("s3://{}/{}", bucket, key).parse()?;
+        let serviceid = Some(bucket.to_string().into());
+        let servicesession = Some(bucket.parse()?);
+
+        let finfo = FileInfo {
+            filename,
+            filepath: Some(filepath.to_path_buf()),
+            urlname: Some(fileurl),
+            md5sum: None,
+            sha1sum: None,
+            filestat: None,
+            serviceid,
+            servicetype: FileService::S3,
+            servicesession,
+        };
+        Ok(FileInfoS3(finfo))
+    }
+
     fn get_finfo(&self) -> &FileInfo {
         &self.0
     }
@@ -68,37 +99,6 @@ impl FileInfoS3 {
             servicesession,
         };
 
-        Ok(FileInfoS3(finfo))
-    }
-
-    pub fn from_url(url: Url) -> Result<FileInfoS3, Error> {
-        if url.scheme() != "s3" {
-            return Err(err_msg("Invalid URL"));
-        }
-        let bucket = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
-        let key = url.path();
-        let filepath = Path::new(&key);
-        let filename = filepath
-            .file_name()
-            .ok_or_else(|| err_msg("Parse failure"))?
-            .to_os_string()
-            .into_string()
-            .map_err(|_| err_msg("Parse failure"))?;
-        let fileurl = format!("s3://{}/{}", bucket, key).parse()?;
-        let serviceid = Some(bucket.to_string().into());
-        let servicesession = Some(bucket.parse()?);
-
-        let finfo = FileInfo {
-            filename,
-            filepath: Some(filepath.to_path_buf()),
-            urlname: Some(fileurl),
-            md5sum: None,
-            sha1sum: None,
-            filestat: None,
-            serviceid,
-            servicetype: FileService::S3,
-            servicesession,
-        };
         Ok(FileInfoS3(finfo))
     }
 }

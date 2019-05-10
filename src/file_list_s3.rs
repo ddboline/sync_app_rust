@@ -59,9 +59,7 @@ impl FileListS3Conf {
 }
 
 impl FileListConfTrait for FileListS3Conf {
-    type Conf = FileListS3Conf;
-
-    fn from_url(url: Url) -> Result<FileListS3Conf, Error> {
+    fn from_url(url: &Url) -> Result<FileListS3Conf, Error> {
         if url.scheme() != "s3" {
             Err(err_msg("Wrong scheme"))
         } else {
