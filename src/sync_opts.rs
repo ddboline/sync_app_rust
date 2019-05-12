@@ -36,10 +36,10 @@ impl SyncOpts {
                     let flist0 = FileList::from_conf(conf0);
                     let flist1 = FileList::from_conf(conf1);
                     let flist0 = flist0.with_list(&flist0.fill_file_list(Some(&pool))?);
-                    let flist1 = flist1.with_list(&flist1.fill_file_list(Some(&pool))?);
-                    println!("{:?} {:?}", flist0.filemap.len(), flist1.filemap.len());
                     flist0.cache_file_list(&pool)?;
+                    let flist1 = flist1.with_list(&flist1.fill_file_list(Some(&pool))?);
                     flist1.cache_file_list(&pool)?;
+                    println!("{:?} {:?}", flist0.filemap.len(), flist1.filemap.len());
                     fsync.compare_lists(&flist0, &flist1)
                 }
             }
