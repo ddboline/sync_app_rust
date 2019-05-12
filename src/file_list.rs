@@ -57,7 +57,14 @@ impl FileList {
             conf: self.conf.clone(),
             filemap: filelist
                 .iter()
-                .map(|f| (f.filename.clone(), f.clone()))
+                .map(|f| {
+                    let key = if let Some(url) = f.urlname.as_ref() {
+                        remove_baseurl(&url, &self.conf.baseurl)
+                    } else {
+                        f.filename.clone()
+                    };
+                    (key, f.clone())
+                })
                 .collect(),
         }
     }
@@ -194,16 +201,28 @@ impl FileListTrait for FileList {
     }
 
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
-        match pool {
-            Some(pool) => match self.load_file_list(&pool) {
-                Ok(v) => {
-                    let result: Vec<Result<_, Error>> =
-                        v.into_iter().map(FileInfo::from_cache_info).collect();
-                    map_result_vec(result)
-                }
-                Err(e) => Err(e),
+        match self.get_conf().servicetype {
+            FileService::Local => {
+                let conf = FileListLocalConf(self.get_conf().clone());
+                let flist = FileListLocal::from_conf(conf);
+                flist.fill_file_list(pool)
+            }
+            FileService::S3 => {
+                let conf = FileListS3Conf(self.get_conf().clone());
+                let flist = FileListS3::from_conf(conf, None);
+                flist.fill_file_list(pool)
+            }
+            _ => match pool {
+                Some(pool) => match self.load_file_list(&pool) {
+                    Ok(v) => {
+                        let result: Vec<Result<_, Error>> =
+                            v.into_iter().map(FileInfo::from_cache_info).collect();
+                        map_result_vec(result)
+                    }
+                    Err(e) => Err(e),
+                },
+                None => Ok(Vec::new()),
             },
-            None => Ok(Vec::new()),
         }
     }
 
@@ -258,10 +277,14 @@ impl FileListTrait for FileList {
     }
 }
 
+pub fn remove_baseurl(urlname: &Url, baseurl: &Url) -> String {
+    let baseurl = format!("{}/", baseurl.as_str().trim_end_matches('/'));
+    urlname.as_str().replacen(&baseurl, "", 1)
+}
+
 pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<Url, Error> {
-    let baseurl0 = format!("{}/", baseurl0.as_str().trim_end_matches('/'));
     let baseurl1 = baseurl1.as_str().trim_end_matches('/');
 
-    let urlstr = format!("{}/{}", baseurl1, urlname.as_str().replace(&baseurl0, ""));
+    let urlstr = format!("{}/{}", baseurl1, remove_baseurl(&urlname, baseurl0));
     Url::parse(&urlstr).map_err(err_msg)
 }
