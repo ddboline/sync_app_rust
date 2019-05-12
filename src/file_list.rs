@@ -9,7 +9,7 @@ use crate::file_list_local::{FileListLocal, FileListLocalConf};
 use crate::file_list_s3::{FileListS3, FileListS3Conf};
 use crate::file_service::FileService;
 use crate::map_result_vec;
-use crate::models::FileInfoCache;
+use crate::models::{FileInfoCache, InsertFileInfoCache};
 use crate::pgpool::PgPool;
 use crate::schema::file_info_cache;
 
@@ -120,22 +120,135 @@ pub trait FileListTrait {
         U: FileInfoTrait + Send + Sync;
 
     fn cache_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
-        let conn = pool.get()?;
-
-        let flist_cache: Vec<Result<_, Error>> = self
-            .get_filemap()
-            .par_iter()
-            .map(|(_, f)| {
-                let finfo_cache = f.get_cache_info()?;
-                Ok(finfo_cache)
+        let current_cache: HashMap<_, _> = self
+            .load_file_list(pool)?
+            .into_iter()
+            .filter_map(|item| {
+                let filename = item.filename.clone();
+                let filepath = if let Some(p) = item.filepath.as_ref() {
+                    p.clone()
+                } else {
+                    return None;
+                };
+                let urlname = if let Some(u) = item.urlname.as_ref() {
+                    u.clone()
+                } else {
+                    return None;
+                };
+                let serviceid = if let Some(s) = item.serviceid.as_ref() {
+                    s.clone()
+                } else {
+                    return None;
+                };
+                let servicesession = if let Some(s) = item.servicesession.as_ref() {
+                    s.clone()
+                } else {
+                    return None;
+                };
+                Some((
+                    (filename, filepath, urlname, serviceid, servicesession),
+                    item,
+                ))
             })
             .collect();
 
-        let flist_cache = map_result_vec(flist_cache)?;
+        let flist_cache_map: HashMap<_, _> = self
+            .get_filemap()
+            .par_iter()
+            .filter_map(|(_, f)| {
+                let item: InsertFileInfoCache = f.into();
+
+                let filename = item.filename.clone();
+                let filepath = if let Some(p) = item.filepath.as_ref() {
+                    p.clone()
+                } else {
+                    return None;
+                };
+                let urlname = if let Some(u) = item.urlname.as_ref() {
+                    u.clone()
+                } else {
+                    return None;
+                };
+                let serviceid = if let Some(s) = item.serviceid.as_ref() {
+                    s.clone()
+                } else {
+                    return None;
+                };
+                let servicesession = if let Some(s) = item.servicesession.as_ref() {
+                    s.clone()
+                } else {
+                    return None;
+                };
+
+                let key = (filename, filepath, urlname, serviceid, servicesession);
+                Some((key, item))
+            })
+            .collect();
+        let flist_cache_update: HashMap<_, _> = flist_cache_map
+            .par_iter()
+            .filter_map(|(k, v)| match current_cache.get(&k) {
+                Some(item) => {
+                    if v.md5sum != item.md5sum
+                        || v.sha1sum != item.sha1sum
+                        || v.filestat_st_mtime != item.filestat_st_mtime
+                        || item.filestat_st_size != item.filestat_st_size
+                    {
+                        Some((k.clone(), v.clone()))
+                    } else {
+                        None
+                    }
+                }
+                None => None,
+            })
+            .collect();
+
+        let results = flist_cache_update
+            .into_par_iter()
+            .map(|(k, v)| {
+                use crate::schema::file_info_cache::dsl::*;
+
+                let conn = pool.clone().get()?;
+
+                let (filename_, filepath_, urlname_, serviceid_, servicesession_) = k;
+
+                let cache = file_info_cache
+                    .filter(filename.eq(filename_))
+                    .filter(filepath.eq(filepath_))
+                    .filter(urlname.eq(urlname_))
+                    .filter(serviceid.eq(serviceid_))
+                    .filter(servicesession.eq(servicesession_))
+                    .load::<FileInfoCache>(&conn)
+                    .map_err(err_msg)?;
+                if cache.len() != 1 {
+                    return Err(err_msg("There should only be one entry"));
+                }
+                let id_ = cache[0].id;
+
+                diesel::update(file_info_cache.filter(id.eq(id_)))
+                    .set((
+                        md5sum.eq(v.md5sum.clone()),
+                        sha1sum.eq(v.sha1sum.clone()),
+                        filestat_st_mtime.eq(v.filestat_st_mtime),
+                        filestat_st_size.eq(v.filestat_st_size),
+                    ))
+                    .execute(&conn)
+                    .map_err(err_msg)
+            })
+            .collect();
+
+        let _ = map_result_vec(results)?;
+
+        let flist_cache_insert: Vec<_> = flist_cache_map
+            .into_par_iter()
+            .filter_map(|(k, v)| match current_cache.get(&k) {
+                Some(_) => None,
+                None => Some(v),
+            })
+            .collect();
 
         diesel::insert_into(file_info_cache::table)
-            .values(&flist_cache)
-            .execute(&conn)
+            .values(&flist_cache_insert)
+            .execute(&pool.get()?)
             .map_err(err_msg)
     }
 

@@ -154,31 +154,38 @@ impl FileInfo {
             servicesession: map_parse(item.servicesession)?,
         })
     }
+}
 
-    pub fn get_cache_info(&self) -> Result<InsertFileInfoCache, Error> {
-        let finfo_cache = InsertFileInfoCache {
-            filename: self.filename.clone(),
-            filepath: match self.filepath.as_ref() {
+impl From<&FileInfo> for InsertFileInfoCache {
+    fn from(item: &FileInfo) -> Self {
+        Self {
+            filename: item.filename.clone(),
+            filepath: match item.filepath.as_ref() {
                 Some(f) => f.to_str().map(ToString::to_string),
                 None => None,
             },
-            urlname: self.urlname.as_ref().map(Url::to_string),
-            md5sum: self.md5sum.as_ref().map(|m| m.0.clone()),
-            sha1sum: self.sha1sum.as_ref().map(|s| s.0.clone()),
-            filestat_st_mtime: self.filestat.map(|f| f.st_mtime as i32),
-            filestat_st_size: self.filestat.map(|f| f.st_size as i32),
-            serviceid: self.serviceid.as_ref().map(|s| s.0.clone()),
-            servicetype: self.servicetype.to_string(),
-            servicesession: self.servicesession.as_ref().map(|s| s.0.clone()),
-        };
-        Ok(finfo_cache)
+            urlname: item.urlname.as_ref().map(Url::to_string),
+            md5sum: item.md5sum.as_ref().map(|m| m.0.clone()),
+            sha1sum: item.sha1sum.as_ref().map(|s| s.0.clone()),
+            filestat_st_mtime: item.filestat.map(|f| f.st_mtime as i32),
+            filestat_st_size: item.filestat.map(|f| f.st_size as i32),
+            serviceid: item.serviceid.as_ref().map(|s| s.0.clone()),
+            servicetype: item.servicetype.to_string(),
+            servicesession: item.servicesession.as_ref().map(|s| s.0.clone()),
+        }
     }
 }
 
-pub fn cache_file_info(pool: &PgPool, finfo: &FileInfo) -> Result<FileInfoCache, Error> {
+impl From<FileInfo> for InsertFileInfoCache {
+    fn from(item: FileInfo) -> Self {
+        Self::from(&item)
+    }
+}
+
+pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, Error> {
     let conn = pool.get()?;
 
-    let finfo_cache = finfo.get_cache_info()?;
+    let finfo_cache: InsertFileInfoCache = finfo.into();
 
     diesel::insert_into(file_info_cache::table)
         .values(&finfo_cache)

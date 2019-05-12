@@ -246,7 +246,7 @@ mod tests {
     use crate::file_list::FileList;
     use crate::file_list_local::{FileListLocal, FileListLocalConf, FileListTrait};
     use crate::file_service::FileService;
-    use crate::models::FileInfoCache;
+    use crate::models::{FileInfoCache, InsertFileInfoCache};
     use crate::pgpool::PgPool;
 
     #[test]
@@ -305,7 +305,7 @@ mod tests {
             .as_str()
             .ends_with("file_list_local.rs"));
 
-        let cache_info = result.get_cache_info().unwrap();
+        let cache_info: InsertFileInfoCache = result.into();
         println!("{:?}", cache_info);
         assert_eq!(
             &result.md5sum.as_ref().unwrap().0,
