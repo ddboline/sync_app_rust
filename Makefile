@@ -36,11 +36,7 @@ build_test:
 	rm -rf build/
 
 install:
-	cp target/$(build_type)/sync-app-rust-proc /usr/bin/sync-app-rust-proc
-	cp target/$(build_type)/sync-app-rust-report /usr/bin/sync-app-rust-report
-	cp target/$(build_type)/sync-app-rust-http /usr/bin/sync-app-rust-http
-	cp python/strava_upload.py /usr/bin/strava-upload
-	cp python/fitbit_auth.py /usr/bin/fitbit-auth
+	cp target/$(build_type)/sync-app-rust /usr/bin/sync-app-rust
 
 pull:
 	`aws ecr --region us-east-1 get-login --no-include-email`
