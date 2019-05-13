@@ -15,14 +15,14 @@ impl FileInfoTrait for FileInfoGDrive {
             return Err(err_msg("Invalid URL"));
         }
         let path = url.path();
-        let filepath = Path::new(&key);
+        let filepath = Path::new(&path);
         let filename = filepath
             .file_name()
             .ok_or_else(|| err_msg("Parse failure"))?
             .to_os_string()
             .into_string()
             .map_err(|_| err_msg("Parse failure"))?;
-        let fileurl = format!("gdrive://{}/{}", bucket, key).parse()?;
+        let fileurl = format!("gdrive://{}/{}", bucket, path).parse()?;
         let serviceid = Some(bucket.to_string().into());
         let servicesession = Some(bucket.parse()?);
 

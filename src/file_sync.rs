@@ -229,11 +229,15 @@ impl FileSync {
     pub fn process_file(&self) -> Result<(), Error> {
         if let FileSyncMode::OutputFile(fname) = &self.mode {
             let f = File::open(fname)?;
-            for line in BufReader::new(f).lines() {
+            let proc_list: Vec<Result<_, Error>> = BufReader::new(f).lines().map(
+                |line| {
                 let v: Vec<_> = line?.split_whitespace().map(ToString::to_string).collect();
-                if v.len() < 2 {
-                    continue;
+                Ok(v)
                 }
+            ).collect();
+            let proc_list = map_result_vec(proc_list)?;
+
+            let results = proc_list.into_par_iter().map(|v| {
                 let u0: Url = v[0].parse()?;
                 let u1: Url = v[1].parse()?;
                 let conf0 = FileListConf::from_url(&u0)?;
@@ -243,7 +247,11 @@ impl FileSync {
                 let finfo0 = FileInfo::from_url(&u0)?;
                 let finfo1 = FileInfo::from_url(&u1)?;
                 self.copy_object(&flist0, &flist1, &finfo0, &finfo1)?;
-            }
+                Ok(())
+            }).collect();
+
+            map_result_vec(results)?;
+
             Ok(())
         } else {
             Err(err_msg("Wrong mode"))

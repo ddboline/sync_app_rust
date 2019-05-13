@@ -220,13 +220,14 @@ impl FileListTrait for FileListLocal {
             .filepath
             .clone()
             .ok_or_else(|| err_msg("No local path"))?;
-        let parent_dir = finfo_remote
+        let parent_dir = finfo_local
             .filepath
             .as_ref()
             .ok_or_else(|| err_msg("No local path"))?
             .parent()
             .ok_or_else(|| err_msg("No parent directory"))?;
         if !parent_dir.exists() {
+
             create_dir_all(&parent_dir)?;
         }
 
