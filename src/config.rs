@@ -1,16 +1,19 @@
-use std::env;
+use std::env::var;
 use std::path::Path;
 
 #[derive(Default)]
 pub struct Config {
     pub database_url: String,
+    pub gdrive_secret_file: String,
+    pub gdrive_token_file: String,
+    pub interactive_auth: bool,
 }
 
 impl Config {
     pub fn new() -> Config {
         let fname = "config.env";
 
-        let home_dir = env::var("HOME").expect("No HOME directory...");
+        let home_dir = var("HOME").expect("No HOME directory...");
 
         let default_fname = format!("{}/.config/sync_app_rust/config.env", home_dir);
 
@@ -28,8 +31,21 @@ impl Config {
             dotenv::dotenv().ok();
         }
 
-        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let database_url = var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let gdrive_secret_file = var("GDRIVE_SECRET_FILE")
+            .unwrap_or_else(|_| format!("{}/.config/sync_app_rust/client_secrets.json", home_dir));
+        let gdrive_token_file = var("GDRIVE_TOKEN_FILE")
+            .unwrap_or_else(|_| format!("{}/.gdrive/gdrive.json", home_dir));
+        let interactive_auth: bool = var("INTERACTIVE_AUTH")
+            .unwrap_or_else(|_| "true".to_string())
+            .parse()
+            .unwrap_or_else(|_| true);
 
-        Config { database_url }
+        Config {
+            database_url,
+            gdrive_secret_file,
+            gdrive_token_file,
+            interactive_auth,
+        }
     }
 }

@@ -6,6 +6,7 @@ use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
+use crate::gdrive_instance::GDriveInstance;
 use crate::pgpool::PgPool;
 
 #[derive(StructOpt, Debug)]
@@ -72,6 +73,13 @@ impl SyncOpts {
             FileSyncAction::Process => {
                 let fsync = FileSync::new(opts.mode);
                 fsync.process_file()
+            }
+            FileSyncAction::GDrive => {
+                let config = Config::new();
+                let gdrive = GDriveInstance::new(&config).with_max_keys(100);
+                let list = gdrive.get_all_files(None)?;
+                println!("{:?}", list[0]);
+                Ok(())
             }
             _ => Ok(()),
         }

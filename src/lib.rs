@@ -10,6 +10,7 @@ pub mod file_list_local;
 pub mod file_list_s3;
 pub mod file_service;
 pub mod file_sync;
+pub mod gdrive_instance;
 pub mod models;
 pub mod pgpool;
 pub mod s3_instance;
