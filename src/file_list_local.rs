@@ -8,6 +8,7 @@ use std::time::SystemTime;
 use url::Url;
 use walkdir::WalkDir;
 
+use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_info_local::FileInfoLocal;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
@@ -34,7 +35,7 @@ impl FileListLocal {
 pub struct FileListLocalConf(pub FileListConf);
 
 impl FileListLocalConf {
-    pub fn new(basedir: PathBuf) -> Result<FileListLocalConf, Error> {
+    pub fn new(basedir: PathBuf, config: &Config) -> Result<FileListLocalConf, Error> {
         let basepath = basedir.canonicalize()?;
         let basestr = basepath
             .to_str()
@@ -43,16 +44,16 @@ impl FileListLocalConf {
         let baseurl = Url::from_file_path(basepath).map_err(|_| err_msg("Failed to parse url"))?;
         let conf = FileListConf {
             baseurl,
+            config: config.clone(),
             servicetype: FileService::Local,
             servicesession: basestr.parse()?,
-            serviceid: basestr.into(),
         };
         Ok(FileListLocalConf(conf))
     }
 }
 
 impl FileListConfTrait for FileListLocalConf {
-    fn from_url(url: &Url) -> Result<FileListLocalConf, Error> {
+    fn from_url(url: &Url, config: &Config) -> Result<FileListLocalConf, Error> {
         if url.scheme() != "file" {
             Err(err_msg("Wrong scheme"))
         } else {
@@ -63,12 +64,16 @@ impl FileListConfTrait for FileListLocalConf {
                 .to_string();
             let conf = FileListConf {
                 baseurl: url.clone(),
+                config: config.clone(),
                 servicetype: FileService::Local,
                 servicesession: basestr.parse()?,
-                serviceid: basestr.into(),
             };
             Ok(FileListLocalConf(conf))
         }
+    }
+
+    fn get_config(&self) -> &Config {
+        &self.0.config
     }
 }
 
@@ -122,13 +127,9 @@ impl FileListTrait for FileListLocal {
                         }
                     }
                 };
-                FileInfoLocal::from_direntry(
-                    entry,
-                    Some(conf.serviceid.clone()),
-                    Some(conf.servicesession.clone()),
-                )
-                .ok()
-                .map(|x| x.0)
+                FileInfoLocal::from_direntry(entry, None, Some(conf.servicesession.clone()))
+                    .ok()
+                    .map(|x| x.0)
             })
             .collect();
 
@@ -227,7 +228,6 @@ impl FileListTrait for FileListLocal {
             .parent()
             .ok_or_else(|| err_msg("No parent directory"))?;
         if !parent_dir.exists() {
-
             create_dir_all(&parent_dir)?;
         }
 

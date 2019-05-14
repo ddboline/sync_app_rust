@@ -59,6 +59,12 @@ impl From<String> for ServiceId {
     }
 }
 
+impl From<ServiceSession> for ServiceId {
+    fn from(s: ServiceSession) -> Self {
+        Self(s.0)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ServiceSession(pub String);
 

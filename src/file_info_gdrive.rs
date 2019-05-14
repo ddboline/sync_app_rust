@@ -1,3 +1,5 @@
+use google_drive3_fork as drive3;
+
 use chrono::DateTime;
 use failure::{err_msg, Error};
 use std::path::Path;
@@ -22,14 +24,13 @@ impl FileInfoTrait for FileInfoGDrive {
             .to_os_string()
             .into_string()
             .map_err(|_| err_msg("Parse failure"))?;
-        let fileurl = format!("gdrive://{}/{}", bucket, path).parse()?;
-        let serviceid = Some(bucket.to_string().into());
-        let servicesession = Some(bucket.parse()?);
+        let serviceid = Some(filename.clone().into());
+        let servicesession = Some(filename.parse()?);
 
         let finfo = FileInfo {
             filename,
             filepath: Some(filepath.to_path_buf()),
-            urlname: Some(fileurl),
+            urlname: Some(url.clone()),
             md5sum: None,
             sha1sum: None,
             filestat: None,
@@ -58,34 +59,26 @@ impl FileInfoTrait for FileInfoGDrive {
 }
 
 impl FileInfoGDrive {
-    pub fn from_object(bucket: &str, item: Object) -> Result<FileInfoGDrive, Error> {
-        let key = item.key.as_ref().ok_or_else(|| err_msg("No key"))?.clone();
-        let filepath = Path::new(&key);
-        let filename = filepath
-            .file_name()
-            .ok_or_else(|| err_msg("Parse failure"))?
-            .to_os_string()
-            .into_string()
-            .map_err(|_| err_msg("Parse failure"))?;
-        let md5sum = item
-            .e_tag
-            .clone()
-            .and_then(|m| m.trim_matches('"').parse().ok());
+    pub fn from_object(item: drive3::File) -> Result<FileInfoGDrive, Error> {
+        let filename = item.name.ok_or_else(|| err_msg("No filename"))?;
+        let md5sum = item.md5_checksum.and_then(|x| x.parse().ok());
         let st_mtime = DateTime::parse_from_rfc3339(
-            item.last_modified
+            item.modified_time
                 .as_ref()
                 .ok_or_else(|| err_msg("No last modified"))?,
         )?
         .timestamp();
-        let size = item.size.ok_or_else(|| err_msg("No file size"))?;
-        let fileurl = format!("gdrive://{}/{}", bucket, key).parse()?;
-        let serviceid = Some(bucket.to_string().into());
-        let servicesession = Some(bucket.parse()?);
+        let size: u32 = item
+            .size
+            .and_then(|x| x.parse().ok())
+            .ok_or_else(|| err_msg("Failed to parse"))?;
+        let serviceid = item.id.map(|x| x.into());
+        let servicesession = Some("gdrive".parse()?);
 
         let finfo = FileInfo {
             filename,
-            filepath: Some(filepath.to_path_buf()),
-            urlname: Some(fileurl),
+            filepath: None,
+            urlname: None,
             md5sum,
             sha1sum: None,
             filestat: Some(FileStat {
@@ -103,7 +96,7 @@ impl FileInfoGDrive {
 
 #[cfg(test)]
 mod tests {
-    use crate::file_info_s3::FileInfoGDrive;
+    use crate::file_info_gdrive::FileInfoGDrive;
 
     #[test]
     fn test_file_info_gdrive() {

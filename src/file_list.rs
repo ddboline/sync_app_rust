@@ -4,6 +4,7 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 use url::Url;
 
+use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait, ServiceId, ServiceSession};
 use crate::file_list_local::{FileListLocal, FileListLocalConf};
 use crate::file_list_s3::{FileListS3, FileListS3Conf};
@@ -16,25 +17,31 @@ use crate::schema::file_info_cache;
 #[derive(Debug, Clone)]
 pub struct FileListConf {
     pub baseurl: Url,
+    pub config: Config,
     pub servicetype: FileService,
     pub servicesession: ServiceSession,
-    pub serviceid: ServiceId,
 }
 
 pub trait FileListConfTrait
 where
     Self: Sized + Send + Sync,
 {
-    fn from_url(url: &Url) -> Result<Self, Error>;
+    fn from_url(url: &Url, config: &Config) -> Result<Self, Error>;
+
+    fn get_config(&self) -> &Config;
 }
 
 impl FileListConfTrait for FileListConf {
-    fn from_url(url: &Url) -> Result<FileListConf, Error> {
+    fn from_url(url: &Url, config: &Config) -> Result<FileListConf, Error> {
         match url.scheme() {
-            "file" => FileListLocalConf::from_url(url).map(|f| f.0),
-            "s3" => FileListS3Conf::from_url(url).map(|f| f.0),
+            "file" => FileListLocalConf::from_url(url, config).map(|f| f.0),
+            "s3" => FileListS3Conf::from_url(url, config).map(|f| f.0),
             _ => Err(err_msg("Bad scheme")),
         }
+    }
+
+    fn get_config(&self) -> &Config {
+        &self.config
     }
 }
 
@@ -259,7 +266,6 @@ pub trait FileListTrait {
         let conf = &self.get_conf();
 
         file_info_cache
-            .filter(serviceid.eq(conf.serviceid.0.clone()))
             .filter(servicesession.eq(conf.servicesession.0.clone()))
             .filter(servicetype.eq(conf.servicetype.to_string()))
             .load::<FileInfoCache>(&conn)
@@ -295,7 +301,6 @@ pub trait FileListTrait {
 
         diesel::delete(
             file_info_cache
-                .filter(serviceid.eq(conf.serviceid.0.clone()))
                 .filter(servicesession.eq(conf.servicesession.0.clone()))
                 .filter(servicetype.eq(conf.servicetype.to_string())),
         )

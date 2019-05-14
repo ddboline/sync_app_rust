@@ -22,18 +22,18 @@ pub struct SyncOpts {
 impl SyncOpts {
     pub fn process_args() -> Result<(), Error> {
         let opts = SyncOpts::from_args();
+        let config = Config::new();
 
         match opts.action {
             FileSyncAction::Sync => {
                 if opts.urls.len() < 2 {
                     Err(err_msg("Need 2 Urls"))
                 } else {
-                    let config = Config::new();
                     let pool = PgPool::new(&config.database_url);
 
-                    let fsync = FileSync::new(opts.mode);
-                    let conf0 = FileListConf::from_url(&opts.urls[0])?;
-                    let conf1 = FileListConf::from_url(&opts.urls[1])?;
+                    let fsync = FileSync::new(opts.mode, &config);
+                    let conf0 = FileListConf::from_url(&opts.urls[0], &config)?;
+                    let conf1 = FileListConf::from_url(&opts.urls[1], &config)?;
                     let flist0 = FileList::from_conf(conf0);
                     let flist1 = FileList::from_conf(conf1);
                     let flist0 = flist0.with_list(&flist0.fill_file_list(Some(&pool))?);
@@ -48,9 +48,9 @@ impl SyncOpts {
                 if opts.urls.len() < 2 {
                     Err(err_msg("Need 2 Urls"))
                 } else {
-                    let fsync = FileSync::new(opts.mode);
-                    let conf0 = FileListConf::from_url(&opts.urls[0])?;
-                    let conf1 = FileListConf::from_url(&opts.urls[1])?;
+                    let fsync = FileSync::new(opts.mode, &config);
+                    let conf0 = FileListConf::from_url(&opts.urls[0], &config)?;
+                    let conf1 = FileListConf::from_url(&opts.urls[1], &config)?;
                     let flist0 = FileList::from_conf(conf0);
                     let flist1 = FileList::from_conf(conf1);
                     let finfo0 = FileInfo::from_url(&opts.urls[0])?;
@@ -63,7 +63,7 @@ impl SyncOpts {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
                     for url in opts.urls {
-                        let conf = FileListConf::from_url(&url)?;
+                        let conf = FileListConf::from_url(&url, &config)?;
                         let flist = FileList::from_conf(conf);
                         flist.print_list()?;
                     }
@@ -71,14 +71,15 @@ impl SyncOpts {
                 }
             }
             FileSyncAction::Process => {
-                let fsync = FileSync::new(opts.mode);
+                let fsync = FileSync::new(opts.mode, &config);
                 fsync.process_file()
             }
             FileSyncAction::GDrive => {
-                let config = Config::new();
                 let gdrive = GDriveInstance::new(&config).with_max_keys(100);
                 let list = gdrive.get_all_files(None)?;
-                println!("{:?}", list[0]);
+                for entry in &list {
+                    println!("{:?}", entry);
+                }
                 Ok(())
             }
             _ => Ok(()),

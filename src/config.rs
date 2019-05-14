@@ -1,7 +1,7 @@
 use std::env::var;
 use std::path::Path;
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct Config {
     pub database_url: String,
     pub gdrive_secret_file: String,

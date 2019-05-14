@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use url::Url;
 
+use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::{replace_baseurl, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
@@ -65,11 +66,15 @@ impl From<&str> for FileSyncMode {
 #[derive(Default, Debug)]
 pub struct FileSync {
     pub mode: FileSyncMode,
+    pub config: Config,
 }
 
 impl FileSync {
-    pub fn new(mode: FileSyncMode) -> FileSync {
-        FileSync { mode }
+    pub fn new(mode: FileSyncMode, config: &Config) -> FileSync {
+        FileSync {
+            mode,
+            config: config.clone(),
+        }
     }
 
     pub fn compare_lists<T, U>(&self, flist0: &T, flist1: &U) -> Result<(), Error>
@@ -104,7 +109,7 @@ impl FileSync {
                                     urlname: Some(url1),
                                     servicesession: Some(conf1.servicesession.clone()),
                                     servicetype: conf1.servicetype,
-                                    serviceid: Some(conf1.serviceid.clone()),
+                                    serviceid: Some(conf1.servicesession.clone().into()),
                                     ..Default::default()
                                 };
                                 Some((finfo0.clone(), finfo1.clone()))
@@ -137,7 +142,7 @@ impl FileSync {
                                     urlname: Some(url0),
                                     servicesession: Some(conf0.servicesession.clone()),
                                     servicetype: conf0.servicetype,
-                                    serviceid: Some(conf0.serviceid.clone()),
+                                    serviceid: Some(conf0.servicesession.clone().into()),
                                     ..Default::default()
                                 };
                                 Some((finfo1.clone(), finfo0.clone()))
@@ -229,26 +234,30 @@ impl FileSync {
     pub fn process_file(&self) -> Result<(), Error> {
         if let FileSyncMode::OutputFile(fname) = &self.mode {
             let f = File::open(fname)?;
-            let proc_list: Vec<Result<_, Error>> = BufReader::new(f).lines().map(
-                |line| {
-                let v: Vec<_> = line?.split_whitespace().map(ToString::to_string).collect();
-                Ok(v)
-                }
-            ).collect();
+            let proc_list: Vec<Result<_, Error>> = BufReader::new(f)
+                .lines()
+                .map(|line| {
+                    let v: Vec<_> = line?.split_whitespace().map(ToString::to_string).collect();
+                    Ok(v)
+                })
+                .collect();
             let proc_list = map_result_vec(proc_list)?;
 
-            let results = proc_list.into_par_iter().map(|v| {
-                let u0: Url = v[0].parse()?;
-                let u1: Url = v[1].parse()?;
-                let conf0 = FileListConf::from_url(&u0)?;
-                let conf1 = FileListConf::from_url(&u1)?;
-                let flist0 = FileList::from_conf(conf0);
-                let flist1 = FileList::from_conf(conf1);
-                let finfo0 = FileInfo::from_url(&u0)?;
-                let finfo1 = FileInfo::from_url(&u1)?;
-                self.copy_object(&flist0, &flist1, &finfo0, &finfo1)?;
-                Ok(())
-            }).collect();
+            let results = proc_list
+                .into_par_iter()
+                .map(|v| {
+                    let u0: Url = v[0].parse()?;
+                    let u1: Url = v[1].parse()?;
+                    let conf0 = FileListConf::from_url(&u0, &self.config)?;
+                    let conf1 = FileListConf::from_url(&u1, &self.config)?;
+                    let flist0 = FileList::from_conf(conf0);
+                    let flist1 = FileList::from_conf(conf1);
+                    let finfo0 = FileInfo::from_url(&u0)?;
+                    let finfo1 = FileInfo::from_url(&u1)?;
+                    self.copy_object(&flist0, &flist1, &finfo0, &finfo1)?;
+                    Ok(())
+                })
+                .collect();
 
             map_result_vec(results)?;
 
