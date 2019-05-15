@@ -1,4 +1,5 @@
 use failure::{err_msg, Error};
+use google_drive3_fork as drive3;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
@@ -9,7 +10,7 @@ use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_info_gdrive::FileInfoGDrive;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::gdrive_instance::GDriveInstance;
+use crate::gdrive_instance::{DirectoryInfo, GDriveInstance};
 use crate::map_result_vec;
 use crate::pgpool::PgPool;
 
@@ -89,7 +90,7 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
-        let flist: Vec<_> = self.gdrive.get_all_files(None)?;
+        let flist: Vec<_> = self.gdrive.get_all_files(false)?;
 
         let flist: Vec<Result<_, Error>> = flist
             .into_par_iter()
@@ -130,10 +131,7 @@ impl FileListTrait for FileListGDrive {
             .ok_or_else(|| err_msg("No local path"))?
             .canonicalize()?;
         let local_url = Url::from_file_path(local_file).map_err(|_| err_msg("failure"))?;
-        let remote_url = finfo_remote
-            .urlname
-            .clone()
-            .ok_or_else(|| err_msg("No gdrive url"))?;
+        let remote_url = "test".to_string();
         self.gdrive.upload(&local_url, &remote_url)
     }
 
@@ -174,8 +172,7 @@ impl FileListTrait for FileListGDrive {
             .clone()
             .ok_or_else(|| err_msg("No gdrive url"))?
             .0;
-        let md5sum = self.gdrive.download(&gdriveid, &local_url, None)?;
-        Ok(())
+        self.gdrive.download(&gdriveid, &local_url, None)
     }
 }
 

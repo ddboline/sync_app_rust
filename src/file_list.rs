@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait, ServiceId, ServiceSession};
+use crate::file_info::{FileInfo, FileInfoTrait, ServiceSession};
 use crate::file_list_local::{FileListLocal, FileListLocalConf};
 use crate::file_list_s3::{FileListS3, FileListS3Conf};
 use crate::file_service::FileService;

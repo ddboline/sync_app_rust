@@ -75,10 +75,14 @@ impl SyncOpts {
                 fsync.process_file()
             }
             FileSyncAction::GDrive => {
-                let gdrive = GDriveInstance::new(&config).with_max_keys(100);
-                let list = gdrive.get_all_files(None)?;
-                for entry in &list {
-                    println!("{:?}", entry);
+                let gdrive = GDriveInstance::new(&config);
+                let dmap = gdrive.get_directory_map()?;
+
+                let gdrive = gdrive.with_max_keys(100);
+                let list = gdrive.get_all_files(false)?;
+                println!("{}", list.len());
+                for item in &list {
+                    println!("{}", gdrive.get_export_path(&item, &dmap)?);
                 }
                 Ok(())
             }

@@ -6,20 +6,23 @@ use failure::{err_msg, Error};
 use hyper::net::HttpsConnector;
 use hyper::Client;
 use hyper_native_tls::NativeTlsClient;
+use mime::Mime;
 use oauth2::{
     Authenticator, ConsoleApplicationSecret, DefaultAuthenticatorDelegate, DiskTokenStorage,
     FlowType,
 };
+use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
 use url::Url;
 
 use crate::config::Config;
 
-type DriveId = String;
+pub type DriveId = String;
 type GCClient = Client;
 type GCAuthenticator = Authenticator<DefaultAuthenticatorDelegate, DiskTokenStorage, Client>;
 type GCDrive = Drive<GCClient, GCAuthenticator>;
@@ -74,13 +77,11 @@ impl GDriveInstance {
     }
 
     fn create_drive_auth(config: &Config) -> Result<GCAuthenticator, Error> {
-        println!("{}", config.gdrive_secret_file);
         let secret_file = File::open(config.gdrive_secret_file.clone())?;
         let secret: ConsoleApplicationSecret = serde_json::from_reader(secret_file)?;
         let secret = secret
             .installed
             .ok_or(err_msg("ConsoleApplicationSecret.installed is None"))?;
-        println!("{}", config.gdrive_token_file);
         let auth = Authenticator::new(
             &secret,
             DefaultAuthenticatorDelegate,
@@ -102,7 +103,7 @@ impl GDriveInstance {
         ))
     }
 
-    pub fn get_all_files(&self, parents: Option<Vec<DriveId>>) -> Result<Vec<drive3::File>, Error> {
+    pub fn get_all_files(&self, get_folders: bool) -> Result<Vec<drive3::File>, Error> {
         let mut all_files = Vec::new();
         let mut page_token: Option<String> = None;
         loop {
@@ -119,19 +120,14 @@ impl GDriveInstance {
             };
 
             let mut query_chain: Vec<String> = Vec::new();
-            if let Some(ref p) = parents {
-                let q = p
-                    .into_iter()
-                    .map(|id| format!("'{}' in parents", id))
-                    .collect::<Vec<_>>()
-                    .join(" or ");
-
-                query_chain.push(format!("({})", q));
+            if get_folders {
+                query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.to_string());
+            } else {
+                query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.to_string());
             }
             query_chain.push(format!("trashed = false"));
 
             let query = query_chain.join(" and ");
-            println!("{}", query);
             let (_, filelist) = request
                 .q(&query)
                 .doit()
@@ -145,7 +141,6 @@ impl GDriveInstance {
             if page_token.is_none() {
                 break;
             }
-            println!("{}", all_files.len());
 
             if let Some(max_keys) = self.max_keys {
                 if all_files.len() > max_keys {
@@ -220,7 +215,7 @@ impl GDriveInstance {
         Ok(())
     }
 
-    fn get_file_metadata(&self, id: &str) -> Result<drive3::File, Error> {
+    fn get_file_metadata(&self, id: &DriveId) -> Result<drive3::File, Error> {
         self.gdrive
             .files()
             .get(id)
@@ -231,8 +226,53 @@ impl GDriveInstance {
             .map_err(|e| err_msg(format!("{:#?}", e)))
     }
 
-    pub fn upload(&self, local: &Url, remote: &Url) -> Result<(), Error> {
-        Ok(())
+    pub fn create_directory(&self, directory: &Url, parentid: &DriveId) -> Result<(), Error> {
+        let directory_path = directory
+            .to_file_path()
+            .map_err(|_| err_msg("No file path"))?;
+        let directory_name = directory_path
+            .file_name()
+            .and_then(|d| d.to_str().map(|s| s.to_string()))
+            .ok_or_else(|| err_msg("Failed to convert string"))?;
+        let new_file = drive3::File {
+            name: Some(directory_name),
+            mime_type: Some("application/vnd.google-apps.folder".to_string()),
+            parents: Some(vec![parentid.clone()]),
+            ..Default::default()
+        };
+        let mime: Mime = "application/octet-stream"
+            .parse()
+            .map_err(|_| err_msg("bad mimetype"))?;
+        let dummy_file = DummyFile::new(&[]);
+        self.gdrive
+            .files()
+            .create(new_file)
+            .upload(dummy_file, mime)
+            .map_err(|e| err_msg(format!("{:#?}", e)))
+            .map(|(_, _)| ())
+    }
+
+    pub fn upload(&self, local: &Url, parentid: &DriveId) -> Result<(), Error> {
+        let file_path = local.to_file_path().map_err(|_| err_msg("No file path"))?;
+        let file_obj = File::open(file_path.clone())?;
+        let mime: Mime = "application/octet-stream"
+            .parse()
+            .map_err(|_| err_msg("bad mimetype"))?;
+        let new_file = drive3::File {
+            name: file_path
+                .as_path()
+                .file_name()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string()),
+            parents: Some(vec![parentid.clone()]),
+            ..Default::default()
+        };
+        self.gdrive
+            .files()
+            .create(new_file)
+            .upload_resumable(file_obj, mime)
+            .map_err(|e| err_msg(format!("{:#?}", e)))
+            .map(|(_, _)| ())
     }
 
     pub fn download(
@@ -263,7 +303,7 @@ impl GDriveInstance {
 
         let mut response = match export_type {
             Some(t) => {
-                let mut response = self
+                let response = self
                     .gdrive
                     .files()
                     .export(gdriveid, &t)
@@ -274,7 +314,7 @@ impl GDriveInstance {
                 response
             }
             None => {
-                let (mut response, _empty_file) = self
+                let (response, _empty_file) = self
                     .gdrive
                     .files()
                     .get(&gdriveid)
@@ -294,6 +334,165 @@ impl GDriveInstance {
         outfile.write_all(&content)?;
 
         Ok(())
+    }
+
+    pub fn get_directory_map(&self) -> Result<HashMap<String, DirectoryInfo>, Error> {
+        let dlist: Vec<_> = self.get_all_files(true)?;
+        let mut dmap: HashMap<_, _> = dlist
+            .iter()
+            .filter_map(|d| {
+                if let Some(gdriveid) = d.id.as_ref() {
+                    if let Some(name) = d.name.as_ref() {
+                        if let Some(parents) = d.parents.as_ref() {
+                            if parents.len() > 0 {
+                                return Some((
+                                    gdriveid.clone(),
+                                    DirectoryInfo {
+                                        gdriveid: gdriveid.clone(),
+                                        name: name.clone(),
+                                        parentid: Some(parents[0].clone()),
+                                    },
+                                ));
+                            } else {
+                                return Some((
+                                    gdriveid.clone(),
+                                    DirectoryInfo {
+                                        gdriveid: gdriveid.clone(),
+                                        name: name.clone(),
+                                        parentid: None,
+                                    },
+                                ));
+                            }
+                        }
+                    }
+                }
+                None
+            })
+            .collect();
+        let unmatched_parents: HashSet<_> = dmap
+            .values()
+            .filter_map(|v| {
+                v.parentid.as_ref().and_then(|p| match dmap.get(p) {
+                    Some(_) => None,
+                    None => Some(p.clone()),
+                })
+            })
+            .collect();
+        for parent in unmatched_parents {
+            let d = self.get_file_metadata(&parent)?;
+            println!("pid {} f {:?}", parent, d);
+            if let Some(gdriveid) = d.id.as_ref() {
+                if let Some(name) = d.name.as_ref() {
+                    let parents = if let Some(parents) = d.parents.as_ref() {
+                        if parents.len() > 0 {
+                            Some(parents[0].clone())
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+                    let val = DirectoryInfo {
+                        gdriveid: gdriveid.clone(),
+                        name: name.clone(),
+                        parentid: parents,
+                    };
+
+                    dmap.entry(gdriveid.clone()).or_insert(val);
+                }
+            }
+        }
+        Ok(dmap)
+    }
+
+    pub fn get_export_path(
+        &self,
+        finfo: &drive3::File,
+        dirmap: &HashMap<String, DirectoryInfo>,
+    ) -> Result<String, Error> {
+        let mut fullpath = Vec::new();
+        if let Some(name) = finfo.name.as_ref() {
+            fullpath.push(name.clone());
+        }
+        let mut pid = if let Some(parents) = finfo.parents.as_ref() {
+            if parents.len() > 0 {
+                Some(parents[0].clone())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        loop {
+            pid = if let Some(pid_) = pid.as_ref() {
+                if let Some(dinfo) = dirmap.get(pid_) {
+                    fullpath.push(dinfo.name.clone());
+                    dinfo.parentid.clone()
+                } else {
+                    println!("pid {}", pid_);
+                    None
+                }
+            } else {
+                None
+            };
+            if pid.is_none() {
+                break;
+            }
+        }
+        let fullpath: Vec<_> = fullpath.into_iter().rev().collect();
+        Ok(fullpath.join("/"))
+    }
+}
+
+pub struct DirectoryInfo {
+    pub gdriveid: DriveId,
+    pub name: String,
+    pub parentid: Option<DriveId>,
+}
+
+struct DummyFile {
+    cursor: u64,
+    data: Vec<u8>,
+}
+
+impl DummyFile {
+    fn new(data: &[u8]) -> DummyFile {
+        DummyFile {
+            cursor: 0,
+            data: Vec::from(data),
+        }
+    }
+}
+
+impl Seek for DummyFile {
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        let position: i64 = match pos {
+            SeekFrom::Start(offset) => offset as i64,
+            SeekFrom::End(offset) => self.data.len() as i64 - offset,
+            SeekFrom::Current(offset) => self.cursor as i64 + offset,
+        };
+
+        if position < 0 {
+            Err(io::Error::from(io::ErrorKind::InvalidInput))
+        } else {
+            self.cursor = position as u64;
+            Ok(self.cursor)
+        }
+    }
+}
+
+impl Read for DummyFile {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let remaining = self.data.len() - self.cursor as usize;
+        let copied = cmp::min(buf.len(), remaining);
+
+        if copied > 0 {
+            buf[..]
+                .copy_from_slice(&self.data[self.cursor as usize..self.cursor as usize + copied]);
+        }
+
+        self.cursor += copied as u64;
+        Ok(copied)
     }
 }
 
