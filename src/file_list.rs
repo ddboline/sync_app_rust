@@ -6,9 +6,11 @@ use url::Url;
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait, ServiceSession};
+use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
 use crate::file_list_local::{FileListLocal, FileListLocalConf};
 use crate::file_list_s3::{FileListS3, FileListS3Conf};
 use crate::file_service::FileService;
+use crate::gdrive_instance::GDriveInstance;
 use crate::map_result_vec;
 use crate::models::{FileInfoCache, InsertFileInfoCache};
 use crate::pgpool::PgPool;
@@ -34,6 +36,7 @@ where
 impl FileListConfTrait for FileListConf {
     fn from_url(url: &Url, config: &Config) -> Result<FileListConf, Error> {
         match url.scheme() {
+            "gdrive" => FileListGDriveConf::from_url(url, config).map(|f| f.0),
             "file" => FileListLocalConf::from_url(url, config).map(|f| f.0),
             "s3" => FileListS3Conf::from_url(url, config).map(|f| f.0),
             _ => Err(err_msg("Bad scheme")),
@@ -93,6 +96,13 @@ pub trait FileListTrait {
             FileService::S3 => {
                 let fconf = FileListS3Conf(conf.clone());
                 let flist = FileListS3::from_conf(fconf, None);
+                flist.fill_file_list(pool)
+            }
+            FileService::GDrive => {
+                let fconf = FileListGDriveConf(conf.clone());
+                let config = Config::new();
+                let gdrive = GDriveInstance::new(&config);
+                let flist = FileListGDrive::from_conf(fconf, &gdrive);
                 flist.fill_file_list(pool)
             }
             _ => Err(err_msg("Not implemented")),

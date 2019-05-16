@@ -237,8 +237,9 @@ mod tests {
             .get(0)
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
+        let config = Config::new();
 
-        let conf = FileListS3Conf::new(&bucket).unwrap();
+        let conf = FileListS3Conf::new(&bucket, &config).unwrap();
         let flist = FileListS3::from_conf(conf, None).max_keys(100);
 
         let new_flist = flist.fill_file_list(None).unwrap();

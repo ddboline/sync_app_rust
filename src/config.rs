@@ -6,7 +6,6 @@ pub struct Config {
     pub database_url: String,
     pub gdrive_secret_file: String,
     pub gdrive_token_file: String,
-    pub interactive_auth: bool,
 }
 
 impl Config {
@@ -36,16 +35,11 @@ impl Config {
             .unwrap_or_else(|_| format!("{}/.config/sync_app_rust/client_secrets.json", home_dir));
         let gdrive_token_file = var("GDRIVE_TOKEN_FILE")
             .unwrap_or_else(|_| format!("{}/.gdrive/gdrive.json", home_dir));
-        let interactive_auth: bool = var("INTERACTIVE_AUTH")
-            .unwrap_or_else(|_| "true".to_string())
-            .parse()
-            .unwrap_or_else(|_| true);
 
         Config {
             database_url,
             gdrive_secret_file,
             gdrive_token_file,
-            interactive_auth,
         }
     }
 }

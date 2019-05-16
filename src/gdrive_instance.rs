@@ -14,9 +14,10 @@ use oauth2::{
 use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::fs::File;
+use std::fs::{create_dir_all, File};
 use std::io;
 use std::io::{Read, Seek, SeekFrom, Write};
+use std::path::Path;
 use std::sync::Arc;
 use url::Url;
 
@@ -82,6 +83,15 @@ impl GDriveInstance {
         let secret = secret
             .installed
             .ok_or(err_msg("ConsoleApplicationSecret.installed is None"))?;
+
+        let parent = Path::new(&config.gdrive_token_file)
+            .parent()
+            .ok_or_else(|| err_msg("No parent"))?;
+
+        if !parent.exists() {
+            create_dir_all(parent)?;
+        }
+
         let auth = Authenticator::new(
             &secret,
             DefaultAuthenticatorDelegate,

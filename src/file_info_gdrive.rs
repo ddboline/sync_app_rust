@@ -2,11 +2,13 @@ use google_drive3_fork as drive3;
 
 use chrono::DateTime;
 use failure::{err_msg, Error};
+use std::collections::HashMap;
 use std::path::Path;
 use url::Url;
 
 use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
 use crate::file_service::FileService;
+use crate::gdrive_instance::{DirectoryInfo, GDriveInstance};
 
 #[derive(Debug, Default)]
 pub struct FileInfoGDrive(pub FileInfo);
@@ -59,9 +61,13 @@ impl FileInfoTrait for FileInfoGDrive {
 }
 
 impl FileInfoGDrive {
-    pub fn from_object(item: drive3::File) -> Result<FileInfoGDrive, Error> {
-        let filename = item.name.ok_or_else(|| err_msg("No filename"))?;
-        let md5sum = item.md5_checksum.and_then(|x| x.parse().ok());
+    pub fn from_object(
+        item: drive3::File,
+        gdrive: &GDriveInstance,
+        directory_map: &HashMap<String, DirectoryInfo>,
+    ) -> Result<FileInfoGDrive, Error> {
+        let filename = item.name.as_ref().ok_or_else(|| err_msg("No filename"))?;
+        let md5sum = item.md5_checksum.as_ref().and_then(|x| x.parse().ok());
         let st_mtime = DateTime::parse_from_rfc3339(
             item.modified_time
                 .as_ref()
@@ -70,15 +76,20 @@ impl FileInfoGDrive {
         .timestamp();
         let size: u32 = item
             .size
+            .as_ref()
             .and_then(|x| x.parse().ok())
             .ok_or_else(|| err_msg("Failed to parse"))?;
-        let serviceid = item.id.map(|x| x.into());
+        let serviceid = item.id.as_ref().map(|x| x.clone().into());
         let servicesession = Some("gdrive".parse()?);
 
+        let export_path = gdrive.get_export_path(&item, &directory_map)?;
+        let filepath = Path::new(&export_path).to_path_buf();
+        let urlname: Url = format!("gdrive:///{}", export_path).parse()?;
+
         let finfo = FileInfo {
-            filename,
-            filepath: None,
-            urlname: None,
+            filename: filename.clone(),
+            filepath: Some(filepath),
+            urlname: Some(urlname),
             md5sum,
             sha1sum: None,
             filestat: Some(FileStat {

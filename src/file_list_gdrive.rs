@@ -10,7 +10,7 @@ use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_info_gdrive::FileInfoGDrive;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::gdrive_instance::{DirectoryInfo, GDriveInstance};
+use crate::gdrive_instance::GDriveInstance;
 use crate::map_result_vec;
 use crate::pgpool::PgPool;
 
@@ -90,11 +90,13 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+        let dmap = self.gdrive.get_directory_map()?;
+
         let flist: Vec<_> = self.gdrive.get_all_files(false)?;
 
         let flist: Vec<Result<_, Error>> = flist
-            .into_par_iter()
-            .map(|f| FileInfoGDrive::from_object(f).map(|i| i.0))
+            .into_iter()
+            .map(|f| FileInfoGDrive::from_object(f, &self.gdrive, &dmap).map(|i| i.0))
             .collect();
         let flist = map_result_vec(flist)?;
 
@@ -191,14 +193,8 @@ mod tests {
             .with_max_keys(100)
             .with_page_size(100);
 
-        let blist = gdrive.get_list_of_buckets().unwrap();
-        let bucket = blist
-            .get(0)
-            .and_then(|b| b.name.clone())
-            .unwrap_or_else(|| "".to_string());
-
-        let conf = FileListGDriveConf::new("test", &config).unwrap();
-        let flist = FileListGDrive::from_conf(conf).max_keys(100);
+        let fconf = FileListGDriveConf::new("test", &config).unwrap();
+        let flist = FileListGDrive::from_conf(fconf, &gdrive).max_keys(100);
 
         let new_flist = flist.fill_file_list(None).unwrap();
 
