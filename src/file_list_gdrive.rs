@@ -112,10 +112,7 @@ impl FileListTrait for FileListGDrive {
         self.gdrive.process_list_of_keys(None, |i| {
             if let Ok(finfo) = FileInfoGDrive::from_object(i.clone(), &self.gdrive, &dmap) {
                 if let Some(url) = finfo.0.filepath {
-                    println!(
-                        "{}",
-                        url.to_str().unwrap_or_else(|| "")
-                    );
+                    println!("{}", url.to_str().unwrap_or_else(|| ""));
                 }
             }
         })

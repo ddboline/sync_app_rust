@@ -103,10 +103,18 @@ impl FileInfoGDrive {
 
 #[cfg(test)]
 mod tests {
+    use url::Url;
+
+    use crate::file_info::FileInfoTrait;
     use crate::file_info_gdrive::FileInfoGDrive;
+    use crate::file_service::FileService;
 
     #[test]
     fn test_file_info_gdrive() {
-        assert!(true);
+        let url: Url = "gdrive:///My Drive/test.txt".parse().unwrap();
+        let finfo = FileInfoGDrive::from_url(&url).unwrap();
+        println!("{:?}", finfo);
+        assert_eq!(finfo.0.filename, "test.txt");
+        assert_eq!(finfo.0.servicetype, FileService::GDrive);
     }
 }

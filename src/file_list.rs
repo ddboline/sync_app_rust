@@ -264,7 +264,7 @@ pub trait FileListTrait {
 
         let results = map_result_vec(results)?;
 
-        println!("{}", flist_cache_map.len());
+        println!("{}", results.len());
 
         let flist_cache_insert: Vec<_> = flist_cache_map
             .into_par_iter()
