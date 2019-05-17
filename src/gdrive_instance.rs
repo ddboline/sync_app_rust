@@ -186,7 +186,7 @@ impl GDriveInstance {
         callback: T,
     ) -> Result<(), Error>
     where
-        T: Fn(&drive3::File) -> () + Send + Sync,
+        T: Fn(&drive3::File) -> (),
     {
         let mut n_processed = 0;
         let mut page_token: Option<String> = None;

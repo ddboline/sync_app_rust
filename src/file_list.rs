@@ -124,6 +124,13 @@ pub trait FileListTrait {
                 let flist = FileListS3::from_conf(fconf, None);
                 flist.print_list()
             }
+            FileService::GDrive => {
+                let config = Config::new();
+                let gdrive = GDriveInstance::new(&config);
+                let fconf = FileListGDriveConf(conf.clone());
+                let flist = FileListGDrive::from_conf(fconf, &gdrive);
+                flist.print_list()
+            }
             _ => Err(err_msg("Not implemented")),
         }
     }

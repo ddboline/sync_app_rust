@@ -61,12 +61,11 @@ impl FileListConfTrait for FileListGDriveConf {
         if url.scheme() != "gdrive" {
             Err(err_msg("Wrong scheme"))
         } else {
-            let bucket = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
             let conf = FileListConf {
                 baseurl: url.clone(),
                 config: config.clone(),
                 servicetype: FileService::GDrive,
-                servicesession: bucket.parse()?,
+                servicesession: "gdrive".parse()?,
             };
 
             Ok(FileListGDriveConf(conf))
@@ -108,11 +107,17 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn print_list(&self) -> Result<(), Error> {
+        let dmap = self.gdrive.get_directory_map()?;
+
         self.gdrive.process_list_of_keys(None, |i| {
-            println!(
-                "gdrive://{}",
-                i.name.as_ref().map(String::as_str).unwrap_or_else(|| "")
-            );
+            if let Ok(finfo) = FileInfoGDrive::from_object(i.clone(), &self.gdrive, &dmap) {
+                if let Some(url) = finfo.0.filepath {
+                    println!(
+                        "{}",
+                        url.to_str().unwrap_or_else(|| "")
+                    );
+                }
+            }
         })
     }
 
