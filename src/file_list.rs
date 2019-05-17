@@ -73,7 +73,9 @@ impl FileList {
                     } else {
                         f.filename.clone()
                     };
-                    (key, f.clone())
+                    let mut f = f.clone();
+                    f.servicesession = Some(self.conf.servicesession.clone());
+                    (key, f)
                 })
                 .collect(),
         }
@@ -253,7 +255,9 @@ pub trait FileListTrait {
             })
             .collect();
 
-        let _ = map_result_vec(results)?;
+        let results = map_result_vec(results)?;
+
+        println!("{}", flist_cache_map.len());
 
         let flist_cache_insert: Vec<_> = flist_cache_map
             .into_par_iter()
@@ -262,6 +266,8 @@ pub trait FileListTrait {
                 None => Some(v),
             })
             .collect();
+
+        println!("{} {}", flist_cache_insert.len(), current_cache.len());
 
         diesel::insert_into(file_info_cache::table)
             .values(&flist_cache_insert)

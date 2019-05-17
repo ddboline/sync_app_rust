@@ -116,10 +116,28 @@ impl GDriveInstance {
     pub fn get_all_files(&self, get_folders: bool) -> Result<Vec<drive3::File>, Error> {
         let mut all_files = Vec::new();
         let mut page_token: Option<String> = None;
+        let fields = vec![
+            "name",
+            "id",
+            "size",
+            "mimeType",
+            "owners",
+            "parents",
+            "trashed",
+            "modifiedTime",
+            "createdTime",
+            "viewedByMeTime",
+            "md5Checksum",
+            "fileExtension",
+            "webContentLink",
+        ];
+        let fields = format!("nextPageToken,files({})", fields.join(","));
         loop {
-            let mut request = self.gdrive.files()
+            let mut request = self
+                .gdrive
+                .files()
                 .list()
-                .param("fields", "nextPageToken,files(name,id,size,mimeType,owners,parents,trashed,modifiedTime,createdTime,viewedByMeTime)")
+                .param("fields", &fields)
                 .spaces("drive") // TODO: maybe add photos as well
                 .corpora("user")
                 .page_size(self.page_size)
@@ -154,6 +172,7 @@ impl GDriveInstance {
 
             if let Some(max_keys) = self.max_keys {
                 if all_files.len() > max_keys {
+                    all_files.resize_with(max_keys, Default::default);
                     break;
                 }
             }
@@ -171,10 +190,28 @@ impl GDriveInstance {
     {
         let mut n_processed = 0;
         let mut page_token: Option<String> = None;
+        let fields = vec![
+            "name",
+            "id",
+            "size",
+            "mimeType",
+            "owners",
+            "parents",
+            "trashed",
+            "modifiedTime",
+            "createdTime",
+            "viewedByMeTime",
+            "md5Checksum",
+            "fileExtension",
+            "webContentLink",
+        ];
+        let fields = format!("nextPageToken,files({})", fields.join(","));
         loop {
-            let mut request = self.gdrive.files()
+            let mut request = self
+                .gdrive
+                .files()
                 .list()
-                .param("fields", "nextPageToken,files(name,id,size,mimeType,owners,parents,trashed,modifiedTime,createdTime,viewedByMeTime)")
+                .param("fields", &fields)
                 .spaces("drive") // TODO: maybe add photos as well
                 .corpora("user")
                 .page_size(self.page_size)
@@ -390,7 +427,6 @@ impl GDriveInstance {
             .collect();
         for parent in unmatched_parents {
             let d = self.get_file_metadata(&parent)?;
-            println!("pid {} f {:?}", parent, d);
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
                     let parents = if let Some(parents) = d.parents.as_ref() {
@@ -439,7 +475,6 @@ impl GDriveInstance {
                     fullpath.push(dinfo.name.clone());
                     dinfo.parentid.clone()
                 } else {
-                    println!("pid {}", pid_);
                     None
                 }
             } else {
@@ -517,7 +552,7 @@ mod tests {
         let gdrive = GDriveInstance::new(&config)
             .with_max_keys(100)
             .with_page_size(100);
-        let list = gdrive.get_all_files(None).unwrap();
-        assert_eq!(list.len(), 200);
+        let list = gdrive.get_all_files(false).unwrap();
+        assert_eq!(list.len(), 100);
     }
 }

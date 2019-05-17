@@ -1,6 +1,4 @@
 use failure::{err_msg, Error};
-use google_drive3_fork as drive3;
-use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
 use url::Url;
@@ -98,7 +96,13 @@ impl FileListTrait for FileListGDrive {
             .into_iter()
             .map(|f| FileInfoGDrive::from_object(f, &self.gdrive, &dmap).map(|i| i.0))
             .collect();
-        let flist = map_result_vec(flist)?;
+        let flist: Vec<_> = map_result_vec(flist)?
+            .into_iter()
+            .map(|mut f| {
+                f.servicesession = Some(self.get_conf().servicesession.clone());
+                f
+            })
+            .collect();
 
         Ok(flist)
     }
@@ -198,14 +202,13 @@ mod tests {
 
         let new_flist = flist.fill_file_list(None).unwrap();
 
-        println!("{} {:?}", bucket, new_flist.get(0));
         assert!(new_flist.len() > 0);
 
         let config = Config::new();
         let pool = PgPool::new(&config.database_url);
         let flist = flist.with_list(&new_flist);
 
-        flist.cache_file_list(&pool).unwrap();
+        println!("wrote {}", flist.cache_file_list(&pool).unwrap());
 
         let new_flist = flist.load_file_list(&pool).unwrap();
 

@@ -76,13 +76,18 @@ impl SyncOpts {
             }
             FileSyncAction::GDrive => {
                 let gdrive = GDriveInstance::new(&config);
-                let dmap = gdrive.get_directory_map()?;
 
-                let gdrive = gdrive.with_max_keys(100);
-                let list = gdrive.get_all_files(false)?;
-                println!("{}", list.len());
-                for item in &list {
-                    println!("{}", gdrive.get_export_path(&item, &dmap)?);
+                use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
+
+                let fconf = FileListGDriveConf::new("test", &config).unwrap();
+                let flist = FileListGDrive::from_conf(fconf, &gdrive).max_keys(100);
+
+                let new_flist = flist.fill_file_list(None)?;
+
+                let flist = FileList::from_conf(flist.get_conf().clone()).with_list(&new_flist);
+
+                for item in flist.get_filemap().values() {
+                    println!("{:?}", item);
                 }
                 Ok(())
             }

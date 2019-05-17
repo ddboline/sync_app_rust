@@ -127,9 +127,13 @@ impl FileListTrait for FileListLocal {
                         }
                     }
                 };
-                FileInfoLocal::from_direntry(entry, None, Some(conf.servicesession.clone()))
-                    .ok()
-                    .map(|x| x.0)
+                FileInfoLocal::from_direntry(
+                    entry,
+                    Some(conf.servicesession.0.clone().into()),
+                    Some(conf.servicesession.clone()),
+                )
+                .ok()
+                .map(|x| x.0)
             })
             .collect();
 
@@ -259,7 +263,8 @@ mod tests {
         )
         .parse()
         .unwrap();
-        let conf = FileListLocalConf::new(basepath);
+        let config = Config::new();
+        let conf = FileListLocalConf::new(basepath, &config);
         println!("{:?}", conf);
         assert_eq!(conf.is_ok(), true);
         let conf = conf.unwrap();
@@ -271,7 +276,8 @@ mod tests {
     #[test]
     fn test_fill_file_list() {
         let basepath = "src".parse().unwrap();
-        let conf = FileListLocalConf::new(basepath).unwrap();
+        let config = Config::new();
+        let conf = FileListLocalConf::new(basepath, &config).unwrap();
         let flist = FileListLocal(FileList {
             conf: conf.0.clone(),
             filemap: HashMap::new(),
@@ -279,9 +285,7 @@ mod tests {
 
         let new_flist = flist.fill_file_list(None).unwrap();
 
-        // for entry in &new_flist {
-        //     println!("{:?}", entry);
-        // }
+        println!("0 {}", new_flist.len());
 
         let fset: HashMap<_, _> = new_flist
             .iter()
@@ -320,9 +324,15 @@ mod tests {
         let config = Config::new();
         let pool = PgPool::new(&config.database_url);
 
+        println!("1 {}", new_flist.len());
+
         let flist = FileListLocal::from_conf(conf).with_list(&new_flist);
 
-        flist.cache_file_list(&pool).unwrap();
+        println!("2 {}", flist.get_filemap().len());
+
+        println!("wrote {}", flist.cache_file_list(&pool).unwrap());
+
+        println!("{:?}", flist.get_conf().servicesession);
 
         let new_flist = flist.load_file_list(&pool).unwrap();
 

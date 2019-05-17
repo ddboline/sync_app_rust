@@ -302,6 +302,7 @@ mod tests {
     use std::path::Path;
     use tempfile::NamedTempFile;
 
+    use crate::config::Config;
     use crate::file_info::{ServiceId, ServiceSession};
     use crate::file_info_local::FileInfoLocal;
     use crate::file_info_s3::FileInfoS3;
@@ -312,7 +313,11 @@ mod tests {
     #[test]
     fn test_compare_objects() {
         let outfile = NamedTempFile::new().unwrap();
-        let fsync = FileSync::new(FileSyncMode::OutputFile(outfile.path().to_path_buf()));
+        let config = Config::new();
+        let fsync = FileSync::new(
+            FileSyncMode::OutputFile(outfile.path().to_path_buf()),
+            &config,
+        );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
         let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
@@ -350,7 +355,11 @@ mod tests {
     #[test]
     fn test_compare_lists_0() {
         let mut outfile = NamedTempFile::new().unwrap();
-        let fsync = FileSync::new(FileSyncMode::OutputFile(outfile.path().to_path_buf()));
+        let config = Config::new();
+        let fsync = FileSync::new(
+            FileSyncMode::OutputFile(outfile.path().to_path_buf()),
+            &config,
+        );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
         let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
@@ -359,10 +368,10 @@ mod tests {
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
         println!("{:?}", finfo0);
 
-        let flist0conf = FileListLocalConf::new(current_dir().unwrap()).unwrap();
+        let flist0conf = FileListLocalConf::new(current_dir().unwrap(), &config).unwrap();
         let flist0 = FileListLocal::from_conf(flist0conf).with_list(&[finfo0.0]);
 
-        let flist1conf = FileListS3Conf::new("test_bucket").unwrap();
+        let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
         let flist1 = FileListS3::from_conf(flist1conf, None);
 
         fsync.compare_lists(&flist0, &flist1).unwrap();
@@ -387,7 +396,11 @@ mod tests {
     #[test]
     fn test_compare_lists_1() {
         let mut outfile = NamedTempFile::new().unwrap();
-        let fsync = FileSync::new(FileSyncMode::OutputFile(outfile.path().to_path_buf()));
+        let config = Config::new();
+        let fsync = FileSync::new(
+            FileSyncMode::OutputFile(outfile.path().to_path_buf()),
+            &config,
+        );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
         let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
@@ -397,7 +410,7 @@ mod tests {
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
         println!("{:?}", finfo0);
 
-        let flist0conf = FileListLocalConf::new(current_dir().unwrap()).unwrap();
+        let flist0conf = FileListLocalConf::new(current_dir().unwrap(), &config).unwrap();
         let flist0 = FileListLocal::from_conf(flist0conf);
 
         let test_owner = Owner {
@@ -415,7 +428,7 @@ mod tests {
 
         let finfo1 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
 
-        let flist1conf = FileListS3Conf::new("test_bucket").unwrap();
+        let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
         let flist1 = FileListS3::from_conf(flist1conf, None).with_list(&[finfo1.0]);
 
         fsync.compare_lists(&flist0, &flist1).unwrap();
