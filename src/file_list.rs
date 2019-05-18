@@ -103,7 +103,7 @@ pub trait FileListTrait {
             FileService::GDrive => {
                 let fconf = FileListGDriveConf(conf.clone());
                 let config = Config::new();
-                let gdrive = GDriveInstance::new(&config);
+                let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
                 let flist = FileListGDrive::from_conf(fconf, &gdrive);
                 flist.fill_file_list(pool)
             }
@@ -126,8 +126,8 @@ pub trait FileListTrait {
             }
             FileService::GDrive => {
                 let config = Config::new();
-                let gdrive = GDriveInstance::new(&config);
                 let fconf = FileListGDriveConf(conf.clone());
+                let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
                 let flist = FileListGDrive::from_conf(fconf, &gdrive);
                 flist.print_list()
             }

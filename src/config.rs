@@ -5,7 +5,7 @@ use std::path::Path;
 pub struct Config {
     pub database_url: String,
     pub gdrive_secret_file: String,
-    pub gdrive_token_file: String,
+    pub gdrive_token_path: String,
 }
 
 impl Config {
@@ -33,13 +33,13 @@ impl Config {
         let database_url = var("DATABASE_URL").expect("DATABASE_URL must be set");
         let gdrive_secret_file = var("GDRIVE_SECRET_FILE")
             .unwrap_or_else(|_| format!("{}/.config/sync_app_rust/client_secrets.json", home_dir));
-        let gdrive_token_file = var("GDRIVE_TOKEN_FILE")
-            .unwrap_or_else(|_| format!("{}/.gdrive/gdrive.json", home_dir));
+        let gdrive_token_path =
+            var("GDRIVE_TOKEN_PATH").unwrap_or_else(|_| format!("{}/.gdrive", home_dir));
 
         Config {
             database_url,
             gdrive_secret_file,
-            gdrive_token_file,
+            gdrive_token_path,
         }
     }
 }

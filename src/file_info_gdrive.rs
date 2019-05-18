@@ -76,11 +76,11 @@ impl FileInfoGDrive {
         .timestamp();
         let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
         let serviceid = item.id.as_ref().map(|x| x.clone().into());
-        let servicesession = Some("gdrive".parse()?);
+        let servicesession = Some(gdrive.session_name.parse()?);
 
         let export_path = gdrive.get_export_path(&item, &directory_map)?;
         let filepath = Path::new(&export_path).to_path_buf();
-        let urlname: Url = format!("gdrive:///{}", export_path).parse()?;
+        let urlname: Url = format!("gdrive://{}/{}", gdrive.session_name, export_path).parse()?;
 
         let finfo = FileInfo {
             filename: filename.clone(),
@@ -103,11 +103,14 @@ impl FileInfoGDrive {
 
 #[cfg(test)]
 mod tests {
+    use google_drive3_fork as drive3;
     use url::Url;
 
+    use crate::config::Config;
     use crate::file_info::FileInfoTrait;
     use crate::file_info_gdrive::FileInfoGDrive;
     use crate::file_service::FileService;
+    use crate::gdrive_instance::GDriveInstance;
 
     #[test]
     fn test_file_info_gdrive() {
@@ -116,5 +119,40 @@ mod tests {
         println!("{:?}", finfo);
         assert_eq!(finfo.0.filename, "test.txt");
         assert_eq!(finfo.0.servicetype, FileService::GDrive);
+    }
+
+    #[test]
+    fn test_file_info_from_object() {
+        let config = Config::new();
+        let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
+        let dmap = gdrive.get_directory_map().unwrap();
+        let f = drive3::File {
+            mime_type: Some("application/pdf".to_string()),
+            viewed_by_me_time: Some("2019-04-20T21:18:40.865Z".to_string()),
+            id: Some("1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb".to_string()),
+            size: Some("859249".to_string()),
+            parents: Some(vec!["0ABGM0lfCdptnUk9PVA".to_string()]),
+            md5_checksum: Some("2196a214fd7eccc6292adb96602f5827".to_string()),
+            modified_time: Some("2019-04-20T21:18:40.865Z".to_string()),
+            created_time: Some("2019-04-20T21:18:40.865Z".to_string()),
+            owners: Some(vec![drive3::User { me: Some(true),
+            kind: Some("drive#user".to_string()),
+            display_name: Some("Daniel Boline".to_string()),
+            photo_link: Some("https://lh5.googleusercontent.com/-dHefkGDbPx4/AAAAAAAAAAI/AAAAAAAAUik/4rvsDcSqY0U/s64/photo.jpg".to_string()),
+            email_address: Some("ddboline@gmail.com".to_string()),
+            permission_id: Some("15472502093706922513".to_string()) }]),
+            name: Some("armstrong_thesis_2003.pdf".to_string()),
+            web_content_link: Some("https://drive.google.com/uc?id=1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb&export=download".to_string()),
+            trashed: Some(false),
+            file_extension: Some("pdf".to_string()),
+            ..Default::default()
+        };
+
+        let finfo = FileInfoGDrive::from_object(f, &gdrive, &dmap).unwrap();
+        assert_eq!(finfo.0.filename, "armstrong_thesis_2003.pdf");
+        assert_eq!(
+            finfo.0.serviceid.unwrap().0,
+            "1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb"
+        );
     }
 }

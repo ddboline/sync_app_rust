@@ -61,11 +61,16 @@ impl FileListConfTrait for FileListGDriveConf {
         if url.scheme() != "gdrive" {
             Err(err_msg("Wrong scheme"))
         } else {
+            let servicesession = url
+                .as_str()
+                .trim_start_matches("gdrive://")
+                .replace(url.path(), "");
+            println!("{:?}", servicesession);
             let conf = FileListConf {
                 baseurl: url.clone(),
                 config: config.clone(),
                 servicetype: FileService::GDrive,
-                servicesession: "gdrive".parse()?,
+                servicesession: servicesession.parse()?,
             };
 
             Ok(FileListGDriveConf(conf))
@@ -111,8 +116,8 @@ impl FileListTrait for FileListGDrive {
 
         self.gdrive.process_list_of_keys(None, |i| {
             if let Ok(finfo) = FileInfoGDrive::from_object(i.clone(), &self.gdrive, &dmap) {
-                if let Some(url) = finfo.0.filepath {
-                    println!("{}", url.to_str().unwrap_or_else(|| ""));
+                if let Some(url) = finfo.0.urlname {
+                    println!("{}", url.as_str());
                 }
             }
         })
@@ -195,7 +200,7 @@ mod tests {
     #[test]
     fn test_fill_file_list() {
         let config = Config::new();
-        let gdrive = GDriveInstance::new(&config)
+        let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
             .with_max_keys(100)
             .with_page_size(100);
 

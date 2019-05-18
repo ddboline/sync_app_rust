@@ -31,8 +31,8 @@ type GCDrive = Drive<GCClient, GCAuthenticator>;
 lazy_static! {
     static ref MIME_TYPES: HashMap<&'static str, &'static str> = hashmap! {
         "application/vnd.google-apps.document" => "application/vnd.oasis.opendocument.text",
-        "application/vnd.google-apps.presentation" => "application/vnd.oasis.opendocument.presentation",
-        "application/vnd.google-apps.spreadsheet" => "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.google-apps.presentation" => "application/pdf",
+        "application/vnd.google-apps.spreadsheet" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.google-apps.drawing" => "image/png",
         "application/vnd.google-apps.site" => "text/plain",
     };
@@ -45,11 +45,23 @@ lazy_static! {
     };
 }
 
+lazy_static! {
+    static ref EXTENSIONS: HashMap<&'static str, &'static str> = hashmap! {
+        "application/vnd.oasis.opendocument.text" => "odt",
+        "image/png" => "png",
+        "application/pdf" => "pdf",
+        "image/jpeg" => "jpg",
+        "text/x-csrc" => "C",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "xlsx",
+    };
+}
+
 #[derive(Clone)]
 pub struct GDriveInstance {
     pub gdrive: Arc<GCDrive>,
     pub page_size: i32,
     pub max_keys: Option<usize>,
+    pub session_name: String,
 }
 
 impl fmt::Debug for GDriveInstance {
@@ -59,11 +71,12 @@ impl fmt::Debug for GDriveInstance {
 }
 
 impl GDriveInstance {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config, session_name: &str) -> Self {
         GDriveInstance {
-            gdrive: Arc::new(GDriveInstance::create_drive(&config).unwrap()),
+            gdrive: Arc::new(GDriveInstance::create_drive(&config, session_name).unwrap()),
             page_size: 1000,
             max_keys: None,
+            session_name: session_name.to_string(),
         }
     }
 
@@ -77,16 +90,15 @@ impl GDriveInstance {
         self
     }
 
-    fn create_drive_auth(config: &Config) -> Result<GCAuthenticator, Error> {
+    fn create_drive_auth(config: &Config, session_name: &str) -> Result<GCAuthenticator, Error> {
         let secret_file = File::open(config.gdrive_secret_file.clone())?;
         let secret: ConsoleApplicationSecret = serde_json::from_reader(secret_file)?;
         let secret = secret
             .installed
             .ok_or(err_msg("ConsoleApplicationSecret.installed is None"))?;
+        let token_file = format!("{}/{}.json", config.gdrive_token_path, session_name);
 
-        let parent = Path::new(&config.gdrive_token_file)
-            .parent()
-            .ok_or_else(|| err_msg("No parent"))?;
+        let parent = Path::new(&config.gdrive_token_path);
 
         if !parent.exists() {
             create_dir_all(parent)?;
@@ -96,7 +108,7 @@ impl GDriveInstance {
             &secret,
             DefaultAuthenticatorDelegate,
             Client::with_connector(HttpsConnector::new(NativeTlsClient::new()?)),
-            DiskTokenStorage::new(&config.gdrive_token_file)?,
+            DiskTokenStorage::new(&token_file)?,
             // Some(FlowType::InstalledInteractive),
             Some(FlowType::InstalledRedirect(8081)),
         );
@@ -105,8 +117,8 @@ impl GDriveInstance {
     }
 
     /// Creates a drive hub.
-    fn create_drive(config: &Config) -> Result<GCDrive, Error> {
-        let auth = Self::create_drive_auth(config)?;
+    fn create_drive(config: &Config, session_name: &str) -> Result<GCDrive, Error> {
+        let auth = Self::create_drive_auth(config, session_name)?;
         Ok(Drive::new(
             Client::with_connector(HttpsConnector::new(NativeTlsClient::new()?)),
             auth,
@@ -549,7 +561,7 @@ mod tests {
     #[test]
     fn test_create_drive() {
         let config = Config::new();
-        let gdrive = GDriveInstance::new(&config)
+        let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
             .with_max_keys(100)
             .with_page_size(100);
         let list = gdrive.get_all_files(false).unwrap();
