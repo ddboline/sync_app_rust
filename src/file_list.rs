@@ -104,7 +104,7 @@ pub trait FileListTrait {
                 let fconf = FileListGDriveConf(conf.clone());
                 let config = Config::new();
                 let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(fconf, &gdrive);
+                let flist = FileListGDrive::from_conf(fconf, &gdrive)?;
                 flist.fill_file_list(pool)
             }
             _ => Err(err_msg("Not implemented")),
@@ -128,7 +128,7 @@ pub trait FileListTrait {
                 let config = Config::new();
                 let fconf = FileListGDriveConf(conf.clone());
                 let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(fconf, &gdrive);
+                let flist = FileListGDrive::from_conf(fconf, &gdrive)?;
                 flist.print_list()
             }
             _ => Err(err_msg("Not implemented")),
@@ -217,7 +217,7 @@ pub trait FileListTrait {
                     if v.md5sum != item.md5sum
                         || v.sha1sum != item.sha1sum
                         || v.filestat_st_mtime != item.filestat_st_mtime
-                        || item.filestat_st_size != item.filestat_st_size
+                        || v.filestat_st_size != item.filestat_st_size
                     {
                         Some((k.clone(), v.clone()))
                     } else {
@@ -233,7 +233,7 @@ pub trait FileListTrait {
             .map(|(k, v)| {
                 use crate::schema::file_info_cache::dsl::*;
 
-                let conn = pool.clone().get()?;
+                let conn = pool.get()?;
 
                 let (filename_, filepath_, urlname_, serviceid_, servicesession_) = k;
 
@@ -351,6 +351,13 @@ impl FileListTrait for FileList {
             FileService::S3 => {
                 let conf = FileListS3Conf(self.get_conf().clone());
                 let flist = FileListS3::from_conf(conf, None);
+                flist.fill_file_list(pool)
+            }
+            FileService::GDrive => {
+                let conf = FileListGDriveConf(self.get_conf().clone());
+                let config = Config::new();
+                let gdrive = GDriveInstance::new(&config, &conf.0.servicesession.0);
+                let flist = FileListGDrive::from_conf(conf, &gdrive)?;
                 flist.fill_file_list(pool)
             }
             _ => match pool {

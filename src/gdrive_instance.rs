@@ -18,12 +18,11 @@ use std::fs::{create_dir_all, File};
 use std::io;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
-use std::sync::Arc;
+use std::rc::Rc;
 use url::Url;
 
 use crate::config::Config;
 
-pub type DriveId = String;
 type GCClient = Client;
 type GCAuthenticator = Authenticator<DefaultAuthenticatorDelegate, DiskTokenStorage, Client>;
 type GCDrive = Drive<GCClient, GCAuthenticator>;
@@ -58,7 +57,7 @@ lazy_static! {
 
 #[derive(Clone)]
 pub struct GDriveInstance {
-    pub gdrive: Arc<GCDrive>,
+    pub gdrive: Rc<GCDrive>,
     pub page_size: i32,
     pub max_keys: Option<usize>,
     pub session_name: String,
@@ -66,14 +65,14 @@ pub struct GDriveInstance {
 
 impl fmt::Debug for GDriveInstance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Arc<GDriveInstance>")
+        write!(f, "Rc<GDriveInstance>")
     }
 }
 
 impl GDriveInstance {
     pub fn new(config: &Config, session_name: &str) -> Self {
         GDriveInstance {
-            gdrive: Arc::new(GDriveInstance::create_drive(&config, session_name).unwrap()),
+            gdrive: Rc::new(GDriveInstance::create_drive(&config, session_name).unwrap()),
             page_size: 1000,
             max_keys: None,
             session_name: session_name.to_string(),
@@ -95,7 +94,7 @@ impl GDriveInstance {
         let secret: ConsoleApplicationSecret = serde_json::from_reader(secret_file)?;
         let secret = secret
             .installed
-            .ok_or(err_msg("ConsoleApplicationSecret.installed is None"))?;
+            .ok_or_else(|| err_msg("ConsoleApplicationSecret.installed is None"))?;
         let token_file = format!("{}/{}.json", config.gdrive_token_path, session_name);
 
         let parent = Path::new(&config.gdrive_token_path);
@@ -125,9 +124,12 @@ impl GDriveInstance {
         ))
     }
 
-    pub fn get_all_files(&self, get_folders: bool) -> Result<Vec<drive3::File>, Error> {
-        let mut all_files = Vec::new();
-        let mut page_token: Option<String> = None;
+    fn get_filelist(
+        &self,
+        page_token: &Option<String>,
+        get_folders: bool,
+        parents: &Option<Vec<String>>,
+    ) -> Result<drive3::FileList, Error> {
         let fields = vec![
             "name",
             "id",
@@ -144,34 +146,51 @@ impl GDriveInstance {
             "webContentLink",
         ];
         let fields = format!("nextPageToken,files({})", fields.join(","));
+        let mut request = self
+            .gdrive
+            .files()
+            .list()
+            .param("fields", &fields)
+            .spaces("drive") // TODO: maybe add photos as well
+            .corpora("user")
+            .page_size(self.page_size)
+            .add_scope(drive3::Scope::Full);
+
+        if let Some(token) = page_token {
+            request = request.page_token(token);
+        };
+
+        let mut query_chain: Vec<String> = Vec::new();
+        if get_folders {
+            query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.to_string());
+        } else {
+            query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.to_string());
+        }
+        if let Some(ref p) = parents {
+            let q = p
+                .iter()
+                .map(|id| format!("'{}' in parents", id))
+                .collect::<Vec<_>>()
+                .join(" or ");
+
+            query_chain.push(format!("({})", q));
+        }
+        query_chain.push("trashed = false".to_string());
+
+        let query = query_chain.join(" and ");
+        println!("{}", query);
+        let (_, filelist) = request
+            .q(&query)
+            .doit()
+            .map_err(|e| err_msg(format!("{:#?}", e)))?;
+        Ok(filelist)
+    }
+
+    pub fn get_all_files(&self, get_folders: bool) -> Result<Vec<drive3::File>, Error> {
+        let mut all_files = Vec::new();
+        let mut page_token: Option<String> = None;
         loop {
-            let mut request = self
-                .gdrive
-                .files()
-                .list()
-                .param("fields", &fields)
-                .spaces("drive") // TODO: maybe add photos as well
-                .corpora("user")
-                .page_size(self.page_size)
-                .add_scope(drive3::Scope::Full);
-
-            if let Some(token) = page_token {
-                request = request.page_token(&token);
-            };
-
-            let mut query_chain: Vec<String> = Vec::new();
-            if get_folders {
-                query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.to_string());
-            } else {
-                query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.to_string());
-            }
-            query_chain.push(format!("trashed = false"));
-
-            let query = query_chain.join(" and ");
-            let (_, filelist) = request
-                .q(&query)
-                .doit()
-                .map_err(|e| err_msg(format!("{:#?}", e)))?;
+            let filelist = self.get_filelist(&page_token, get_folders, &None)?;
 
             if let Some(files) = filelist.files {
                 all_files.extend(files);
@@ -194,7 +213,7 @@ impl GDriveInstance {
 
     pub fn process_list_of_keys<T>(
         &self,
-        parents: Option<Vec<DriveId>>,
+        parents: Option<Vec<String>>,
         callback: T,
     ) -> Result<(), Error>
     where
@@ -202,55 +221,8 @@ impl GDriveInstance {
     {
         let mut n_processed = 0;
         let mut page_token: Option<String> = None;
-        let fields = vec![
-            "name",
-            "id",
-            "size",
-            "mimeType",
-            "owners",
-            "parents",
-            "trashed",
-            "modifiedTime",
-            "createdTime",
-            "viewedByMeTime",
-            "md5Checksum",
-            "fileExtension",
-            "webContentLink",
-        ];
-        let fields = format!("nextPageToken,files({})", fields.join(","));
         loop {
-            let mut request = self
-                .gdrive
-                .files()
-                .list()
-                .param("fields", &fields)
-                .spaces("drive") // TODO: maybe add photos as well
-                .corpora("user")
-                .page_size(self.page_size)
-                .add_scope(drive3::Scope::Full);
-
-            if let Some(token) = page_token {
-                request = request.page_token(&token);
-            };
-
-            let mut query_chain: Vec<String> = Vec::new();
-            if let Some(ref p) = parents {
-                let q = p
-                    .into_iter()
-                    .map(|id| format!("'{}' in parents", id))
-                    .collect::<Vec<_>>()
-                    .join(" or ");
-
-                query_chain.push(format!("({})", q));
-            }
-            query_chain.push(format!("trashed = false"));
-
-            let query = query_chain.join(" and ");
-            println!("{}", query);
-            let (_, filelist) = request
-                .q(&query)
-                .doit()
-                .map_err(|e| err_msg(format!("{:#?}", e)))?;
+            let filelist = self.get_filelist(&page_token, false, &parents)?;
 
             if let Some(files) = filelist.files {
                 for f in &files {
@@ -274,7 +246,7 @@ impl GDriveInstance {
         Ok(())
     }
 
-    fn get_file_metadata(&self, id: &DriveId) -> Result<drive3::File, Error> {
+    fn get_file_metadata(&self, id: &str) -> Result<drive3::File, Error> {
         self.gdrive
             .files()
             .get(id)
@@ -285,7 +257,7 @@ impl GDriveInstance {
             .map_err(|e| err_msg(format!("{:#?}", e)))
     }
 
-    pub fn create_directory(&self, directory: &Url, parentid: &DriveId) -> Result<(), Error> {
+    pub fn create_directory(&self, directory: &Url, parentid: &str) -> Result<(), Error> {
         let directory_path = directory
             .to_file_path()
             .map_err(|_| err_msg("No file path"))?;
@@ -296,7 +268,7 @@ impl GDriveInstance {
         let new_file = drive3::File {
             name: Some(directory_name),
             mime_type: Some("application/vnd.google-apps.folder".to_string()),
-            parents: Some(vec![parentid.clone()]),
+            parents: Some(vec![parentid.to_string()]),
             ..Default::default()
         };
         let mime: Mime = "application/octet-stream"
@@ -311,7 +283,7 @@ impl GDriveInstance {
             .map(|(_, _)| ())
     }
 
-    pub fn upload(&self, local: &Url, parentid: &DriveId) -> Result<(), Error> {
+    pub fn upload(&self, local: &Url, parentid: &str) -> Result<drive3::File, Error> {
         let file_path = local.to_file_path().map_err(|_| err_msg("No file path"))?;
         let file_obj = File::open(file_path.clone())?;
         let mime: Mime = "application/octet-stream"
@@ -323,7 +295,7 @@ impl GDriveInstance {
                 .file_name()
                 .and_then(|s| s.to_str())
                 .map(|s| s.to_string()),
-            parents: Some(vec![parentid.clone()]),
+            parents: Some(vec![parentid.to_string()]),
             ..Default::default()
         };
         self.gdrive
@@ -331,12 +303,12 @@ impl GDriveInstance {
             .create(new_file)
             .upload_resumable(file_obj, mime)
             .map_err(|e| err_msg(format!("{:#?}", e)))
-            .map(|(_, _)| ())
+            .map(|(_, f)| f)
     }
 
     pub fn download(
         &self,
-        gdriveid: &DriveId,
+        gdriveid: &str,
         local: &Url,
         mime_type: Option<String>,
     ) -> Result<(), Error> {
@@ -361,17 +333,13 @@ impl GDriveInstance {
             .cloned();
 
         let mut response = match export_type {
-            Some(t) => {
-                let response = self
-                    .gdrive
-                    .files()
-                    .export(gdriveid, &t)
-                    .add_scope(drive3::Scope::Full)
-                    .doit()
-                    .map_err(|e| err_msg(format!("{:#?}", e)))?;
-
-                response
-            }
+            Some(t) => self
+                .gdrive
+                .files()
+                .export(gdriveid, &t)
+                .add_scope(drive3::Scope::Full)
+                .doit()
+                .map_err(|e| err_msg(format!("{:#?}", e)))?,
             None => {
                 let (response, _empty_file) = self
                     .gdrive
@@ -395,7 +363,54 @@ impl GDriveInstance {
         Ok(())
     }
 
-    pub fn get_directory_map(&self) -> Result<HashMap<String, DirectoryInfo>, Error> {
+    pub fn move_to_trash(&self, id: &str) -> Result<(), Error> {
+        let mut f = drive3::File::default();
+        f.trashed = Some(true);
+
+        self.gdrive
+            .files()
+            .update(f, id)
+            .add_scope(drive3::Scope::Full)
+            .doit_without_upload()
+            .map(|_| ())
+            .map_err(|e| err_msg(format!("DriveFacade::move_to_trash() {}", e)))
+    }
+
+    pub fn delete_permanently(&self, id: &str) -> Result<bool, Error> {
+        self.gdrive
+            .files()
+            .delete(&id)
+            .supports_team_drives(false)
+            .add_scope(drive3::Scope::Full)
+            .doit()
+            .map(|response| response.status.is_success())
+            .map_err(|e| err_msg(format!("{:#?}", e)))
+    }
+
+    pub fn move_to(&self, id: &str, parent: &str, new_name: &str) -> Result<(), Error> {
+        let current_parents = self
+            .get_file_metadata(id)?
+            .parents
+            .unwrap_or(vec![String::from("root")])
+            .join(",");
+
+        let mut file = drive3::File::default();
+        file.name = Some(new_name.to_string());
+        let _ = self
+            .gdrive
+            .files()
+            .update(file, id)
+            .remove_parents(&current_parents)
+            .add_parents(parent)
+            .add_scope(drive3::Scope::Full)
+            .doit_without_upload()
+            .map_err(|e| err_msg(format!("DriveFacade::move_to() {}", e)))?;
+        Ok(())
+    }
+
+    pub fn get_directory_map(
+        &self,
+    ) -> Result<(HashMap<String, DirectoryInfo>, Option<String>), Error> {
         let dlist: Vec<_> = self.get_all_files(true)?;
         let mut dmap: HashMap<_, _> = dlist
             .iter()
@@ -437,19 +452,23 @@ impl GDriveInstance {
                 })
             })
             .collect();
+        let mut root_id: Option<String> = None;
         for parent in unmatched_parents {
             let d = self.get_file_metadata(&parent)?;
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
-                    let parents = if let Some(parents) = d.parents.as_ref() {
-                        if parents.len() > 0 {
-                            Some(parents[0].clone())
+                    let parents = if let Some(p) = d.parents.as_ref() {
+                        if p.len() > 0 {
+                            Some(p[0].clone())
                         } else {
                             None
                         }
                     } else {
                         None
                     };
+                    if parents.is_none() && root_id.is_none() {
+                        root_id = parents.clone();
+                    }
                     let val = DirectoryInfo {
                         gdriveid: gdriveid.clone(),
                         name: name.clone(),
@@ -460,7 +479,7 @@ impl GDriveInstance {
                 }
             }
         }
-        Ok(dmap)
+        Ok((dmap, root_id))
     }
 
     pub fn get_export_path(
@@ -501,10 +520,11 @@ impl GDriveInstance {
     }
 }
 
+#[derive(Debug)]
 pub struct DirectoryInfo {
-    pub gdriveid: DriveId,
+    pub gdriveid: String,
     pub name: String,
-    pub parentid: Option<DriveId>,
+    pub parentid: Option<String>,
 }
 
 struct DummyFile {
@@ -555,6 +575,9 @@ impl Read for DummyFile {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+    use url::Url;
+
     use crate::config::Config;
     use crate::gdrive_instance::GDriveInstance;
 
@@ -562,9 +585,23 @@ mod tests {
     fn test_create_drive() {
         let config = Config::new();
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
-            .with_max_keys(100)
-            .with_page_size(100);
+            .with_max_keys(10)
+            .with_page_size(10);
         let list = gdrive.get_all_files(false).unwrap();
-        assert_eq!(list.len(), 100);
+        assert_eq!(list.len(), 10);
+        let gdriveid = "1-vdOUMSwDYmMOQzyB1mpFiWGSBSCv_bJ9HRdCdj_yes".to_string();
+        let parent = "0ABGM0lfCdptnUk9PVA".to_string();
+        let local_url: Url = "file:///tmp/temp.file".parse().unwrap();
+        let mime = "application/vnd.google-apps.spreadsheet".to_string();
+        println!("{}", mime);
+        gdrive.download(&gdriveid, &local_url, Some(mime)).unwrap();
+
+        let basepath = Path::new("src/gdrive_instance.rs").canonicalize().unwrap();
+        let local_url = Url::from_file_path(basepath).unwrap();
+        let new_file = gdrive.upload(&local_url, &parent).unwrap();
+        println!("{:?}", new_file);
+        let new_driveid = new_file.id.unwrap();
+        gdrive.move_to_trash(&new_driveid).unwrap();
+        gdrive.delete_permanently(&new_driveid).unwrap();
     }
 }

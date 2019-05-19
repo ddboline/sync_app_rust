@@ -1,6 +1,7 @@
 use failure::{err_msg, Error};
 use std::collections::HashMap;
 use std::fs::create_dir_all;
+use std::sync::Arc;
 use url::Url;
 
 use crate::config::Config;
@@ -8,7 +9,7 @@ use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_info_gdrive::FileInfoGDrive;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::gdrive_instance::GDriveInstance;
+use crate::gdrive_instance::{DirectoryInfo, GDriveInstance};
 use crate::map_result_vec;
 use crate::pgpool::PgPool;
 
@@ -16,25 +17,41 @@ use crate::pgpool::PgPool;
 pub struct FileListGDrive {
     pub flist: FileList,
     pub gdrive: GDriveInstance,
+    pub directory_map: Arc<HashMap<String, DirectoryInfo>>,
+    pub root_directory: Option<String>,
 }
 
 impl FileListGDrive {
-    pub fn from_conf(conf: FileListGDriveConf, gdrive: &GDriveInstance) -> FileListGDrive {
-        FileListGDrive {
+    pub fn from_conf(
+        conf: FileListGDriveConf,
+        gdrive: &GDriveInstance,
+    ) -> Result<FileListGDrive, Error> {
+        let (dmap, root_dir) = gdrive.get_directory_map()?;
+        let f = FileListGDrive {
             flist: FileList::from_conf(conf.0),
             gdrive: gdrive.clone(),
-        }
+            directory_map: Arc::new(dmap),
+            root_directory: root_dir,
+        };
+        Ok(f)
     }
 
-    pub fn with_list(&self, filelist: &[FileInfo]) -> FileListGDrive {
+    pub fn with_list(self, filelist: &[FileInfo]) -> FileListGDrive {
         FileListGDrive {
             flist: self.flist.with_list(&filelist),
-            gdrive: self.gdrive.clone(),
+            gdrive: self.gdrive,
+            directory_map: self.directory_map,
+            root_directory: self.root_directory,
         }
     }
 
     pub fn max_keys(mut self, max_keys: usize) -> Self {
         self.gdrive = self.gdrive.with_max_keys(max_keys);
+        self
+    }
+
+    pub fn set_root_directory(mut self, root_directory: &str) -> Self {
+        self.root_directory = Some(root_directory.to_string());
         self
     }
 }
@@ -92,13 +109,11 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
-        let dmap = self.gdrive.get_directory_map()?;
-
         let flist: Vec<_> = self.gdrive.get_all_files(false)?;
 
         let flist: Vec<Result<_, Error>> = flist
             .into_iter()
-            .map(|f| FileInfoGDrive::from_object(f, &self.gdrive, &dmap).map(|i| i.0))
+            .map(|f| FileInfoGDrive::from_object(f, &self.gdrive, &self.directory_map).map(|i| i.0))
             .collect();
         let flist: Vec<_> = map_result_vec(flist)?
             .into_iter()
@@ -112,10 +127,10 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn print_list(&self) -> Result<(), Error> {
-        let dmap = self.gdrive.get_directory_map()?;
-
         self.gdrive.process_list_of_keys(None, |i| {
-            if let Ok(finfo) = FileInfoGDrive::from_object(i.clone(), &self.gdrive, &dmap) {
+            if let Ok(finfo) =
+                FileInfoGDrive::from_object(i.clone(), &self.gdrive, &self.directory_map)
+            {
                 if let Some(url) = finfo.0.urlname {
                     println!("{}", url.as_str());
                 }
@@ -145,7 +160,8 @@ impl FileListTrait for FileListGDrive {
             .canonicalize()?;
         let local_url = Url::from_file_path(local_file).map_err(|_| err_msg("failure"))?;
         let remote_url = "test".to_string();
-        self.gdrive.upload(&local_url, &remote_url)
+        self.gdrive.upload(&local_url, &remote_url)?;
+        Ok(())
     }
 
     fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
@@ -205,7 +221,9 @@ mod tests {
             .with_page_size(100);
 
         let fconf = FileListGDriveConf::new("test", &config).unwrap();
-        let flist = FileListGDrive::from_conf(fconf, &gdrive).max_keys(100);
+        let flist = FileListGDrive::from_conf(fconf, &gdrive)
+            .unwrap()
+            .max_keys(100);
 
         let new_flist = flist.fill_file_list(None).unwrap();
 

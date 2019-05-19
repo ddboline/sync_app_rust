@@ -125,7 +125,7 @@ mod tests {
     fn test_file_info_from_object() {
         let config = Config::new();
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
-        let dmap = gdrive.get_directory_map().unwrap();
+        let (dmap, _) = gdrive.get_directory_map().unwrap();
         let f = drive3::File {
             mime_type: Some("application/pdf".to_string()),
             viewed_by_me_time: Some("2019-04-20T21:18:40.865Z".to_string()),
