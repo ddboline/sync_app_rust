@@ -13,12 +13,14 @@ use oauth2::{
 };
 use std::cmp;
 use std::collections::{HashMap, HashSet};
+use std::ffi::OsStr;
 use std::fmt;
 use std::fs::{create_dir_all, File};
 use std::io;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::rc::Rc;
+use std::string::ToString;
 use url::Url;
 
 use crate::config::Config;
@@ -263,7 +265,7 @@ impl GDriveInstance {
             .map_err(|_| err_msg("No file path"))?;
         let directory_name = directory_path
             .file_name()
-            .and_then(|d| d.to_str().map(|s| s.to_string()))
+            .and_then(|d| d.to_str().map(ToString::to_string))
             .ok_or_else(|| err_msg("Failed to convert string"))?;
         let new_file = drive3::File {
             name: Some(directory_name),
@@ -293,8 +295,8 @@ impl GDriveInstance {
             name: file_path
                 .as_path()
                 .file_name()
-                .and_then(|s| s.to_str())
-                .map(|s| s.to_string()),
+                .and_then(OsStr::to_str)
+                .map(ToString::to_string),
             parents: Some(vec![parentid.to_string()]),
             ..Default::default()
         };
@@ -391,7 +393,7 @@ impl GDriveInstance {
         let current_parents = self
             .get_file_metadata(id)?
             .parents
-            .unwrap_or(vec![String::from("root")])
+            .unwrap_or_else(|| vec![String::from("root")])
             .join(",");
 
         let mut file = drive3::File::default();
@@ -418,7 +420,7 @@ impl GDriveInstance {
                 if let Some(gdriveid) = d.id.as_ref() {
                     if let Some(name) = d.name.as_ref() {
                         if let Some(parents) = d.parents.as_ref() {
-                            if parents.len() > 0 {
+                            if !parents.is_empty() {
                                 return Some((
                                     gdriveid.clone(),
                                     DirectoryInfo {
@@ -458,7 +460,7 @@ impl GDriveInstance {
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
                     let parents = if let Some(p) = d.parents.as_ref() {
-                        if p.len() > 0 {
+                        if !p.is_empty() {
                             Some(p[0].clone())
                         } else {
                             None
@@ -486,27 +488,41 @@ impl GDriveInstance {
         &self,
         finfo: &drive3::File,
         dirmap: &HashMap<String, DirectoryInfo>,
-    ) -> Result<String, Error> {
+    ) -> Result<Vec<String>, Error> {
         let mut fullpath = Vec::new();
         if let Some(name) = finfo.name.as_ref() {
-            fullpath.push(name.clone());
+            fullpath.push(format!("{}", name));
         }
         let mut pid = if let Some(parents) = finfo.parents.as_ref() {
-            if parents.len() > 0 {
+            if !parents.is_empty() {
                 Some(parents[0].clone())
             } else {
                 None
             }
         } else {
+            println!("No parents {:?}", finfo);
             None
         };
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
                 if let Some(dinfo) = dirmap.get(pid_) {
-                    fullpath.push(dinfo.name.clone());
+                    fullpath.push(format!("{}/", dinfo.name));
                     dinfo.parentid.clone()
                 } else {
-                    None
+                    let pid_ = self
+                        .get_file_metadata(pid_)
+                        .ok()
+                        .as_ref()
+                        .and_then(|f| f.parents.as_ref())
+                        .and_then(|v| {
+                            if !v.is_empty() {
+                                Some(v[0].clone())
+                            } else {
+                                None
+                            }
+                        });
+                    println!("{:?}", pid_);
+                    pid_
                 }
             } else {
                 None
@@ -516,7 +532,7 @@ impl GDriveInstance {
             }
         }
         let fullpath: Vec<_> = fullpath.into_iter().rev().collect();
-        Ok(fullpath.join("/"))
+        Ok(fullpath)
     }
 }
 
@@ -602,6 +618,8 @@ mod tests {
         println!("{:?}", new_file);
         let new_driveid = new_file.id.unwrap();
         gdrive.move_to_trash(&new_driveid).unwrap();
+        println!("{:?}", gdrive.get_file_metadata(&new_driveid).unwrap());
         gdrive.delete_permanently(&new_driveid).unwrap();
+        println!("{}", gdrive.get_file_metadata(&new_driveid).unwrap_err());
     }
 }

@@ -318,7 +318,7 @@ mod tests {
         );
 
         let cache_info = FileInfoCache::from_insert(cache_info, 5);
-        let test_result = FileInfo::from_cache_info(cache_info).unwrap();
+        let test_result = FileInfo::from_cache_info(&cache_info).unwrap();
         assert_eq!(*result, test_result);
 
         let config = Config::new();

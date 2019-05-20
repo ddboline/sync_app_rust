@@ -1,6 +1,6 @@
 use crate::schema::file_info_cache;
 
-#[derive(Queryable)]
+#[derive(Queryable, Clone)]
 pub struct FileInfoCache {
     pub id: i32,
     pub filename: String,
@@ -15,7 +15,7 @@ pub struct FileInfoCache {
     pub servicesession: Option<String>,
 }
 
-#[derive(Insertable, Debug)]
+#[derive(Insertable, Debug, Clone)]
 #[table_name = "file_info_cache"]
 pub struct InsertFileInfoCache {
     pub filename: String,
@@ -28,6 +28,15 @@ pub struct InsertFileInfoCache {
     pub serviceid: Option<String>,
     pub servicetype: String,
     pub servicesession: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FileInfoKey {
+    pub filename: String,
+    pub filepath: String,
+    pub urlname: String,
+    pub serviceid: String,
+    pub servicesession: String,
 }
 
 impl From<FileInfoCache> for InsertFileInfoCache {
@@ -62,5 +71,44 @@ impl FileInfoCache {
             servicetype: item.servicetype,
             servicesession: item.servicesession,
         }
+    }
+
+    pub fn get_key(&self) -> Option<FileInfoKey> {
+        let finfo: InsertFileInfoCache = self.clone().into();
+        finfo.get_key()
+    }
+}
+
+impl InsertFileInfoCache {
+    pub fn get_key(&self) -> Option<FileInfoKey> {
+        let filename = self.filename.clone();
+        let filepath = if let Some(p) = self.filepath.as_ref() {
+            p.clone()
+        } else {
+            return None;
+        };
+        let urlname = if let Some(u) = self.urlname.as_ref() {
+            u.clone()
+        } else {
+            return None;
+        };
+        let serviceid = if let Some(s) = self.serviceid.as_ref() {
+            s.clone()
+        } else {
+            return None;
+        };
+        let servicesession = if let Some(s) = self.servicesession.as_ref() {
+            s.clone()
+        } else {
+            return None;
+        };
+        let finfo = FileInfoKey {
+            filename,
+            filepath,
+            urlname,
+            serviceid,
+            servicesession,
+        };
+        Some(finfo)
     }
 }

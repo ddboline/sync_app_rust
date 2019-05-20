@@ -43,6 +43,10 @@ impl FileInfoTrait for FileInfoLocal {
         }
     }
 
+    fn delete(&self) -> Result<(), Error> {
+        Ok(())
+    }
+
     fn get_finfo(&self) -> &FileInfo {
         &self.0
     }

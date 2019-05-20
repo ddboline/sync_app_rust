@@ -4,7 +4,7 @@ use url::Url;
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait};
-use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
+use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
 use crate::pgpool::PgPool;
 
@@ -73,7 +73,14 @@ impl SyncOpts {
                 let fsync = FileSync::new(opts.mode, &config);
                 fsync.process_file()
             }
-            _ => Ok(()),
+            FileSyncAction::Delete => {
+                if opts.urls.is_empty() {
+                    Err(err_msg("Need at least 1 Url"))
+                } else {
+                    println!("{:?}", group_urls(&opts.urls));
+                    Ok(())
+                }
+            }
         }
     }
 }

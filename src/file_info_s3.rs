@@ -42,6 +42,10 @@ impl FileInfoTrait for FileInfoS3 {
         Ok(FileInfoS3(finfo))
     }
 
+    fn delete(&self) -> Result<(), Error> {
+        Ok(())
+    }
+
     fn get_finfo(&self) -> &FileInfo {
         &self.0
     }

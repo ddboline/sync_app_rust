@@ -3,7 +3,7 @@ use google_drive3_fork as drive3;
 use chrono::DateTime;
 use failure::{err_msg, Error};
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use url::Url;
 
 use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
@@ -43,6 +43,10 @@ impl FileInfoTrait for FileInfoGDrive {
         Ok(FileInfoGDrive(finfo))
     }
 
+    fn delete(&self) -> Result<(), Error> {
+        Ok(())
+    }
+
     fn get_finfo(&self) -> &FileInfo {
         &self.0
     }
@@ -79,8 +83,15 @@ impl FileInfoGDrive {
         let servicesession = Some(gdrive.session_name.parse()?);
 
         let export_path = gdrive.get_export_path(&item, &directory_map)?;
-        let filepath = Path::new(&export_path).to_path_buf();
-        let urlname: Url = format!("gdrive://{}/{}", gdrive.session_name, export_path).parse()?;
+        let filepath = export_path.iter().fold(PathBuf::new(), |mut p, e| {
+            p.push(e);
+            p
+        });
+        let urlname = format!("gdrive://{}/", gdrive.session_name);
+        let urlname = Url::parse(&urlname)?;
+        let urlname = export_path
+            .iter()
+            .fold(urlname, |u, e| u.join(e).unwrap_or(u));
 
         let finfo = FileInfo {
             filename: filename.clone(),

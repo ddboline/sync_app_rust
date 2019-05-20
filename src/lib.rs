@@ -43,7 +43,7 @@ pub fn map_result_vec<T>(input: Vec<Result<T, Error>>) -> Result<Vec<T>, Error> 
     }
 }
 
-pub fn map_parse<T>(x: Option<String>) -> Result<Option<T>, Error>
+pub fn map_parse<T>(x: &Option<String>) -> Result<Option<T>, Error>
 where
     T: FromStr,
     <T as std::str::FromStr>::Err: 'static + Send + Sync + fmt::Debug + fmt::Display,

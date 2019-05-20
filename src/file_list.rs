@@ -150,31 +150,8 @@ pub trait FileListTrait {
             .load_file_list(pool)?
             .into_iter()
             .filter_map(|item| {
-                let filename = item.filename.clone();
-                let filepath = if let Some(p) = item.filepath.as_ref() {
-                    p.clone()
-                } else {
-                    return None;
-                };
-                let urlname = if let Some(u) = item.urlname.as_ref() {
-                    u.clone()
-                } else {
-                    return None;
-                };
-                let serviceid = if let Some(s) = item.serviceid.as_ref() {
-                    s.clone()
-                } else {
-                    return None;
-                };
-                let servicesession = if let Some(s) = item.servicesession.as_ref() {
-                    s.clone()
-                } else {
-                    return None;
-                };
-                Some((
-                    (filename, filepath, urlname, serviceid, servicesession),
-                    item,
-                ))
+                let key = item.get_key();
+                key.map(|k| (k, item))
             })
             .collect();
 
@@ -184,30 +161,8 @@ pub trait FileListTrait {
             .filter_map(|(_, f)| {
                 let item: InsertFileInfoCache = f.into();
 
-                let filename = item.filename.clone();
-                let filepath = if let Some(p) = item.filepath.as_ref() {
-                    p.clone()
-                } else {
-                    return None;
-                };
-                let urlname = if let Some(u) = item.urlname.as_ref() {
-                    u.clone()
-                } else {
-                    return None;
-                };
-                let serviceid = if let Some(s) = item.serviceid.as_ref() {
-                    s.clone()
-                } else {
-                    return None;
-                };
-                let servicesession = if let Some(s) = item.servicesession.as_ref() {
-                    s.clone()
-                } else {
-                    return None;
-                };
-
-                let key = (filename, filepath, urlname, serviceid, servicesession);
-                Some((key, item))
+                let key = item.get_key();
+                key.map(|k| (k, item))
             })
             .collect();
         let flist_cache_update: HashMap<_, _> = flist_cache_map
@@ -235,14 +190,12 @@ pub trait FileListTrait {
 
                 let conn = pool.get()?;
 
-                let (filename_, filepath_, urlname_, serviceid_, servicesession_) = k;
-
                 let cache = file_info_cache
-                    .filter(filename.eq(filename_))
-                    .filter(filepath.eq(filepath_))
-                    .filter(urlname.eq(urlname_))
-                    .filter(serviceid.eq(serviceid_))
-                    .filter(servicesession.eq(servicesession_))
+                    .filter(filename.eq(k.filename))
+                    .filter(filepath.eq(k.filepath))
+                    .filter(urlname.eq(k.urlname))
+                    .filter(serviceid.eq(k.serviceid))
+                    .filter(servicesession.eq(k.servicesession))
                     .load::<FileInfoCache>(&conn)
                     .map_err(err_msg)?;
                 if cache.len() != 1 {
@@ -276,10 +229,17 @@ pub trait FileListTrait {
 
         println!("{} {}", flist_cache_insert.len(), current_cache.len());
 
-        diesel::insert_into(file_info_cache::table)
-            .values(&flist_cache_insert)
-            .execute(&pool.get()?)
-            .map_err(err_msg)
+        let results = flist_cache_insert
+            .chunks(1000)
+            .map(|v| {
+                diesel::insert_into(file_info_cache::table)
+                    .values(v)
+                    .execute(&pool.get()?)
+                    .map_err(err_msg)
+            })
+            .collect();
+        let result: usize = map_result_vec(results)?.iter().sum();
+        Ok(result)
     }
 
     fn load_file_list(&self, pool: &PgPool) -> Result<Vec<FileInfoCache>, Error> {
@@ -300,17 +260,10 @@ pub trait FileListTrait {
             .load_file_list(&pool)?
             .into_par_iter()
             .filter_map(|entry| {
-                if entry.filepath.is_none() {
-                    None
-                } else {
-                    let key = entry.filepath.as_ref().unwrap().to_string();
-                    let val = FileInfo::from_cache_info(entry);
-                    if val.is_err() {
-                        None
-                    } else {
-                        Some((key, val.unwrap()))
-                    }
-                }
+                entry.filepath.as_ref().and_then(|fp| {
+                    let key = fp.to_string();
+                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                })
             })
             .collect();
         Ok(flist_dict)
@@ -364,7 +317,7 @@ impl FileListTrait for FileList {
                 Some(pool) => match self.load_file_list(&pool) {
                     Ok(v) => {
                         let result: Vec<Result<_, Error>> =
-                            v.into_iter().map(FileInfo::from_cache_info).collect();
+                            v.iter().map(FileInfo::from_cache_info).collect();
                         map_result_vec(result)
                     }
                     Err(e) => Err(e),
@@ -435,4 +388,14 @@ pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<
 
     let urlstr = format!("{}/{}", baseurl1, remove_baseurl(&urlname, baseurl0));
     Url::parse(&urlstr).map_err(err_msg)
+}
+
+pub fn group_urls(url_list: &[Url]) -> HashMap<String, Vec<Url>> {
+    url_list.into_iter().fold(HashMap::new(), |mut h, m| {
+        let key = m.scheme();
+        h.entry(key.to_string())
+            .or_insert(Vec::new())
+            .push(m.clone());
+        h
+    })
 }

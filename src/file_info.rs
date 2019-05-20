@@ -98,7 +98,7 @@ where
     Self: Sized + Send + Sync,
 {
     fn from_url(url: &Url) -> Result<Self, Error>;
-
+    fn delete(&self) -> Result<(), Error>;
     fn get_finfo(&self) -> &FileInfo;
     fn get_md5(&self) -> Option<Md5Sum>;
     fn get_sha1(&self) -> Option<Sha1Sum>;
@@ -112,6 +112,10 @@ impl FileInfoTrait for FileInfo {
             "s3" => FileInfoS3::from_url(url).map(|x| x.0),
             _ => Err(err_msg("Bad scheme")),
         }
+    }
+
+    fn delete(&self) -> Result<(), Error> {
+        Ok(())
     }
 
     fn get_finfo(&self) -> &FileInfo {
@@ -132,19 +136,19 @@ impl FileInfoTrait for FileInfo {
 }
 
 impl FileInfo {
-    pub fn from_cache_info(item: FileInfoCache) -> Result<FileInfo, Error> {
+    pub fn from_cache_info(item: &FileInfoCache) -> Result<FileInfo, Error> {
         Ok(FileInfo {
-            filename: item.filename,
-            filepath: item.filepath.map(Into::into),
-            urlname: match item.urlname {
+            filename: item.filename.clone(),
+            filepath: item.filepath.clone().map(Into::into),
+            urlname: match item.urlname.as_ref() {
                 Some(urlname) => match urlname.parse() {
                     Ok(urlname) => Some(urlname),
                     _ => None,
                 },
                 None => None,
             },
-            md5sum: map_parse(item.md5sum)?,
-            sha1sum: map_parse(item.sha1sum)?,
+            md5sum: map_parse(&item.md5sum)?,
+            sha1sum: map_parse(&item.sha1sum)?,
             filestat: match item.filestat_st_mtime {
                 Some(st_mtime) => match item.filestat_st_size {
                     Some(st_size) => Some(FileStat {
@@ -155,9 +159,9 @@ impl FileInfo {
                 },
                 None => None,
             },
-            serviceid: item.serviceid.map(Into::into),
+            serviceid: item.serviceid.clone().map(Into::into),
             servicetype: item.servicetype.parse()?,
-            servicesession: map_parse(item.servicesession)?,
+            servicesession: map_parse(&item.servicesession)?,
         })
     }
 }
@@ -206,7 +210,7 @@ mod tests {
     #[test]
     fn test_map_parse() {
         let test_sessionstr: Option<_> = Some("test_sessionname".to_string());
-        let test_sessionname: Option<ServiceSession> = map_parse(test_sessionstr).unwrap();
+        let test_sessionname: Option<ServiceSession> = map_parse(&test_sessionstr).unwrap();
 
         assert_eq!(
             test_sessionname,
