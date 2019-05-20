@@ -109,7 +109,7 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
-        let flist: Vec<_> = self.gdrive.get_all_files(false)?;
+        let flist: Vec<_> = self.gdrive.get_all_files(false, None)?;
 
         let flist: Vec<Result<_, Error>> = flist
             .into_iter()

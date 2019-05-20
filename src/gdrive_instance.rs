@@ -188,11 +188,15 @@ impl GDriveInstance {
         Ok(filelist)
     }
 
-    pub fn get_all_files(&self, get_folders: bool) -> Result<Vec<drive3::File>, Error> {
+    pub fn get_all_files(
+        &self,
+        get_folders: bool,
+        parents: Option<Vec<String>>,
+    ) -> Result<Vec<drive3::File>, Error> {
         let mut all_files = Vec::new();
         let mut page_token: Option<String> = None;
         loop {
-            let filelist = self.get_filelist(&page_token, get_folders, &None)?;
+            let filelist = self.get_filelist(&page_token, get_folders, &parents)?;
 
             if let Some(files) = filelist.files {
                 all_files.extend(files);
@@ -413,7 +417,7 @@ impl GDriveInstance {
     pub fn get_directory_map(
         &self,
     ) -> Result<(HashMap<String, DirectoryInfo>, Option<String>), Error> {
-        let dlist: Vec<_> = self.get_all_files(true)?;
+        let dlist: Vec<_> = self.get_all_files(true, None)?;
         let mut dmap: HashMap<_, _> = dlist
             .iter()
             .filter_map(|d| {
@@ -603,7 +607,7 @@ mod tests {
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
             .with_max_keys(10)
             .with_page_size(10);
-        let list = gdrive.get_all_files(false).unwrap();
+        let list = gdrive.get_all_files(false, None).unwrap();
         assert_eq!(list.len(), 10);
         let gdriveid = "1-vdOUMSwDYmMOQzyB1mpFiWGSBSCv_bJ9HRdCdj_yes".to_string();
         let parent = "0ABGM0lfCdptnUk9PVA".to_string();

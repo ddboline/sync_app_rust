@@ -61,10 +61,13 @@ impl SyncOpts {
                 if opts.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
-                    for url in opts.urls {
-                        let conf = FileListConf::from_url(&url, &config)?;
-                        let flist = FileList::from_conf(conf);
-                        flist.print_list()?;
+                    for (_, urls) in &group_urls(&opts.urls) {
+                        let conf = FileListConf::from_url(&urls[0], &config)?;
+                        let mut flist = FileList::from_conf(conf);
+                        for url in urls {
+                            flist.conf.baseurl = url.clone();
+                            flist.print_list()?;
+                        }
                     }
                     Ok(())
                 }
