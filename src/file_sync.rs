@@ -162,9 +162,7 @@ impl FileSync {
                     .filter(|(f0, f1)| {
                         f0.servicetype == FileService::Local || f1.servicetype == FileService::Local
                     })
-                    .map(|(f0, f1)| {
-                        self.copy_object(flist0, flist1, f0, f1)
-                    })
+                    .map(|(f0, f1)| self.copy_object(flist0, flist1, f0, f1))
                     .collect();
                 map_result_vec(result)?;
             }
