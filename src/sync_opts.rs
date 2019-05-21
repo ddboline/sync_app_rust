@@ -79,8 +79,27 @@ impl SyncOpts {
                 if opts.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
+                    for (_, urls) in &group_urls(&opts.urls) {
+                        for url in urls {
+                            let finfo = FileInfo::from_url(&url)?;
+                            finfo.delete()?;
+                        }
+                    }
                     println!("{:?}", group_urls(&opts.urls));
                     Ok(())
+                }
+            }
+            FileSyncAction::Move => {
+                if opts.urls.len() < 2 {
+                    Err(err_msg("Need 2 Urls"))
+                } else {
+                    let conf0 = FileListConf::from_url(&opts.urls[0], &config)?;
+                    let conf1 = FileListConf::from_url(&opts.urls[1], &config)?;
+                    if conf0.servicetype != conf1.servicetype {
+                        Err(err_msg("Can only move within servicetype"))
+                    } else {
+                        Ok(())
+                    }
                 }
             }
         }

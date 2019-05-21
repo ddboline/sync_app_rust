@@ -21,6 +21,7 @@ pub enum FileSyncAction {
     Copy,
     List,
     Delete,
+    Move,
 }
 
 impl FromStr for FileSyncAction {
@@ -33,6 +34,7 @@ impl FromStr for FileSyncAction {
             "copy" | "cp" => Ok(FileSyncAction::Copy),
             "list" | "ls" => Ok(FileSyncAction::List),
             "delete" | "rm" => Ok(FileSyncAction::Delete),
+            "move" | "mv" => Ok(FileSyncAction::Move),
             _ => Err(err_msg("Parse failure")),
         }
     }

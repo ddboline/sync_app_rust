@@ -87,6 +87,16 @@ pub trait FileListTrait {
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo>;
 
+    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync;
+
+    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync;
+
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
         let conf = self.get_conf();
         match conf.servicetype {
@@ -134,16 +144,6 @@ pub trait FileListTrait {
             _ => Err(err_msg("Not implemented")),
         }
     }
-
-    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync;
-
-    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync;
 
     fn cache_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
         let current_cache: HashMap<_, _> = self
