@@ -82,7 +82,6 @@ impl FileListConfTrait for FileListGDriveConf {
                 .as_str()
                 .trim_start_matches("gdrive://")
                 .replace(url.path(), "");
-            println!("{:?}", servicesession);
             let conf = FileListConf {
                 baseurl: url.clone(),
                 config: config.clone(),
@@ -109,7 +108,27 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
-        let flist: Vec<_> = self.gdrive.get_all_files(false, None)?;
+        let flist: Vec<_> = self
+            .gdrive
+            .get_all_files(false)?
+            .into_iter()
+            .filter_map(|f| {
+                if let Some(owners) = f.owners.as_ref() {
+                    if owners.is_empty() {
+                        return None;
+                    }
+                    if owners[0].me != Some(true) {
+                        return None;
+                    }
+                } else {
+                    return None;
+                }
+                if f.name == Some("Chrome Syncable FileSystem".to_string()) {
+                    return None;
+                }
+                Some(f)
+            })
+            .collect();
 
         let flist: Vec<Result<_, Error>> = flist
             .into_iter()
@@ -127,7 +146,12 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn print_list(&self) -> Result<(), Error> {
-        self.gdrive.process_list_of_keys(None, |i| {
+        let parents = if let Some(root_dir) = self.root_directory.as_ref() {
+            Some(vec![root_dir.clone()])
+        } else {
+            None
+        };
+        self.gdrive.process_list_of_keys(parents, |i| {
             if let Ok(finfo) =
                 FileInfoGDrive::from_object(i.clone(), &self.gdrive, &self.directory_map)
             {

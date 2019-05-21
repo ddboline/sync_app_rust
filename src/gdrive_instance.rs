@@ -180,7 +180,6 @@ impl GDriveInstance {
         query_chain.push("trashed = false".to_string());
 
         let query = query_chain.join(" and ");
-        println!("{}", query);
         let (_, filelist) = request
             .q(&query)
             .doit()
@@ -188,15 +187,11 @@ impl GDriveInstance {
         Ok(filelist)
     }
 
-    pub fn get_all_files(
-        &self,
-        get_folders: bool,
-        parents: Option<Vec<String>>,
-    ) -> Result<Vec<drive3::File>, Error> {
+    pub fn get_all_files(&self, get_folders: bool) -> Result<Vec<drive3::File>, Error> {
         let mut all_files = Vec::new();
         let mut page_token: Option<String> = None;
         loop {
-            let filelist = self.get_filelist(&page_token, get_folders, &parents)?;
+            let filelist = self.get_filelist(&page_token, get_folders, &None)?;
 
             if let Some(files) = filelist.files {
                 all_files.extend(files);
@@ -241,7 +236,6 @@ impl GDriveInstance {
             if page_token.is_none() {
                 break;
             }
-            println!("{}", n_processed);
 
             if let Some(max_keys) = self.max_keys {
                 if n_processed > max_keys {
@@ -417,10 +411,24 @@ impl GDriveInstance {
     pub fn get_directory_map(
         &self,
     ) -> Result<(HashMap<String, DirectoryInfo>, Option<String>), Error> {
-        let dlist: Vec<_> = self.get_all_files(true, None)?;
+        let dlist: Vec<_> = self.get_all_files(true)?;
+        let mut root_id: Option<String> = None;
         let mut dmap: HashMap<_, _> = dlist
             .iter()
             .filter_map(|d| {
+                if let Some(owners) = d.owners.as_ref() {
+                    if owners.is_empty() {
+                        return None;
+                    }
+                    if owners[0].me != Some(true) {
+                        return None;
+                    }
+                } else {
+                    return None;
+                }
+                if d.name == Some("Chrome Syncable FileSystem".to_string()) {
+                    return None;
+                }
                 if let Some(gdriveid) = d.id.as_ref() {
                     if let Some(name) = d.name.as_ref() {
                         if let Some(parents) = d.parents.as_ref() {
@@ -433,16 +441,19 @@ impl GDriveInstance {
                                         parentid: Some(parents[0].clone()),
                                     },
                                 ));
-                            } else {
-                                return Some((
-                                    gdriveid.clone(),
-                                    DirectoryInfo {
-                                        gdriveid: gdriveid.clone(),
-                                        name: name.clone(),
-                                        parentid: None,
-                                    },
-                                ));
                             }
+                        } else {
+                            if root_id.is_none() {
+                                root_id = Some(gdriveid.clone());
+                            }
+                            return Some((
+                                gdriveid.clone(),
+                                DirectoryInfo {
+                                    gdriveid: gdriveid.clone(),
+                                    name: name.clone(),
+                                    parentid: None,
+                                },
+                            ));
                         }
                     }
                 }
@@ -458,9 +469,11 @@ impl GDriveInstance {
                 })
             })
             .collect();
-        let mut root_id: Option<String> = None;
         for parent in unmatched_parents {
             let d = self.get_file_metadata(&parent)?;
+            if d.name == Some("Chrome Syncable FileSystem".to_string()) {
+                continue;
+            }
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
                     let parents = if let Some(p) = d.parents.as_ref() {
@@ -473,7 +486,7 @@ impl GDriveInstance {
                         None
                     };
                     if parents.is_none() && root_id.is_none() {
-                        root_id = parents.clone();
+                        root_id = Some(gdriveid.clone());
                     }
                     let val = DirectoryInfo {
                         gdriveid: gdriveid.clone(),
@@ -504,7 +517,6 @@ impl GDriveInstance {
                 None
             }
         } else {
-            println!("No parents {:?}", finfo);
             None
         };
         loop {
@@ -525,7 +537,6 @@ impl GDriveInstance {
                                 None
                             }
                         });
-                    println!("{:?}", pid_);
                     pid_
                 }
             } else {
@@ -607,7 +618,7 @@ mod tests {
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
             .with_max_keys(10)
             .with_page_size(10);
-        let list = gdrive.get_all_files(false, None).unwrap();
+        let list = gdrive.get_all_files(false).unwrap();
         assert_eq!(list.len(), 10);
         let gdriveid = "1-vdOUMSwDYmMOQzyB1mpFiWGSBSCv_bJ9HRdCdj_yes".to_string();
         let parent = "0ABGM0lfCdptnUk9PVA".to_string();

@@ -215,9 +215,7 @@ pub trait FileListTrait {
             })
             .collect();
 
-        let results = map_result_vec(results)?;
-
-        println!("{}", results.len());
+        map_result_vec(results)?;
 
         let flist_cache_insert: Vec<_> = flist_cache_map
             .into_par_iter()
@@ -226,8 +224,6 @@ pub trait FileListTrait {
                 None => Some(v),
             })
             .collect();
-
-        println!("{} {}", flist_cache_insert.len(), current_cache.len());
 
         let results = flist_cache_insert
             .chunks(1000)

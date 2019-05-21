@@ -88,8 +88,6 @@ impl FileSync {
             .filter_map(|(k, finfo0)| match flist1.get_filemap().get(k) {
                 Some(finfo1) => {
                     if self.compare_objects(finfo0, finfo1) {
-                        println!("{:?}", finfo0);
-                        println!("{:?}", finfo1);
                         Some((finfo0.clone(), finfo1.clone()))
                     } else {
                         None
@@ -165,7 +163,6 @@ impl FileSync {
                         f0.servicetype == FileService::Local || f1.servicetype == FileService::Local
                     })
                     .map(|(f0, f1)| {
-                        println!("{:?} {:?}", f0, f1);
                         self.copy_object(flist0, flist1, f0, f1)
                     })
                     .collect();

@@ -39,7 +39,6 @@ impl SyncOpts {
                     flist0.cache_file_list(&pool)?;
                     let flist1 = flist1.with_list(&flist1.fill_file_list(Some(&pool))?);
                     flist1.cache_file_list(&pool)?;
-                    println!("{:?} {:?}", flist0.filemap.len(), flist1.filemap.len());
                     fsync.compare_lists(&flist0, &flist1)
                 }
             }
