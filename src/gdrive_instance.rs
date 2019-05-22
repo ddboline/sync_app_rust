@@ -67,7 +67,7 @@ pub struct GDriveInstance {
 
 impl fmt::Debug for GDriveInstance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Rc<GDriveInstance>")
+        write!(f, "GDriveInstance")
     }
 }
 
@@ -508,7 +508,7 @@ impl GDriveInstance {
     ) -> Result<Vec<String>, Error> {
         let mut fullpath = Vec::new();
         if let Some(name) = finfo.name.as_ref() {
-            fullpath.push(format!("{}", name));
+            fullpath.push(name.to_string());
         }
         let mut pid = if let Some(parents) = finfo.parents.as_ref() {
             if !parents.is_empty() {
@@ -525,8 +525,7 @@ impl GDriveInstance {
                     fullpath.push(format!("{}/", dinfo.name));
                     dinfo.parentid.clone()
                 } else {
-                    let pid_ = self
-                        .get_file_metadata(pid_)
+                    self.get_file_metadata(pid_)
                         .ok()
                         .as_ref()
                         .and_then(|f| f.parents.as_ref())
@@ -536,8 +535,7 @@ impl GDriveInstance {
                             } else {
                                 None
                             }
-                        });
-                    pid_
+                        })
                 }
             } else {
                 None

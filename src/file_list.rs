@@ -87,15 +87,26 @@ pub trait FileListTrait {
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo>;
 
-    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
+    // Copy operation where the origin (finfo0) has the same servicetype as self
+    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync;
+        T: FileInfoTrait,
+        U: FileInfoTrait;
 
-    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
+    // Copy operation where the destination (finfo0) has the same servicetype as self
+    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync;
+        T: FileInfoTrait,
+        U: FileInfoTrait;
+
+    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait,
+        U: FileInfoTrait;
+
+    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
+    where
+        T: FileInfoTrait;
 
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
         let conf = self.get_conf();
@@ -107,7 +118,7 @@ pub trait FileListTrait {
             }
             FileService::S3 => {
                 let fconf = FileListS3Conf(conf.clone());
-                let flist = FileListS3::from_conf(fconf, None);
+                let flist = FileListS3::from_conf(fconf);
                 flist.fill_file_list(pool)
             }
             FileService::GDrive => {
@@ -131,7 +142,7 @@ pub trait FileListTrait {
             }
             FileService::S3 => {
                 let fconf = FileListS3Conf(conf.clone());
-                let flist = FileListS3::from_conf(fconf, None);
+                let flist = FileListS3::from_conf(fconf);
                 flist.print_list()
             }
             FileService::GDrive => {
@@ -299,7 +310,7 @@ impl FileListTrait for FileList {
             }
             FileService::S3 => {
                 let conf = FileListS3Conf(self.get_conf().clone());
-                let flist = FileListS3::from_conf(conf, None);
+                let flist = FileListS3::from_conf(conf);
                 flist.fill_file_list(pool)
             }
             FileService::GDrive => {
@@ -323,53 +334,91 @@ impl FileListTrait for FileList {
         }
     }
 
-    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
+    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync,
+        T: FileInfoTrait,
+        U: FileInfoTrait,
     {
-        let finfo_local = finfo_local.get_finfo();
-        let finfo_remote = finfo_remote.get_finfo();
-        if finfo_local.servicetype != FileService::Local {
-            return Err(err_msg(format!(
-                "Wrong fileinfo types {} {}",
-                finfo_local.servicetype, finfo_remote.servicetype
-            )));
-        }
-        if finfo_remote.servicetype == FileService::Local {
-            let f = FileListLocal(self.clone());
-            f.upload_file(finfo_local, finfo_remote)
-        } else if finfo_remote.servicetype == FileService::S3 {
-            let c = FileListS3Conf(self.conf.clone());
-            let f = FileListS3::from_conf(c, None);
-            f.upload_file(finfo_local, finfo_remote)
-        } else {
-            Ok(())
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        match self.get_conf().servicetype {
+            FileService::Local => {
+                let f = FileListLocal(self.clone());
+                f.copy_from(finfo0, finfo1)
+            }
+            FileService::S3 => {
+                let c = FileListS3Conf(self.conf.clone());
+                let f = FileListS3::from_conf(c);
+                f.copy_from(finfo0, finfo1)
+            }
+            FileService::GDrive => {
+                let c = FileListGDriveConf(self.conf.clone());
+                let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
+                let f = FileListGDrive::from_conf(c, &g)?;
+                f.copy_from(finfo0, finfo1)
+            }
+            _ => Ok(()),
         }
     }
 
-    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
+    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync,
+        T: FileInfoTrait,
+        U: FileInfoTrait,
     {
-        let finfo_local = finfo_local.get_finfo();
-        let finfo_remote = finfo_remote.get_finfo();
-        if finfo_local.servicetype != FileService::Local {
-            return Err(err_msg(format!(
-                "Wrong fileinfo types {} {}",
-                finfo_local.servicetype, finfo_remote.servicetype
-            )));
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        match self.get_conf().servicetype {
+            FileService::Local => {
+                let f = FileListLocal(self.clone());
+                f.copy_to(finfo0, finfo1)
+            }
+            FileService::S3 => {
+                let c = FileListS3Conf(self.conf.clone());
+                let f = FileListS3::from_conf(c);
+                f.copy_to(finfo0, finfo1)
+            }
+            FileService::GDrive => {
+                let c = FileListGDriveConf(self.conf.clone());
+                let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
+                let f = FileListGDrive::from_conf(c, &g)?;
+                f.copy_to(finfo0, finfo1)
+            }
+            _ => Ok(()),
         }
-        if finfo_remote.servicetype == FileService::Local {
-            let f = FileListLocal(self.clone());
-            f.download_file(finfo_remote, finfo_local)
-        } else if finfo_remote.servicetype == FileService::S3 {
-            let c = FileListS3Conf(self.conf.clone());
-            let f = FileListS3::from_conf(c, None);
-            f.download_file(finfo_remote, finfo_local)
-        } else {
-            Ok(())
+    }
+
+    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait,
+        U: FileInfoTrait,
+    {
+        Ok(())
+    }
+
+    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
+    where
+        T: FileInfoTrait,
+    {
+        match self.get_conf().servicetype {
+            FileService::Local => {
+                let conf = FileListLocalConf(self.get_conf().clone());
+                let flist = FileListLocal::from_conf(conf);
+                flist.delete(finfo)
+            }
+            FileService::S3 => {
+                let conf = FileListS3Conf(self.get_conf().clone());
+                let flist = FileListS3::from_conf(conf);
+                flist.delete(finfo)
+            }
+            FileService::GDrive => {
+                let conf = FileListGDriveConf(self.get_conf().clone());
+                let config = Config::new();
+                let gdrive = GDriveInstance::new(&config, &conf.0.servicesession.0);
+                let flist = FileListGDrive::from_conf(conf, &gdrive)?;
+                flist.delete(finfo)
+            }
+            _ => Ok(()),
         }
     }
 }
@@ -387,10 +436,10 @@ pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<
 }
 
 pub fn group_urls(url_list: &[Url]) -> HashMap<String, Vec<Url>> {
-    url_list.into_iter().fold(HashMap::new(), |mut h, m| {
+    url_list.iter().fold(HashMap::new(), |mut h, m| {
         let key = m.scheme();
         h.entry(key.to_string())
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push(m.clone());
         h
     })

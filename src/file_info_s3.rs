@@ -6,9 +6,13 @@ use url::Url;
 
 use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
 use crate::file_service::FileService;
+use crate::s3_instance::S3Instance;
 
-#[derive(Debug, Default)]
-pub struct FileInfoS3(pub FileInfo);
+#[derive(Debug, Default, Clone)]
+pub struct FileInfoS3 {
+    finfo: FileInfo,
+    s3: Option<S3Instance>,
+}
 
 impl FileInfoTrait for FileInfoS3 {
     fn from_url(url: &Url) -> Result<FileInfoS3, Error> {
@@ -39,31 +43,36 @@ impl FileInfoTrait for FileInfoS3 {
             servicetype: FileService::S3,
             servicesession,
         };
-        Ok(FileInfoS3(finfo))
-    }
-
-    fn delete(&self) -> Result<(), Error> {
-        Ok(())
+        Ok(FileInfoS3 { finfo, s3: None })
     }
 
     fn get_finfo(&self) -> &FileInfo {
-        &self.0
+        &self.finfo
+    }
+
+    fn into_finfo(self) -> FileInfo {
+        self.finfo
     }
 
     fn get_md5(&self) -> Option<Md5Sum> {
-        self.0.md5sum.clone()
+        self.finfo.md5sum.clone()
     }
 
     fn get_sha1(&self) -> Option<Sha1Sum> {
-        self.0.sha1sum.clone()
+        self.finfo.sha1sum.clone()
     }
 
     fn get_stat(&self) -> Option<FileStat> {
-        self.0.filestat
+        self.finfo.filestat
     }
 }
 
 impl FileInfoS3 {
+    pub fn with_s3(mut self, s3: S3Instance) -> FileInfoS3 {
+        self.s3 = Some(s3);
+        self
+    }
+
     pub fn from_object(bucket: &str, item: Object) -> Result<FileInfoS3, Error> {
         let key = item.key.as_ref().ok_or_else(|| err_msg("No key"))?.clone();
         let filepath = Path::new(&key);
@@ -103,7 +112,7 @@ impl FileInfoS3 {
             servicesession,
         };
 
-        Ok(FileInfoS3(finfo))
+        Ok(FileInfoS3 { finfo, s3: None })
     }
 }
 
@@ -111,6 +120,7 @@ impl FileInfoS3 {
 mod tests {
     use rusoto_s3::{Object, Owner};
 
+    use crate::file_info::FileInfoTrait;
     use crate::file_info_s3::FileInfoS3;
 
     #[test]
@@ -131,9 +141,9 @@ mod tests {
         let finfo = FileInfoS3::from_object("test_bucket", test_object).unwrap();
 
         assert_eq!(
-            finfo.0.urlname.unwrap().as_str(),
+            finfo.get_finfo().urlname.as_ref().unwrap().as_str(),
             "s3://test_bucket/test_key"
         );
-        assert_eq!(&finfo.0.filename, "test_key");
+        assert_eq!(&finfo.get_finfo().filename, "test_key");
     }
 }

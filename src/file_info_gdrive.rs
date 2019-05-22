@@ -11,7 +11,9 @@ use crate::file_service::FileService;
 use crate::gdrive_instance::{DirectoryInfo, GDriveInstance};
 
 #[derive(Debug, Default)]
-pub struct FileInfoGDrive(pub FileInfo);
+pub struct FileInfoGDrive {
+    pub finfo: FileInfo,
+}
 
 impl FileInfoTrait for FileInfoGDrive {
     fn from_url(url: &Url) -> Result<FileInfoGDrive, Error> {
@@ -40,27 +42,27 @@ impl FileInfoTrait for FileInfoGDrive {
             servicetype: FileService::GDrive,
             servicesession,
         };
-        Ok(FileInfoGDrive(finfo))
-    }
-
-    fn delete(&self) -> Result<(), Error> {
-        Ok(())
+        Ok(FileInfoGDrive { finfo })
     }
 
     fn get_finfo(&self) -> &FileInfo {
-        &self.0
+        &self.finfo
+    }
+
+    fn into_finfo(self) -> FileInfo {
+        self.finfo
     }
 
     fn get_md5(&self) -> Option<Md5Sum> {
-        self.0.md5sum.clone()
+        self.finfo.md5sum.clone()
     }
 
     fn get_sha1(&self) -> Option<Sha1Sum> {
-        self.0.sha1sum.clone()
+        self.finfo.sha1sum.clone()
     }
 
     fn get_stat(&self) -> Option<FileStat> {
-        self.0.filestat
+        self.finfo.filestat
     }
 }
 
@@ -108,7 +110,7 @@ impl FileInfoGDrive {
             servicesession,
         };
 
-        Ok(FileInfoGDrive(finfo))
+        Ok(FileInfoGDrive { finfo })
     }
 }
 
@@ -128,8 +130,8 @@ mod tests {
         let url: Url = "gdrive:///My Drive/test.txt".parse().unwrap();
         let finfo = FileInfoGDrive::from_url(&url).unwrap();
         println!("{:?}", finfo);
-        assert_eq!(finfo.0.filename, "test.txt");
-        assert_eq!(finfo.0.servicetype, FileService::GDrive);
+        assert_eq!(finfo.get_finfo().filename, "test.txt");
+        assert_eq!(finfo.get_finfo().servicetype, FileService::GDrive);
     }
 
     #[test]
@@ -160,9 +162,9 @@ mod tests {
         };
 
         let finfo = FileInfoGDrive::from_object(f, &gdrive, &dmap).unwrap();
-        assert_eq!(finfo.0.filename, "armstrong_thesis_2003.pdf");
+        assert_eq!(finfo.get_finfo().filename, "armstrong_thesis_2003.pdf");
         assert_eq!(
-            finfo.0.serviceid.unwrap().0,
+            finfo.get_finfo().serviceid.as_ref().unwrap().0.as_str(),
             "1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb"
         );
     }

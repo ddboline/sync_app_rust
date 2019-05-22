@@ -1,7 +1,7 @@
 use failure::{err_msg, Error};
 use std::collections::HashMap;
 use std::fs::create_dir_all;
-use std::sync::Arc;
+use std::rc::Rc;
 use url::Url;
 
 use crate::config::Config;
@@ -17,7 +17,7 @@ use crate::pgpool::PgPool;
 pub struct FileListGDrive {
     pub flist: FileList,
     pub gdrive: GDriveInstance,
-    pub directory_map: Arc<HashMap<String, DirectoryInfo>>,
+    pub directory_map: Rc<HashMap<String, DirectoryInfo>>,
     pub root_directory: Option<String>,
 }
 
@@ -30,7 +30,7 @@ impl FileListGDrive {
         let f = FileListGDrive {
             flist: FileList::from_conf(conf.0),
             gdrive: gdrive.clone(),
-            directory_map: Arc::new(dmap),
+            directory_map: Rc::new(dmap),
             root_directory: root_dir,
         };
         Ok(f)
@@ -112,27 +112,30 @@ impl FileListTrait for FileListGDrive {
             .gdrive
             .get_all_files(false)?
             .into_iter()
-            .filter_map(|f| {
+            .filter(|f| {
                 if let Some(owners) = f.owners.as_ref() {
                     if owners.is_empty() {
-                        return None;
+                        return false;
                     }
                     if owners[0].me != Some(true) {
-                        return None;
+                        return false;
                     }
                 } else {
-                    return None;
+                    return false;
                 }
                 if f.name == Some("Chrome Syncable FileSystem".to_string()) {
-                    return None;
+                    return false;
                 }
-                Some(f)
+                true
             })
             .collect();
 
         let flist: Vec<Result<_, Error>> = flist
             .into_iter()
-            .map(|f| FileInfoGDrive::from_object(f, &self.gdrive, &self.directory_map).map(|i| i.0))
+            .map(|f| {
+                FileInfoGDrive::from_object(f, &self.gdrive, &self.directory_map)
+                    .map(FileInfoTrait::into_finfo)
+            })
             .collect();
         let flist: Vec<_> = map_result_vec(flist)?
             .into_iter()
@@ -155,77 +158,95 @@ impl FileListTrait for FileListGDrive {
             if let Ok(finfo) =
                 FileInfoGDrive::from_object(i.clone(), &self.gdrive, &self.directory_map)
             {
-                if let Some(url) = finfo.0.urlname {
+                if let Some(url) = finfo.get_finfo().urlname.as_ref() {
                     println!("{}", url.as_str());
                 }
             }
         })
     }
 
-    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
+    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync,
+        T: FileInfoTrait,
+        U: FileInfoTrait,
     {
-        let finfo_local = finfo_local.get_finfo();
-        let finfo_remote = finfo_remote.get_finfo();
-        if finfo_local.servicetype != FileService::Local
-            || finfo_remote.servicetype != FileService::GDrive
-        {
-            return Err(err_msg(format!(
-                "Wrong fileinfo types {} {}",
-                finfo_local.servicetype, finfo_remote.servicetype
-            )));
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        if finfo0.servicetype == FileService::GDrive && finfo1.servicetype == FileService::Local {
+            let local_file = finfo1
+                .filepath
+                .clone()
+                .ok_or_else(|| err_msg("No local path"))?
+                .to_str()
+                .ok_or_else(|| err_msg("Failed to parse path"))?
+                .to_string();
+            let local_url = Url::from_file_path(local_file).map_err(|_| err_msg("failure"))?;
+            let parent_dir = finfo1
+                .filepath
+                .as_ref()
+                .ok_or_else(|| err_msg("No local path"))?
+                .parent()
+                .ok_or_else(|| err_msg("No parent directory"))?;
+            if !parent_dir.exists() {
+                create_dir_all(&parent_dir)?;
+            }
+            let gdriveid = finfo0
+                .serviceid
+                .clone()
+                .ok_or_else(|| err_msg("No gdrive url"))?
+                .0;
+            self.gdrive.download(&gdriveid, &local_url, None)
+        } else {
+            Err(err_msg(format!(
+                "Invalid types {} {}",
+                finfo0.servicetype, finfo1.servicetype
+            )))
         }
-        let local_file = finfo_local
-            .filepath
-            .clone()
-            .ok_or_else(|| err_msg("No local path"))?
-            .canonicalize()?;
-        let local_url = Url::from_file_path(local_file).map_err(|_| err_msg("failure"))?;
-        let remote_url = "test".to_string();
-        self.gdrive.upload(&local_url, &remote_url)?;
+    }
+
+    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait,
+        U: FileInfoTrait,
+    {
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::GDrive {
+            let local_file = finfo0
+                .filepath
+                .clone()
+                .ok_or_else(|| err_msg("No local path"))?
+                .canonicalize()?;
+            let local_url = Url::from_file_path(local_file).map_err(|_| err_msg("failure"))?;
+            let remote_url = "test".to_string();
+            self.gdrive.upload(&local_url, &remote_url)?;
+            Ok(())
+        } else {
+            Err(err_msg(format!(
+                "Invalid types {} {}",
+                finfo0.servicetype, finfo1.servicetype
+            )))
+        }
+    }
+
+    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait,
+        U: FileInfoTrait,
+    {
         Ok(())
     }
 
-    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
+    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync,
+        T: FileInfoTrait,
     {
-        let finfo_remote = finfo_remote.get_finfo();
-        let finfo_local = finfo_local.get_finfo();
-        if finfo_local.servicetype != FileService::Local
-            || finfo_remote.servicetype != FileService::GDrive
-        {
-            return Err(err_msg(format!(
-                "Wrong fileinfo types {} {}",
-                finfo_local.servicetype, finfo_remote.servicetype
-            )));
+        let finfo = finfo.get_finfo();
+        if finfo.servicetype != FileService::GDrive {
+            Err(err_msg("Wrong service type"))
+        } else {
+            Ok(())
         }
-        let local_file = finfo_local
-            .filepath
-            .clone()
-            .ok_or_else(|| err_msg("No local path"))?
-            .to_str()
-            .ok_or_else(|| err_msg("Failed to parse path"))?
-            .to_string();
-        let local_url = Url::from_file_path(local_file).map_err(|_| err_msg("failure"))?;
-        let parent_dir = finfo_local
-            .filepath
-            .as_ref()
-            .ok_or_else(|| err_msg("No local path"))?
-            .parent()
-            .ok_or_else(|| err_msg("No parent directory"))?;
-        if !parent_dir.exists() {
-            create_dir_all(&parent_dir)?;
-        }
-        let gdriveid = finfo_remote
-            .serviceid
-            .clone()
-            .ok_or_else(|| err_msg("No gdrive url"))?
-            .0;
-        self.gdrive.download(&gdriveid, &local_url, None)
     }
 }
 

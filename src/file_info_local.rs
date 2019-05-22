@@ -43,12 +43,12 @@ impl FileInfoTrait for FileInfoLocal {
         }
     }
 
-    fn delete(&self) -> Result<(), Error> {
-        Ok(())
-    }
-
     fn get_finfo(&self) -> &FileInfo {
         &self.0
+    }
+
+    fn into_finfo(self) -> FileInfo {
+        self.0
     }
 
     fn get_md5(&self) -> Option<Md5Sum> {

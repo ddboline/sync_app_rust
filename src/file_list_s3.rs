@@ -20,8 +20,8 @@ pub struct FileListS3 {
 }
 
 impl FileListS3 {
-    pub fn from_conf(conf: FileListS3Conf, region_name: Option<&str>) -> FileListS3 {
-        let s3 = S3Instance::new(region_name);
+    pub fn from_conf(conf: FileListS3Conf) -> FileListS3 {
+        let s3 = S3Instance::new(conf.get_config());
 
         FileListS3 {
             flist: FileList::from_conf(conf.0),
@@ -102,7 +102,7 @@ impl FileListTrait for FileListS3 {
             .s3
             .get_list_of_keys(bucket, Some(prefix))?
             .into_par_iter()
-            .map(|f| FileInfoS3::from_object(bucket, f).map(|i| i.0))
+            .map(|f| FileInfoS3::from_object(bucket, f).map(FileInfoTrait::into_finfo))
             .collect();
         let flist = map_result_vec(flist)?;
 
@@ -126,98 +126,110 @@ impl FileListTrait for FileListS3 {
         })
     }
 
-    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
+    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync,
+        T: FileInfoTrait,
+        U: FileInfoTrait,
     {
-        let finfo_local = finfo_local.get_finfo();
-        let finfo_remote = finfo_remote.get_finfo();
-        if finfo_local.servicetype != FileService::Local
-            || finfo_remote.servicetype != FileService::S3
-        {
-            return Err(err_msg(format!(
-                "Wrong fileinfo types {} {}",
-                finfo_local.servicetype, finfo_remote.servicetype
-            )));
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        if finfo0.servicetype == FileService::S3 && finfo1.servicetype == FileService::Local {
+            let local_file = finfo1
+                .filepath
+                .clone()
+                .ok_or_else(|| err_msg("No local path"))?
+                .to_str()
+                .ok_or_else(|| err_msg("Failed to parse path"))?
+                .to_string();
+            let parent_dir = finfo1
+                .filepath
+                .as_ref()
+                .ok_or_else(|| err_msg("No local path"))?
+                .parent()
+                .ok_or_else(|| err_msg("No parent directory"))?;
+            if !parent_dir.exists() {
+                create_dir_all(&parent_dir)?;
+            }
+            let remote_url = finfo0.urlname.clone().ok_or_else(|| err_msg("No s3 url"))?;
+            let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
+            let key = remote_url.path().trim_start_matches('/');
+            let md5sum = self.s3.download(&bucket, &key, &local_file)?;
+            if md5sum
+                != finfo1
+                    .md5sum
+                    .clone()
+                    .map(|u| u.0)
+                    .unwrap_or_else(|| "".to_string())
+            {
+                println!(
+                    "Multipart upload? {} {}",
+                    finfo1
+                        .urlname
+                        .clone()
+                        .map(Url::into_string)
+                        .unwrap_or_else(|| "".to_string()),
+                    finfo0
+                        .urlname
+                        .clone()
+                        .map(Url::into_string)
+                        .unwrap_or_else(|| "".to_string())
+                );
+            }
+            Ok(())
+        } else {
+            Err(err_msg(format!(
+                "Invalid types {} {}",
+                finfo0.servicetype, finfo1.servicetype
+            )))
         }
-        let local_file = finfo_local
-            .filepath
-            .clone()
-            .ok_or_else(|| err_msg("No local path"))?
-            .canonicalize()?
-            .to_str()
-            .ok_or_else(|| err_msg("Failed to parse path"))?
-            .to_string();
-        let remote_url = finfo_remote
-            .urlname
-            .clone()
-            .ok_or_else(|| err_msg("No s3 url"))?;
-        let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
-        let key = remote_url.path();
-        self.s3.upload(&local_file, &bucket, &key)
     }
 
-    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
+    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync,
+        T: FileInfoTrait,
+        U: FileInfoTrait,
     {
-        let finfo_remote = finfo_remote.get_finfo();
-        let finfo_local = finfo_local.get_finfo();
-        if finfo_local.servicetype != FileService::Local
-            || finfo_remote.servicetype != FileService::S3
-        {
-            return Err(err_msg(format!(
-                "Wrong fileinfo types {} {}",
-                finfo_local.servicetype, finfo_remote.servicetype
-            )));
-        }
-        let local_file = finfo_local
-            .filepath
-            .clone()
-            .ok_or_else(|| err_msg("No local path"))?
-            .to_str()
-            .ok_or_else(|| err_msg("Failed to parse path"))?
-            .to_string();
-        let parent_dir = finfo_local
-            .filepath
-            .as_ref()
-            .ok_or_else(|| err_msg("No local path"))?
-            .parent()
-            .ok_or_else(|| err_msg("No parent directory"))?;
-        if !parent_dir.exists() {
-            create_dir_all(&parent_dir)?;
-        }
-        let remote_url = finfo_remote
-            .urlname
-            .clone()
-            .ok_or_else(|| err_msg("No s3 url"))?;
-        let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
-        let key = remote_url.path().trim_start_matches('/');
-        let md5sum = self.s3.download(&bucket, &key, &local_file)?;
-        if md5sum
-            != finfo_local
-                .md5sum
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::S3 {
+            let local_file = finfo0
+                .filepath
                 .clone()
-                .map(|u| u.0)
-                .unwrap_or_else(|| "".to_string())
-        {
-            println!(
-                "Multipart upload? {} {}",
-                finfo_local
-                    .urlname
-                    .clone()
-                    .map(Url::into_string)
-                    .unwrap_or_else(|| "".to_string()),
-                finfo_remote
-                    .urlname
-                    .clone()
-                    .map(Url::into_string)
-                    .unwrap_or_else(|| "".to_string())
-            );
+                .ok_or_else(|| err_msg("No local path"))?
+                .canonicalize()?
+                .to_str()
+                .ok_or_else(|| err_msg("Failed to parse path"))?
+                .to_string();
+            let remote_url = finfo1.urlname.clone().ok_or_else(|| err_msg("No s3 url"))?;
+            let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
+            let key = remote_url.path();
+            self.s3.upload(&local_file, &bucket, &key)
+        } else {
+            Err(err_msg(format!(
+                "Invalid types {} {}",
+                finfo0.servicetype, finfo1.servicetype
+            )))
         }
+    }
+
+    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait,
+        U: FileInfoTrait,
+    {
         Ok(())
+    }
+
+    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
+    where
+        T: FileInfoTrait,
+    {
+        let finfo = finfo.get_finfo();
+        if finfo.servicetype != FileService::S3 {
+            Err(err_msg("Wrong service type"))
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -231,16 +243,16 @@ mod tests {
 
     #[test]
     fn test_fill_file_list() {
-        let s3 = S3Instance::new(None);
+        let config = Config::new();
+        let s3 = S3Instance::new(&config);
         let blist = s3.get_list_of_buckets().unwrap();
         let bucket = blist
             .get(0)
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
-        let config = Config::new();
 
         let conf = FileListS3Conf::new(&bucket, &config).unwrap();
-        let flist = FileListS3::from_conf(conf, None).max_keys(100);
+        let flist = FileListS3::from_conf(conf).max_keys(100);
 
         let new_flist = flist.fill_file_list(None).unwrap();
 

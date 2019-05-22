@@ -9,6 +9,8 @@ use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
 
+use crate::config::Config;
+
 #[derive(Clone)]
 pub struct S3Instance {
     s3_client: Arc<S3Client>,
@@ -21,13 +23,22 @@ impl fmt::Debug for S3Instance {
     }
 }
 
-impl S3Instance {
-    pub fn new(region_name: Option<&str>) -> Self {
-        let region: Region = match region_name {
-            Some(r) => r.parse().ok(),
-            None => None,
+impl Default for S3Instance {
+    fn default() -> Self {
+        Self {
+            s3_client: Arc::new(S3Client::new(Region::UsEast1)),
+            max_keys: None,
         }
-        .unwrap_or(Region::UsEast1);
+    }
+}
+
+impl S3Instance {
+    pub fn new(config: &Config) -> Self {
+        let region: Region = config
+            .aws_region_name
+            .parse()
+            .ok()
+            .unwrap_or(Region::UsEast1);
         Self {
             s3_client: Arc::new(S3Client::new(region)),
             max_keys: None,
@@ -204,11 +215,13 @@ impl S3Instance {
 
 #[cfg(test)]
 mod tests {
+    use crate::config::Config;
     use crate::s3_instance::S3Instance;
 
     #[test]
     fn test_list_buckets() {
-        let s3_instance = S3Instance::new(None).max_keys(100);
+        let config = Config::new();
+        let s3_instance = S3Instance::new(&config).max_keys(100);
         let blist = s3_instance.get_list_of_buckets().unwrap();
         let bucket = blist
             .get(0)

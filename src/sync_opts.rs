@@ -47,20 +47,18 @@ impl SyncOpts {
                     Err(err_msg("Need 2 Urls"))
                 } else {
                     let fsync = FileSync::new(opts.mode, &config);
-                    let conf0 = FileListConf::from_url(&opts.urls[0], &config)?;
-                    let conf1 = FileListConf::from_url(&opts.urls[1], &config)?;
-                    let flist0 = FileList::from_conf(conf0);
-                    let flist1 = FileList::from_conf(conf1);
+                    let conf = FileListConf::from_url(&opts.urls[0], &config)?;
+                    let flist = FileList::from_conf(conf);
                     let finfo0 = FileInfo::from_url(&opts.urls[0])?;
                     let finfo1 = FileInfo::from_url(&opts.urls[1])?;
-                    fsync.copy_object(&flist0, &flist1, &finfo0, &finfo1)
+                    fsync.copy_object(&flist, &finfo0, &finfo1)
                 }
             }
             FileSyncAction::List => {
                 if opts.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
-                    for (_, urls) in &group_urls(&opts.urls) {
+                    for urls in group_urls(&opts.urls).values() {
                         let conf = FileListConf::from_url(&urls[0], &config)?;
                         let mut flist = FileList::from_conf(conf);
                         for url in urls {
@@ -79,10 +77,12 @@ impl SyncOpts {
                 if opts.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
-                    for (_, urls) in &group_urls(&opts.urls) {
+                    for urls in group_urls(&opts.urls).values() {
+                        let conf = FileListConf::from_url(&urls[0], &config)?;
+                        let flist = FileList::from_conf(conf);
                         for url in urls {
                             let finfo = FileInfo::from_url(&url)?;
-                            finfo.delete()?;
+                            flist.delete(&finfo)?;
                         }
                     }
                     println!("{:?}", group_urls(&opts.urls));

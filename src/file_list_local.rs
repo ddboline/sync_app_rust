@@ -164,79 +164,68 @@ impl FileListTrait for FileListLocal {
         Ok(())
     }
 
-    fn upload_file<T, U>(&self, finfo_local: &T, finfo_remote: &U) -> Result<(), Error>
+    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync,
+        T: FileInfoTrait,
+        U: FileInfoTrait,
     {
-        let finfo_local = finfo_local.get_finfo();
-        let finfo_remote = finfo_remote.get_finfo();
-        if finfo_local.servicetype != FileService::Local
-            || finfo_remote.servicetype != FileService::Local
-        {
-            return Err(err_msg(format!(
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        if finfo0.servicetype != FileService::Local || finfo1.servicetype != FileService::Local {
+            Err(err_msg(format!(
                 "Wrong fileinfo types {} {}",
-                finfo_local.servicetype, finfo_remote.servicetype
-            )));
+                finfo0.servicetype, finfo1.servicetype
+            )))
+        } else {
+            let local_file = finfo1
+                .filepath
+                .as_ref()
+                .ok_or_else(|| err_msg("No local path"))?;
+            let remote_file = finfo0
+                .filepath
+                .clone()
+                .ok_or_else(|| err_msg("No local path"))?;
+            let parent_dir = finfo1
+                .filepath
+                .as_ref()
+                .ok_or_else(|| err_msg("No local path"))?
+                .parent()
+                .ok_or_else(|| err_msg("No parent directory"))?;
+            if !parent_dir.exists() {
+                create_dir_all(&parent_dir)?;
+            }
+
+            copy(&remote_file, &local_file)?;
+            Ok(())
         }
-        let parent_dir = finfo_local
-            .filepath
-            .as_ref()
-            .ok_or_else(|| err_msg("No local path"))?
-            .parent()
-            .ok_or_else(|| err_msg("No parent directory"))?;
-        if !parent_dir.exists() {
-            create_dir_all(&parent_dir)?;
-        }
-        let local_file = finfo_local
-            .filepath
-            .as_ref()
-            .ok_or_else(|| err_msg("No local path"))?
-            .canonicalize()?;
-        let remote_file = finfo_remote
-            .filepath
-            .as_ref()
-            .ok_or_else(|| err_msg("No local path"))?
-            .canonicalize()?;
-        copy(&local_file, &remote_file)?;
+    }
+
+    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait,
+        U: FileInfoTrait,
+    {
+        self.copy_from(finfo0, finfo1)
+    }
+
+    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
+    where
+        T: FileInfoTrait,
+        U: FileInfoTrait,
+    {
         Ok(())
     }
 
-    fn download_file<T, U>(&self, finfo_remote: &T, finfo_local: &U) -> Result<(), Error>
+    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
     where
-        T: FileInfoTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync,
+        T: FileInfoTrait,
     {
-        let finfo_local = finfo_local.get_finfo();
-        let finfo_remote = finfo_remote.get_finfo();
-        if finfo_local.servicetype != FileService::Local
-            || finfo_remote.servicetype != FileService::Local
-        {
-            return Err(err_msg(format!(
-                "Wrong fileinfo types {} {}",
-                finfo_local.servicetype, finfo_remote.servicetype
-            )));
+        let finfo = finfo.get_finfo();
+        if finfo.servicetype != FileService::Local {
+            Err(err_msg("Wrong service type"))
+        } else {
+            Ok(())
         }
-        let local_file = finfo_local
-            .filepath
-            .as_ref()
-            .ok_or_else(|| err_msg("No local path"))?;
-        let remote_file = finfo_remote
-            .filepath
-            .clone()
-            .ok_or_else(|| err_msg("No local path"))?;
-        let parent_dir = finfo_local
-            .filepath
-            .as_ref()
-            .ok_or_else(|| err_msg("No local path"))?
-            .parent()
-            .ok_or_else(|| err_msg("No parent directory"))?;
-        if !parent_dir.exists() {
-            create_dir_all(&parent_dir)?;
-        }
-
-        copy(&remote_file, &local_file)?;
-        Ok(())
     }
 }
 

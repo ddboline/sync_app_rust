@@ -164,7 +164,7 @@ impl FileSync {
                     .filter(|(f0, f1)| {
                         f0.servicetype == FileService::Local || f1.servicetype == FileService::Local
                     })
-                    .map(|(f0, f1)| self.copy_object(flist0, flist1, f0, f1))
+                    .map(|(f0, f1)| self.copy_object(flist0, f0, f1))
                     .collect();
                 map_result_vec(result)?;
             }
@@ -243,13 +243,11 @@ impl FileSync {
                 .map(|v| {
                     let u0: Url = v[0].parse()?;
                     let u1: Url = v[1].parse()?;
-                    let conf0 = FileListConf::from_url(&u0, &self.config)?;
-                    let conf1 = FileListConf::from_url(&u1, &self.config)?;
-                    let flist0 = FileList::from_conf(conf0);
-                    let flist1 = FileList::from_conf(conf1);
+                    let conf = FileListConf::from_url(&u0, &self.config)?;
+                    let flist = FileList::from_conf(conf);
                     let finfo0 = FileInfo::from_url(&u0)?;
                     let finfo1 = FileInfo::from_url(&u1)?;
-                    self.copy_object(&flist0, &flist1, &finfo0, &finfo1)?;
+                    self.copy_object(&flist, &finfo0, &finfo1)?;
                     Ok(())
                 })
                 .collect();
@@ -262,26 +260,20 @@ impl FileSync {
         }
     }
 
-    pub fn copy_object<T, U, V, W>(
-        &self,
-        flist0: &T,
-        flist1: &U,
-        finfo0: &V,
-        finfo1: &W,
-    ) -> Result<(), Error>
+    pub fn copy_object<T, U, V>(&self, flist: &T, finfo0: &U, finfo1: &V) -> Result<(), Error>
     where
         T: FileListTrait + Send + Sync,
-        U: FileListTrait + Send + Sync,
+        U: FileInfoTrait + Send + Sync,
         V: FileInfoTrait + Send + Sync,
-        W: FileInfoTrait + Send + Sync,
     {
+        let t = flist.get_conf().servicetype;
         let t0 = finfo0.get_finfo().servicetype;
         let t1 = finfo1.get_finfo().servicetype;
 
         if t1 == FileService::Local {
-            flist0.download_file(finfo0, finfo1)
+            flist.copy_from(finfo0, finfo1)
         } else if t0 == FileService::Local {
-            flist1.upload_file(finfo0, finfo1)
+            flist.copy_to(finfo0, finfo1)
         } else {
             Err(err_msg("Invalid request"))
         }
@@ -298,7 +290,7 @@ mod tests {
     use tempfile::NamedTempFile;
 
     use crate::config::Config;
-    use crate::file_info::{ServiceId, ServiceSession};
+    use crate::file_info::{FileInfoTrait, ServiceId, ServiceSession};
     use crate::file_info_local::FileInfoLocal;
     use crate::file_info_s3::FileInfoS3;
     use crate::file_list_local::{FileListLocal, FileListLocalConf};
@@ -367,7 +359,7 @@ mod tests {
         let flist0 = FileListLocal::from_conf(flist0conf).with_list(&[finfo0.0]);
 
         let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
-        let flist1 = FileListS3::from_conf(flist1conf, None);
+        let flist1 = FileListS3::from_conf(flist1conf);
 
         fsync.compare_lists(&flist0, &flist1).unwrap();
 
@@ -424,7 +416,7 @@ mod tests {
         let finfo1 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
 
         let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
-        let flist1 = FileListS3::from_conf(flist1conf, None).with_list(&[finfo1.0]);
+        let flist1 = FileListS3::from_conf(flist1conf).with_list(&[finfo1.into_finfo()]);
 
         fsync.compare_lists(&flist0, &flist1).unwrap();
 

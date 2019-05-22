@@ -6,6 +6,7 @@ pub struct Config {
     pub database_url: String,
     pub gdrive_secret_file: String,
     pub gdrive_token_path: String,
+    pub aws_region_name: String,
 }
 
 impl Config {
@@ -35,11 +36,13 @@ impl Config {
             .unwrap_or_else(|_| format!("{}/.config/sync_app_rust/client_secrets.json", home_dir));
         let gdrive_token_path =
             var("GDRIVE_TOKEN_PATH").unwrap_or_else(|_| format!("{}/.gdrive", home_dir));
+        let aws_region_name = var("AWS_REGION_NAME").unwrap_or_else(|_| "us-east-1".to_string());
 
         Config {
             database_url,
             gdrive_secret_file,
             gdrive_token_path,
+            aws_region_name,
         }
     }
 }
