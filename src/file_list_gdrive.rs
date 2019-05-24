@@ -220,8 +220,12 @@ impl FileListTrait for FileListGDrive {
                 .ok_or_else(|| err_msg("No gdrive url"))?
                 .0;
             let gfile = self.gdrive.get_file_metadata(&gdriveid)?;
+            println!("{:?}", gfile.mime_type);
+            if self.gdrive.is_unexportable(&gfile.mime_type) {
+                return Ok(());
+            }
             self.gdrive
-                .download(&gdriveid, &local_path, gfile.mime_type)
+                .download(&gdriveid, &local_path, &gfile.mime_type)
         } else {
             Err(err_msg(format!(
                 "Invalid types {} {}",

@@ -204,15 +204,23 @@ impl FileSync {
 
         let use_sha1 = (finfo0.servicetype == FileService::OneDrive)
             || (finfo1.servicetype == FileService::OneDrive);
+        let is_export = if use_sha1 {
+            !(finfo0.sha1sum.is_some() && finfo1.sha1sum.is_some())
+        } else {
+            !(finfo0.md5sum.is_some() && finfo1.md5sum.is_some())
+        };
         if finfo0.filename != finfo1.filename {
             return false;
+        }
+        if is_export {
+            do_update = false;
         }
         if let Some(fstat0) = finfo0.filestat.as_ref() {
             if let Some(fstat1) = finfo1.filestat.as_ref() {
                 if fstat0.st_mtime > fstat1.st_mtime {
                     do_update = true;
                 }
-                if fstat0.st_size != fstat1.st_size {
+                if fstat0.st_size != fstat1.st_size && !is_export {
                     do_update = true;
                 }
             }
