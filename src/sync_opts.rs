@@ -1,4 +1,6 @@
 use failure::{err_msg, Error};
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use structopt::StructOpt;
 use url::Url;
 
@@ -6,6 +8,7 @@ use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
+use crate::map_result_vec;
 use crate::pgpool::PgPool;
 
 #[derive(StructOpt, Debug)]
@@ -62,6 +65,7 @@ impl SyncOpts {
                         let conf = FileListConf::from_url(&urls[0], &config)?;
                         let mut flist = FileList::from_conf(conf);
                         for url in urls {
+                            println!("url {:?} {}", url, flist.get_conf().servicetype);
                             flist.conf.baseurl = url.clone();
                             flist.print_list()?;
                         }
@@ -70,14 +74,35 @@ impl SyncOpts {
                 }
             }
             FileSyncAction::Process => {
+                let pool = PgPool::new(&config.database_url);
                 let fsync = FileSync::new(opts.mode, &config);
-                fsync.process_file()
+                fsync.process_file(&pool)
             }
             FileSyncAction::Delete => {
-                if opts.urls.is_empty() {
+                if opts.urls.is_empty() && opts.mode == FileSyncMode::Full {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
-                    for urls in group_urls(&opts.urls).values() {
+                    let mut all_urls = opts.urls.clone();
+                    if let FileSyncMode::OutputFile(fname) = &opts.mode {
+                        let f = File::open(fname)?;
+                        let proc_list: Vec<Result<_, Error>> = BufReader::new(f)
+                            .lines()
+                            .map(|line| {
+                                let url: Url = match line?
+                                    .split_whitespace()
+                                    .map(ToString::to_string)
+                                    .nth(0)
+                                {
+                                    Some(v) => v.parse()?,
+                                    None => return Err(err_msg("No url")),
+                                };
+                                Ok(url)
+                            })
+                            .collect();
+                        let proc_list = map_result_vec(proc_list)?;
+                        all_urls.extend_from_slice(&proc_list);
+                    }
+                    for urls in group_urls(&all_urls).values() {
                         let conf = FileListConf::from_url(&urls[0], &config)?;
                         let flist = FileList::from_conf(conf);
                         for url in urls {

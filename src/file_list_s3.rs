@@ -228,7 +228,10 @@ impl FileListTrait for FileListS3 {
         if finfo.servicetype != FileService::S3 {
             Err(err_msg("Wrong service type"))
         } else {
-            Ok(())
+            let url = finfo.urlname.clone().ok_or_else(|| err_msg("No s3 url"))?;
+            let bucket = url.host_str().ok_or_else(|| err_msg("No bucket"))?;
+            let key = url.path();
+            self.s3.delete_key(&bucket, &key)
         }
     }
 }

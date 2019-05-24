@@ -26,14 +26,20 @@ impl FileListGDrive {
         conf: FileListGDriveConf,
         gdrive: &GDriveInstance,
     ) -> Result<FileListGDrive, Error> {
-        let (dmap, root_dir) = gdrive.get_directory_map()?;
         let f = FileListGDrive {
             flist: FileList::from_conf(conf.0),
             gdrive: gdrive.clone(),
-            directory_map: Rc::new(dmap),
-            root_directory: root_dir,
+            directory_map: Rc::new(HashMap::new()),
+            root_directory: None,
         };
         Ok(f)
+    }
+
+    pub fn set_directory_map(mut self) -> Result<Self, Error> {
+        let (dmap, root_dir) = self.gdrive.get_directory_map()?;
+        self.directory_map = Rc::new(dmap);
+        self.root_directory = root_dir;
+        Ok(self)
     }
 
     pub fn with_list(self, filelist: &[FileInfo]) -> FileListGDrive {
@@ -60,14 +66,18 @@ impl FileListGDrive {
 pub struct FileListGDriveConf(pub FileListConf);
 
 impl FileListGDriveConf {
-    pub fn new(basepath: &str, config: &Config) -> Result<FileListGDriveConf, Error> {
-        let baseurl: Url = format!("gdrive://{}", basepath).parse()?;
+    pub fn new(
+        servicesession: &str,
+        basepath: &str,
+        config: &Config,
+    ) -> Result<FileListGDriveConf, Error> {
+        let baseurl: Url = format!("gdrive://{}/{}", servicesession, basepath).parse()?;
 
         let conf = FileListConf {
             baseurl,
             config: config.clone(),
             servicetype: FileService::GDrive,
-            servicesession: basepath.parse()?,
+            servicesession: servicesession.parse()?,
         };
         Ok(FileListGDriveConf(conf))
     }
@@ -123,9 +133,6 @@ impl FileListTrait for FileListGDrive {
                 } else {
                     return false;
                 }
-                if f.name == Some("Chrome Syncable FileSystem".to_string()) {
-                    return false;
-                }
                 true
             })
             .collect();
@@ -139,6 +146,14 @@ impl FileListTrait for FileListGDrive {
             .collect();
         let flist: Vec<_> = map_result_vec(flist)?
             .into_iter()
+            .filter(|f| {
+                if let Some(url) = f.urlname.as_ref() {
+                    if url.as_str().contains(self.get_conf().baseurl.as_str()) {
+                        return true;
+                    }
+                }
+                return false;
+            })
             .map(|mut f| {
                 f.servicesession = Some(self.get_conf().servicesession.clone());
                 f
@@ -195,7 +210,8 @@ impl FileListTrait for FileListGDrive {
                 .clone()
                 .ok_or_else(|| err_msg("No gdrive url"))?
                 .0;
-            self.gdrive.download(&gdriveid, &local_url, None)
+            let gfile = self.gdrive.get_file_metadata(&gdriveid)?;
+            self.gdrive.download(&gdriveid, &local_url, gfile.mime_type)
         } else {
             Err(err_msg(format!(
                 "Invalid types {} {}",
@@ -245,13 +261,19 @@ impl FileListTrait for FileListGDrive {
         if finfo.servicetype != FileService::GDrive {
             Err(err_msg("Wrong service type"))
         } else {
-            Ok(())
+            if let Some(gdriveid) = finfo.serviceid.as_ref() {
+                self.gdrive.move_to_trash(&gdriveid.0)
+            } else {
+                Ok(())
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use crate::config::Config;
     use crate::file_list::FileListTrait;
     use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
@@ -261,14 +283,14 @@ mod tests {
     #[test]
     fn test_fill_file_list() {
         let config = Config::new();
-        let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
-            .with_max_keys(100)
-            .with_page_size(100);
+        let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
 
-        let fconf = FileListGDriveConf::new("test", &config).unwrap();
+        let fconf = FileListGDriveConf::new("ddboline@gmail.com", "My Drive", &config).unwrap();
         let flist = FileListGDrive::from_conf(fconf, &gdrive)
             .unwrap()
-            .max_keys(100);
+            .max_keys(100)
+            .set_directory_map()
+            .unwrap();
 
         let new_flist = flist.fill_file_list(None).unwrap();
 
@@ -276,6 +298,8 @@ mod tests {
 
         let config = Config::new();
         let pool = PgPool::new(&config.database_url);
+        flist.clear_file_list(&pool).unwrap();
+
         let flist = flist.with_list(&new_flist);
 
         println!("wrote {}", flist.cache_file_list(&pool).unwrap());
@@ -285,5 +309,25 @@ mod tests {
         assert_eq!(flist.flist.filemap.len(), new_flist.len());
 
         flist.clear_file_list(&pool).unwrap();
+
+        println!("dmap {}", flist.directory_map.len());
+
+        let dnamemap = GDriveInstance::get_directory_name_map(&flist.directory_map);
+        for f in flist.get_filemap().values() {
+            let u = f.urlname.as_ref().unwrap();
+            let parent_id = gdrive
+                .get_parent_id(u, &flist.directory_map, &dnamemap)
+                .unwrap();
+            assert!(!parent_id.is_none());
+            println!("{} {:?}", u, parent_id);
+        }
+
+        let multimap: HashMap<_, _> = dnamemap.iter().filter(|(_, v)| v.len() > 1).collect();
+        println!("multimap {}", multimap.len());
+        for (key, val) in &multimap {
+            if val.len() > 1 {
+                println!("{} {}", key, val.len());
+            }
+        }
     }
 }

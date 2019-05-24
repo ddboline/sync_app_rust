@@ -1,7 +1,7 @@
 use failure::{err_msg, Error};
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::fs::{copy, create_dir_all};
+use std::fs::{copy, create_dir_all, remove_file};
 use std::path::PathBuf;
 use std::string::ToString;
 use std::time::SystemTime;
@@ -224,7 +224,11 @@ impl FileListTrait for FileListLocal {
         if finfo.servicetype != FileService::Local {
             Err(err_msg("Wrong service type"))
         } else {
-            Ok(())
+            if let Some(filepath) = finfo.filepath.as_ref() {
+                remove_file(filepath).map_err(err_msg)
+            } else {
+                Ok(())
+            }
         }
     }
 }

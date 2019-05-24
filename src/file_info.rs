@@ -6,6 +6,7 @@ use std::str::FromStr;
 use std::string::ToString;
 use url::Url;
 
+use crate::file_info_gdrive::FileInfoGDrive;
 use crate::file_info_local::FileInfoLocal;
 use crate::file_info_s3::FileInfoS3;
 use crate::file_service::FileService;
@@ -110,6 +111,7 @@ impl FileInfoTrait for FileInfo {
         match url.scheme() {
             "file" => FileInfoLocal::from_url(url).map(FileInfoTrait::into_finfo),
             "s3" => FileInfoS3::from_url(url).map(FileInfoTrait::into_finfo),
+            "gdrive" => FileInfoGDrive::from_url(url).map(FileInfoTrait::into_finfo),
             _ => Err(err_msg("Bad scheme")),
         }
     }
@@ -163,6 +165,25 @@ impl FileInfo {
             servicetype: item.servicetype.parse()?,
             servicesession: map_parse(&item.servicesession)?,
         })
+    }
+
+    pub fn from_database(pool: &PgPool, url: &Url) -> Result<Option<FileInfo>, Error> {
+        use crate::schema::file_info_cache::dsl::*;
+
+        let conn = pool.get()?;
+
+        let result = match file_info_cache
+            .filter(urlname.eq(url.as_str().to_string()))
+            .load::<FileInfoCache>(&conn)
+            .map_err(err_msg)?
+            .iter()
+            .nth(0)
+        {
+            Some(f) => Some(FileInfo::from_cache_info(&f)?),
+            None => None,
+        };
+
+        Ok(result)
     }
 }
 

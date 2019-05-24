@@ -91,9 +91,13 @@ impl FileInfoGDrive {
         });
         let urlname = format!("gdrive://{}/", gdrive.session_name);
         let urlname = Url::parse(&urlname)?;
-        let urlname = export_path
-            .iter()
-            .fold(urlname, |u, e| u.join(e).unwrap_or(u));
+        let urlname = export_path.iter().fold(urlname, |u, e| {
+            if e.contains('#') {
+                u.join(&e.replace("#", "%35")).unwrap()
+            } else {
+                u.join(e).unwrap()
+            }
+        });
 
         let finfo = FileInfo {
             filename: filename.clone(),

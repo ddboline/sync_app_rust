@@ -108,53 +108,9 @@ pub trait FileListTrait {
     where
         T: FileInfoTrait;
 
-    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
-        let conf = self.get_conf();
-        match conf.servicetype {
-            FileService::Local => {
-                let fconf = FileListLocalConf(conf.clone());
-                let flist = FileListLocal::from_conf(fconf);
-                flist.fill_file_list(pool)
-            }
-            FileService::S3 => {
-                let fconf = FileListS3Conf(conf.clone());
-                let flist = FileListS3::from_conf(fconf);
-                flist.fill_file_list(pool)
-            }
-            FileService::GDrive => {
-                let fconf = FileListGDriveConf(conf.clone());
-                let config = Config::new();
-                let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(fconf, &gdrive)?;
-                flist.fill_file_list(pool)
-            }
-            _ => Err(err_msg("Not implemented")),
-        }
-    }
+    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error>;
 
-    fn print_list(&self) -> Result<(), Error> {
-        let conf = self.get_conf();
-        match conf.servicetype {
-            FileService::Local => {
-                let fconf = FileListLocalConf(conf.clone());
-                let flist = FileListLocal::from_conf(fconf);
-                flist.print_list()
-            }
-            FileService::S3 => {
-                let fconf = FileListS3Conf(conf.clone());
-                let flist = FileListS3::from_conf(fconf);
-                flist.print_list()
-            }
-            FileService::GDrive => {
-                let config = Config::new();
-                let fconf = FileListGDriveConf(conf.clone());
-                let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(fconf, &gdrive)?;
-                flist.print_list()
-            }
-            _ => Err(err_msg("Not implemented")),
-        }
-    }
+    fn print_list(&self) -> Result<(), Error>;
 
     fn cache_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
         let current_cache: HashMap<_, _> = self
@@ -317,7 +273,7 @@ impl FileListTrait for FileList {
                 let conf = FileListGDriveConf(self.get_conf().clone());
                 let config = Config::new();
                 let gdrive = GDriveInstance::new(&config, &conf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(conf, &gdrive)?;
+                let flist = FileListGDrive::from_conf(conf, &gdrive)?.set_directory_map()?;
                 flist.fill_file_list(pool)
             }
             _ => match pool {
@@ -331,6 +287,30 @@ impl FileListTrait for FileList {
                 },
                 None => Ok(Vec::new()),
             },
+        }
+    }
+
+    fn print_list(&self) -> Result<(), Error> {
+        let conf = self.get_conf();
+        match conf.servicetype {
+            FileService::Local => {
+                let fconf = FileListLocalConf(conf.clone());
+                let flist = FileListLocal::from_conf(fconf);
+                flist.print_list()
+            }
+            FileService::S3 => {
+                let fconf = FileListS3Conf(conf.clone());
+                let flist = FileListS3::from_conf(fconf);
+                flist.print_list()
+            }
+            FileService::GDrive => {
+                let config = Config::new();
+                let fconf = FileListGDriveConf(conf.clone());
+                let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
+                let flist = FileListGDrive::from_conf(fconf, &gdrive)?.set_directory_map()?;
+                flist.print_list()
+            }
+            _ => Err(err_msg("Not implemented")),
         }
     }
 

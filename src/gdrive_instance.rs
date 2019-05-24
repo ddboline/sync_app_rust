@@ -11,6 +11,7 @@ use oauth2::{
     Authenticator, ConsoleApplicationSecret, DefaultAuthenticatorDelegate, DiskTokenStorage,
     FlowType,
 };
+use percent_encoding::percent_decode;
 use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
@@ -24,6 +25,7 @@ use std::string::ToString;
 use url::Url;
 
 use crate::config::Config;
+use crate::exponential_retry;
 
 type GCClient = Client;
 type GCAuthenticator = Authenticator<DefaultAuthenticatorDelegate, DiskTokenStorage, Client>;
@@ -55,6 +57,13 @@ lazy_static! {
         "text/x-csrc" => "C",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "xlsx",
     };
+}
+
+#[derive(Debug, Clone)]
+pub struct DirectoryInfo {
+    pub gdriveid: String,
+    pub name: String,
+    pub parentid: Option<String>,
 }
 
 #[derive(Clone)]
@@ -246,15 +255,17 @@ impl GDriveInstance {
         Ok(())
     }
 
-    fn get_file_metadata(&self, id: &str) -> Result<drive3::File, Error> {
-        self.gdrive
-            .files()
-            .get(id)
-            .param("fields", "id,name,parents,mimeType,webContentLink")
-            .add_scope(drive3::Scope::Full)
-            .doit()
-            .map(|(_response, file)| file)
-            .map_err(|e| err_msg(format!("{:#?}", e)))
+    pub fn get_file_metadata(&self, id: &str) -> Result<drive3::File, Error> {
+        exponential_retry(|| {
+            self.gdrive
+                .files()
+                .get(id)
+                .param("fields", "id,name,parents,mimeType,webContentLink")
+                .add_scope(drive3::Scope::Full)
+                .doit()
+                .map(|(_response, file)| file)
+                .map_err(|e| err_msg(format!("{:#?}", e)))
+        })
     }
 
     pub fn create_directory(&self, directory: &Url, parentid: &str) -> Result<(), Error> {
@@ -265,45 +276,51 @@ impl GDriveInstance {
             .file_name()
             .and_then(|d| d.to_str().map(ToString::to_string))
             .ok_or_else(|| err_msg("Failed to convert string"))?;
-        let new_file = drive3::File {
-            name: Some(directory_name),
-            mime_type: Some("application/vnd.google-apps.folder".to_string()),
-            parents: Some(vec![parentid.to_string()]),
-            ..Default::default()
-        };
-        let mime: Mime = "application/octet-stream"
-            .parse()
-            .map_err(|_| err_msg("bad mimetype"))?;
-        let dummy_file = DummyFile::new(&[]);
-        self.gdrive
-            .files()
-            .create(new_file)
-            .upload(dummy_file, mime)
-            .map_err(|e| err_msg(format!("{:#?}", e)))
-            .map(|(_, _)| ())
+        exponential_retry(move || {
+            let new_file = drive3::File {
+                name: Some(directory_name.clone()),
+                mime_type: Some("application/vnd.google-apps.folder".to_string()),
+                parents: Some(vec![parentid.to_string()]),
+                ..Default::default()
+            };
+            let mime: Mime = "application/octet-stream"
+                .parse()
+                .map_err(|_| err_msg("bad mimetype"))?;
+            let dummy_file = DummyFile::new(&[]);
+
+            self.gdrive
+                .files()
+                .create(new_file)
+                .upload(dummy_file, mime)
+                .map_err(|e| err_msg(format!("{:#?}", e)))
+                .map(|(_, _)| ())
+        })
     }
 
     pub fn upload(&self, local: &Url, parentid: &str) -> Result<drive3::File, Error> {
         let file_path = local.to_file_path().map_err(|_| err_msg("No file path"))?;
-        let file_obj = File::open(file_path.clone())?;
-        let mime: Mime = "application/octet-stream"
-            .parse()
-            .map_err(|_| err_msg("bad mimetype"))?;
-        let new_file = drive3::File {
-            name: file_path
-                .as_path()
-                .file_name()
-                .and_then(OsStr::to_str)
-                .map(ToString::to_string),
-            parents: Some(vec![parentid.to_string()]),
-            ..Default::default()
-        };
-        self.gdrive
-            .files()
-            .create(new_file)
-            .upload_resumable(file_obj, mime)
-            .map_err(|e| err_msg(format!("{:#?}", e)))
-            .map(|(_, f)| f)
+        exponential_retry(|| {
+            let file_obj = File::open(file_path.clone())?;
+            let mime: Mime = "application/octet-stream"
+                .parse()
+                .map_err(|_| err_msg("bad mimetype"))?;
+            let new_file = drive3::File {
+                name: file_path
+                    .as_path()
+                    .file_name()
+                    .and_then(OsStr::to_str)
+                    .map(ToString::to_string),
+                parents: Some(vec![parentid.to_string()]),
+                ..Default::default()
+            };
+
+            self.gdrive
+                .files()
+                .create(new_file)
+                .upload_resumable(file_obj, mime)
+                .map_err(|e| err_msg(format!("{:#?}", e)))
+                .map(|(_, f)| f)
+        })
     }
 
     pub fn download(
@@ -332,59 +349,64 @@ impl GDriveInstance {
             .and_then(|ref t| MIME_TYPES.get::<str>(&t))
             .cloned();
 
-        let mut response = match export_type {
-            Some(t) => self
-                .gdrive
-                .files()
-                .export(gdriveid, &t)
-                .add_scope(drive3::Scope::Full)
-                .doit()
-                .map_err(|e| err_msg(format!("{:#?}", e)))?,
-            None => {
-                let (response, _empty_file) = self
+        exponential_retry(move || {
+            let mut response = match export_type {
+                Some(t) => self
                     .gdrive
                     .files()
-                    .get(&gdriveid)
-                    .supports_team_drives(false)
-                    .param("alt", "media")
+                    .export(gdriveid, &t)
                     .add_scope(drive3::Scope::Full)
                     .doit()
-                    .map_err(|e| err_msg(format!("{:#?}", e)))?;
-                response
-            }
-        };
+                    .map_err(|e| err_msg(format!("{:#?}", e)))?,
+                None => {
+                    let (response, _empty_file) = self
+                        .gdrive
+                        .files()
+                        .get(&gdriveid)
+                        .supports_team_drives(false)
+                        .param("alt", "media")
+                        .add_scope(drive3::Scope::Full)
+                        .doit()
+                        .map_err(|e| err_msg(format!("{:#?}", e)))?;
+                    response
+                }
+            };
 
-        let mut content: Vec<u8> = Vec::new();
-        response.read_to_end(&mut content)?;
+            let mut content: Vec<u8> = Vec::new();
+            response.read_to_end(&mut content)?;
 
-        let mut outfile = File::create(outpath)?;
-        outfile.write_all(&content)?;
-
-        Ok(())
+            let mut outfile = File::create(outpath.clone())?;
+            outfile.write_all(&content)?;
+            Ok(())
+        })
     }
 
     pub fn move_to_trash(&self, id: &str) -> Result<(), Error> {
-        let mut f = drive3::File::default();
-        f.trashed = Some(true);
+        exponential_retry(|| {
+            let mut f = drive3::File::default();
+            f.trashed = Some(true);
 
-        self.gdrive
-            .files()
-            .update(f, id)
-            .add_scope(drive3::Scope::Full)
-            .doit_without_upload()
-            .map(|_| ())
-            .map_err(|e| err_msg(format!("DriveFacade::move_to_trash() {}", e)))
+            self.gdrive
+                .files()
+                .update(f, id)
+                .add_scope(drive3::Scope::Full)
+                .doit_without_upload()
+                .map(|_| ())
+                .map_err(|e| err_msg(format!("DriveFacade::move_to_trash() {}", e)))
+        })
     }
 
     pub fn delete_permanently(&self, id: &str) -> Result<bool, Error> {
-        self.gdrive
-            .files()
-            .delete(&id)
-            .supports_team_drives(false)
-            .add_scope(drive3::Scope::Full)
-            .doit()
-            .map(|response| response.status.is_success())
-            .map_err(|e| err_msg(format!("{:#?}", e)))
+        exponential_retry(|| {
+            self.gdrive
+                .files()
+                .delete(&id)
+                .supports_team_drives(false)
+                .add_scope(drive3::Scope::Full)
+                .doit()
+                .map(|response| response.status.is_success())
+                .map_err(|e| err_msg(format!("{:#?}", e)))
+        })
     }
 
     pub fn move_to(&self, id: &str, parent: &str, new_name: &str) -> Result<(), Error> {
@@ -426,9 +448,6 @@ impl GDriveInstance {
                 } else {
                     return None;
                 }
-                if d.name == Some("Chrome Syncable FileSystem".to_string()) {
-                    return None;
-                }
                 if let Some(gdriveid) = d.id.as_ref() {
                     if let Some(name) = d.name.as_ref() {
                         if let Some(parents) = d.parents.as_ref() {
@@ -444,7 +463,9 @@ impl GDriveInstance {
                             }
                         } else {
                             if root_id.is_none() {
-                                root_id = Some(gdriveid.clone());
+                                if d.name != Some("Chrome Syncable FileSystem".to_string()) {
+                                    root_id = Some(gdriveid.clone());
+                                }
                             }
                             return Some((
                                 gdriveid.clone(),
@@ -471,9 +492,6 @@ impl GDriveInstance {
             .collect();
         for parent in unmatched_parents {
             let d = self.get_file_metadata(&parent)?;
-            if d.name == Some("Chrome Syncable FileSystem".to_string()) {
-                continue;
-            }
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
                     let parents = if let Some(p) = d.parents.as_ref() {
@@ -486,7 +504,9 @@ impl GDriveInstance {
                         None
                     };
                     if parents.is_none() && root_id.is_none() {
-                        root_id = Some(gdriveid.clone());
+                        if d.name != Some("Chrome Syncable FileSystem".to_string()) {
+                            root_id = Some(gdriveid.clone());
+                        }
                     }
                     let val = DirectoryInfo {
                         gdriveid: gdriveid.clone(),
@@ -499,6 +519,17 @@ impl GDriveInstance {
             }
         }
         Ok((dmap, root_id))
+    }
+
+    pub fn get_directory_name_map(
+        directory_map: &HashMap<String, DirectoryInfo>,
+    ) -> HashMap<String, Vec<DirectoryInfo>> {
+        directory_map.values().fold(HashMap::new(), |mut h, m| {
+            let key = m.name.clone();
+            let val = m.clone();
+            h.entry(key).or_insert_with(Vec::new).push(val);
+            h
+        })
     }
 
     pub fn get_export_path(
@@ -547,13 +578,41 @@ impl GDriveInstance {
         let fullpath: Vec<_> = fullpath.into_iter().rev().collect();
         Ok(fullpath)
     }
-}
 
-#[derive(Debug)]
-pub struct DirectoryInfo {
-    pub gdriveid: String,
-    pub name: String,
-    pub parentid: Option<String>,
+    pub fn get_parent_id(
+        &self,
+        url: &Url,
+        dmap: &HashMap<String, DirectoryInfo>,
+        dir_name_map: &HashMap<String, Vec<DirectoryInfo>>,
+    ) -> Result<Option<String>, Error> {
+        let mut previous_parent_id: Option<String> = None;
+        if let Some(segments) = url.path_segments() {
+            for seg in segments {
+                let name = percent_decode(seg.as_bytes())
+                    .decode_utf8_lossy()
+                    .to_string();
+                let mut matching_directory: Option<String> = None;
+                if let Some(parents) = dir_name_map.get(&name) {
+                    for parent in parents {
+                        if previous_parent_id.is_none() {
+                            previous_parent_id = Some(parent.gdriveid.clone());
+                            matching_directory = Some(parent.gdriveid.clone());
+                            break;
+                        }
+                        if !parent.parentid.is_none() && parent.parentid == previous_parent_id {
+                            matching_directory = Some(parent.gdriveid.clone())
+                        }
+                    }
+                }
+                if let Some(gdriveid) = matching_directory.as_ref() {
+                    previous_parent_id = matching_directory.clone();
+                } else {
+                    return Ok(previous_parent_id);
+                }
+            }
+        }
+        Ok(None)
+    }
 }
 
 struct DummyFile {

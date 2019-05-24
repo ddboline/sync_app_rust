@@ -1,5 +1,6 @@
 use failure::{err_msg, Error};
 use rayon::prelude::*;
+use std::collections::HashMap;
 use std::convert::From;
 use std::fs::File;
 use std::io::Write;
@@ -10,9 +11,12 @@ use url::Url;
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait};
-use crate::file_list::{replace_baseurl, FileList, FileListConf, FileListConfTrait, FileListTrait};
+use crate::file_list::{
+    group_urls, replace_baseurl, FileList, FileListConf, FileListConfTrait, FileListTrait,
+};
 use crate::file_service::FileService;
 use crate::map_result_vec;
+use crate::pgpool::PgPool;
 
 #[derive(Debug)]
 pub enum FileSyncAction {
@@ -40,7 +44,7 @@ impl FromStr for FileSyncAction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FileSyncMode {
     OutputFile(PathBuf),
     Full,
@@ -226,7 +230,7 @@ impl FileSync {
         do_update
     }
 
-    pub fn process_file(&self) -> Result<(), Error> {
+    pub fn process_file(&self, pool: &PgPool) -> Result<(), Error> {
         if let FileSyncMode::OutputFile(fname) = &self.mode {
             let f = File::open(fname)?;
             let proc_list: Vec<Result<_, Error>> = BufReader::new(f)
@@ -238,22 +242,38 @@ impl FileSync {
                 .collect();
             let proc_list = map_result_vec(proc_list)?;
 
-            let results = proc_list
-                .into_par_iter()
+            let proc_list: Vec<Result<_, Error>> = proc_list
+                .into_iter()
                 .map(|v| {
                     let u0: Url = v[0].parse()?;
                     let u1: Url = v[1].parse()?;
-                    let conf = FileListConf::from_url(&u0, &self.config)?;
-                    let flist = FileList::from_conf(conf);
-                    let finfo0 = FileInfo::from_url(&u0)?;
-                    let finfo1 = FileInfo::from_url(&u1)?;
-                    self.copy_object(&flist, &finfo0, &finfo1)?;
-                    Ok(())
+                    Ok((u0, u1))
                 })
                 .collect();
 
-            map_result_vec(results)?;
+            let proc_list = map_result_vec(proc_list)?;
 
+            let proc_map: HashMap<_, _> = proc_list.into_iter().collect();
+
+            let key_list: Vec<_> = proc_map.keys().map(|x| x.clone()).collect();
+
+            for urls in group_urls(&key_list).values() {
+                if let Some(u0) = urls.iter().nth(0) {
+                    let conf = FileListConf::from_url(u0, &self.config)?;
+                    let flist = FileList::from_conf(conf);
+                    for key in urls {
+                        if let Some(val) = proc_map.get(&key) {
+                            let finfo0 = match FileInfo::from_database(&pool, &key)? {
+                                Some(f) => f,
+                                None => FileInfo::from_url(&key)?,
+                            };
+                            let finfo1 = FileInfo::from_url(&val)?;
+                            println!("copy {} {}", key, val);
+                            self.copy_object(&flist, &finfo0, &finfo1)?;
+                        }
+                    }
+                }
+            }
             Ok(())
         } else {
             Err(err_msg("Wrong mode"))

@@ -24,8 +24,12 @@ pub mod schema;
 pub mod sync_opts;
 
 use failure::{err_msg, Error};
+use rand::distributions::{Distribution, Uniform};
+use rand::thread_rng;
 use std::fmt;
 use std::str::FromStr;
+use std::thread::sleep;
+use std::time::Duration;
 
 pub fn map_result_vec<T>(input: Vec<Result<T, Error>>) -> Result<Vec<T>, Error> {
     let mut output: Vec<T> = Vec::new();
@@ -51,5 +55,26 @@ where
     match x {
         Some(y) => Ok(Some(y.parse::<T>().map_err(err_msg)?)),
         None => Ok(None),
+    }
+}
+
+pub fn exponential_retry<T, U>(closure: T) -> Result<U, Error>
+where
+    T: Fn() -> Result<U, Error>,
+{
+    let mut timeout: f64 = 1.0;
+    let mut rng = thread_rng();
+    let range = Uniform::from(0..1000);
+    loop {
+        match closure() {
+            Ok(x) => return Ok(x),
+            Err(e) => {
+                sleep(Duration::from_millis((timeout * 1000.0) as u64));
+                timeout *= 4.0 * range.sample(&mut rng) as f64 / 1000.0;
+                if timeout >= 64.0 {
+                    return Err(err_msg(e));
+                }
+            }
+        }
     }
 }
