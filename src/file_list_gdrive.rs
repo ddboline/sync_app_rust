@@ -222,6 +222,7 @@ impl FileListTrait for FileListGDrive {
             let gfile = self.gdrive.get_file_metadata(&gdriveid)?;
             println!("{:?}", gfile.mime_type);
             if self.gdrive.is_unexportable(&gfile.mime_type) {
+                println!("unexportable");
                 return Ok(());
             }
             self.gdrive

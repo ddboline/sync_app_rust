@@ -166,8 +166,8 @@ impl FileSync {
         match &self.mode {
             FileSyncMode::Full => {
                 let result: Vec<Result<_, Error>> = list_a_not_b
-                    .par_iter()
-                    .chain(list_b_not_a.par_iter())
+                    .iter()
+                    .chain(list_b_not_a.iter())
                     .filter(|(f0, f1)| {
                         f0.servicetype == FileService::Local || f1.servicetype == FileService::Local
                     })
