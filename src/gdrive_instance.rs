@@ -326,10 +326,9 @@ impl GDriveInstance {
     pub fn download(
         &self,
         gdriveid: &str,
-        local: &Url,
+        local: &Path,
         mime_type: Option<String>,
     ) -> Result<(), Error> {
-        let outpath = local.to_file_path().map_err(|_| err_msg("No file path"))?;
         if let Some(mime) = mime_type.clone() {
             if UNEXPORTABLE_MIME_TYPES.contains::<str>(&mime) {
                 return Err(err_msg(format!(
@@ -375,7 +374,7 @@ impl GDriveInstance {
             let mut content: Vec<u8> = Vec::new();
             response.read_to_end(&mut content)?;
 
-            let mut outfile = File::create(outpath.clone())?;
+            let mut outfile = File::create(local.to_path_buf())?;
             outfile.write_all(&content)?;
             Ok(())
         })
@@ -679,10 +678,10 @@ mod tests {
         assert_eq!(list.len(), 10);
         let gdriveid = "1-vdOUMSwDYmMOQzyB1mpFiWGSBSCv_bJ9HRdCdj_yes".to_string();
         let parent = "0ABGM0lfCdptnUk9PVA".to_string();
-        let local_url: Url = "file:///tmp/temp.file".parse().unwrap();
+        let local_path = Path::new("/tmp/temp.file");
         let mime = "application/vnd.google-apps.spreadsheet".to_string();
         println!("{}", mime);
-        gdrive.download(&gdriveid, &local_url, Some(mime)).unwrap();
+        gdrive.download(&gdriveid, &local_path, Some(mime)).unwrap();
 
         let basepath = Path::new("src/gdrive_instance.rs").canonicalize().unwrap();
         let local_url = Url::from_file_path(basepath).unwrap();

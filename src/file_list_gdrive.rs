@@ -1,6 +1,7 @@
 use failure::{err_msg, Error};
 use std::collections::HashMap;
 use std::fs::create_dir_all;
+use std::path::Path;
 use std::rc::Rc;
 use url::Url;
 
@@ -72,9 +73,11 @@ impl FileListGDriveConf {
         config: &Config,
     ) -> Result<FileListGDriveConf, Error> {
         let baseurl: Url = format!("gdrive://{}/{}", servicesession, basepath).parse()?;
+        let basepath = Path::new(basepath);
 
         let conf = FileListConf {
             baseurl,
+            basepath: basepath.to_path_buf(),
             config: config.clone(),
             servicetype: FileService::GDrive,
             servicesession: servicesession.parse()?,
@@ -92,8 +95,18 @@ impl FileListConfTrait for FileListGDriveConf {
                 .as_str()
                 .trim_start_matches("gdrive://")
                 .replace(url.path(), "");
+            let tmp = format!("gdrive://{}/", servicesession);
+            let basepath: Url = url.as_str().replace(&tmp, "file:///").parse()?;
+            let basepath = basepath.to_file_path().map_err(|_| err_msg("Failure"))?;
+            let basepath = Path::new(
+                basepath
+                    .to_str()
+                    .ok_or_else(|| err_msg("Failure"))?
+                    .trim_start_matches("/"),
+            );
             let conf = FileListConf {
                 baseurl: url.clone(),
+                basepath: basepath.to_path_buf(),
                 config: config.clone(),
                 servicetype: FileService::GDrive,
                 servicesession: servicesession.parse()?,
@@ -188,14 +201,10 @@ impl FileListTrait for FileListGDrive {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::GDrive && finfo1.servicetype == FileService::Local {
-            let local_file = finfo1
+            let local_path = finfo1
                 .filepath
-                .clone()
-                .ok_or_else(|| err_msg("No local path"))?
-                .to_str()
-                .ok_or_else(|| err_msg("Failed to parse path"))?
-                .to_string();
-            let local_url = Url::from_file_path(local_file).map_err(|_| err_msg("failure"))?;
+                .as_ref()
+                .ok_or_else(|| err_msg("No local path"))?;
             let parent_dir = finfo1
                 .filepath
                 .as_ref()
@@ -211,7 +220,8 @@ impl FileListTrait for FileListGDrive {
                 .ok_or_else(|| err_msg("No gdrive url"))?
                 .0;
             let gfile = self.gdrive.get_file_metadata(&gdriveid)?;
-            self.gdrive.download(&gdriveid, &local_url, gfile.mime_type)
+            self.gdrive
+                .download(&gdriveid, &local_path, gfile.mime_type)
         } else {
             Err(err_msg(format!(
                 "Invalid types {} {}",

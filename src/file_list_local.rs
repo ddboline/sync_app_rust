@@ -41,9 +41,11 @@ impl FileListLocalConf {
             .to_str()
             .ok_or_else(|| err_msg("Failed to parse path"))?
             .to_string();
-        let baseurl = Url::from_file_path(basepath).map_err(|_| err_msg("Failed to parse url"))?;
+        let baseurl =
+            Url::from_file_path(basepath.clone()).map_err(|_| err_msg("Failed to parse url"))?;
         let conf = FileListConf {
             baseurl,
+            basepath,
             config: config.clone(),
             servicetype: FileService::Local,
             servicesession: basestr.parse()?,
@@ -64,6 +66,7 @@ impl FileListConfTrait for FileListLocalConf {
                 .to_string();
             let conf = FileListConf {
                 baseurl: url.clone(),
+                basepath: path,
                 config: config.clone(),
                 servicetype: FileService::Local,
                 servicesession: basestr.parse()?,

@@ -2,6 +2,7 @@ use diesel::prelude::*;
 use failure::{err_msg, Error};
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use url::Url;
 
 use crate::config::Config;
@@ -19,6 +20,7 @@ use crate::schema::file_info_cache;
 #[derive(Debug, Clone)]
 pub struct FileListConf {
     pub baseurl: Url,
+    pub basepath: PathBuf,
     pub config: Config,
     pub servicetype: FileService,
     pub servicesession: ServiceSession,
@@ -68,8 +70,8 @@ impl FileList {
             filemap: filelist
                 .iter()
                 .map(|f| {
-                    let key = if let Some(url) = f.urlname.as_ref() {
-                        remove_baseurl(&url, &self.conf.baseurl)
+                    let key = if let Some(path) = f.filepath.as_ref().and_then(|x| x.to_str()) {
+                        remove_basepath(&path, &self.conf.basepath.to_str().unwrap())
                     } else {
                         f.filename.clone()
                     };
@@ -413,6 +415,28 @@ pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<
 
     let urlstr = format!("{}/{}", baseurl1, remove_baseurl(&urlname, baseurl0));
     Url::parse(&urlstr).map_err(err_msg)
+}
+
+pub fn remove_basepath(basename: &str, basepath: &str) -> String {
+    let basepath = format!("{}/", basepath.trim_end_matches('/'));
+    basename.replacen(&basepath, "", 1)
+}
+
+pub fn replace_basepath(
+    basename: &Path,
+    basepath0: &Path,
+    basepath1: &Path,
+) -> Result<PathBuf, Error> {
+    let basepath0 = basepath0.to_str().ok_or_else(|| err_msg("Failure"))?;
+    let basepath1 = basepath1
+        .to_str()
+        .ok_or_else(|| err_msg("Failure"))?
+        .trim_end_matches('/');
+    let basename = basename.to_str().ok_or_else(|| err_msg("Failure"))?;
+
+    let new_path = format!("{}/{}", basepath1, remove_basepath(&basename, &basepath0));
+    let new_path = Path::new(&new_path);
+    Ok(new_path.to_path_buf())
 }
 
 pub fn group_urls(url_list: &[Url]) -> HashMap<String, Vec<Url>> {

@@ -12,7 +12,8 @@ use url::Url;
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::{
-    group_urls, replace_baseurl, FileList, FileListConf, FileListConfTrait, FileListTrait,
+    group_urls, replace_basepath, replace_baseurl, FileList, FileListConf, FileListConfTrait,
+    FileListTrait,
 };
 use crate::file_service::FileService;
 use crate::map_result_vec;
@@ -100,14 +101,15 @@ impl FileSync {
                     }
                 }
                 None => {
-                    if let Some(url0) = finfo0.urlname.as_ref() {
+                    if let Some(path0) = finfo0.filepath.as_ref() {
+                        let url0 = finfo0.urlname.as_ref().unwrap();
                         if let Ok(url1) = replace_baseurl(&url0, &conf0.baseurl, &conf1.baseurl) {
+                            let path1 =
+                                replace_basepath(&path0, &conf0.basepath, &conf1.basepath).unwrap();
                             if url1.as_str().contains(conf1.baseurl.as_str()) {
                                 let finfo1 = FileInfo {
                                     filename: k.clone(),
-                                    filepath: Some(
-                                        url1.to_file_path().unwrap_or_else(|_| PathBuf::new()),
-                                    ),
+                                    filepath: Some(path1),
                                     urlname: Some(url1),
                                     servicesession: Some(conf1.servicesession.clone()),
                                     servicetype: conf1.servicetype,
@@ -133,14 +135,15 @@ impl FileSync {
             .filter_map(|(k, finfo1)| match flist0.get_filemap().get(k) {
                 Some(_) => None,
                 None => {
-                    if let Some(url1) = finfo1.urlname.as_ref() {
+                    if let Some(path1) = finfo1.filepath.as_ref() {
+                        let url1 = finfo1.urlname.as_ref().unwrap();
                         if let Ok(url0) = replace_baseurl(&url1, &conf1.baseurl, &conf0.baseurl) {
+                            let path0 =
+                                replace_basepath(&path1, &conf1.basepath, &conf0.basepath).unwrap();
                             if url0.as_str().contains(conf0.baseurl.as_str()) {
                                 let finfo0 = FileInfo {
                                     filename: k.clone(),
-                                    filepath: Some(
-                                        url0.to_file_path().unwrap_or_else(|_| PathBuf::new()),
-                                    ),
+                                    filepath: Some(path0),
                                     urlname: Some(url0),
                                     servicesession: Some(conf0.servicesession.clone()),
                                     servicetype: conf0.servicetype,
@@ -168,7 +171,10 @@ impl FileSync {
                     .filter(|(f0, f1)| {
                         f0.servicetype == FileService::Local || f1.servicetype == FileService::Local
                     })
-                    .map(|(f0, f1)| self.copy_object(flist0, f0, f1))
+                    .map(|(f0, f1)| {
+                        println!("copy {:?} {:?}", f0.urlname, f1.urlname);
+                        self.copy_object(flist0, f0, f1)
+                    })
                     .collect();
                 map_result_vec(result)?;
             }
@@ -267,7 +273,10 @@ impl FileSync {
                                 Some(f) => f,
                                 None => FileInfo::from_url(&key)?,
                             };
-                            let finfo1 = FileInfo::from_url(&val)?;
+                            let finfo1 = match FileInfo::from_database(&pool, &val)? {
+                                Some(f) => f,
+                                None => FileInfo::from_url(&val)?,
+                            };
                             println!("copy {} {}", key, val);
                             self.copy_object(&flist, &finfo0, &finfo1)?;
                         }

@@ -2,6 +2,7 @@ use failure::{err_msg, Error};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
+use std::path::Path;
 use url::Url;
 
 use crate::config::Config;
@@ -48,9 +49,11 @@ pub struct FileListS3Conf(pub FileListConf);
 impl FileListS3Conf {
     pub fn new(bucket: &str, config: &Config) -> Result<FileListS3Conf, Error> {
         let baseurl: Url = format!("s3://{}", bucket).parse()?;
+        let basepath = Path::new("");
 
         let conf = FileListConf {
             baseurl,
+            basepath: basepath.to_path_buf(),
             config: config.clone(),
             servicetype: FileService::S3,
             servicesession: bucket.parse()?,
@@ -64,9 +67,11 @@ impl FileListConfTrait for FileListS3Conf {
         if url.scheme() != "s3" {
             Err(err_msg("Wrong scheme"))
         } else {
+            let basepath = Path::new(url.path());
             let bucket = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
             let conf = FileListConf {
                 baseurl: url.clone(),
+                basepath: basepath.to_path_buf(),
                 config: config.clone(),
                 servicetype: FileService::S3,
                 servicesession: bucket.parse()?,
