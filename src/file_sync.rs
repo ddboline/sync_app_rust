@@ -267,7 +267,15 @@ impl FileSync {
 
             let proc_list = map_result_vec(proc_list)?;
 
-            let proc_map: HashMap<_, _> = proc_list.into_iter().collect();
+            let proc_map: HashMap<_, _> =
+                proc_list
+                    .into_iter()
+                    .fold(HashMap::new(), |mut h, (u0, u1)| {
+                        let key = u0;
+                        let val = u1;
+                        h.entry(key).or_insert_with(Vec::new).push(val);
+                        h
+                    });
 
             let key_list: Vec<_> = proc_map.keys().map(|x| x.clone()).collect();
 
@@ -276,17 +284,19 @@ impl FileSync {
                     let conf = FileListConf::from_url(u0, &self.config)?;
                     let flist = FileList::from_conf(conf);
                     for key in urls {
-                        if let Some(val) = proc_map.get(&key) {
-                            let finfo0 = match FileInfo::from_database(&pool, &key)? {
-                                Some(f) => f,
-                                None => FileInfo::from_url(&key)?,
-                            };
-                            let finfo1 = match FileInfo::from_database(&pool, &val)? {
-                                Some(f) => f,
-                                None => FileInfo::from_url(&val)?,
-                            };
-                            println!("copy {} {}", key, val);
-                            self.copy_object(&flist, &finfo0, &finfo1)?;
+                        if let Some(vals) = proc_map.get(&key) {
+                            for val in vals {
+                                let finfo0 = match FileInfo::from_database(&pool, &key)? {
+                                    Some(f) => f,
+                                    None => FileInfo::from_url(&key)?,
+                                };
+                                let finfo1 = match FileInfo::from_database(&pool, &val)? {
+                                    Some(f) => f,
+                                    None => FileInfo::from_url(&val)?,
+                                };
+                                println!("copy {} {}", key, val);
+                                self.copy_object(&flist, &finfo0, &finfo1)?;
+                            }
                         }
                     }
                 }

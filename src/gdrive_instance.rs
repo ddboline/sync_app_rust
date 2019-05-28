@@ -352,7 +352,8 @@ impl GDriveInstance {
             }
         }
 
-        let export_type: Option<&'static str> = mime_type.as_ref()
+        let export_type: Option<&'static str> = mime_type
+            .as_ref()
             .and_then(|ref t| MIME_TYPES.get::<str>(&t))
             .cloned();
 
@@ -689,7 +690,9 @@ mod tests {
         let local_path = Path::new("/tmp/temp.file");
         let mime = "application/vnd.google-apps.spreadsheet".to_string();
         println!("{}", mime);
-        gdrive.download(&gdriveid, &local_path, &Some(mime)).unwrap();
+        gdrive
+            .download(&gdriveid, &local_path, &Some(mime))
+            .unwrap();
 
         let basepath = Path::new("src/gdrive_instance.rs").canonicalize().unwrap();
         let local_url = Url::from_file_path(basepath).unwrap();
