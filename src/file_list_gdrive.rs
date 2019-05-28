@@ -146,6 +146,9 @@ impl FileListTrait for FileListGDrive {
                 } else {
                     return false;
                 }
+                if self.gdrive.is_unexportable(&f.mime_type) {
+                    return false;
+                }
                 true
             })
             .collect();
