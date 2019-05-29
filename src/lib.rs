@@ -6,6 +6,7 @@ extern crate lazy_static;
 extern crate maplit;
 
 pub mod config;
+pub mod directory_info;
 pub mod file_info;
 pub mod file_info_gdrive;
 pub mod file_info_local;

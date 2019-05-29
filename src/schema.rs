@@ -1,4 +1,15 @@
 table! {
+    directory_info_cache (id) {
+        id -> Int4,
+        directory_id -> Text,
+        directory_name -> Text,
+        parent_id -> Nullable<Text>,
+        servicetype -> Text,
+        servicesession -> Text,
+    }
+}
+
+table! {
     file_info_cache (id) {
         id -> Int4,
         filename -> Varchar,
@@ -13,3 +24,5 @@ table! {
         servicesession -> Nullable<Text>,
     }
 }
+
+allow_tables_to_appear_in_same_query!(directory_info_cache, file_info_cache,);

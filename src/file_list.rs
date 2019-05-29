@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait, ServiceSession};
+use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession};
 use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
 use crate::file_list_local::{FileListLocal, FileListLocalConf};
 use crate::file_list_s3::{FileListS3, FileListS3Conf};
@@ -15,7 +15,6 @@ use crate::gdrive_instance::GDriveInstance;
 use crate::map_result_vec;
 use crate::models::{FileInfoCache, InsertFileInfoCache};
 use crate::pgpool::PgPool;
-use crate::schema::file_info_cache;
 
 #[derive(Debug, Clone)]
 pub struct FileListConf {
@@ -115,6 +114,8 @@ pub trait FileListTrait {
     fn print_list(&self) -> Result<(), Error>;
 
     fn cache_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
+        use crate::schema::file_info_cache;
+
         let current_cache: HashMap<_, _> = self
             .load_file_list(pool)?
             .into_iter()
@@ -155,7 +156,10 @@ pub trait FileListTrait {
         let results = flist_cache_update
             .into_par_iter()
             .map(|(k, v)| {
-                use crate::schema::file_info_cache::dsl::*;
+                use crate::schema::file_info_cache::dsl::{
+                    file_info_cache, filename, filepath, filestat_st_mtime, filestat_st_size, id,
+                    md5sum, serviceid, servicesession, sha1sum, urlname,
+                };
 
                 let conn = pool.get()?;
 
@@ -208,7 +212,7 @@ pub trait FileListTrait {
     }
 
     fn load_file_list(&self, pool: &PgPool) -> Result<Vec<FileInfoCache>, Error> {
-        use crate::schema::file_info_cache::dsl::*;
+        use crate::schema::file_info_cache::dsl::{file_info_cache, servicesession, servicetype};
 
         let conn = pool.get()?;
         let conf = &self.get_conf();
@@ -220,22 +224,43 @@ pub trait FileListTrait {
             .map_err(err_msg)
     }
 
-    fn get_file_list_dict(&self, pool: &PgPool) -> Result<HashMap<String, FileInfo>, Error> {
-        let flist_dict: HashMap<_, _> = self
-            .load_file_list(&pool)?
+    fn get_file_list_dict(
+        &self,
+        file_list: Vec<FileInfoCache>,
+        key_type: FileInfoKeyType,
+    ) -> HashMap<String, FileInfo> {
+        file_list
             .into_par_iter()
-            .filter_map(|entry| {
-                entry.filepath.as_ref().and_then(|fp| {
+            .filter_map(|entry| match key_type {
+                FileInfoKeyType::FileName => FileInfo::from_cache_info(&entry)
+                    .ok()
+                    .map(|val| (entry.filename.clone(), val)),
+                FileInfoKeyType::FilePath => entry.filepath.as_ref().and_then(|fp| {
                     let key = fp.to_string();
                     FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
-                })
+                }),
+                FileInfoKeyType::UrlName => entry.urlname.as_ref().and_then(|url| {
+                    let key = url.to_string();
+                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                }),
+                FileInfoKeyType::Md5Sum => entry.md5sum.as_ref().and_then(|fp| {
+                    let key = fp.to_string();
+                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                }),
+                FileInfoKeyType::Sha1Sum => entry.sha1sum.as_ref().and_then(|fp| {
+                    let key = fp.to_string();
+                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                }),
+                FileInfoKeyType::ServiceId => entry.serviceid.as_ref().and_then(|fp| {
+                    let key = fp.to_string();
+                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                }),
             })
-            .collect();
-        Ok(flist_dict)
+            .collect()
     }
 
     fn clear_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
-        use crate::schema::file_info_cache::dsl::*;
+        use crate::schema::file_info_cache::dsl::{file_info_cache, servicesession, servicetype};
 
         let conn = pool.get()?;
         let conf = &self.get_conf();

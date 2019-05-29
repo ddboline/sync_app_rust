@@ -1,5 +1,4 @@
 use failure::{err_msg, Error};
-use rayon::prelude::*;
 use std::collections::HashMap;
 use std::convert::From;
 use std::fs::File;
@@ -173,7 +172,11 @@ impl FileSync {
                     })
                     .map(|(f0, f1)| {
                         println!("copy {:?} {:?}", f0.urlname, f1.urlname);
-                        self.copy_object(flist0, f0, f1)
+                        if f1.servicetype == FileService::Local {
+                            self.copy_object(flist0, f0, f1)
+                        } else {
+                            self.copy_object(flist1, f0, f1)
+                        }
                     })
                     .collect();
                 map_result_vec(result)?;
@@ -282,7 +285,7 @@ impl FileSync {
             for urls in group_urls(&key_list).values() {
                 if let Some(u0) = urls.iter().nth(0) {
                     let conf = FileListConf::from_url(u0, &self.config)?;
-                    let flist = FileList::from_conf(conf);
+                    let flist0 = FileList::from_conf(conf);
                     for key in urls {
                         if let Some(vals) = proc_map.get(&key) {
                             for val in vals {
@@ -295,7 +298,14 @@ impl FileSync {
                                     None => FileInfo::from_url(&val)?,
                                 };
                                 println!("copy {} {}", key, val);
-                                self.copy_object(&flist, &finfo0, &finfo1)?;
+                                println!("{:?} {:?}", finfo0, finfo1);
+                                if finfo1.servicetype == FileService::Local {
+                                    self.copy_object(&flist0, &finfo0, &finfo1)?;
+                                } else {
+                                    let conf = FileListConf::from_url(val, &self.config)?;
+                                    let flist1 = FileList::from_conf(conf);
+                                    self.copy_object(&flist1, &finfo0, &finfo1)?;
+                                }
                             }
                         }
                     }

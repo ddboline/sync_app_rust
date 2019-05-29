@@ -1,4 +1,4 @@
-use crate::schema::file_info_cache;
+use crate::schema::{directory_info_cache, file_info_cache};
 
 #[derive(Queryable, Clone)]
 pub struct FileInfoCache {
@@ -110,5 +110,37 @@ impl InsertFileInfoCache {
             servicesession,
         };
         Some(finfo)
+    }
+}
+
+#[derive(Queryable, Clone)]
+pub struct DirectoryInfoCache {
+    pub id: i32,
+    pub directory_id: String,
+    pub directory_name: String,
+    pub parent_id: Option<String>,
+    pub servicetype: String,
+    pub servicesession: String,
+}
+
+#[derive(Insertable, Debug, Clone)]
+#[table_name = "directory_info_cache"]
+pub struct InsertDirectoryInfoCache {
+    pub directory_id: String,
+    pub directory_name: String,
+    pub parent_id: Option<String>,
+    pub servicetype: String,
+    pub servicesession: String,
+}
+
+impl From<DirectoryInfoCache> for InsertDirectoryInfoCache {
+    fn from(item: DirectoryInfoCache) -> Self {
+        Self {
+            directory_id: item.directory_id,
+            directory_name: item.directory_name,
+            parent_id: item.parent_id,
+            servicetype: item.servicetype,
+            servicesession: item.servicesession,
+        }
     }
 }

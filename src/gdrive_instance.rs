@@ -25,6 +25,7 @@ use std::string::ToString;
 use url::Url;
 
 use crate::config::Config;
+use crate::directory_info::DirectoryInfo;
 use crate::exponential_retry;
 
 type GCClient = Client;
@@ -57,13 +58,6 @@ lazy_static! {
         "text/x-csrc" => "C",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "xlsx",
     };
-}
-
-#[derive(Debug, Clone)]
-pub struct DirectoryInfo {
-    pub gdriveid: String,
-    pub name: String,
-    pub parentid: Option<String>,
 }
 
 #[derive(Clone)]
@@ -463,8 +457,8 @@ impl GDriveInstance {
                                 return Some((
                                     gdriveid.clone(),
                                     DirectoryInfo {
-                                        gdriveid: gdriveid.clone(),
-                                        name: name.clone(),
+                                        directory_id: gdriveid.clone(),
+                                        directory_name: name.clone(),
                                         parentid: Some(parents[0].clone()),
                                     },
                                 ));
@@ -478,8 +472,8 @@ impl GDriveInstance {
                             return Some((
                                 gdriveid.clone(),
                                 DirectoryInfo {
-                                    gdriveid: gdriveid.clone(),
-                                    name: name.clone(),
+                                    directory_id: gdriveid.clone(),
+                                    directory_name: name.clone(),
                                     parentid: None,
                                 },
                             ));
@@ -517,8 +511,8 @@ impl GDriveInstance {
                         }
                     }
                     let val = DirectoryInfo {
-                        gdriveid: gdriveid.clone(),
-                        name: name.clone(),
+                        directory_id: gdriveid.clone(),
+                        directory_name: name.clone(),
                         parentid: parents,
                     };
 
@@ -533,7 +527,7 @@ impl GDriveInstance {
         directory_map: &HashMap<String, DirectoryInfo>,
     ) -> HashMap<String, Vec<DirectoryInfo>> {
         directory_map.values().fold(HashMap::new(), |mut h, m| {
-            let key = m.name.clone();
+            let key = m.directory_name.clone();
             let val = m.clone();
             h.entry(key).or_insert_with(Vec::new).push(val);
             h
@@ -561,7 +555,7 @@ impl GDriveInstance {
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
                 if let Some(dinfo) = dirmap.get(pid_) {
-                    fullpath.push(format!("{}/", dinfo.name));
+                    fullpath.push(format!("{}/", dinfo.directory_name));
                     dinfo.parentid.clone()
                 } else {
                     self.get_file_metadata(pid_)
@@ -590,7 +584,6 @@ impl GDriveInstance {
     pub fn get_parent_id(
         &self,
         url: &Url,
-        dmap: &HashMap<String, DirectoryInfo>,
         dir_name_map: &HashMap<String, Vec<DirectoryInfo>>,
     ) -> Result<Option<String>, Error> {
         let mut previous_parent_id: Option<String> = None;
@@ -603,16 +596,16 @@ impl GDriveInstance {
                 if let Some(parents) = dir_name_map.get(&name) {
                     for parent in parents {
                         if previous_parent_id.is_none() {
-                            previous_parent_id = Some(parent.gdriveid.clone());
-                            matching_directory = Some(parent.gdriveid.clone());
+                            previous_parent_id = Some(parent.directory_id.clone());
+                            matching_directory = Some(parent.directory_id.clone());
                             break;
                         }
                         if !parent.parentid.is_none() && parent.parentid == previous_parent_id {
-                            matching_directory = Some(parent.gdriveid.clone())
+                            matching_directory = Some(parent.directory_id.clone())
                         }
                     }
                 }
-                if let Some(gdriveid) = matching_directory.as_ref() {
+                if let Some(_) = matching_directory.as_ref() {
                     previous_parent_id = matching_directory.clone();
                 } else {
                     return Ok(previous_parent_id);
@@ -685,10 +678,12 @@ mod tests {
             .with_page_size(10);
         let list = gdrive.get_all_files(false).unwrap();
         assert_eq!(list.len(), 10);
-        let gdriveid = "1-vdOUMSwDYmMOQzyB1mpFiWGSBSCv_bJ9HRdCdj_yes".to_string();
-        let parent = "0ABGM0lfCdptnUk9PVA".to_string();
+        let test_info = list.iter().filter(|f| !f.parents.is_none()).nth(0).unwrap();
+        println!("{:?}", test_info);
+        let gdriveid = test_info.id.as_ref().unwrap();
+        let parent = &test_info.parents.as_ref().unwrap()[0];
         let local_path = Path::new("/tmp/temp.file");
-        let mime = "application/vnd.google-apps.spreadsheet".to_string();
+        let mime = test_info.mime_type.as_ref().unwrap().to_string();
         println!("{}", mime);
         gdrive
             .download(&gdriveid, &local_path, &Some(mime))
@@ -698,9 +693,11 @@ mod tests {
         let local_url = Url::from_file_path(basepath).unwrap();
         let new_file = gdrive.upload(&local_url, &parent).unwrap();
         println!("{:?}", new_file);
+
         let new_driveid = new_file.id.unwrap();
         gdrive.move_to_trash(&new_driveid).unwrap();
         println!("{:?}", gdrive.get_file_metadata(&new_driveid).unwrap());
+
         gdrive.delete_permanently(&new_driveid).unwrap();
         println!("{}", gdrive.get_file_metadata(&new_driveid).unwrap_err());
     }

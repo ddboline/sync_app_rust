@@ -94,6 +94,15 @@ pub struct FileInfo {
     pub servicesession: Option<ServiceSession>,
 }
 
+pub enum FileInfoKeyType {
+    FileName,
+    FilePath,
+    UrlName,
+    Md5Sum,
+    Sha1Sum,
+    ServiceId,
+}
+
 pub trait FileInfoTrait
 where
     Self: Sized + Send + Sync,

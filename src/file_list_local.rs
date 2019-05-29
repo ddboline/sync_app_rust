@@ -9,7 +9,7 @@ use url::Url;
 use walkdir::WalkDir;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
 use crate::file_info_local::FileInfoLocal;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
@@ -93,7 +93,10 @@ impl FileListTrait for FileListLocal {
         let conf = self.get_conf();
         let basedir = conf.baseurl.path();
         let flist_dict = match pool {
-            Some(pool) => self.get_file_list_dict(&pool)?,
+            Some(pool) => {
+                let file_list = self.load_file_list(&pool)?;
+                self.get_file_list_dict(file_list, FileInfoKeyType::FilePath)
+            }
             None => HashMap::new(),
         };
 

@@ -6,11 +6,12 @@ use std::rc::Rc;
 use url::Url;
 
 use crate::config::Config;
+use crate::directory_info::DirectoryInfo;
 use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_info_gdrive::FileInfoGDrive;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::gdrive_instance::{DirectoryInfo, GDriveInstance};
+use crate::gdrive_instance::GDriveInstance;
 use crate::map_result_vec;
 use crate::pgpool::PgPool;
 
@@ -180,7 +181,13 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn print_list(&self) -> Result<(), Error> {
-        let parents = if let Some(root_dir) = self.root_directory.as_ref() {
+        let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
+        let parents = if let Ok(Some(p)) = self
+            .gdrive
+            .get_parent_id(&self.get_conf().baseurl, &dnamemap)
+        {
+            Some(vec![p.clone()])
+        } else if let Some(root_dir) = self.root_directory.as_ref() {
             Some(vec![root_dir.clone()])
         } else {
             None
@@ -252,8 +259,18 @@ impl FileListTrait for FileListGDrive {
                 .ok_or_else(|| err_msg("No local path"))?
                 .canonicalize()?;
             let local_url = Url::from_file_path(local_file).map_err(|_| err_msg("failure"))?;
-            let remote_url = "test".to_string();
-            self.gdrive.upload(&local_url, &remote_url)?;
+
+            let remote_url = finfo1
+                .urlname
+                .clone()
+                .ok_or_else(|| err_msg("No remote url"))?;
+            let (dmap, root_dir) = self.gdrive.get_directory_map()?;
+            let dnamemap = GDriveInstance::get_directory_name_map(&dmap);
+            let parent_id = self
+                .gdrive
+                .get_parent_id(&remote_url, &dnamemap)?
+                .ok_or_else(|| err_msg("No parent id!"))?;
+            self.gdrive.upload(&local_url, &parent_id)?;
             Ok(())
         } else {
             Err(err_msg(format!(
@@ -333,9 +350,7 @@ mod tests {
         let dnamemap = GDriveInstance::get_directory_name_map(&flist.directory_map);
         for f in flist.get_filemap().values() {
             let u = f.urlname.as_ref().unwrap();
-            let parent_id = gdrive
-                .get_parent_id(u, &flist.directory_map, &dnamemap)
-                .unwrap();
+            let parent_id = gdrive.get_parent_id(u, &dnamemap).unwrap();
             assert!(!parent_id.is_none());
             println!("{} {:?}", u, parent_id);
         }

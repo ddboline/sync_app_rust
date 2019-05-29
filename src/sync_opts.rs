@@ -5,7 +5,7 @@ use structopt::StructOpt;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
 use crate::map_result_vec;
@@ -82,6 +82,7 @@ impl SyncOpts {
                 if opts.urls.is_empty() && opts.mode == FileSyncMode::Full {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
+                    let pool = PgPool::new(&config.database_url);
                     let mut all_urls = opts.urls.clone();
                     if let FileSyncMode::OutputFile(fname) = &opts.mode {
                         let f = File::open(fname)?;
@@ -105,8 +106,18 @@ impl SyncOpts {
                     for urls in group_urls(&all_urls).values() {
                         let conf = FileListConf::from_url(&urls[0], &config)?;
                         let flist = FileList::from_conf(conf);
+                        let fdict = flist.get_file_list_dict(
+                            flist.load_file_list(&pool)?,
+                            FileInfoKeyType::UrlName,
+                        );
                         for url in urls {
-                            let finfo = FileInfo::from_url(&url)?;
+                            let finfo = if let Some(f) = fdict.get(&url.as_str().to_string()) {
+                                f.clone()
+                            } else {
+                                FileInfo::from_url(&url)?
+                            };
+
+                            println!("delete {:?}", finfo);
                             flist.delete(&finfo)?;
                         }
                     }

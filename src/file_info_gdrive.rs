@@ -6,9 +6,10 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use url::Url;
 
+use crate::directory_info::DirectoryInfo;
 use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
 use crate::file_service::FileService;
-use crate::gdrive_instance::{DirectoryInfo, GDriveInstance};
+use crate::gdrive_instance::GDriveInstance;
 
 #[derive(Debug, Default)]
 pub struct FileInfoGDrive {
@@ -29,7 +30,11 @@ impl FileInfoTrait for FileInfoGDrive {
             .into_string()
             .map_err(|_| err_msg("Parse failure"))?;
         let serviceid = Some(filename.clone().into());
-        let servicesession = Some(filename.parse()?);
+        let servicesession = url
+            .as_str()
+            .trim_start_matches("gdrive://")
+            .replace(url.path(), "")
+            .parse()?;
 
         let finfo = FileInfo {
             filename,
@@ -40,7 +45,7 @@ impl FileInfoTrait for FileInfoGDrive {
             filestat: None,
             serviceid,
             servicetype: FileService::GDrive,
-            servicesession,
+            servicesession: Some(servicesession),
         };
         Ok(FileInfoGDrive { finfo })
     }
@@ -131,7 +136,9 @@ mod tests {
 
     #[test]
     fn test_file_info_gdrive() {
-        let url: Url = "gdrive:///My Drive/test.txt".parse().unwrap();
+        let url: Url = "gdrive://user@domain.com/My Drive/test.txt"
+            .parse()
+            .unwrap();
         let finfo = FileInfoGDrive::from_url(&url).unwrap();
         println!("{:?}", finfo);
         assert_eq!(finfo.get_finfo().filename, "test.txt");
