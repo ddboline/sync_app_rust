@@ -37,10 +37,26 @@ impl FileListGDrive {
         Ok(f)
     }
 
-    pub fn set_directory_map(mut self) -> Result<Self, Error> {
-        let (dmap, root_dir) = self.gdrive.get_directory_map()?;
+    pub fn set_directory_map(
+        mut self,
+        use_cache: bool,
+        pool: Option<&PgPool>,
+    ) -> Result<Self, Error> {
+        let (dmap, root_dir) = if use_cache && pool.is_some() {
+            let dlist = self.load_directory_info_cache(&pool.unwrap())?;
+            self.get_directory_map_cache(dlist)
+        } else {
+            self.gdrive.get_directory_map()?
+        };
+        if !use_cache {
+            if let Some(pool) = pool {
+                self.clear_directory_list(&pool)?;
+                self.cache_directory_map(&pool, &dmap, &root_dir)?;
+            }
+        }
         self.directory_map = Rc::new(dmap);
         self.root_directory = root_dir;
+
         Ok(self)
     }
 
@@ -324,7 +340,7 @@ mod tests {
         let flist = FileListGDrive::from_conf(fconf, &gdrive)
             .unwrap()
             .max_keys(100)
-            .set_directory_map()
+            .set_directory_map(false, None)
             .unwrap();
 
         let new_flist = flist.fill_file_list(None).unwrap();

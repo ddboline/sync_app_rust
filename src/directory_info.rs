@@ -21,13 +21,4 @@ impl DirectoryInfo {
             parentid: item.parent_id.clone(),
         }
     }
-
-    pub fn cache_directory_map(
-        pool: &PgPool,
-        dmap: &HashMap<String, DirectoryInfo>,
-        servicetype: FileService,
-        servicesession: &ServiceSession,
-    ) -> Result<(), Error> {
-        Ok(())
-    }
 }

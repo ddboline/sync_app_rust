@@ -1,11 +1,12 @@
 use diesel::prelude::*;
 use failure::{err_msg, Error};
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use url::Url;
 
 use crate::config::Config;
+use crate::directory_info::DirectoryInfo;
 use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession};
 use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
 use crate::file_list_local::{FileListLocal, FileListLocalConf};
@@ -13,7 +14,9 @@ use crate::file_list_s3::{FileListS3, FileListS3Conf};
 use crate::file_service::FileService;
 use crate::gdrive_instance::GDriveInstance;
 use crate::map_result_vec;
-use crate::models::{FileInfoCache, InsertFileInfoCache};
+use crate::models::{
+    DirectoryInfoCache, FileInfoCache, InsertDirectoryInfoCache, InsertFileInfoCache,
+};
 use crate::pgpool::PgPool;
 
 #[derive(Debug, Clone)]
@@ -259,6 +262,81 @@ pub trait FileListTrait {
             .collect()
     }
 
+    fn load_directory_info_cache(&self, pool: &PgPool) -> Result<Vec<DirectoryInfoCache>, Error> {
+        use crate::schema::directory_info_cache::dsl::{
+            directory_info_cache, servicesession, servicetype,
+        };
+
+        let conn = pool.get()?;
+        let conf = &self.get_conf();
+
+        directory_info_cache
+            .filter(servicesession.eq(conf.servicesession.0.clone()))
+            .filter(servicetype.eq(conf.servicetype.to_string()))
+            .load::<DirectoryInfoCache>(&conn)
+            .map_err(err_msg)
+    }
+
+    fn get_directory_map_cache(
+        &self,
+        directory_list: Vec<DirectoryInfoCache>,
+    ) -> (HashMap<String, DirectoryInfo>, Option<String>) {
+        let root_id: Option<String> = directory_list
+            .iter()
+            .filter(|d| d.is_root)
+            .nth(0)
+            .map(|d| d.directory_id.clone());
+        let dmap: HashMap<_, _> = directory_list
+            .into_par_iter()
+            .map(|d| {
+                let dinfo = DirectoryInfo::from_cache_info(&d);
+                (d.directory_id, dinfo)
+            })
+            .collect();
+        (dmap, root_id)
+    }
+
+    fn cache_directory_map(
+        &self,
+        pool: &PgPool,
+        directory_map: &HashMap<String, DirectoryInfo>,
+        root_id: &Option<String>,
+    ) -> Result<usize, Error> {
+        use crate::schema::directory_info_cache;
+
+        let dmap_cache_insert: Vec<InsertDirectoryInfoCache> = directory_map
+            .values()
+            .map(|d| {
+                let is_root = if let Some(rid) = root_id {
+                    rid == &d.directory_id
+                } else {
+                    false
+                };
+
+                InsertDirectoryInfoCache {
+                    directory_id: d.directory_id.clone(),
+                    directory_name: d.directory_name.clone(),
+                    parent_id: d.parentid.clone(),
+                    is_root,
+                    servicetype: self.get_conf().servicetype.to_string(),
+                    servicesession: self.get_conf().servicesession.0.clone(),
+                }
+            })
+            .collect();
+
+        let results = dmap_cache_insert
+            .chunks(1000)
+            .map(|v| {
+                diesel::insert_into(directory_info_cache::table)
+                    .values(v)
+                    .execute(&pool.get()?)
+                    .map_err(err_msg)
+            })
+            .collect();
+        let result: usize = map_result_vec(results)?.iter().sum();
+        Ok(result)
+    }
+
     fn clear_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
         use crate::schema::file_info_cache::dsl::{file_info_cache, servicesession, servicetype};
 
@@ -267,6 +345,23 @@ pub trait FileListTrait {
 
         diesel::delete(
             file_info_cache
+                .filter(servicesession.eq(conf.servicesession.0.clone()))
+                .filter(servicetype.eq(conf.servicetype.to_string())),
+        )
+        .execute(&conn)
+        .map_err(err_msg)
+    }
+
+    fn clear_directory_list(&self, pool: &PgPool) -> Result<usize, Error> {
+        use crate::schema::directory_info_cache::dsl::{
+            directory_info_cache, servicesession, servicetype,
+        };
+
+        let conn = pool.get()?;
+        let conf = &self.get_conf();
+
+        diesel::delete(
+            directory_info_cache
                 .filter(servicesession.eq(conf.servicesession.0.clone()))
                 .filter(servicetype.eq(conf.servicetype.to_string())),
         )
@@ -300,7 +395,8 @@ impl FileListTrait for FileList {
                 let conf = FileListGDriveConf(self.get_conf().clone());
                 let config = Config::new();
                 let gdrive = GDriveInstance::new(&config, &conf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(conf, &gdrive)?.set_directory_map()?;
+                let flist =
+                    FileListGDrive::from_conf(conf, &gdrive)?.set_directory_map(false, pool)?;
                 flist.fill_file_list(pool)
             }
             _ => match pool {
@@ -334,7 +430,8 @@ impl FileListTrait for FileList {
                 let config = Config::new();
                 let fconf = FileListGDriveConf(conf.clone());
                 let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(fconf, &gdrive)?.set_directory_map()?;
+                let flist =
+                    FileListGDrive::from_conf(fconf, &gdrive)?.set_directory_map(false, None)?;
                 flist.print_list()
             }
             _ => Err(err_msg("Not implemented")),

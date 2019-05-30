@@ -4,6 +4,7 @@ table! {
         directory_id -> Text,
         directory_name -> Text,
         parent_id -> Nullable<Text>,
+        is_root -> Bool,
         servicetype -> Text,
         servicesession -> Text,
     }

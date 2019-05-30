@@ -119,6 +119,7 @@ pub struct DirectoryInfoCache {
     pub directory_id: String,
     pub directory_name: String,
     pub parent_id: Option<String>,
+    pub is_root: bool,
     pub servicetype: String,
     pub servicesession: String,
 }
@@ -129,6 +130,7 @@ pub struct InsertDirectoryInfoCache {
     pub directory_id: String,
     pub directory_name: String,
     pub parent_id: Option<String>,
+    pub is_root: bool,
     pub servicetype: String,
     pub servicesession: String,
 }
@@ -139,6 +141,7 @@ impl From<DirectoryInfoCache> for InsertDirectoryInfoCache {
             directory_id: item.directory_id,
             directory_name: item.directory_name,
             parent_id: item.parent_id,
+            is_root: item.is_root,
             servicetype: item.servicetype,
             servicesession: item.servicesession,
         }
