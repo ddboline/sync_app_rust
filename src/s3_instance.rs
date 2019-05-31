@@ -10,6 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::config::Config;
+use crate::exponential_retry;
 
 #[derive(Clone)]
 pub struct S3Instance {
@@ -51,58 +52,68 @@ impl S3Instance {
     }
 
     pub fn get_list_of_buckets(&self) -> Result<Vec<Bucket>, Error> {
-        self.s3_client
-            .list_buckets()
-            .sync()
-            .map(|l| l.buckets.unwrap_or_default())
-            .map_err(err_msg)
+        exponential_retry(|| {
+            self.s3_client
+                .list_buckets()
+                .sync()
+                .map(|l| l.buckets.unwrap_or_default())
+                .map_err(err_msg)
+        })
     }
 
     pub fn create_bucket(&self, bucket_name: &str) -> Result<String, Error> {
-        self.s3_client
-            .create_bucket(CreateBucketRequest {
-                bucket: bucket_name.to_string(),
-                ..Default::default()
-            })
-            .sync()?
-            .location
-            .ok_or_else(|| err_msg("Failed to create bucket"))
+        exponential_retry(|| {
+            self.s3_client
+                .create_bucket(CreateBucketRequest {
+                    bucket: bucket_name.to_string(),
+                    ..Default::default()
+                })
+                .sync()?
+                .location
+                .ok_or_else(|| err_msg("Failed to create bucket"))
+        })
     }
 
     pub fn delete_bucket(&self, bucket_name: &str) -> Result<(), Error> {
-        self.s3_client
-            .delete_bucket(DeleteBucketRequest {
-                bucket: bucket_name.to_string(),
-            })
-            .sync()
-            .map_err(err_msg)
+        exponential_retry(|| {
+            self.s3_client
+                .delete_bucket(DeleteBucketRequest {
+                    bucket: bucket_name.to_string(),
+                })
+                .sync()
+                .map_err(err_msg)
+        })
     }
 
     pub fn delete_key(&self, bucket_name: &str, key_name: &str) -> Result<(), Error> {
-        self.s3_client
-            .delete_object(DeleteObjectRequest {
-                bucket: bucket_name.to_string(),
-                key: key_name.to_string(),
-                ..Default::default()
-            })
-            .sync()
-            .map(|_| ())
-            .map_err(err_msg)
+        exponential_retry(|| {
+            self.s3_client
+                .delete_object(DeleteObjectRequest {
+                    bucket: bucket_name.to_string(),
+                    key: key_name.to_string(),
+                    ..Default::default()
+                })
+                .sync()
+                .map(|_| ())
+                .map_err(err_msg)
+        })
     }
 
     pub fn upload(&self, fname: &str, bucket_name: &str, key_name: &str) -> Result<(), Error> {
-        if Path::new(&fname).exists() {
-            return Err(err_msg("File doesn't exist"));
-        }
-        self.s3_client.upload_from_file(
-            &fname,
-            PutObjectRequest {
-                bucket: bucket_name.to_string(),
-                key: key_name.to_string(),
-                ..Default::default()
-            },
-        )?;
-        Ok(())
+        exponential_retry(|| {
+            if Path::new(&fname).exists() {
+                return Err(err_msg("File doesn't exist"));
+            }
+            self.s3_client.upload_from_file(
+                &fname,
+                PutObjectRequest {
+                    bucket: bucket_name.to_string(),
+                    key: key_name.to_string(),
+                    ..Default::default()
+                },
+            )?;
+            Ok(())
+        })
     }
 
     pub fn download(
@@ -111,17 +122,19 @@ impl S3Instance {
         key_name: &str,
         fname: &str,
     ) -> Result<String, Error> {
-        self.s3_client
-            .download_to_file(
-                GetObjectRequest {
-                    bucket: bucket_name.to_string(),
-                    key: key_name.to_string(),
-                    ..Default::default()
-                },
-                &fname,
-            )
-            .map(|x| x.e_tag.unwrap_or_else(|| "".to_string()))
-            .map_err(err_msg)
+        exponential_retry(|| {
+            self.s3_client
+                .download_to_file(
+                    GetObjectRequest {
+                        bucket: bucket_name.to_string(),
+                        key: key_name.to_string(),
+                        ..Default::default()
+                    },
+                    &fname,
+                )
+                .map(|x| x.e_tag.unwrap_or_else(|| "".to_string()))
+                .map_err(err_msg)
+        })
     }
 
     pub fn get_list_of_keys(
@@ -134,15 +147,17 @@ impl S3Instance {
         let mut list_of_keys = Vec::new();
 
         loop {
-            let current_list = self
-                .s3_client
-                .list_objects_v2(ListObjectsV2Request {
-                    bucket: bucket.to_string(),
-                    continuation_token,
-                    prefix: prefix.map(ToString::to_string),
-                    ..Default::default()
-                })
-                .sync()?;
+            let current_list = exponential_retry(|| {
+                self.s3_client
+                    .list_objects_v2(ListObjectsV2Request {
+                        bucket: bucket.to_string(),
+                        continuation_token: continuation_token.clone(),
+                        prefix: prefix.map(ToString::to_string),
+                        ..Default::default()
+                    })
+                    .sync()
+                    .map_err(err_msg)
+            })?;
 
             continuation_token = current_list.next_continuation_token.clone();
 
@@ -181,15 +196,17 @@ impl S3Instance {
         let mut continuation_token = None;
 
         loop {
-            let current_list = self
-                .s3_client
-                .list_objects_v2(ListObjectsV2Request {
-                    bucket: bucket.to_string(),
-                    continuation_token,
-                    prefix: prefix.map(ToString::to_string),
-                    ..Default::default()
-                })
-                .sync()?;
+            let current_list = exponential_retry(|| {
+                self.s3_client
+                    .list_objects_v2(ListObjectsV2Request {
+                        bucket: bucket.to_string(),
+                        continuation_token: continuation_token.clone(),
+                        prefix: prefix.map(ToString::to_string),
+                        ..Default::default()
+                    })
+                    .sync()
+                    .map_err(err_msg)
+            })?;
 
             continuation_token = current_list.next_continuation_token.clone();
 
