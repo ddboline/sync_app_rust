@@ -298,7 +298,6 @@ impl FileSync {
                                     None => FileInfo::from_url(&val)?,
                                 };
                                 println!("copy {} {}", key, val);
-                                println!("{:?} {:?}", finfo0, finfo1);
                                 if finfo1.servicetype == FileService::Local {
                                     self.copy_object(&flist0, &finfo0, &finfo1)?;
                                 } else {

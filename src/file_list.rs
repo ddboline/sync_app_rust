@@ -395,8 +395,8 @@ impl FileListTrait for FileList {
                 let conf = FileListGDriveConf(self.get_conf().clone());
                 let config = Config::new();
                 let gdrive = GDriveInstance::new(&config, &conf.0.servicesession.0);
-                let flist =
-                    FileListGDrive::from_conf(conf, &gdrive)?.set_directory_map(false, pool)?;
+                let flist = FileListGDrive::from_conf(conf, &gdrive)?;
+                let flist = flist.set_directory_map(false, pool)?;
                 flist.fill_file_list(pool)
             }
             _ => match pool {
@@ -430,8 +430,8 @@ impl FileListTrait for FileList {
                 let config = Config::new();
                 let fconf = FileListGDriveConf(conf.clone());
                 let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
-                let flist =
-                    FileListGDrive::from_conf(fconf, &gdrive)?.set_directory_map(false, None)?;
+                let flist = FileListGDrive::from_conf(fconf, &gdrive)?;
+                let flist = flist.set_directory_map(false, None)?;
                 flist.print_list()
             }
             _ => Err(err_msg("Not implemented")),
