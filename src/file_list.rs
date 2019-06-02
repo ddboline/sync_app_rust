@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use failure::{err_msg, Error};
 use rayon::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use url::Url;
 
@@ -457,8 +457,9 @@ impl FileListTrait for FileList {
             }
             FileService::GDrive => {
                 let c = FileListGDriveConf(self.conf.clone());
+                let pool = PgPool::new(&c.get_config().database_url);
                 let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
-                let f = FileListGDrive::from_conf(c, &g)?;
+                let f = FileListGDrive::from_conf(c, &g)?.set_directory_map(true, Some(&pool))?;
                 f.copy_from(finfo0, finfo1)
             }
             _ => Ok(()),
@@ -484,8 +485,9 @@ impl FileListTrait for FileList {
             }
             FileService::GDrive => {
                 let c = FileListGDriveConf(self.conf.clone());
+                let pool = PgPool::new(&c.get_config().database_url);
                 let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
-                let f = FileListGDrive::from_conf(c, &g)?;
+                let f = FileListGDrive::from_conf(c, &g)?.set_directory_map(true, Some(&pool))?;
                 f.copy_to(finfo0, finfo1)
             }
             _ => Ok(()),
@@ -497,7 +499,32 @@ impl FileListTrait for FileList {
         T: FileInfoTrait,
         U: FileInfoTrait,
     {
-        Ok(())
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        if finfo0.servicetype != finfo1.servicetype {
+            return Ok(());
+        } else if self.get_conf().servicetype != finfo0.servicetype {
+            return Ok(());
+        }
+        match self.get_conf().servicetype {
+            FileService::Local => {
+                let f = FileListLocal(self.clone());
+                f.move_file(finfo0, finfo1)
+            }
+            FileService::S3 => {
+                let c = FileListS3Conf(self.conf.clone());
+                let f = FileListS3::from_conf(c);
+                f.move_file(finfo0, finfo1)
+            }
+            FileService::GDrive => {
+                let c = FileListGDriveConf(self.conf.clone());
+                let pool = PgPool::new(&c.get_config().database_url);
+                let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
+                let f = FileListGDrive::from_conf(c, &g)?.set_directory_map(true, Some(&pool))?;
+                f.move_file(finfo0, finfo1)
+            }
+            _ => Ok(()),
+        }
     }
 
     fn delete<T>(&self, finfo: &T) -> Result<(), Error>
@@ -516,10 +543,11 @@ impl FileListTrait for FileList {
                 flist.delete(finfo)
             }
             FileService::GDrive => {
-                let conf = FileListGDriveConf(self.get_conf().clone());
-                let config = Config::new();
-                let gdrive = GDriveInstance::new(&config, &conf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(conf, &gdrive)?;
+                let c = FileListGDriveConf(self.get_conf().clone());
+                let pool = PgPool::new(&c.get_config().database_url);
+                let gdrive = GDriveInstance::new(&self.conf.get_config(), &c.0.servicesession.0);
+                let flist =
+                    FileListGDrive::from_conf(c, &gdrive)?.set_directory_map(true, Some(&pool))?;
                 flist.delete(finfo)
             }
             _ => Ok(()),

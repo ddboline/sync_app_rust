@@ -323,7 +323,6 @@ impl FileSync {
         U: FileInfoTrait + Send + Sync,
         V: FileInfoTrait + Send + Sync,
     {
-        let t = flist.get_conf().servicetype;
         let t0 = finfo0.get_finfo().servicetype;
         let t1 = finfo1.get_finfo().servicetype;
 

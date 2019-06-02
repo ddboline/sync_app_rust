@@ -280,8 +280,7 @@ impl FileListTrait for FileListGDrive {
                 .urlname
                 .clone()
                 .ok_or_else(|| err_msg("No remote url"))?;
-            let (dmap, root_dir) = self.gdrive.get_directory_map()?;
-            let dnamemap = GDriveInstance::get_directory_name_map(&dmap);
+            let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
             let parent_id = self
                 .gdrive
                 .get_parent_id(&remote_url, &dnamemap)?
@@ -301,7 +300,25 @@ impl FileListTrait for FileListGDrive {
         T: FileInfoTrait,
         U: FileInfoTrait,
     {
-        Ok(())
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        if finfo0.servicetype != finfo1.servicetype {
+            return Ok(());
+        } else if self.get_conf().servicetype != finfo0.servicetype {
+            return Ok(());
+        }
+        let gdriveid = &finfo0
+            .serviceid
+            .as_ref()
+            .ok_or_else(|| err_msg("No serviceid"))?
+            .0;
+        let url = finfo1.urlname.as_ref().ok_or_else(|| err_msg("No url"))?;
+        let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
+        let parentid = self
+            .gdrive
+            .get_parent_id(&url, &dnamemap)?
+            .ok_or_else(|| err_msg("No parentid"))?;
+        self.gdrive.move_to(gdriveid, &parentid, &finfo1.filename)
     }
 
     fn delete<T>(&self, finfo: &T) -> Result<(), Error>

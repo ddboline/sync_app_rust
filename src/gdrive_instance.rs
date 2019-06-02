@@ -151,43 +151,45 @@ impl GDriveInstance {
             "webContentLink",
         ];
         let fields = format!("nextPageToken,files({})", fields.join(","));
-        let mut request = self
-            .gdrive
-            .files()
-            .list()
-            .param("fields", &fields)
-            .spaces("drive") // TODO: maybe add photos as well
-            .corpora("user")
-            .page_size(self.page_size)
-            .add_scope(drive3::Scope::Full);
+        exponential_retry(|| {
+            let mut request = self
+                .gdrive
+                .files()
+                .list()
+                .param("fields", &fields)
+                .spaces("drive") // TODO: maybe add photos as well
+                .corpora("user")
+                .page_size(self.page_size)
+                .add_scope(drive3::Scope::Full);
 
-        if let Some(token) = page_token {
-            request = request.page_token(token);
-        };
+            if let Some(token) = page_token {
+                request = request.page_token(token);
+            };
 
-        let mut query_chain: Vec<String> = Vec::new();
-        if get_folders {
-            query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.to_string());
-        } else {
-            query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.to_string());
-        }
-        if let Some(ref p) = parents {
-            let q = p
-                .iter()
-                .map(|id| format!("'{}' in parents", id))
-                .collect::<Vec<_>>()
-                .join(" or ");
+            let mut query_chain: Vec<String> = Vec::new();
+            if get_folders {
+                query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.to_string());
+            } else {
+                query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.to_string());
+            }
+            if let Some(ref p) = parents {
+                let q = p
+                    .iter()
+                    .map(|id| format!("'{}' in parents", id))
+                    .collect::<Vec<_>>()
+                    .join(" or ");
 
-            query_chain.push(format!("({})", q));
-        }
-        query_chain.push("trashed = false".to_string());
+                query_chain.push(format!("({})", q));
+            }
+            query_chain.push("trashed = false".to_string());
 
-        let query = query_chain.join(" and ");
-        let (_, filelist) = request
-            .q(&query)
-            .doit()
-            .map_err(|e| err_msg(format!("{:#?}", e)))?;
-        Ok(filelist)
+            let query = query_chain.join(" and ");
+            let (_, filelist) = request
+                .q(&query)
+                .doit()
+                .map_err(|e| err_msg(format!("{:#?}", e)))?;
+            Ok(filelist)
+        })
     }
 
     pub fn get_all_files(&self, get_folders: bool) -> Result<Vec<drive3::File>, Error> {
@@ -412,24 +414,26 @@ impl GDriveInstance {
     }
 
     pub fn move_to(&self, id: &str, parent: &str, new_name: &str) -> Result<(), Error> {
-        let current_parents = self
-            .get_file_metadata(id)?
-            .parents
-            .unwrap_or_else(|| vec![String::from("root")])
-            .join(",");
+        exponential_retry(|| {
+            let current_parents = self
+                .get_file_metadata(id)?
+                .parents
+                .unwrap_or_else(|| vec![String::from("root")])
+                .join(",");
 
-        let mut file = drive3::File::default();
-        file.name = Some(new_name.to_string());
-        let _ = self
-            .gdrive
-            .files()
-            .update(file, id)
-            .remove_parents(&current_parents)
-            .add_parents(parent)
-            .add_scope(drive3::Scope::Full)
-            .doit_without_upload()
-            .map_err(|e| err_msg(format!("DriveFacade::move_to() {}", e)))?;
-        Ok(())
+            let mut file = drive3::File::default();
+            file.name = Some(new_name.to_string());
+            let _ = self
+                .gdrive
+                .files()
+                .update(file, id)
+                .remove_parents(&current_parents)
+                .add_parents(parent)
+                .add_scope(drive3::Scope::Full)
+                .doit_without_upload()
+                .map_err(|e| err_msg(format!("DriveFacade::move_to() {}", e)))?;
+            Ok(())
+        })
     }
 
     pub fn get_directory_map(

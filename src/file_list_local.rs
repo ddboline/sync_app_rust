@@ -1,7 +1,7 @@
 use failure::{err_msg, Error};
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::fs::{copy, create_dir_all, remove_file};
+use std::fs::{copy, create_dir_all, remove_file, rename};
 use std::path::PathBuf;
 use std::string::ToString;
 use std::time::SystemTime;
@@ -219,7 +219,27 @@ impl FileListTrait for FileListLocal {
         T: FileInfoTrait,
         U: FileInfoTrait,
     {
-        Ok(())
+        let finfo0 = finfo0.get_finfo();
+        let finfo1 = finfo1.get_finfo();
+        let path0 = finfo0
+            .filepath
+            .as_ref()
+            .ok_or_else(|| err_msg("No file path"))?;
+        let path1 = finfo1
+            .filepath
+            .as_ref()
+            .ok_or_else(|| err_msg("No file path"))?;
+        if finfo0.servicetype != FileService::Local {
+            Ok(())
+        } else if finfo1.servicetype != FileService::Local {
+            Ok(())
+        } else {
+            rename(&path0, path1).or_else(|_| {
+                copy(&path0, &path1)?;
+                remove_file(&path0)?;
+                Ok(())
+            })
+        }
     }
 
     fn delete<T>(&self, finfo: &T) -> Result<(), Error>

@@ -1,13 +1,14 @@
 use failure::{err_msg, Error};
 use rusoto_core::Region;
 use rusoto_s3::{
-    Bucket, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest, GetObjectRequest,
-    ListObjectsV2Request, Object, PutObjectRequest, S3Client, S3,
+    Bucket, CopyObjectRequest, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest,
+    GetObjectRequest, ListObjectsV2Request, Object, PutObjectRequest, S3Client, S3,
 };
 use s4::S4;
 use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
+use url::Url;
 
 use crate::config::Config;
 use crate::exponential_retry;
@@ -99,19 +100,44 @@ impl S3Instance {
         })
     }
 
+    pub fn copy_key(
+        &self,
+        source: &Url,
+        bucket_to: &str,
+        key_to: &str,
+    ) -> Result<Option<String>, Error> {
+        exponential_retry(|| {
+            let copy_source = source.to_string();
+            self.s3_client
+                .copy_object(CopyObjectRequest {
+                    copy_source,
+                    bucket: bucket_to.to_string(),
+                    key: key_to.to_string(),
+                    ..Default::default()
+                })
+                .sync()
+                .map_err(err_msg)
+        })
+        .map(|x| x.copy_object_result.and_then(|s| s.e_tag))
+    }
+
     pub fn upload(&self, fname: &str, bucket_name: &str, key_name: &str) -> Result<(), Error> {
         exponential_retry(|| {
             if Path::new(&fname).exists() {
                 return Err(err_msg("File doesn't exist"));
             }
-            self.s3_client.upload_from_file(
-                &fname,
-                PutObjectRequest {
-                    bucket: bucket_name.to_string(),
-                    key: key_name.to_string(),
-                    ..Default::default()
-                },
-            )?;
+            exponential_retry(|| {
+                self.s3_client
+                    .upload_from_file(
+                        &fname,
+                        PutObjectRequest {
+                            bucket: bucket_name.to_string(),
+                            key: key_name.to_string(),
+                            ..Default::default()
+                        },
+                    )
+                    .map_err(err_msg)
+            })?;
             Ok(())
         })
     }

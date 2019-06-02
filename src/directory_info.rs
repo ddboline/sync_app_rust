@@ -1,10 +1,4 @@
-use failure::Error;
-use std::collections::HashMap;
-
-use crate::file_info::ServiceSession;
-use crate::file_service::FileService;
-use crate::models::{DirectoryInfoCache, InsertDirectoryInfoCache};
-use crate::pgpool::PgPool;
+use crate::models::DirectoryInfoCache;
 
 #[derive(Debug, Clone)]
 pub struct DirectoryInfo {
