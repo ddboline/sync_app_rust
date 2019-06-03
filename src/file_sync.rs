@@ -280,10 +280,10 @@ impl FileSync {
                         h
                     });
 
-            let key_list: Vec<_> = proc_map.keys().map(|x| x.clone()).collect();
+            let key_list: Vec<_> = proc_map.keys().cloned().collect();
 
             for urls in group_urls(&key_list).values() {
-                if let Some(u0) = urls.iter().nth(0) {
+                if let Some(u0) = urls.get(0) {
                     let conf = FileListConf::from_url(u0, &self.config)?;
                     let flist0 = FileList::from_conf(conf);
                     for key in urls {

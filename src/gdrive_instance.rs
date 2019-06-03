@@ -468,10 +468,10 @@ impl GDriveInstance {
                                 ));
                             }
                         } else {
-                            if root_id.is_none() {
-                                if d.name != Some("Chrome Syncable FileSystem".to_string()) {
-                                    root_id = Some(gdriveid.clone());
-                                }
+                            if root_id.is_none()
+                                && d.name != Some("Chrome Syncable FileSystem".to_string())
+                            {
+                                root_id = Some(gdriveid.clone());
                             }
                             return Some((
                                 gdriveid.clone(),
@@ -509,10 +509,11 @@ impl GDriveInstance {
                     } else {
                         None
                     };
-                    if parents.is_none() && root_id.is_none() {
-                        if d.name != Some("Chrome Syncable FileSystem".to_string()) {
-                            root_id = Some(gdriveid.clone());
-                        }
+                    if parents.is_none()
+                        && root_id.is_none()
+                        && d.name != Some("Chrome Syncable FileSystem".to_string())
+                    {
+                        root_id = Some(gdriveid.clone());
                     }
                     let val = DirectoryInfo {
                         directory_id: gdriveid.clone(),
@@ -604,12 +605,12 @@ impl GDriveInstance {
                             matching_directory = Some(parent.directory_id.clone());
                             break;
                         }
-                        if !parent.parentid.is_none() && parent.parentid == previous_parent_id {
+                        if parent.parentid.is_some() && parent.parentid == previous_parent_id {
                             matching_directory = Some(parent.directory_id.clone())
                         }
                     }
                 }
-                if let Some(_) = matching_directory.as_ref() {
+                if matching_directory.is_some() {
                     previous_parent_id = matching_directory.clone();
                 } else {
                     return Ok(previous_parent_id);

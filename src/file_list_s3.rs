@@ -224,9 +224,9 @@ impl FileListTrait for FileListS3 {
     {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
-        if finfo0.servicetype != finfo1.servicetype {
-            return Ok(());
-        } else if self.get_conf().servicetype != finfo0.servicetype {
+        if finfo0.servicetype != finfo1.servicetype
+            || self.get_conf().servicetype != finfo0.servicetype
+        {
             return Ok(());
         }
         let url0 = finfo0.urlname.as_ref().ok_or_else(|| err_msg("No url"))?;
@@ -236,7 +236,7 @@ impl FileListTrait for FileListS3 {
         let bucket1 = url1.host_str().ok_or_else(|| err_msg("Parse error"))?;
         let key1 = url1.path();
         let new_tag = self.s3.copy_key(url0, &bucket1, &key1)?;
-        if let Some(_) = new_tag {
+        if new_tag.is_some() {
             self.s3.delete_key(bucket0, key0)?;
         }
         Ok(())

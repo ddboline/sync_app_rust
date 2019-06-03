@@ -185,8 +185,7 @@ impl FileInfo {
             .filter(urlname.eq(url.as_str().to_string()))
             .load::<FileInfoCache>(&conn)
             .map_err(err_msg)?
-            .iter()
-            .nth(0)
+            .get(0)
         {
             Some(f) => Some(FileInfo::from_cache_info(&f)?),
             None => None,

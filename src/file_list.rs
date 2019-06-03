@@ -501,9 +501,9 @@ impl FileListTrait for FileList {
     {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
-        if finfo0.servicetype != finfo1.servicetype {
-            return Ok(());
-        } else if self.get_conf().servicetype != finfo0.servicetype {
+        if finfo0.servicetype != finfo1.servicetype
+            || self.get_conf().servicetype != finfo0.servicetype
+        {
             return Ok(());
         }
         match self.get_conf().servicetype {

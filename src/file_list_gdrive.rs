@@ -119,7 +119,7 @@ impl FileListConfTrait for FileListGDriveConf {
                 basepath
                     .to_str()
                     .ok_or_else(|| err_msg("Failure"))?
-                    .trim_start_matches("/"),
+                    .trim_start_matches('/'),
             );
             let conf = FileListConf {
                 baseurl: url.clone(),
@@ -185,7 +185,7 @@ impl FileListTrait for FileListGDrive {
                         return true;
                     }
                 }
-                return false;
+                false
             })
             .map(|mut f| {
                 f.servicesession = Some(self.get_conf().servicesession.clone());
@@ -302,9 +302,9 @@ impl FileListTrait for FileListGDrive {
     {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
-        if finfo0.servicetype != finfo1.servicetype {
-            return Ok(());
-        } else if self.get_conf().servicetype != finfo0.servicetype {
+        if finfo0.servicetype != finfo1.servicetype
+            || self.get_conf().servicetype != finfo0.servicetype
+        {
             return Ok(());
         }
         let gdriveid = &finfo0
@@ -328,12 +328,10 @@ impl FileListTrait for FileListGDrive {
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::GDrive {
             Err(err_msg("Wrong service type"))
+        } else if let Some(gdriveid) = finfo.serviceid.as_ref() {
+            self.gdrive.move_to_trash(&gdriveid.0)
         } else {
-            if let Some(gdriveid) = finfo.serviceid.as_ref() {
-                self.gdrive.move_to_trash(&gdriveid.0)
-            } else {
-                Ok(())
-            }
+            Ok(())
         }
     }
 }

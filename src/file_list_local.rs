@@ -229,9 +229,7 @@ impl FileListTrait for FileListLocal {
             .filepath
             .as_ref()
             .ok_or_else(|| err_msg("No file path"))?;
-        if finfo0.servicetype != FileService::Local {
-            Ok(())
-        } else if finfo1.servicetype != FileService::Local {
+        if finfo0.servicetype != FileService::Local || finfo1.servicetype != FileService::Local {
             Ok(())
         } else {
             rename(&path0, path1).or_else(|_| {
@@ -249,12 +247,10 @@ impl FileListTrait for FileListLocal {
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::Local {
             Err(err_msg("Wrong service type"))
+        } else if let Some(filepath) = finfo.filepath.as_ref() {
+            remove_file(filepath).map_err(err_msg)
         } else {
-            if let Some(filepath) = finfo.filepath.as_ref() {
-                remove_file(filepath).map_err(err_msg)
-            } else {
-                Ok(())
-            }
+            Ok(())
         }
     }
 }
