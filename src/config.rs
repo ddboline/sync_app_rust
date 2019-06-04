@@ -7,6 +7,9 @@ pub struct Config {
     pub gdrive_secret_file: String,
     pub gdrive_token_path: String,
     pub aws_region_name: String,
+    pub onedrive_client_id: String,
+    pub onedrive_client_secret: String,
+    pub onedrive_redirect_uri: String,
 }
 
 impl Config {
@@ -37,12 +40,21 @@ impl Config {
         let gdrive_token_path =
             var("GDRIVE_TOKEN_PATH").unwrap_or_else(|_| format!("{}/.gdrive", home_dir));
         let aws_region_name = var("AWS_REGION_NAME").unwrap_or_else(|_| "us-east-1".to_string());
+        let onedrive_client_id =
+            var("ONEDRIVE_CLIENT_ID").unwrap_or_else(|_| "Need OneDrive ClientID".to_string());
+        let onedrive_client_secret =
+            var("ONEDRIVE_CLIENT_SECRET").unwrap_or_else(|_| "Need Client Secret".to_string());
+        let onedrive_redirect_uri =
+            var("ONEDRIVE_REDIRECT_URI").unwrap_or_else(|_| "Need Redirect URI".to_string());
 
         Config {
             database_url,
             gdrive_secret_file,
             gdrive_token_path,
             aws_region_name,
+            onedrive_client_id,
+            onedrive_client_secret,
+            onedrive_redirect_uri,
         }
     }
 }
