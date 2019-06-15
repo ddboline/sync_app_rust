@@ -24,7 +24,7 @@ pub struct SyncOpts {
 impl SyncOpts {
     pub fn process_args() -> Result<(), Error> {
         let opts = SyncOpts::from_args();
-        let config = Config::new();
+        let config = Config::init_config()?;
 
         match opts.action {
             FileSyncAction::Sync => {

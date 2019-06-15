@@ -677,7 +677,7 @@ mod tests {
 
     #[test]
     fn test_create_drive() {
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
             .with_max_keys(10)
             .with_page_size(10);

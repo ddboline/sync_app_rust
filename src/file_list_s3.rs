@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn test_fill_file_list() {
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let s3 = S3Instance::new(&config);
         let blist = s3.get_list_of_buckets().unwrap();
         let bucket = blist
@@ -284,7 +284,7 @@ mod tests {
         println!("{} {:?}", bucket, new_flist.get(0));
         assert!(new_flist.len() > 0);
 
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let pool = PgPool::new(&config.database_url);
         let flist = flist.with_list(&new_flist);
 

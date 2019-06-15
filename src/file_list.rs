@@ -430,7 +430,7 @@ impl FileListTrait for FileList {
             }
             FileService::GDrive => {
                 let conf = FileListGDriveConf(self.get_conf().clone());
-                let config = Config::new();
+                let config = Config::init_config()?;
                 let gdrive = GDriveInstance::new(&config, &conf.0.servicesession.0);
                 let flist = FileListGDrive::from_conf(conf, &gdrive)?;
                 let flist = flist.set_directory_map(false, pool)?;
@@ -464,7 +464,7 @@ impl FileListTrait for FileList {
                 flist.print_list()
             }
             FileService::GDrive => {
-                let config = Config::new();
+                let config = Config::init_config()?;
                 let fconf = FileListGDriveConf(conf.clone());
                 let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
                 let flist = FileListGDrive::from_conf(fconf, &gdrive)?;

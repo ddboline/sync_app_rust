@@ -348,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_fill_file_list() {
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
 
         let fconf = FileListGDriveConf::new("ddboline@gmail.com", "My Drive", &config).unwrap();
@@ -362,7 +362,7 @@ mod tests {
 
         assert!(new_flist.len() > 0);
 
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let pool = PgPool::new(&config.database_url);
         flist.clear_file_list(&pool).unwrap();
 

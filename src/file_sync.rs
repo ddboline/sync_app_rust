@@ -355,7 +355,7 @@ mod tests {
     #[test]
     fn test_compare_objects() {
         let outfile = NamedTempFile::new().unwrap();
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let fsync = FileSync::new(
             FileSyncMode::OutputFile(outfile.path().to_path_buf()),
             &config,
@@ -397,7 +397,7 @@ mod tests {
     #[test]
     fn test_compare_lists_0() {
         let mut outfile = NamedTempFile::new().unwrap();
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let fsync = FileSync::new(
             FileSyncMode::OutputFile(outfile.path().to_path_buf()),
             &config,
@@ -438,7 +438,7 @@ mod tests {
     #[test]
     fn test_compare_lists_1() {
         let mut outfile = NamedTempFile::new().unwrap();
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let fsync = FileSync::new(
             FileSyncMode::OutputFile(outfile.path().to_path_buf()),
             &config,

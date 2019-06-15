@@ -147,7 +147,7 @@ mod tests {
 
     #[test]
     fn test_file_info_from_object() {
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
         let (dmap, _) = gdrive.get_directory_map().unwrap();
         let f = drive3::File {

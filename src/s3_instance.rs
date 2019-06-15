@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn test_list_buckets() {
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let s3_instance = S3Instance::new(&config).max_keys(100);
         let blist = s3_instance.get_list_of_buckets().unwrap();
         let bucket = blist

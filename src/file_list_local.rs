@@ -278,7 +278,7 @@ mod tests {
         )
         .parse()
         .unwrap();
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let conf = FileListLocalConf::new(basepath, &config);
         println!("{:?}", conf);
         assert_eq!(conf.is_ok(), true);
@@ -291,7 +291,7 @@ mod tests {
     #[test]
     fn test_fill_file_list() {
         let basepath = "src".parse().unwrap();
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let conf = FileListLocalConf::new(basepath, &config).unwrap();
         let flist = FileListLocal(FileList {
             conf: conf.0.clone(),
@@ -336,7 +336,7 @@ mod tests {
         let test_result = FileInfo::from_cache_info(&cache_info).unwrap();
         assert_eq!(*result, test_result);
 
-        let config = Config::new();
+        let config = Config::init_config().unwrap();
         let pool = PgPool::new(&config.database_url);
 
         println!("1 {}", new_flist.len());
