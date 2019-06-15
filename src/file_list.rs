@@ -138,7 +138,44 @@ pub trait FileListTrait {
                 key.map(|k| (k, item))
             })
             .collect();
-        let flist_cache_update: HashMap<_, _> = flist_cache_map
+
+        let flist_cache_remove: Vec<_> = current_cache
+            .par_iter()
+            .filter_map(|(k, _)| match flist_cache_map.get(&k) {
+                Some(_) => None,
+                None => Some(k.clone()),
+            })
+            .collect();
+
+        println!("nremove {}", flist_cache_remove.len());
+
+        let results = flist_cache_remove
+            .into_par_iter()
+            .map(|k| {
+                use crate::schema::file_info_cache::dsl::{
+                    file_info_cache, filename, filepath, serviceid, servicesession, urlname,
+                };
+
+                let conn = pool.get()?;
+
+                println!("remove {:?}", k);
+
+                diesel::delete(
+                    file_info_cache
+                        .filter(filename.eq(k.filename))
+                        .filter(filepath.eq(k.filepath))
+                        .filter(serviceid.eq(k.serviceid))
+                        .filter(servicesession.eq(k.servicesession))
+                        .filter(urlname.eq(k.urlname)),
+                )
+                .execute(&conn)
+                .map_err(err_msg)
+            })
+            .collect();
+
+        map_result_vec(results)?;
+
+        let flist_cache_update: Vec<_> = flist_cache_map
             .par_iter()
             .filter_map(|(k, v)| match current_cache.get(&k) {
                 Some(item) => {
@@ -147,7 +184,7 @@ pub trait FileListTrait {
                         || v.filestat_st_mtime != item.filestat_st_mtime
                         || v.filestat_st_size != item.filestat_st_size
                     {
-                        Some((k.clone(), v.clone()))
+                        Some(v.clone())
                     } else {
                         None
                     }
@@ -158,7 +195,7 @@ pub trait FileListTrait {
 
         let results = flist_cache_update
             .into_par_iter()
-            .map(|(k, v)| {
+            .map(|v| {
                 use crate::schema::file_info_cache::dsl::{
                     file_info_cache, filename, filepath, filestat_st_mtime, filestat_st_size, id,
                     md5sum, serviceid, servicesession, sha1sum, urlname,
@@ -167,11 +204,11 @@ pub trait FileListTrait {
                 let conn = pool.get()?;
 
                 let cache = file_info_cache
-                    .filter(filename.eq(k.filename))
-                    .filter(filepath.eq(k.filepath))
-                    .filter(urlname.eq(k.urlname))
-                    .filter(serviceid.eq(k.serviceid))
-                    .filter(servicesession.eq(k.servicesession))
+                    .filter(filename.eq(v.filename))
+                    .filter(filepath.eq(v.filepath))
+                    .filter(urlname.eq(v.urlname))
+                    .filter(serviceid.eq(v.serviceid))
+                    .filter(servicesession.eq(v.servicesession))
                     .load::<FileInfoCache>(&conn)
                     .map_err(err_msg)?;
                 if cache.len() != 1 {
