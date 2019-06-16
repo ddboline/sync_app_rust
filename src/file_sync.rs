@@ -1,4 +1,5 @@
 use failure::{err_msg, Error};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::convert::From;
 use std::fs::File;
@@ -9,7 +10,7 @@ use std::str::FromStr;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
 use crate::file_list::{
     group_urls, replace_basepath, replace_baseurl, FileList, FileListConf, FileListConfTrait,
     FileListTrait,
@@ -249,8 +250,7 @@ impl FileSync {
 
     pub fn process_file(&self, pool: &PgPool) -> Result<(), Error> {
         if let FileSyncMode::OutputFile(fname) = &self.mode {
-            let f = File::open(fname)?;
-            let proc_list: Vec<Result<_, Error>> = BufReader::new(f)
+            let proc_list: Vec<Result<_, Error>> = BufReader::new(File::open(fname)?)
                 .lines()
                 .map(|line| {
                     let v: Vec<_> = line?.split_whitespace().map(ToString::to_string).collect();
@@ -286,34 +286,76 @@ impl FileSync {
                 if let Some(u0) = urls.get(0) {
                     let conf = FileListConf::from_url(u0, &self.config)?;
                     let flist0 = FileList::from_conf(conf);
-                    for key in urls {
-                        if let Some(vals) = proc_map.get(&key) {
-                            for val in vals {
-                                let finfo0 = match FileInfo::from_database(&pool, &key)? {
-                                    Some(f) => f,
-                                    None => FileInfo::from_url(&key)?,
-                                };
-                                let finfo1 = match FileInfo::from_database(&pool, &val)? {
-                                    Some(f) => f,
-                                    None => FileInfo::from_url(&val)?,
-                                };
-                                println!("copy {} {}", key, val);
-                                if finfo1.servicetype == FileService::Local {
-                                    self.copy_object(&flist0, &finfo0, &finfo1)?;
-                                } else {
-                                    let conf = FileListConf::from_url(val, &self.config)?;
-                                    let flist1 = FileList::from_conf(conf);
-                                    self.copy_object(&flist1, &finfo0, &finfo1)?;
+                    let results: Vec<Result<_, Error>> = urls
+                        .par_iter()
+                        .map(|key| {
+                            if let Some(vals) = proc_map.get(&key) {
+                                for val in vals {
+                                    let finfo0 = match FileInfo::from_database(&pool, &key)? {
+                                        Some(f) => f,
+                                        None => FileInfo::from_url(&key)?,
+                                    };
+                                    let finfo1 = match FileInfo::from_database(&pool, &val)? {
+                                        Some(f) => f,
+                                        None => FileInfo::from_url(&val)?,
+                                    };
+                                    println!("copy {} {}", key, val);
+                                    if finfo1.servicetype == FileService::Local {
+                                        self.copy_object(&flist0, &finfo0, &finfo1)?;
+                                    } else {
+                                        let conf = FileListConf::from_url(val, &self.config)?;
+                                        let flist1 = FileList::from_conf(conf);
+                                        self.copy_object(&flist1, &finfo0, &finfo1)?;
+                                    }
                                 }
                             }
-                        }
-                    }
+                            Ok(())
+                        })
+                        .collect();
+                    map_result_vec(results)?;
                 }
             }
             Ok(())
         } else {
             Err(err_msg("Wrong mode"))
         }
+    }
+
+    pub fn delete_files(&self, urls: &[Url], pool: &PgPool) -> Result<(), Error> {
+        let mut all_urls = urls.to_vec();
+        if let FileSyncMode::OutputFile(fname) = &self.mode {
+            let f = File::open(fname)?;
+            let proc_list: Vec<Result<_, Error>> = BufReader::new(f)
+                .lines()
+                .map(|line| {
+                    let url: Url = match line?.split_whitespace().map(ToString::to_string).nth(0) {
+                        Some(v) => v.parse()?,
+                        None => return Err(err_msg("No url")),
+                    };
+                    Ok(url)
+                })
+                .collect();
+            let proc_list = map_result_vec(proc_list)?;
+            all_urls.extend_from_slice(&proc_list);
+        }
+        for urls in group_urls(&all_urls).values() {
+            let conf = FileListConf::from_url(&urls[0], &self.config)?;
+            let flist = FileList::from_conf(conf);
+            let fdict =
+                flist.get_file_list_dict(flist.load_file_list(&pool)?, FileInfoKeyType::UrlName);
+            for url in urls {
+                let finfo = if let Some(f) = fdict.get(&url.as_str().to_string()) {
+                    f.clone()
+                } else {
+                    FileInfo::from_url(&url)?
+                };
+
+                println!("delete {:?}", finfo);
+                flist.delete(&finfo)?;
+            }
+        }
+        println!("{:?}", group_urls(&urls));
+        Ok(())
     }
 
     pub fn copy_object<T, U, V>(&self, flist: &T, finfo0: &U, finfo1: &V) -> Result<(), Error>

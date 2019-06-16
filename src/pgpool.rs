@@ -4,6 +4,7 @@ use failure::{err_msg, Error};
 use r2d2::{Pool, PooledConnection};
 use std::fmt;
 
+#[derive(Clone)]
 pub struct PgPool {
     pgurl: String,
     pool: Pool<ConnectionManager<PgConnection>>,
