@@ -53,10 +53,13 @@ impl OneDriveInstance {
             .write(true)
             .access_shared(true)
             .offline_access(true);
+        println!("{}", config.onedrive_credential_file);
         let cred = OneDriveCredentials::read_from_file(&config.onedrive_credential_file)?;
         let auth = AuthClient::new(cred.client_id.clone(), perm, cred.redirect_uri.clone());
 
-        let auth_url = auth.get_code_auth_url();
+        let auth_url = auth.get_token_auth_url();
+        println!("{} {}", auth_url, cred.redirect_uri);
+        panic!("{}", auth_url);
         let code = "".to_string();
         let token = auth.login_with_code(&code, None)?;
         Ok(DriveClient::new(token.token, DriveLocation::me()))
@@ -65,7 +68,8 @@ impl OneDriveInstance {
 
 #[cfg(test)]
 mod tests {
-    use crate::onedrive_instance::OneDriveCredentials;
+    use crate::config::Config;
+    use crate::onedrive_instance::{OneDriveInstance, OneDriveCredentials};
 
     #[test]
     fn test_onedrive_read_credentials() {
@@ -73,5 +77,14 @@ mod tests {
         assert_eq!(cred.redirect_uri, "http://localhost:8080/");
         assert_eq!(cred.client_id, "ABCDEFG");
         assert_eq!(cred.client_secret, "abcdefg012345");
+    }
+
+    #[test]
+    fn test_onedrive_create_drive() {
+        let config = Config::init_config().unwrap();
+        let session_name = "test_session";
+        let client = OneDriveInstance::create_drive(&config, session_name).unwrap();
+
+        assert!(false);
     }
 }
