@@ -19,7 +19,6 @@ pub mod file_service;
 pub mod file_sync;
 pub mod gdrive_instance;
 pub mod models;
-pub mod onedrive_instance;
 pub mod pgpool;
 pub mod s3_instance;
 pub mod schema;

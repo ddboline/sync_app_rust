@@ -8,8 +8,6 @@ pub struct Config {
     pub gdrive_secret_file: String,
     pub gdrive_token_path: String,
     pub aws_region_name: String,
-    pub onedrive_credential_file: String,
-    pub onedrive_token_path: String,
 }
 
 impl Config {
@@ -49,10 +47,6 @@ impl Config {
             gdrive_token_path: var("GDRIVE_TOKEN_PATH")
                 .unwrap_or_else(|_| default_gdrive_token_path),
             aws_region_name: var("AWS_REGION_NAME").unwrap_or_else(|_| "us-east-1".to_string()),
-            onedrive_credential_file: var("ONEDRIVE_CREDENTIAL_FILE")
-                .unwrap_or_else(|_| "Need OnDrive Credential File".to_string()),
-            onedrive_token_path: var("ONEDRIVE_TOKEN_PATH")
-                .unwrap_or_else(|_| "Need OneDrive token path".to_string()),
         };
 
         Ok(conf)

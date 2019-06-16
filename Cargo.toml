@@ -6,7 +6,6 @@ edition = "2018"
 
 [dependencies]
 google-drive3-fork = "1.0.10"
-onedrive-api = "0.4.0"
 rusoto_core = {version = "0.39", default_features = false, features=["rustls"]}
 rusoto_s3 = {version = "0.39", default_features = false, features=["rustls"]}
 s4 = { git = "https://github.com/ddboline/s4.git", branch = "upgrade_rusoto_0.39" }
