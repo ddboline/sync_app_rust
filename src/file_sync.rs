@@ -16,7 +16,7 @@ use crate::file_list::{
     FileListTrait,
 };
 use crate::file_service::FileService;
-use crate::map_result_vec;
+use crate::map_result;
 use crate::pgpool::PgPool;
 
 #[derive(Debug)]
@@ -180,7 +180,7 @@ impl FileSync {
                         }
                     })
                     .collect();
-                map_result_vec(result)?;
+                map_result(result)?;
             }
             FileSyncMode::OutputFile(fname) => {
                 let mut f = File::create(fname)?;
@@ -257,7 +257,7 @@ impl FileSync {
                     Ok(v)
                 })
                 .collect();
-            let proc_list = map_result_vec(proc_list)?;
+            let proc_list: Vec<_> = map_result(proc_list)?;
 
             let proc_list: Vec<Result<_, Error>> = proc_list
                 .into_iter()
@@ -268,7 +268,7 @@ impl FileSync {
                 })
                 .collect();
 
-            let proc_list = map_result_vec(proc_list)?;
+            let proc_list: Vec<_> = map_result(proc_list)?;
 
             let proc_map: HashMap<_, _> =
                 proc_list
@@ -303,7 +303,7 @@ impl FileSync {
                                     if finfo1.servicetype == FileService::Local {
                                         self.copy_object(&flist0, &finfo0, &finfo1)?;
                                     } else {
-                                        let conf = FileListConf::from_url(val, &self.config)?;
+                                        let conf = FileListConf::from_url(&val, &self.config)?;
                                         let flist1 = FileList::from_conf(conf);
                                         self.copy_object(&flist1, &finfo0, &finfo1)?;
                                     }
@@ -312,7 +312,7 @@ impl FileSync {
                             Ok(())
                         })
                         .collect();
-                    map_result_vec(results)?;
+                    map_result(results)?;
                 }
             }
             Ok(())
@@ -335,7 +335,7 @@ impl FileSync {
                     Ok(url)
                 })
                 .collect();
-            let proc_list = map_result_vec(proc_list)?;
+            let proc_list: Vec<_> = map_result(proc_list)?;
             all_urls.extend_from_slice(&proc_list);
         }
         for urls in group_urls(&all_urls).values() {

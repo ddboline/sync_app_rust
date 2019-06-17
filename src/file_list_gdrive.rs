@@ -12,7 +12,7 @@ use crate::file_info_gdrive::FileInfoGDrive;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
 use crate::gdrive_instance::GDriveInstance;
-use crate::map_result_vec;
+use crate::map_result;
 use crate::pgpool::PgPool;
 
 #[derive(Debug, Clone)]
@@ -177,7 +177,8 @@ impl FileListTrait for FileListGDrive {
                     .map(FileInfoTrait::into_finfo)
             })
             .collect();
-        let flist: Vec<_> = map_result_vec(flist)?
+        let flist: Vec<_> = map_result(flist)?;
+        let flist: Vec<_> = flist
             .into_iter()
             .filter(|f| {
                 if let Some(url) = f.urlname.as_ref() {

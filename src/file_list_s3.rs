@@ -10,7 +10,7 @@ use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_info_s3::FileInfoS3;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::map_result_vec;
+use crate::map_result;
 use crate::pgpool::PgPool;
 use crate::s3_instance::S3Instance;
 
@@ -109,7 +109,7 @@ impl FileListTrait for FileListS3 {
             .into_par_iter()
             .map(|f| FileInfoS3::from_object(bucket, f).map(FileInfoTrait::into_finfo))
             .collect();
-        let flist = map_result_vec(flist)?;
+        let flist = map_result(flist)?;
 
         Ok(flist)
     }

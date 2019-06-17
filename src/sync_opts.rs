@@ -7,7 +7,7 @@ use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
-use crate::map_result_vec;
+use crate::map_result;
 use crate::pgpool::PgPool;
 
 #[derive(StructOpt, Debug)]
@@ -46,7 +46,7 @@ impl SyncOpts {
                         })
                         .collect();
 
-                    let flists = map_result_vec(results)?;
+                    let flists: Vec<_> = map_result(results)?;
 
                     fsync.compare_lists(&flists[0], &flists[1])
                 }
