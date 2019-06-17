@@ -147,8 +147,6 @@ pub trait FileListTrait {
             })
             .collect();
 
-        println!("nremove {}", flist_cache_remove.len());
-
         let results = flist_cache_remove
             .into_par_iter()
             .map(|k| {
