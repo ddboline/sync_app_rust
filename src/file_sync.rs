@@ -287,7 +287,7 @@ impl FileSync {
                     let conf = FileListConf::from_url(u0, &self.config)?;
                     let flist0 = FileList::from_conf(conf);
                     let results: Vec<Result<_, Error>> = urls
-                        .par_iter()
+                        .iter()
                         .map(|key| {
                             if let Some(vals) = proc_map.get(&key) {
                                 for val in vals {
