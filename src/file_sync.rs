@@ -286,6 +286,7 @@ impl FileSync {
                 if let Some(u0) = urls.get(0) {
                     let conf = FileListConf::from_url(u0, &self.config)?;
                     let flist0 = FileList::from_conf(conf);
+                    println!("len urls {}", urls.len());
                     let results: Vec<Result<_, Error>> = urls
                         .par_iter()
                         .map(|key| {
