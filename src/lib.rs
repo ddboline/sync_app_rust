@@ -11,6 +11,7 @@ pub mod file_info;
 pub mod file_info_gdrive;
 pub mod file_info_local;
 pub mod file_info_s3;
+pub mod file_info_ssh;
 pub mod file_list;
 pub mod file_list_gdrive;
 pub mod file_list_local;

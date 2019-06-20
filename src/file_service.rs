@@ -8,6 +8,7 @@ pub enum FileService {
     GDrive,
     OneDrive,
     S3,
+    SSH,
 }
 
 impl Default for FileService {
@@ -25,6 +26,7 @@ impl FromStr for FileService {
             "gdrive" => Ok(FileService::GDrive),
             "onedrive" => Ok(FileService::OneDrive),
             "s3" => Ok(FileService::S3),
+            "ssh" => Ok(FileService::SSH),
             _ => Err(err_msg("Failed to parse FileService")),
         }
     }
@@ -37,6 +39,7 @@ impl fmt::Display for FileService {
             FileService::GDrive => write!(f, "gdrive"),
             FileService::OneDrive => write!(f, "onedrive"),
             FileService::S3 => write!(f, "s3"),
+            FileService::SSH => write!(f, "ssh"),
         }
     }
 }
