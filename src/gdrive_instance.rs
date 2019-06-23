@@ -646,12 +646,12 @@ impl GDriveInstance {
             .doit()
             .map_err(|e| err_msg(format!("{:#?}", e)))
             .map(|result| {
-                result.1.start_page_token.unwrap_or(
+                result.1.start_page_token.unwrap_or_else(|| {
                     err_msg(
                         "Received OK response from drive but there is no startPageToken included.",
                     )
-                    .to_string(),
-                )
+                    .to_string()
+                })
             })
     }
 

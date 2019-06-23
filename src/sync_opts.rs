@@ -27,7 +27,7 @@ impl SyncOpts {
 
         match opts.action {
             FileSyncAction::Index => {
-                if opts.urls.len() < 1 {
+                if opts.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
                     let pool = PgPool::new(&config.database_url);

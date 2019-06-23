@@ -4,9 +4,7 @@ use std::path::Path;
 use subprocess::Exec;
 use url::Url;
 
-use crate::file_info::{
-    FileInfo, FileInfoTrait, FileStat, Md5Sum, ServiceId, ServiceSession, Sha1Sum,
-};
+use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
 use crate::file_service::FileService;
 
 #[derive(Debug, Clone)]
