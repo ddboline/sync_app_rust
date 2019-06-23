@@ -1,3 +1,5 @@
+use google_drive3_fork as drive3;
+
 use failure::{err_msg, Error};
 use std::collections::HashMap;
 use std::fs::create_dir_all;
@@ -7,7 +9,7 @@ use url::Url;
 
 use crate::config::Config;
 use crate::directory_info::DirectoryInfo;
-use crate::file_info::{FileInfo, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
 use crate::file_info_gdrive::FileInfoGDrive;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
@@ -78,6 +80,75 @@ impl FileListGDrive {
         self.root_directory = Some(root_directory.to_string());
         self
     }
+
+    fn convert_file_list_to_file_info(
+        &self,
+        flist: Vec<drive3::File>,
+    ) -> Result<Vec<FileInfo>, Error> {
+        let flist: Vec<Result<_, Error>> = flist
+            .into_iter()
+            .filter(|f| {
+                if let Some(owners) = f.owners.as_ref() {
+                    if owners.is_empty() {
+                        return false;
+                    }
+                    if owners[0].me != Some(true) {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+                if self.gdrive.is_unexportable(&f.mime_type) {
+                    return false;
+                }
+                true
+            })
+            .map(|f| {
+                FileInfoGDrive::from_object(f, &self.gdrive, &self.directory_map)
+                    .map(FileInfoTrait::into_finfo)
+            })
+            .collect();
+        let flist: Vec<_> = map_result(flist)?;
+        let flist: Vec<_> = flist
+            .into_iter()
+            .filter(|f| {
+                if let Some(url) = f.urlname.as_ref() {
+                    if url.as_str().contains(self.get_conf().baseurl.as_str()) {
+                        return true;
+                    }
+                }
+                false
+            })
+            .map(|mut f| {
+                f.servicesession = Some(self.get_conf().servicesession.clone());
+                f
+            })
+            .collect();
+        Ok(flist)
+    }
+
+    fn get_all_files(&self) -> Result<Vec<FileInfo>, Error> {
+        let flist: Vec<_> = self.gdrive.get_all_files(false)?;
+
+        let flist = self.convert_file_list_to_file_info(flist)?;
+
+        Ok(flist)
+    }
+
+    fn get_all_changes(&self) -> Result<(Vec<String>, Vec<FileInfo>), Error> {
+        let chlist: Vec<_> = self.gdrive.get_all_changes()?;
+        let delete_list: Vec<_> = chlist
+            .iter()
+            .filter_map(|ch| match ch.file {
+                Some(_) => None,
+                None => ch.file_id.clone(),
+            })
+            .collect();
+        let flist: Vec<_> = chlist.into_iter().filter_map(|ch| ch.file).collect();
+
+        let flist = self.convert_file_list_to_file_info(flist)?;
+        Ok((delete_list, flist))
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -147,52 +218,43 @@ impl FileListTrait for FileListGDrive {
         &self.flist.filemap
     }
 
-    fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
-        let flist: Vec<_> = self
-            .gdrive
-            .get_all_files(false)?
-            .into_iter()
-            .filter(|f| {
-                if let Some(owners) = f.owners.as_ref() {
-                    if owners.is_empty() {
-                        return false;
-                    }
-                    if owners[0].me != Some(true) {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-                if self.gdrive.is_unexportable(&f.mime_type) {
-                    return false;
-                }
-                true
-            })
-            .collect();
+    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+        let start_page_token = self.gdrive.get_start_page_token()?;
 
-        let flist: Vec<Result<_, Error>> = flist
-            .into_iter()
-            .map(|f| {
-                FileInfoGDrive::from_object(f, &self.gdrive, &self.directory_map)
-                    .map(FileInfoTrait::into_finfo)
-            })
-            .collect();
-        let flist: Vec<_> = map_result(flist)?;
-        let flist: Vec<_> = flist
-            .into_iter()
-            .filter(|f| {
-                if let Some(url) = f.urlname.as_ref() {
-                    if url.as_str().contains(self.get_conf().baseurl.as_str()) {
-                        return true;
-                    }
+        let mut flist_dict = match pool {
+            Some(pool) => {
+                let file_list = self.load_file_list(&pool)?;
+                self.get_file_list_dict(file_list, FileInfoKeyType::ServiceId)
+            }
+            None => HashMap::new(),
+        };
+
+        let (dlist, flist) = match self.gdrive.start_page_token {
+            Some(_) => self.get_all_changes()?,
+            None => {
+                if let Some(pool) = pool {
+                    self.clear_file_list(&pool)?;
                 }
-                false
-            })
-            .map(|mut f| {
-                f.servicesession = Some(self.get_conf().servicesession.clone());
-                f
-            })
-            .collect();
+                (Vec::new(), self.get_all_files()?)
+            }
+        };
+
+        for dfid in &dlist {
+            flist_dict.remove(dfid);
+        }
+
+        for f in flist {
+            if let Some(fid) = f.serviceid.as_ref() {
+                flist_dict.insert(fid.0.clone(), f);
+            }
+        }
+
+        let flist = flist_dict.into_iter().map(|(_, v)| v).collect();
+
+        let gdrive = self.gdrive.clone().with_start_page_token(&start_page_token);
+        let start_page_path = format!("{}.new", self.gdrive.start_page_token_filename);
+        let start_page_path = Path::new(&start_page_path);
+        gdrive.store_start_page_token(&start_page_path)?;
 
         Ok(flist)
     }
@@ -348,9 +410,10 @@ mod tests {
     use crate::pgpool::PgPool;
 
     #[test]
-    fn test_fill_file_list() {
+    fn test_gdrive_fill_file_list() {
         let config = Config::init_config().unwrap();
-        let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
+        let mut gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
+        gdrive.start_page_token = None;
 
         let fconf = FileListGDriveConf::new("ddboline@gmail.com", "My Drive", &config).unwrap();
         let flist = FileListGDrive::from_conf(fconf, &gdrive)

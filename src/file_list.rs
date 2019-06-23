@@ -2,6 +2,7 @@ use diesel::prelude::*;
 use failure::{err_msg, Error};
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::fs::rename;
 use std::path::{Path, PathBuf};
 use url::Url;
 
@@ -115,6 +116,22 @@ pub trait FileListTrait {
     fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error>;
 
     fn print_list(&self) -> Result<(), Error>;
+
+    fn cleanup(&self) -> Result<(), Error> {
+        if self.get_conf().servicetype == FileService::GDrive {
+            let config = Config::init_config()?;
+            let fname = format!(
+                "{}/{}_start_page_token",
+                config.gdrive_token_path,
+                self.get_conf().servicesession.0
+            );
+            let start_page_path = format!("{}.new", fname);
+            println!("{} {}", start_page_path, fname);
+            rename(&start_page_path, &fname).map_err(err_msg)
+        } else {
+            Ok(())
+        }
+    }
 
     fn cache_file_list(&self, pool: &PgPool) -> Result<usize, Error> {
         use crate::schema::file_info_cache;

@@ -21,6 +21,7 @@ use crate::pgpool::PgPool;
 
 #[derive(Debug)]
 pub enum FileSyncAction {
+    Index,
     Sync,
     Process,
     Copy,
@@ -34,6 +35,7 @@ impl FromStr for FileSyncAction {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "index" => Ok(FileSyncAction::Index),
             "sync" => Ok(FileSyncAction::Sync),
             "process" | "proc" => Ok(FileSyncAction::Process),
             "copy" | "cp" => Ok(FileSyncAction::Copy),
@@ -181,6 +183,8 @@ impl FileSync {
                     })
                     .collect();
                 map_result(result)?;
+                flist0.cleanup()?;
+                flist1.cleanup()?;
             }
             FileSyncMode::OutputFile(fname) => {
                 let mut f = File::create(fname)?;
@@ -302,10 +306,12 @@ impl FileSync {
                                     println!("copy {} {}", key, val);
                                     if finfo1.servicetype == FileService::Local {
                                         self.copy_object(&flist0, &finfo0, &finfo1)?;
+                                        flist0.cleanup()?;
                                     } else {
                                         let conf = FileListConf::from_url(&val, &self.config)?;
                                         let flist1 = FileList::from_conf(conf);
                                         self.copy_object(&flist1, &finfo0, &finfo1)?;
+                                        flist1.cleanup()?;
                                     }
                                 }
                             }

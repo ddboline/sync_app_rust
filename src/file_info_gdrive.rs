@@ -121,6 +121,15 @@ impl FileInfoGDrive {
 
         Ok(FileInfoGDrive { finfo })
     }
+
+    pub fn from_changes_object(
+        item: drive3::Change,
+        gdrive: &GDriveInstance,
+        directory_map: &HashMap<String, DirectoryInfo>,
+    ) -> Result<FileInfoGDrive, Error> {
+        let file = item.file.ok_or_else(|| err_msg("No file"))?;
+        FileInfoGDrive::from_object(file, gdrive, directory_map)
+    }
 }
 
 #[cfg(test)]

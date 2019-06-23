@@ -66,6 +66,8 @@ pub struct GDriveInstance {
     pub page_size: i32,
     pub max_keys: Option<usize>,
     pub session_name: String,
+    pub start_page_token: Option<String>,
+    pub start_page_token_filename: String,
 }
 
 impl fmt::Debug for GDriveInstance {
@@ -76,11 +78,18 @@ impl fmt::Debug for GDriveInstance {
 
 impl GDriveInstance {
     pub fn new(config: &Config, session_name: &str) -> Self {
+        let fname = format!(
+            "{}/{}_start_page_token",
+            config.gdrive_token_path, session_name
+        );
+        let path = Path::new(&fname);
         GDriveInstance {
             gdrive: Rc::new(GDriveInstance::create_drive(&config, session_name).unwrap()),
             page_size: 1000,
             max_keys: None,
             session_name: session_name.to_string(),
+            start_page_token: GDriveInstance::read_start_page_token(&path).unwrap_or(None),
+            start_page_token_filename: fname,
         }
     }
 
@@ -91,6 +100,17 @@ impl GDriveInstance {
 
     pub fn with_page_size(mut self, page_size: i32) -> Self {
         self.page_size = page_size;
+        self
+    }
+
+    pub fn with_start_page_token(mut self, start_page_token: &str) -> Self {
+        self.start_page_token = Some(start_page_token.to_string());
+        self
+    }
+
+    pub fn read_start_page_token_from_file(mut self) -> Self {
+        let path = Path::new(&self.start_page_token_filename);
+        self.start_page_token = GDriveInstance::read_start_page_token(&path).unwrap_or(None);
         self
     }
 
@@ -252,16 +272,14 @@ impl GDriveInstance {
     }
 
     pub fn get_file_metadata(&self, id: &str) -> Result<drive3::File, Error> {
-        exponential_retry(|| {
-            self.gdrive
-                .files()
-                .get(id)
-                .param("fields", "id,name,parents,mimeType,webContentLink")
-                .add_scope(drive3::Scope::Full)
-                .doit()
-                .map(|(_response, file)| file)
-                .map_err(|e| err_msg(format!("{:#?}", e)))
-        })
+        self.gdrive
+            .files()
+            .get(id)
+            .param("fields", "id,name,parents,mimeType,webContentLink")
+            .add_scope(drive3::Scope::Full)
+            .doit()
+            .map(|(_response, file)| file)
+            .map_err(|e| err_msg(format!("{:#?}", e)))
     }
 
     pub fn create_directory(&self, directory: &Url, parentid: &str) -> Result<(), Error> {
@@ -619,6 +637,110 @@ impl GDriveInstance {
         }
         Ok(None)
     }
+
+    pub fn get_start_page_token(&self) -> Result<String, Error> {
+        self.gdrive
+            .changes()
+            .get_start_page_token()
+            .add_scope(drive3::Scope::Full)
+            .doit()
+            .map_err(|e| err_msg(format!("{:#?}", e)))
+            .map(|result| {
+                result.1.start_page_token.unwrap_or(
+                    err_msg(
+                        "Received OK response from drive but there is no startPageToken included.",
+                    )
+                    .to_string(),
+                )
+            })
+    }
+
+    pub fn store_start_page_token(&self, path: &Path) -> Result<(), Error> {
+        if let Some(start_page_token) = self.start_page_token.as_ref() {
+            let mut f = File::create(path)?;
+            writeln!(f, "{}", start_page_token)?;
+        }
+        Ok(())
+    }
+
+    pub fn read_start_page_token(path: &Path) -> Result<Option<String>, Error> {
+        if !path.exists() {
+            return Ok(None);
+        }
+        let mut f = File::open(path)?;
+        let mut buf = String::new();
+        f.read_to_string(&mut buf)?;
+        Ok(Some(buf.trim().to_string()))
+    }
+
+    pub fn get_all_changes(&self) -> Result<Vec<drive3::Change>, Error> {
+        if self.start_page_token.is_some() {
+            let mut start_page_token = self.start_page_token.clone().unwrap();
+
+            let mut all_changes = Vec::new();
+
+            let changes_fields = vec!["kind", "type", "time", "removed", "fileId"];
+            let file_fields = vec![
+                "name",
+                "id",
+                "size",
+                "mimeType",
+                "owners",
+                "parents",
+                "trashed",
+                "modifiedTime",
+                "createdTime",
+                "viewedByMeTime",
+                "md5Checksum",
+                "fileExtension",
+                "webContentLink",
+            ];
+            let fields = format!(
+                "kind,nextPageToken,newStartPageToken,changes({},file({}))",
+                changes_fields.join(","),
+                file_fields.join(",")
+            );
+
+            loop {
+                let result = exponential_retry(|| {
+                    self.gdrive
+                        .changes()
+                        .list(&start_page_token)
+                        .param("fields", &fields)
+                        .spaces("drive")
+                        .restrict_to_my_drive(true)
+                        // Whether to include changes indicating that items have been removed from the list of changes, for example by deletion or loss of access. (Default: true)
+                        .include_removed(true) // ^wtf?
+                        .supports_team_drives(false)
+                        .include_team_drive_items(false)
+                        .page_size(self.page_size)
+                        .add_scope(drive3::Scope::Full)
+                        .doit()
+                        .map_err(|e| err_msg(format!("{:#?}", e)))
+                });
+                let (_response, changelist) = result?;
+
+                match changelist.changes {
+                    Some(changes) => all_changes.extend(changes),
+                    _ => {
+                        println!("Changelist does not contain any changes!");
+                        break;
+                    }
+                };
+                if changelist.new_start_page_token.is_some() {
+                    break;
+                }
+                match changelist.next_page_token {
+                    Some(token) => start_page_token = token,
+                    None => break,
+                };
+            }
+
+            Ok(all_changes)
+        } else {
+            Ok(Vec::new())
+        }
+    }
 }
 
 struct DummyFile {
@@ -669,6 +791,7 @@ impl Read for DummyFile {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use std::path::Path;
     use url::Url;
 
@@ -680,16 +803,19 @@ mod tests {
         let config = Config::init_config().unwrap();
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
             .with_max_keys(10)
-            .with_page_size(10);
+            .with_page_size(10)
+            .read_start_page_token_from_file();
+
         let list = gdrive.get_all_files(false).unwrap();
         assert_eq!(list.len(), 10);
         let test_info = list.iter().filter(|f| !f.parents.is_none()).nth(0).unwrap();
-        println!("{:?}", test_info);
+        println!("test_info {:?}", test_info);
+
         let gdriveid = test_info.id.as_ref().unwrap();
         let parent = &test_info.parents.as_ref().unwrap()[0];
         let local_path = Path::new("/tmp/temp.file");
         let mime = test_info.mime_type.as_ref().unwrap().to_string();
-        println!("{}", mime);
+        println!("mime {}", mime);
         gdrive
             .download(&gdriveid, &local_path, &Some(mime))
             .unwrap();
@@ -697,13 +823,57 @@ mod tests {
         let basepath = Path::new("src/gdrive_instance.rs").canonicalize().unwrap();
         let local_url = Url::from_file_path(basepath).unwrap();
         let new_file = gdrive.upload(&local_url, &parent).unwrap();
-        println!("{:?}", new_file);
+        println!("new_file {:?}", new_file);
+        println!("start_page_token {:?}", gdrive.start_page_token);
+        println!(
+            "current_start_page_token {:?}",
+            gdrive.get_start_page_token().unwrap()
+        );
+
+        let changes = gdrive.get_all_changes().unwrap();
+        let changes_map: HashMap<_, _> = changes
+            .into_iter()
+            .filter_map(|c| {
+                if let Some((t, f)) = c
+                    .file_id
+                    .as_ref()
+                    .and_then(|f| c.time.as_ref().and_then(|t| Some((f.clone(), t.clone()))))
+                {
+                    Some(((t, f), c))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        println!("N files {}", changes_map.len());
+        for ((f, t), ch) in changes_map {
+            println!("ch {:?} {:?} {:?}", f, t, ch.file);
+        }
 
         let new_driveid = new_file.id.unwrap();
         gdrive.move_to_trash(&new_driveid).unwrap();
-        println!("{:?}", gdrive.get_file_metadata(&new_driveid).unwrap());
+        println!(
+            "trash {:?}",
+            gdrive.get_file_metadata(&new_driveid).unwrap()
+        );
 
         gdrive.delete_permanently(&new_driveid).unwrap();
-        println!("{}", gdrive.get_file_metadata(&new_driveid).unwrap_err());
+        println!(
+            "error {}",
+            gdrive.get_file_metadata(&new_driveid).unwrap_err()
+        );
+    }
+
+    #[test]
+    fn test_gdrive_store_read_change_token() {
+        let config = Config::init_config().unwrap();
+        let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
+            .with_max_keys(10)
+            .with_page_size(10)
+            .with_start_page_token("test_string");
+        let p = Path::new("/tmp/temp_start_page_token.txt");
+        gdrive.store_start_page_token(&p).unwrap();
+        let result = GDriveInstance::read_start_page_token(&p).unwrap();
+        assert_eq!(result, Some("test_string".to_string()));
     }
 }

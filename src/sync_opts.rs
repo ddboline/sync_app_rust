@@ -26,6 +26,30 @@ impl SyncOpts {
         let config = Config::init_config()?;
 
         match opts.action {
+            FileSyncAction::Index => {
+                if opts.urls.len() < 1 {
+                    Err(err_msg("Need at least 1 Url"))
+                } else {
+                    let pool = PgPool::new(&config.database_url);
+
+                    let results: Vec<Result<_, Error>> = opts
+                        .urls
+                        .par_iter()
+                        .map(|url| {
+                            let pool = pool.clone();
+                            let conf = FileListConf::from_url(&url, &config)?;
+                            let flist = FileList::from_conf(conf);
+                            let flist = flist.with_list(&flist.fill_file_list(Some(&pool))?);
+                            flist.cache_file_list(&pool)?;
+                            Ok(flist)
+                        })
+                        .collect();
+
+                    let _: Vec<_> = map_result(results)?;
+
+                    Ok(())
+                }
+            }
             FileSyncAction::Sync => {
                 if opts.urls.len() < 2 {
                     Err(err_msg("Need 2 Urls"))
