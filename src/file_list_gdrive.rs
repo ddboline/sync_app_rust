@@ -239,6 +239,8 @@ impl FileListTrait for FileListGDrive {
             }
         };
 
+        println!("delete {} insert {}", dlist.len(), flist.len());
+
         for dfid in &dlist {
             flist_dict.remove(dfid);
         }

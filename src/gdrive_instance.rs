@@ -709,8 +709,7 @@ impl GDriveInstance {
                         .param("fields", &fields)
                         .spaces("drive")
                         .restrict_to_my_drive(true)
-                        // Whether to include changes indicating that items have been removed from the list of changes, for example by deletion or loss of access. (Default: true)
-                        .include_removed(true) // ^wtf?
+                        .include_removed(true)
                         .supports_team_drives(false)
                         .include_team_drive_items(false)
                         .page_size(self.page_size)
