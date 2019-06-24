@@ -1,5 +1,5 @@
 use failure::{err_msg, Error};
-use rayon::prelude::*;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::create_dir_all;
 use std::path::Path;

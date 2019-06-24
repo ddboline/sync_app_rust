@@ -1,4 +1,4 @@
-use diesel::prelude::*;
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use failure::{err_msg, Error};
 use std::convert::Into;
 use std::path::PathBuf;
