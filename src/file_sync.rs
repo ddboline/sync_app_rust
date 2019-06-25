@@ -188,10 +188,15 @@ impl FileSync {
             }
             FileSyncMode::OutputFile(fname) => {
                 let mut f = File::create(fname)?;
-                for (f0, f1) in list_a_not_b.iter().chain(list_b_not_a.iter()) {
-                    if let Some(u0) = f0.urlname.as_ref() {
-                        if let Some(u1) = f1.urlname.as_ref() {
-                            writeln!(f, "{} {}", u0, u1)?;
+                if list_a_not_b.is_empty() && list_b_not_a.is_empty() {
+                    flist0.cleanup()?;
+                    flist1.cleanup()?;
+                } else {
+                    for (f0, f1) in list_a_not_b.iter().chain(list_b_not_a.iter()) {
+                        if let Some(u0) = f0.urlname.as_ref() {
+                            if let Some(u1) = f1.urlname.as_ref() {
+                                writeln!(f, "{} {}", u0, u1)?;
+                            }
                         }
                     }
                 }
