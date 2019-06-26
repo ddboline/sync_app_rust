@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DB="podcatch"
+DB="sync_app_cache"
 
 TABLES="
 directory_info_cache
