@@ -127,7 +127,11 @@ pub trait FileListTrait {
             );
             let start_page_path = format!("{}.new", fname);
             println!("{} {}", start_page_path, fname);
-            rename(&start_page_path, &fname).map_err(err_msg)
+            if Path::new(&start_page_path).exists() {
+                rename(&start_page_path, &fname).map_err(err_msg)
+            } else {
+                Ok(())
+            }
         } else {
             Ok(())
         }
