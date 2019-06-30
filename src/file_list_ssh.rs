@@ -1,17 +1,18 @@
 use failure::{err_msg, Error};
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use subprocess::Exec;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, FileInfoSerialize};
+use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoSerialize, FileInfoTrait};
 use crate::file_info_ssh::FileInfoSSH;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::pgpool::PgPool;
 use crate::map_result;
+use crate::pgpool::PgPool;
 
 pub struct FileListSSH(pub FileList);
 
@@ -216,20 +217,11 @@ impl FileListTrait for FileListSSH {
         }
     }
 
-    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+    fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
         let conf = self.get_conf();
-        let basedir = conf.baseurl.path();
-        let flist_dict = match pool {
-            Some(pool) => {
-                let file_list = self.load_file_list(&pool)?;
-                self.get_file_list_dict(file_list, FileInfoKeyType::FilePath)
-            }
-            None => HashMap::new(),
-        };
 
-        let url = &self.get_conf().baseurl;
-        let path = self
-            .get_conf()
+        let url = &conf.baseurl;
+        let path = conf
             .basepath
             .to_str()
             .ok_or_else(|| err_msg("Invalid path"))?;
@@ -249,20 +241,27 @@ impl FileListTrait for FileListSSH {
         );
         let stream = Exec::shell(command).stream_stdout()?;
         let reader = BufReader::new(stream);
+        let url_prefix = format!("ssh://{}", user_host);
 
         let results: Vec<_> = reader
             .lines()
             .map(|line| {
                 let l = line?;
                 let finfo: FileInfoSerialize = serde_json::from_str(&l)?;
-                println!("{:?}", finfo);
-                Ok(())
+                let mut finfo: FileInfo = finfo.try_into()?;
+                finfo.servicetype = FileService::SSH;
+                finfo.urlname = finfo
+                    .urlname
+                    .and_then(|u| u.as_str().replace("file://", &url_prefix).parse().ok());
+                finfo.serviceid = Some(conf.baseurl.clone().into_string().into());
+                finfo.servicesession = conf.baseurl.as_str().parse().ok();
+                Ok(finfo)
             })
             .collect();
 
-        let _: Vec<_> = map_result(results)?;
+        let flist: Vec<_> = map_result(results)?;
 
-        Ok(Vec::new())
+        Ok(flist)
     }
 
     fn print_list(&self) -> Result<(), Error> {
