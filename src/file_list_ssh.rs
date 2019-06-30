@@ -1,15 +1,17 @@
 use failure::{err_msg, Error};
 use std::collections::HashMap;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use subprocess::Exec;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, FileInfoSerialize};
 use crate::file_info_ssh::FileInfoSSH;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
+use crate::map_result;
 
 pub struct FileListSSH(pub FileList);
 
@@ -225,10 +227,6 @@ impl FileListTrait for FileListSSH {
             None => HashMap::new(),
         };
 
-        Ok(Vec::new())
-    }
-
-    fn print_list(&self) -> Result<(), Error> {
         let url = &self.get_conf().baseurl;
         let path = self
             .get_conf()
@@ -240,7 +238,49 @@ impl FileListTrait for FileListSSH {
             r#"ssh {} "sync-app-rust index -u file://{}""#,
             user_host, path
         );
-        println!("command {}", command);
+        let status = Exec::shell(command).join()?;
+        if !status.success() {
+            return Err(err_msg("Scp failed"));
+        }
+
+        let command = format!(
+            r#"ssh {} "sync-app-rust ser -u file://{}""#,
+            user_host, path
+        );
+        let stream = Exec::shell(command).stream_stdout()?;
+        let reader = BufReader::new(stream);
+
+        let results: Vec<_> = reader
+            .lines()
+            .map(|line| {
+                let l = line?;
+                let finfo: FileInfoSerialize = serde_json::from_str(&l)?;
+                println!("{:?}", finfo);
+                Ok(())
+            })
+            .collect();
+
+        let _: Vec<_> = map_result(results)?;
+
+        Ok(Vec::new())
+    }
+
+    fn print_list(&self) -> Result<(), Error> {
+        let url = &self.get_conf().baseurl;
+        let path = self
+            .get_conf()
+            .basepath
+            .to_str()
+            .ok_or_else(|| err_msg("Invalid path"))?;
+        let user_host = FileInfoSSH::get_ssh_username_host(&url)?;
+        let command = format!(r#"ssh {} "sync-app-rust ls -u file://{}""#, user_host, path);
+        let stream = Exec::shell(command).stream_stdout()?;
+        let reader = BufReader::new(stream);
+        for line in reader.lines() {
+            if let Ok(l) = line {
+                println!("ssh://{}{}", user_host, l);
+            }
+        }
         Ok(())
     }
 }

@@ -460,6 +460,12 @@ impl FileListTrait for FileList {
                 let flist = flist.set_directory_map(false, pool)?;
                 flist.fill_file_list(pool)
             }
+            FileService::SSH => {
+                let fconf = FileListSSHConf(self.get_conf().clone());
+                let flist = FileList::from_conf(fconf.0);
+                let flist = FileListSSH(flist);
+                flist.fill_file_list(pool)
+            }
             _ => match pool {
                 Some(pool) => match self.load_file_list(&pool) {
                     Ok(v) => {
