@@ -236,7 +236,10 @@ impl FileListTrait for FileListSSH {
             .to_str()
             .ok_or_else(|| err_msg("Invalid path"))?;
         let user_host = FileInfoSSH::get_ssh_username_host(&url)?;
-        let command = format!(r#"ssh {} "sync-app-rust index -u file://{}""#, user_host, path);
+        let command = format!(
+            r#"ssh {} "sync-app-rust index -u file://{}""#,
+            user_host, path
+        );
         println!("command {}", command);
         Ok(())
     }
@@ -254,6 +257,7 @@ mod tests {
     use crate::file_info_ssh::FileInfoSSH;
     use crate::file_list::{FileList, FileListConfTrait, FileListTrait};
     use crate::file_list_ssh::{FileListSSH, FileListSSHConf};
+    use crate::file_service::FileService;
 
     #[test]
     fn test_file_list_ssh_conf_from_url() {
@@ -263,7 +267,8 @@ mod tests {
             .unwrap();
         let conf = FileListSSHConf::from_url(&url, &config).unwrap();
         println!("{:?}", conf);
-        assert!(false);
+        assert_eq!(conf.0.baseurl, url);
+        assert_eq!(conf.0.servicetype, FileService::SSH);
     }
 
     #[test]

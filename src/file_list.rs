@@ -497,7 +497,8 @@ impl FileListTrait for FileList {
             }
             FileService::SSH => {
                 let fconf = FileListSSHConf(conf.clone());
-                let flist = FileListSSH::from_conf(fconf);
+                let flist = FileList::from_conf(fconf.0);
+                let flist = FileListSSH(flist);
                 flist.print_list()
             }
             _ => Err(err_msg("Not implemented")),
