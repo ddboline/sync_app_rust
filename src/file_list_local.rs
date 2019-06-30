@@ -18,6 +18,9 @@ use crate::pgpool::PgPool;
 #[derive(Debug, Clone)]
 pub struct FileListLocal(pub FileList);
 
+#[derive(Debug, Clone)]
+pub struct FileListLocalConf(pub FileListConf);
+
 impl FileListLocal {
     pub fn from_conf(conf: FileListLocalConf) -> FileListLocal {
         FileListLocal(FileList {
@@ -30,9 +33,6 @@ impl FileListLocal {
         FileListLocal(self.0.with_list(&filelist))
     }
 }
-
-#[derive(Debug, Clone)]
-pub struct FileListLocalConf(pub FileListConf);
 
 impl FileListLocalConf {
     pub fn new(basedir: PathBuf, config: &Config) -> Result<FileListLocalConf, Error> {

@@ -25,6 +25,9 @@ pub struct FileListGDrive {
     pub root_directory: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct FileListGDriveConf(pub FileListConf);
+
 impl FileListGDrive {
     pub fn from_conf(
         conf: FileListGDriveConf,
@@ -150,9 +153,6 @@ impl FileListGDrive {
         Ok((delete_list, flist))
     }
 }
-
-#[derive(Debug, Clone)]
-pub struct FileListGDriveConf(pub FileListConf);
 
 impl FileListGDriveConf {
     pub fn new(

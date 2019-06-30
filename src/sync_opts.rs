@@ -4,7 +4,7 @@ use structopt::StructOpt;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
 use crate::map_result;
@@ -128,6 +128,40 @@ impl SyncOpts {
                     } else {
                         Ok(())
                     }
+                }
+            }
+            FileSyncAction::Serialize => {
+                if opts.urls.is_empty() {
+                    Err(err_msg("Need at least 1 Url"))
+                } else {
+                    let pool = PgPool::new(&config.database_url);
+
+                    let results: Vec<Result<_, Error>> = opts
+                        .urls
+                        .par_iter()
+                        .map(|url| {
+                            let pool = pool.clone();
+                            let conf = FileListConf::from_url(&url, &config)?;
+                            let flist = FileList::from_conf(conf);
+                            let flist = flist.with_list(&flist.fill_file_list(Some(&pool))?);
+                            let results: Vec<Result<_, Error>> = flist
+                                .filemap
+                                .values()
+                                .map(|finfo| {
+                                    let tmp: FileInfoSerialize = finfo.clone().into();
+                                    let js = serde_json::to_string(&tmp)?;
+                                    println!("{}", js);
+                                    Ok(())
+                                })
+                                .collect();
+                            let _: Vec<_> = map_result(results)?;
+                            Ok(())
+                        })
+                        .collect();
+
+                    let _: Vec<_> = map_result(results)?;
+
+                    Ok(())
                 }
             }
         }

@@ -1,4 +1,6 @@
 #[macro_use]
+extern crate serde_derive;
+#[macro_use]
 extern crate diesel;
 #[macro_use]
 extern crate lazy_static;
@@ -16,6 +18,7 @@ pub mod file_list;
 pub mod file_list_gdrive;
 pub mod file_list_local;
 pub mod file_list_s3;
+pub mod file_list_ssh;
 pub mod file_service;
 pub mod file_sync;
 pub mod gdrive_instance;

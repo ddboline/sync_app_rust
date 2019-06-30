@@ -10,6 +10,39 @@ use crate::file_service::FileService;
 #[derive(Debug, Clone)]
 pub struct FileInfoSSH(pub FileInfo);
 
+impl FileInfoSSH {
+    pub fn get_ssh_str(url: &Url) -> Result<String, Error> {
+        let path = Path::new(url.path())
+            .to_str()
+            .ok_or_else(|| err_msg("Invalid path"))?;
+        let host = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
+        let port = url.port().unwrap_or(22);
+        let username = url.username().to_string();
+
+        let ssh_str = if port == 22 {
+            format!("{}@{}:{}", username, host, path)
+        } else {
+            format!("-p {} {}@{}:{}", port, username, host, path)
+        };
+
+        Ok(ssh_str)
+    }
+
+    pub fn get_ssh_username_host(url: &Url) -> Result<String, Error> {
+        let host = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
+        let port = url.port().unwrap_or(22);
+        let username = url.username().to_string();
+
+        let ssh_str = if port == 22 {
+            format!("{}@{}", username, host)
+        } else {
+            format!("-p {} {}@{}", port, username, host)
+        };
+
+        Ok(ssh_str)
+    }
+}
+
 impl FileInfoTrait for FileInfoSSH {
     fn from_url(url: &Url) -> Result<FileInfoSSH, Error> {
         if url.scheme() != "ssh" {

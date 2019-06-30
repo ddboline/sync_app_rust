@@ -20,6 +20,9 @@ pub struct FileListS3 {
     pub s3: S3Instance,
 }
 
+#[derive(Debug, Clone)]
+pub struct FileListS3Conf(pub FileListConf);
+
 impl FileListS3 {
     pub fn from_conf(conf: FileListS3Conf) -> FileListS3 {
         let s3 = S3Instance::new(conf.get_config());
@@ -42,9 +45,6 @@ impl FileListS3 {
         self
     }
 }
-
-#[derive(Debug, Clone)]
-pub struct FileListS3Conf(pub FileListConf);
 
 impl FileListS3Conf {
     pub fn new(bucket: &str, config: &Config) -> Result<FileListS3Conf, Error> {

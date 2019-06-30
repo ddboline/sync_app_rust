@@ -12,6 +12,7 @@ use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession}
 use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
 use crate::file_list_local::{FileListLocal, FileListLocalConf};
 use crate::file_list_s3::{FileListS3, FileListS3Conf};
+use crate::file_list_ssh::{FileListSSH, FileListSSHConf};
 use crate::file_service::FileService;
 use crate::gdrive_instance::GDriveInstance;
 use crate::map_result;
@@ -44,6 +45,7 @@ impl FileListConfTrait for FileListConf {
             "gdrive" => FileListGDriveConf::from_url(url, config).map(|f| f.0),
             "file" => FileListLocalConf::from_url(url, config).map(|f| f.0),
             "s3" => FileListS3Conf::from_url(url, config).map(|f| f.0),
+            "ssh" => FileListSSHConf::from_url(url, config).map(|f| f.0),
             _ => Err(err_msg("Bad scheme")),
         }
     }
@@ -491,6 +493,11 @@ impl FileListTrait for FileList {
                 let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
                 let flist = FileListGDrive::from_conf(fconf, &gdrive)?;
                 let flist = flist.set_directory_map(false, None)?;
+                flist.print_list()
+            }
+            FileService::SSH => {
+                let fconf = FileListSSHConf(conf.clone());
+                let flist = FileListSSH::from_conf(fconf);
                 flist.print_list()
             }
             _ => Err(err_msg("Not implemented")),

@@ -2,6 +2,7 @@ use failure::{err_msg, Error};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::convert::From;
+use std::fmt;
 use std::fs::File;
 use std::io::Write;
 use std::io::{BufRead, BufReader};
@@ -28,6 +29,7 @@ pub enum FileSyncAction {
     List,
     Delete,
     Move,
+    Serialize,
 }
 
 impl FromStr for FileSyncAction {
@@ -42,6 +44,7 @@ impl FromStr for FileSyncAction {
             "list" | "ls" => Ok(FileSyncAction::List),
             "delete" | "rm" => Ok(FileSyncAction::Delete),
             "move" | "mv" => Ok(FileSyncAction::Move),
+            "ser" | "serialize" => Ok(FileSyncAction::Serialize),
             _ => Err(err_msg("Parse failure")),
         }
     }
@@ -56,6 +59,17 @@ pub enum FileSyncMode {
 impl Default for FileSyncMode {
     fn default() -> FileSyncMode {
         FileSyncMode::Full
+    }
+}
+
+impl fmt::Display for FileSyncMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            FileSyncMode::Full => write!(f, "Full"),
+            FileSyncMode::OutputFile(pathbuf) => {
+                write!(f, "OutputFile({})", pathbuf.to_str().unwrap_or(""))
+            }
+        }
     }
 }
 
