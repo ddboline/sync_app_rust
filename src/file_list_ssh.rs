@@ -7,7 +7,7 @@ use subprocess::Exec;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoSerialize, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
 use crate::file_info_ssh::FileInfoSSH;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
