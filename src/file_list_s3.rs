@@ -1,7 +1,7 @@
 use failure::{err_msg, Error};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, remove_file};
 use std::path::Path;
 use url::Url;
 
@@ -158,6 +158,9 @@ impl FileListTrait for FileListS3 {
             let remote_url = finfo0.urlname.clone().ok_or_else(|| err_msg("No s3 url"))?;
             let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
             let key = remote_url.path().trim_start_matches('/');
+            if Path::new(&local_file).exists() {
+                remove_file(&local_file)?;
+            }
             let md5sum = self.s3.download(&bucket, &key, &local_file)?;
             if md5sum
                 != finfo1
