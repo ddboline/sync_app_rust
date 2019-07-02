@@ -10,6 +10,7 @@ use url::Url;
 use crate::file_info_gdrive::FileInfoGDrive;
 use crate::file_info_local::FileInfoLocal;
 use crate::file_info_s3::FileInfoS3;
+use crate::file_info_ssh::FileInfoSSH;
 use crate::file_service::FileService;
 use crate::map_parse;
 use crate::models::{FileInfoCache, InsertFileInfoCache};
@@ -122,6 +123,7 @@ impl FileInfoTrait for FileInfo {
             "file" => FileInfoLocal::from_url(url).map(FileInfoTrait::into_finfo),
             "s3" => FileInfoS3::from_url(url).map(FileInfoTrait::into_finfo),
             "gdrive" => FileInfoGDrive::from_url(url).map(FileInfoTrait::into_finfo),
+            "ssh" => FileInfoSSH::from_url(url).map(FileInfoTrait::into_finfo),
             _ => Err(err_msg("Bad scheme")),
         }
     }

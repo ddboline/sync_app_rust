@@ -535,6 +535,12 @@ impl FileListTrait for FileList {
                 let f = FileListGDrive::from_conf(c, &g)?.set_directory_map(true, Some(&pool))?;
                 f.copy_from(finfo0, finfo1)
             }
+            FileService::SSH => {
+                let fconf = FileListSSHConf(self.conf.clone());
+                let flist = FileList::from_conf(fconf.0);
+                let flist = FileListSSH(flist);
+                flist.copy_from(finfo0, finfo1)
+            }
             _ => Ok(()),
         }
     }
@@ -562,6 +568,12 @@ impl FileListTrait for FileList {
                 let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
                 let f = FileListGDrive::from_conf(c, &g)?.set_directory_map(true, Some(&pool))?;
                 f.copy_to(finfo0, finfo1)
+            }
+            FileService::SSH => {
+                let fconf = FileListSSHConf(self.conf.clone());
+                let flist = FileList::from_conf(fconf.0);
+                let flist = FileListSSH(flist);
+                flist.copy_to(finfo0, finfo1)
             }
             _ => Ok(()),
         }
@@ -596,6 +608,12 @@ impl FileListTrait for FileList {
                 let f = FileListGDrive::from_conf(c, &g)?.set_directory_map(true, Some(&pool))?;
                 f.move_file(finfo0, finfo1)
             }
+            FileService::SSH => {
+                let fconf = FileListSSHConf(self.conf.clone());
+                let flist = FileList::from_conf(fconf.0);
+                let flist = FileListSSH(flist);
+                flist.move_file(finfo0, finfo1)
+            }
             _ => Ok(()),
         }
     }
@@ -621,6 +639,12 @@ impl FileListTrait for FileList {
                 let gdrive = GDriveInstance::new(&self.conf.get_config(), &c.0.servicesession.0);
                 let flist =
                     FileListGDrive::from_conf(c, &gdrive)?.set_directory_map(true, Some(&pool))?;
+                flist.delete(finfo)
+            }
+            FileService::SSH => {
+                let fconf = FileListSSHConf(self.get_conf().clone());
+                let flist = FileList::from_conf(fconf.0);
+                let flist = FileListSSH(flist);
                 flist.delete(finfo)
             }
             _ => Ok(()),
