@@ -156,9 +156,15 @@ impl S3Instance {
                         key: key_name.to_string(),
                         ..Default::default()
                     },
-                    &fname,
+                    fname,
                 )
-                .map(|x| x.e_tag.unwrap_or_else(|| "".to_string()))
+                .map(|x| {
+                    x.e_tag
+                        .as_ref()
+                        .map(|y| y.trim_matches('"'))
+                        .unwrap_or("")
+                        .to_string()
+                })
                 .map_err(err_msg)
         })
     }
