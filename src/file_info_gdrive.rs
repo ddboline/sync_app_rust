@@ -12,9 +12,7 @@ use crate::file_service::FileService;
 use crate::gdrive_instance::GDriveInstance;
 
 #[derive(Debug, Default)]
-pub struct FileInfoGDrive {
-    pub finfo: FileInfo,
-}
+pub struct FileInfoGDrive(pub FileInfo);
 
 impl FileInfoTrait for FileInfoGDrive {
     fn from_url(url: &Url) -> Result<FileInfoGDrive, Error> {
@@ -47,27 +45,27 @@ impl FileInfoTrait for FileInfoGDrive {
             servicetype: FileService::GDrive,
             servicesession: Some(servicesession),
         };
-        Ok(FileInfoGDrive { finfo })
+        Ok(FileInfoGDrive(finfo))
     }
 
     fn get_finfo(&self) -> &FileInfo {
-        &self.finfo
+        &self.0
     }
 
     fn into_finfo(self) -> FileInfo {
-        self.finfo
+        self.0
     }
 
     fn get_md5(&self) -> Option<Md5Sum> {
-        self.finfo.md5sum.clone()
+        self.0.md5sum.clone()
     }
 
     fn get_sha1(&self) -> Option<Sha1Sum> {
-        self.finfo.sha1sum.clone()
+        self.0.sha1sum.clone()
     }
 
     fn get_stat(&self) -> Option<FileStat> {
-        self.finfo.filestat
+        self.0.filestat
     }
 }
 
@@ -119,7 +117,7 @@ impl FileInfoGDrive {
             servicesession,
         };
 
-        Ok(FileInfoGDrive { finfo })
+        Ok(FileInfoGDrive(finfo))
     }
 
     pub fn from_changes_object(

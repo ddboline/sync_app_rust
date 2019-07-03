@@ -462,8 +462,7 @@ impl FileListTrait for FileList {
             }
             FileService::SSH => {
                 let fconf = FileListSSHConf(self.get_conf().clone());
-                let flist = FileList::from_conf(fconf.0);
-                let flist = FileListSSH(flist);
+                let flist = FileListSSH::from_conf(fconf)?;
                 flist.fill_file_list(pool)
             }
             _ => match pool {
@@ -503,8 +502,7 @@ impl FileListTrait for FileList {
             }
             FileService::SSH => {
                 let fconf = FileListSSHConf(conf.clone());
-                let flist = FileList::from_conf(fconf.0);
-                let flist = FileListSSH(flist);
+                let flist = FileListSSH::from_conf(fconf)?;
                 flist.print_list()
             }
             _ => Err(err_msg("Not implemented")),
@@ -537,8 +535,7 @@ impl FileListTrait for FileList {
             }
             FileService::SSH => {
                 let fconf = FileListSSHConf(self.conf.clone());
-                let flist = FileList::from_conf(fconf.0);
-                let flist = FileListSSH(flist);
+                let flist = FileListSSH::from_conf(fconf)?;
                 flist.copy_from(finfo0, finfo1)
             }
             _ => Ok(()),
@@ -571,8 +568,7 @@ impl FileListTrait for FileList {
             }
             FileService::SSH => {
                 let fconf = FileListSSHConf(self.conf.clone());
-                let flist = FileList::from_conf(fconf.0);
-                let flist = FileListSSH(flist);
+                let flist = FileListSSH::from_conf(fconf)?;
                 flist.copy_to(finfo0, finfo1)
             }
             _ => Ok(()),
@@ -610,8 +606,7 @@ impl FileListTrait for FileList {
             }
             FileService::SSH => {
                 let fconf = FileListSSHConf(self.conf.clone());
-                let flist = FileList::from_conf(fconf.0);
-                let flist = FileListSSH(flist);
+                let flist = FileListSSH::from_conf(fconf)?;
                 flist.move_file(finfo0, finfo1)
             }
             _ => Ok(()),
@@ -643,8 +638,7 @@ impl FileListTrait for FileList {
             }
             FileService::SSH => {
                 let fconf = FileListSSHConf(self.get_conf().clone());
-                let flist = FileList::from_conf(fconf.0);
-                let flist = FileListSSH(flist);
+                let flist = FileListSSH::from_conf(fconf)?;
                 flist.delete(finfo)
             }
             _ => Ok(()),

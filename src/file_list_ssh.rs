@@ -1,20 +1,32 @@
 use failure::{err_msg, Error};
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::io::{BufRead, BufReader};
 use std::path::Path;
-use subprocess::Exec;
 use url::Url;
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
-use crate::file_info_ssh::FileInfoSSH;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
 use crate::map_result;
 use crate::pgpool::PgPool;
+use crate::ssh_instance::SSHInstance;
 
-pub struct FileListSSH(pub FileList);
+#[derive(Clone, Debug)]
+pub struct FileListSSH {
+    pub flist: FileList,
+    pub ssh: SSHInstance,
+}
+
+impl FileListSSH {
+    pub fn from_conf(conf: FileListSSHConf) -> Result<Self, Error> {
+        let ssh = SSHInstance::from_url(&conf.0.baseurl)?;
+        Ok(Self {
+            flist: FileList::from_conf(conf.0),
+            ssh,
+        })
+    }
+}
 
 #[derive(Debug)]
 pub struct FileListSSHConf(pub FileListConf);
@@ -54,11 +66,11 @@ impl FileListConfTrait for FileListSSHConf {
 
 impl FileListTrait for FileListSSH {
     fn get_conf(&self) -> &FileListConf {
-        &self.0.conf
+        &self.flist.conf
     }
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
-        &self.0.filemap
+        &self.flist.filemap
     }
 
     // Copy operation where the origin (finfo0) has the same servicetype as self
@@ -75,9 +87,12 @@ impl FileListTrait for FileListSSH {
                 .urlname
                 .as_ref()
                 .ok_or_else(|| err_msg("No url"))?;
+            let path0 = Path::new(url0.path())
+                .to_str()
+                .ok_or_else(|| err_msg("Invalid path"))?;
             let command = format!(
                 "scp {} {}",
-                FileInfoSSH::get_ssh_str(&url0)?,
+                self.ssh.get_ssh_str(&path0)?,
                 finfo1
                     .filepath
                     .as_ref()
@@ -86,12 +101,7 @@ impl FileListTrait for FileListSSH {
                     .ok_or_else(|| err_msg("Invalid String"))?
             );
             println!("command {}", command);
-            let status = Exec::shell(command).join()?;
-            if !status.success() {
-                Err(err_msg("Scp failed"))
-            } else {
-                Ok(())
-            }
+            self.ssh.run_command(&command)
         } else {
             Err(err_msg(format!(
                 "Invalid types {} {}",
@@ -114,6 +124,9 @@ impl FileListTrait for FileListSSH {
                 .urlname
                 .as_ref()
                 .ok_or_else(|| err_msg("No url"))?;
+            let path1 = Path::new(url1.path())
+                .to_str()
+                .ok_or_else(|| err_msg("Invalid path"))?;
             let command = format!(
                 "scp {} {}",
                 finfo0
@@ -122,15 +135,10 @@ impl FileListTrait for FileListSSH {
                     .ok_or_else(|| err_msg("No path"))?
                     .to_str()
                     .ok_or_else(|| err_msg("Invalid String"))?,
-                FileInfoSSH::get_ssh_str(&url1)?,
+                self.ssh.get_ssh_str(&path1)?,
             );
             println!("command {}", command);
-            let status = Exec::shell(command).join()?;
-            if !status.success() {
-                Err(err_msg("Scp failed"))
-            } else {
-                Ok(())
-            }
+            self.ssh.run_command(&command)
         } else {
             Err(err_msg(format!(
                 "Invalid types {} {}",
@@ -162,11 +170,10 @@ impl FileListTrait for FileListSSH {
             .as_ref()
             .ok_or_else(|| err_msg("No url"))?;
 
-        let user_host0 = FileInfoSSH::get_ssh_username_host(&url0)?;
-        let user_host1 = FileInfoSSH::get_ssh_username_host(&url1)?;
-        if user_host0 != user_host1 {
+        if url0.username() != url1.username() || url0.host_str() != url1.host_str() {
             return Ok(());
         }
+
         let url0 = finfo0
             .get_finfo()
             .urlname
@@ -183,14 +190,9 @@ impl FileListTrait for FileListSSH {
         let path1 = Path::new(url1.path())
             .to_str()
             .ok_or_else(|| err_msg("Invalid path"))?;
-        let command = format!(r#"ssh {} "{} {}""#, user_host0, path0, path1);
+        let command = format!("mv {} {}", path0, path1);
         println!("command {}", command);
-        let status = Exec::shell(command).join()?;
-        if !status.success() {
-            Err(err_msg("Scp failed"))
-        } else {
-            Ok(())
-        }
+        self.ssh.run_command_ssh(&command)
     }
 
     fn delete<T>(&self, finfo: &T) -> Result<(), Error>
@@ -206,47 +208,30 @@ impl FileListTrait for FileListSSH {
         let path = Path::new(url.path())
             .to_str()
             .ok_or_else(|| err_msg("Invalid path"))?;
-        let user_host = FileInfoSSH::get_ssh_username_host(&url)?;
-        let command = format!(r#"ssh {} "rm {}""#, user_host, path);
-        println!("command {}", command);
-        let status = Exec::shell(command).join()?;
-        if !status.success() {
-            Err(err_msg("Scp failed"))
-        } else {
-            Ok(())
-        }
+        let command = format!("rm {}", path);
+        self.ssh.run_command_ssh(&command)
     }
 
     fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
         let conf = self.get_conf();
 
-        let url = &conf.baseurl;
         let path = conf
             .basepath
             .to_str()
             .ok_or_else(|| err_msg("Invalid path"))?;
-        let user_host = FileInfoSSH::get_ssh_username_host(&url)?;
-        let command = format!(
-            r#"ssh {} "sync-app-rust index -u file://{}""#,
-            user_host, path
-        );
-        let status = Exec::shell(command).join()?;
-        if !status.success() {
-            return Err(err_msg("Scp failed"));
-        }
+        let user_host = self.ssh.get_ssh_username_host()?;
+        let command = format!("sync-app-rust index -u file://{}", path);
+        self.ssh.run_command_ssh(&command)?;
 
-        let command = format!(
-            r#"ssh {} "sync-app-rust ser -u file://{}""#,
-            user_host, path
-        );
-        let stream = Exec::shell(command).stream_stdout()?;
-        let reader = BufReader::new(stream);
+        let command = format!("sync-app-rust ser -u file://{}", path);
+
         let url_prefix = format!("ssh://{}", user_host);
 
-        let results: Vec<_> = reader
-            .lines()
-            .map(|line| {
-                let l = line?;
+        let results: Vec<_> = self
+            .ssh
+            .run_command_stream_stdout(&command)?
+            .into_iter()
+            .map(|l| {
                 let finfo: FileInfoSerialize = serde_json::from_str(&l)?;
                 let mut finfo: FileInfo = finfo.try_into()?;
                 finfo.servicetype = FileService::SSH;
@@ -265,22 +250,14 @@ impl FileListTrait for FileListSSH {
     }
 
     fn print_list(&self) -> Result<(), Error> {
-        let url = &self.get_conf().baseurl;
         let path = self
             .get_conf()
             .basepath
             .to_str()
             .ok_or_else(|| err_msg("Invalid path"))?;
-        let user_host = FileInfoSSH::get_ssh_username_host(&url)?;
-        let command = format!(r#"ssh {} "sync-app-rust ls -u file://{}""#, user_host, path);
-        let stream = Exec::shell(command).stream_stdout()?;
-        let reader = BufReader::new(stream);
-        for line in reader.lines() {
-            if let Ok(l) = line {
-                println!("ssh://{}{}", user_host, l);
-            }
-        }
-        Ok(())
+        let command = format!("sync-app-rust ls -u file://{}", path);
+        println!("{}", command);
+        self.ssh.run_command_print_stdout(&command)
     }
 }
 
