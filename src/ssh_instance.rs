@@ -6,12 +6,15 @@ use url::Url;
 
 use crate::map_result;
 
+lazy_static! {
+    static ref SSH_LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+}
+
 #[derive(Debug, Clone)]
 pub struct SSHInstance {
     pub user: String,
     pub host: String,
     pub port: u16,
-    pub ssh_lock: Arc<Mutex<()>>,
 }
 
 impl SSHInstance {
@@ -20,7 +23,6 @@ impl SSHInstance {
             user: user.to_string(),
             host: host.to_string(),
             port: port,
-            ssh_lock: Arc::new(Mutex::new(())),
         }
     }
 
@@ -52,7 +54,7 @@ impl SSHInstance {
     }
 
     pub fn run_command_stream_stdout(&self, cmd: &str) -> Result<Vec<String>, Error> {
-        if let Ok(_) = self.ssh_lock.lock() {
+        if let Ok(_) = SSH_LOCK.lock() {
             println!("cmd {}", cmd);
             let user_host = self.get_ssh_username_host()?;
             let command = format!(r#"ssh {} "{}""#, user_host, cmd);
@@ -68,7 +70,7 @@ impl SSHInstance {
     }
 
     pub fn run_command_print_stdout(&self, cmd: &str) -> Result<(), Error> {
-        if let Ok(_) = self.ssh_lock.lock() {
+        if let Ok(_) = SSH_LOCK.lock() {
             println!("cmd {}", cmd);
             let user_host = self.get_ssh_username_host()?;
             let command = format!(r#"ssh {} "{}""#, user_host, cmd);
@@ -93,7 +95,7 @@ impl SSHInstance {
     }
 
     pub fn run_command(&self, cmd: &str) -> Result<(), Error> {
-        if let Ok(_) = self.ssh_lock.lock() {
+        if let Ok(_) = SSH_LOCK.lock() {
             println!("cmd {}", cmd);
             let status = Exec::shell(cmd).join()?;
             if !status.success() {
