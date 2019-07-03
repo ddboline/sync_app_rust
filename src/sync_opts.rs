@@ -95,7 +95,6 @@ impl SyncOpts {
                         let conf = FileListConf::from_url(&urls[0], &config)?;
                         let mut flist = FileList::from_conf(conf);
                         for url in urls {
-                            println!("url {:?} {}", url, flist.get_conf().servicetype);
                             flist.conf.baseurl = url.clone();
                             flist.print_list()?;
                         }
