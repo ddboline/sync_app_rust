@@ -13,11 +13,11 @@ use crate::pgpool::PgPool;
 #[derive(StructOpt, Debug)]
 pub struct SyncOpts {
     #[structopt(short = "m", long = "mode", parse(from_str), default_value = "full")]
-    mode: FileSyncMode,
+    pub mode: FileSyncMode,
     #[structopt(parse(try_from_str))]
-    action: FileSyncAction,
+    pub action: FileSyncAction,
     #[structopt(short = "u", long = "urls", parse(try_from_str))]
-    urls: Vec<Url>,
+    pub urls: Vec<Url>,
 }
 
 impl SyncOpts {

@@ -1,13 +1,16 @@
 use failure::{err_msg, Error};
+use parking_lot::{Mutex, RwLock};
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use subprocess::Exec;
 use url::Url;
 
 use crate::map_result;
 
 lazy_static! {
-    static ref SSH_LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    static ref LOCK_CACHE: Arc<RwLock<HashMap<String, Mutex<()>>>> =
+        Arc::new(RwLock::new(HashMap::new()));
 }
 
 #[derive(Debug, Clone)]
@@ -19,6 +22,7 @@ pub struct SSHInstance {
 
 impl SSHInstance {
     pub fn new(user: &str, host: &str, port: u16) -> Self {
+        LOCK_CACHE.write().insert(host.to_string(), Mutex::new(()));
         Self {
             user: user.to_string(),
             host: host.to_string(),
@@ -54,34 +58,39 @@ impl SSHInstance {
     }
 
     pub fn run_command_stream_stdout(&self, cmd: &str) -> Result<Vec<String>, Error> {
-        if let Ok(_) = SSH_LOCK.lock() {
-            println!("cmd {}", cmd);
-            let user_host = self.get_ssh_username_host()?;
-            let command = format!(r#"ssh {} "{}""#, user_host, cmd);
-            let stream = Exec::shell(command).stream_stdout()?;
-            let reader = BufReader::new(stream);
+        if let Some(host_lock) = LOCK_CACHE.read().get(&self.host) {
+            let output: Vec<String>;
+            *host_lock.lock() = {
+                println!("cmd {}", cmd);
+                let user_host = self.get_ssh_username_host()?;
+                let command = format!(r#"ssh {} "{}""#, user_host, cmd);
+                let stream = Exec::shell(command).stream_stdout()?;
+                let reader = BufReader::new(stream);
 
-            let results: Vec<_> = reader.lines().map(|line| Ok(line?)).collect();
-            let results: Vec<String> = map_result(results)?;
-            Ok(results)
+                let results: Vec<_> = reader.lines().map(|line| Ok(line?)).collect();
+                output = map_result(results)?;
+            };
+            Ok(output)
         } else {
             Err(err_msg("Failed to acquire lock"))
         }
     }
 
     pub fn run_command_print_stdout(&self, cmd: &str) -> Result<(), Error> {
-        if let Ok(_) = SSH_LOCK.lock() {
-            println!("cmd {}", cmd);
-            let user_host = self.get_ssh_username_host()?;
-            let command = format!(r#"ssh {} "{}""#, user_host, cmd);
-            let stream = Exec::shell(command).stream_stdout()?;
-            let reader = BufReader::new(stream);
+        if let Some(host_lock) = LOCK_CACHE.read().get(&self.host) {
+            *host_lock.lock() = {
+                println!("cmd {}", cmd);
+                let user_host = self.get_ssh_username_host()?;
+                let command = format!(r#"ssh {} "{}""#, user_host, cmd);
+                let stream = Exec::shell(command).stream_stdout()?;
+                let reader = BufReader::new(stream);
 
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    println!("ssh://{}{}", user_host, l);
+                for line in reader.lines() {
+                    if let Ok(l) = line {
+                        println!("ssh://{}{}", user_host, l);
+                    }
                 }
-            }
+            };
             Ok(())
         } else {
             Err(err_msg("Failed to acquire lock"))
@@ -95,10 +104,13 @@ impl SSHInstance {
     }
 
     pub fn run_command(&self, cmd: &str) -> Result<(), Error> {
-        if let Ok(_) = SSH_LOCK.lock() {
-            println!("cmd {}", cmd);
-            let status = Exec::shell(cmd).join()?;
-            if !status.success() {
+        if let Some(host_lock) = LOCK_CACHE.read().get(&self.host) {
+            let status: bool;
+            *host_lock.lock() = {
+                println!("cmd {}", cmd);
+                status = Exec::shell(cmd).join()?.success();
+            };
+            if !status {
                 Err(err_msg(format!("{} failed", cmd)))
             } else {
                 Ok(())

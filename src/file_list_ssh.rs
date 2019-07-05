@@ -1,6 +1,7 @@
 use failure::{err_msg, Error};
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::fs::create_dir_all;
 use std::path::Path;
 use url::Url;
 
@@ -90,6 +91,17 @@ impl FileListTrait for FileListSSH {
             let path0 = Path::new(url0.path())
                 .to_str()
                 .ok_or_else(|| err_msg("Invalid path"))?;
+
+            let parent_dir = finfo1
+                .filepath
+                .as_ref()
+                .ok_or_else(|| err_msg("No local path"))?
+                .parent()
+                .ok_or_else(|| err_msg("No parent directory"))?;
+            if !parent_dir.exists() {
+                create_dir_all(&parent_dir)?;
+            }
+
             let command = format!(
                 "scp {} {}",
                 self.ssh.get_ssh_str(&path0)?,
@@ -127,6 +139,19 @@ impl FileListTrait for FileListSSH {
             let path1 = Path::new(url1.path())
                 .to_str()
                 .ok_or_else(|| err_msg("Invalid path"))?;
+
+            let parent_dir = finfo1
+                .filepath
+                .as_ref()
+                .ok_or_else(|| err_msg("No local path"))?
+                .parent()
+                .ok_or_else(|| err_msg("No parent directory"))?
+                .to_str()
+                .ok_or_else(|| err_msg("Invalid path"))?;
+
+            let command = format!("mkdir -p {}", parent_dir);
+            self.ssh.run_command_ssh(&command)?;
+
             let command = format!(
                 "scp {} {}",
                 finfo0
