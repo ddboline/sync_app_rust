@@ -296,7 +296,7 @@ mod tests {
     use crate::file_info::FileInfoTrait;
     use crate::file_info_local::FileInfoLocal;
     use crate::file_info_ssh::FileInfoSSH;
-    use crate::file_list::{FileList, FileListConfTrait, FileListTrait};
+    use crate::file_list::{FileListConfTrait, FileListTrait};
     use crate::file_list_ssh::{FileListSSH, FileListSSHConf};
     use crate::file_service::FileService;
 
@@ -326,8 +326,7 @@ mod tests {
             .parse()
             .unwrap();
         let conf = FileListSSHConf::from_url(&url, &config).unwrap();
-        let flist = FileList::from_conf(conf.0);
-        let flist = FileListSSH(flist);
+        let flist = FileListSSH::from_conf(conf).unwrap();
         flist.copy_from(&finfo0, &finfo1).unwrap();
         let p = Path::new("/tmp/temp0.txt");
         if p.exists() {
@@ -351,8 +350,7 @@ mod tests {
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/".parse().unwrap();
         let conf = FileListSSHConf::from_url(&url, &config).unwrap();
-        let flist = FileList::from_conf(conf.0);
-        let flist = FileListSSH(flist);
+        let flist = FileListSSH::from_conf(conf).unwrap();
 
         flist.copy_to(&finfo0, &finfo1).unwrap();
         flist.delete(&finfo1).unwrap();

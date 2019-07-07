@@ -76,15 +76,5 @@ mod tests {
             "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/movie_queue.sql"
         );
         assert_eq!(&finfo.get_finfo().filename, "movie_queue.sql");
-        assert_eq!(
-            &finfo.get_md5().unwrap().0,
-            "33a52453f4f07c4d4491a41a1b3c7e5b"
-        );
-        assert_eq!(
-            &finfo.get_sha1().unwrap().0,
-            "a674b70761141d7814ebed059e8d42cfe42f7dd5"
-        );
-        assert_eq!(finfo.get_stat().unwrap().st_size, 128217549);
-        println!("{:?}", finfo.get_finfo());
     }
 }

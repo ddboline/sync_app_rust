@@ -6,13 +6,9 @@ use url::Url;
 
 use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
 use crate::file_service::FileService;
-use crate::s3_instance::S3Instance;
 
 #[derive(Debug, Default, Clone)]
-pub struct FileInfoS3 {
-    finfo: FileInfo,
-    s3: Option<S3Instance>,
-}
+pub struct FileInfoS3(FileInfo);
 
 impl FileInfoTrait for FileInfoS3 {
     fn from_url(url: &Url) -> Result<FileInfoS3, Error> {
@@ -43,36 +39,31 @@ impl FileInfoTrait for FileInfoS3 {
             servicetype: FileService::S3,
             servicesession,
         };
-        Ok(FileInfoS3 { finfo, s3: None })
+        Ok(FileInfoS3(finfo))
     }
 
     fn get_finfo(&self) -> &FileInfo {
-        &self.finfo
+        &self.0
     }
 
     fn into_finfo(self) -> FileInfo {
-        self.finfo
+        self.0
     }
 
     fn get_md5(&self) -> Option<Md5Sum> {
-        self.finfo.md5sum.clone()
+        self.0.md5sum.clone()
     }
 
     fn get_sha1(&self) -> Option<Sha1Sum> {
-        self.finfo.sha1sum.clone()
+        self.0.sha1sum.clone()
     }
 
     fn get_stat(&self) -> Option<FileStat> {
-        self.finfo.filestat
+        self.0.filestat
     }
 }
 
 impl FileInfoS3 {
-    pub fn with_s3(mut self, s3: S3Instance) -> FileInfoS3 {
-        self.s3 = Some(s3);
-        self
-    }
-
     pub fn from_object(bucket: &str, item: Object) -> Result<FileInfoS3, Error> {
         let key = item.key.as_ref().ok_or_else(|| err_msg("No key"))?.clone();
         let filepath = Path::new(&key);
@@ -112,7 +103,7 @@ impl FileInfoS3 {
             servicesession,
         };
 
-        Ok(FileInfoS3 { finfo, s3: None })
+        Ok(FileInfoS3(finfo))
     }
 }
 
