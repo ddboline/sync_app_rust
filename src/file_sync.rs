@@ -78,8 +78,7 @@ impl From<&str> for FileSyncMode {
         if s == "full" {
             FileSyncMode::Full
         } else {
-            let path = Path::new(&s);
-            FileSyncMode::OutputFile(path.to_path_buf())
+            FileSyncMode::OutputFile(Path::new(&s).to_path_buf())
         }
     }
 }
@@ -91,11 +90,8 @@ pub struct FileSync {
 }
 
 impl FileSync {
-    pub fn new(mode: FileSyncMode, config: &Config) -> FileSync {
-        FileSync {
-            mode,
-            config: config.clone(),
-        }
+    pub fn new(mode: FileSyncMode, config: Config) -> FileSync {
+        FileSync { mode, config }
     }
 
     pub fn compare_lists<T, U>(&self, flist0: &T, flist1: &U) -> Result<(), Error>

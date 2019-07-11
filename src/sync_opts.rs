@@ -56,7 +56,7 @@ impl SyncOpts {
                 } else {
                     let pool = PgPool::new(&config.database_url);
 
-                    let fsync = FileSync::new(opts.mode, &config);
+                    let fsync = FileSync::new(opts.mode, config.clone());
 
                     let results: Vec<Result<_, Error>> = opts.urls[0..2]
                         .par_iter()
@@ -79,7 +79,7 @@ impl SyncOpts {
                 if opts.urls.len() < 2 {
                     Err(err_msg("Need 2 Urls"))
                 } else {
-                    let fsync = FileSync::new(opts.mode, &config);
+                    let fsync = FileSync::new(opts.mode, config.clone());
                     let conf = FileListConf::from_url(&opts.urls[0], &config)?;
                     let flist = FileList::from_conf(conf);
                     let finfo0 = FileInfo::from_url(&opts.urls[0])?;
@@ -104,7 +104,7 @@ impl SyncOpts {
             }
             FileSyncAction::Process => {
                 let pool = PgPool::new(&config.database_url);
-                let fsync = FileSync::new(opts.mode, &config);
+                let fsync = FileSync::new(opts.mode, config);
                 fsync.process_file(&pool)
             }
             FileSyncAction::Delete => {
@@ -112,7 +112,7 @@ impl SyncOpts {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
                     let pool = PgPool::new(&config.database_url);
-                    let fsync = FileSync::new(opts.mode, &config);
+                    let fsync = FileSync::new(opts.mode, config);
                     fsync.delete_files(&opts.urls, &pool)
                 }
             }
