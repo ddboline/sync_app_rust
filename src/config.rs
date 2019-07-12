@@ -1,14 +1,19 @@
 use failure::{err_msg, Error};
 use std::env::var;
+use std::ops::Deref;
 use std::path::Path;
+use std::sync::Arc;
 
-#[derive(Default, Debug, Clone)]
-pub struct Config {
+#[derive(Default, Debug)]
+pub struct ConfigInner {
     pub database_url: String,
     pub gdrive_secret_file: String,
     pub gdrive_token_path: String,
     pub aws_region_name: String,
 }
+
+#[derive(Default, Debug, Clone)]
+pub struct Config(Arc<ConfigInner>);
 
 impl Config {
     pub fn new() -> Config {
@@ -40,7 +45,7 @@ impl Config {
             format!("{}/.config/sync_app_rust/client_secrets.json", home_dir);
         let default_gdrive_token_path = format!("{}/.gdrive", home_dir);
 
-        let conf = Config {
+        let conf = ConfigInner {
             database_url: var("DATABASE_URL")
                 .map_err(|e| err_msg(format!("DATABASE_URL must be set {}", e)))?,
             gdrive_secret_file: var("GDRIVE_SECRET_FILE").unwrap_or_else(|_| default_gdrive_secret),
@@ -49,6 +54,14 @@ impl Config {
             aws_region_name: var("AWS_REGION_NAME").unwrap_or_else(|_| "us-east-1".to_string()),
         };
 
-        Ok(conf)
+        Ok(Config(Arc::new(conf)))
+    }
+}
+
+impl Deref for Config {
+    type Target = ConfigInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
