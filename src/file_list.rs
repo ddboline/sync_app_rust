@@ -413,6 +413,24 @@ pub trait FileListTrait {
         .map_err(err_msg)
     }
 
+    fn remove_by_id(&self, pool: &PgPool, gdriveid: &str) -> Result<usize, Error> {
+        use crate::schema::file_info_cache::dsl::{
+            file_info_cache, serviceid, servicesession, servicetype,
+        };
+
+        let conn = pool.get()?;
+        let conf = &self.get_conf();
+
+        diesel::delete(
+            file_info_cache
+                .filter(servicesession.eq(conf.servicesession.0.clone()))
+                .filter(servicetype.eq(conf.servicetype.to_string()))
+                .filter(serviceid.eq(Some(gdriveid))),
+        )
+        .execute(&conn)
+        .map_err(err_msg)
+    }
+
     fn clear_directory_list(&self, pool: &PgPool) -> Result<usize, Error> {
         use crate::schema::directory_info_cache::dsl::{
             directory_info_cache, servicesession, servicetype,
@@ -456,7 +474,7 @@ impl FileListTrait for FileList {
                 let conf = FileListGDriveConf(self.get_conf().clone());
                 let config = Config::init_config()?;
                 let gdrive = GDriveInstance::new(&config, &conf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(conf, &gdrive)?;
+                let flist = FileListGDrive::from_conf(conf, &gdrive, pool)?;
                 let flist = flist.set_directory_map(false, pool)?;
                 flist.fill_file_list(pool)
             }
@@ -496,7 +514,7 @@ impl FileListTrait for FileList {
                 let config = Config::init_config()?;
                 let fconf = FileListGDriveConf(conf.clone());
                 let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
-                let flist = FileListGDrive::from_conf(fconf, &gdrive)?;
+                let flist = FileListGDrive::from_conf(fconf, &gdrive, None)?;
                 let flist = flist.set_directory_map(false, None)?;
                 flist.print_list()
             }
@@ -530,7 +548,8 @@ impl FileListTrait for FileList {
                 let c = FileListGDriveConf(self.conf.clone());
                 let pool = PgPool::new(&c.get_config().database_url);
                 let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
-                let f = FileListGDrive::from_conf(c, &g)?.set_directory_map(true, Some(&pool))?;
+                let f = FileListGDrive::from_conf(c, &g, Some(&pool))?
+                    .set_directory_map(true, Some(&pool))?;
                 f.copy_from(finfo0, finfo1)
             }
             FileService::SSH => {
@@ -563,7 +582,8 @@ impl FileListTrait for FileList {
                 let c = FileListGDriveConf(self.conf.clone());
                 let pool = PgPool::new(&c.get_config().database_url);
                 let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
-                let f = FileListGDrive::from_conf(c, &g)?.set_directory_map(true, Some(&pool))?;
+                let f = FileListGDrive::from_conf(c, &g, Some(&pool))?
+                    .set_directory_map(true, Some(&pool))?;
                 f.copy_to(finfo0, finfo1)
             }
             FileService::SSH => {
@@ -601,7 +621,8 @@ impl FileListTrait for FileList {
                 let c = FileListGDriveConf(self.conf.clone());
                 let pool = PgPool::new(&c.get_config().database_url);
                 let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
-                let f = FileListGDrive::from_conf(c, &g)?.set_directory_map(true, Some(&pool))?;
+                let f = FileListGDrive::from_conf(c, &g, Some(&pool))?
+                    .set_directory_map(true, Some(&pool))?;
                 f.move_file(finfo0, finfo1)
             }
             FileService::SSH => {
@@ -632,8 +653,8 @@ impl FileListTrait for FileList {
                 let c = FileListGDriveConf(self.get_conf().clone());
                 let pool = PgPool::new(&c.get_config().database_url);
                 let gdrive = GDriveInstance::new(&self.conf.get_config(), &c.0.servicesession.0);
-                let flist =
-                    FileListGDrive::from_conf(c, &gdrive)?.set_directory_map(true, Some(&pool))?;
+                let flist = FileListGDrive::from_conf(c, &gdrive, Some(&pool))?
+                    .set_directory_map(true, Some(&pool))?;
                 flist.delete(finfo)
             }
             FileService::SSH => {

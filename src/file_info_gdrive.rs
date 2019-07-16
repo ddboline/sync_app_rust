@@ -116,6 +116,9 @@ impl FileInfoGDrive {
             servicetype: FileService::GDrive,
             servicesession,
         };
+        if item.id == Some("1t4plcsKgXK_NB025K01yFLKwljaTeM3i".to_string()) {
+            println!("{:?}, {:?}", item, finfo);
+        }
 
         Ok(FileInfoGDrive(finfo))
     }

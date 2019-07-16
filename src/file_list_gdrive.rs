@@ -23,6 +23,7 @@ pub struct FileListGDrive {
     pub gdrive: GDriveInstance,
     pub directory_map: Rc<HashMap<String, DirectoryInfo>>,
     pub root_directory: Option<String>,
+    pub pool: Option<PgPool>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,12 +33,14 @@ impl FileListGDrive {
     pub fn from_conf(
         conf: FileListGDriveConf,
         gdrive: &GDriveInstance,
+        pool: Option<&PgPool>,
     ) -> Result<FileListGDrive, Error> {
         let f = FileListGDrive {
             flist: FileList::from_conf(conf.0),
             gdrive: gdrive.clone(),
             directory_map: Rc::new(HashMap::new()),
             root_directory: None,
+            pool: pool.cloned(),
         };
         Ok(f)
     }
@@ -71,6 +74,7 @@ impl FileListGDrive {
             gdrive: self.gdrive,
             directory_map: self.directory_map,
             root_directory: self.root_directory,
+            pool: self.pool,
         }
     }
 
@@ -314,6 +318,10 @@ impl FileListTrait for FileListGDrive {
             println!("{:?}", gfile.mime_type);
             if self.gdrive.is_unexportable(&gfile.mime_type) {
                 println!("unexportable");
+                if let Some(pool) = self.pool.as_ref() {
+                    self.remove_by_id(pool, &gdriveid)?;
+                    println!("removed from database");
+                }
                 return Ok(());
             }
             self.gdrive

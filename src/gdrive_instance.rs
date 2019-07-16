@@ -46,6 +46,7 @@ lazy_static! {
     static ref UNEXPORTABLE_MIME_TYPES: HashSet<&'static str> = hashset! {
         "application/vnd.google-apps.form",
         "application/vnd.google-apps.map",
+        "application/vnd.google-apps.folder",
     };
 }
 
