@@ -26,7 +26,7 @@ impl SSHInstance {
         Self {
             user: user.to_string(),
             host: host.to_string(),
-            port: port,
+            port,
         }
     }
 
