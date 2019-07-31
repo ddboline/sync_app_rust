@@ -84,12 +84,12 @@ impl GDriveInstance {
             config.gdrive_token_path, session_name
         );
         let path = Path::new(&fname);
-        GDriveInstance {
-            gdrive: Rc::new(GDriveInstance::create_drive(&config, session_name).unwrap()),
+        Self {
+            gdrive: Rc::new(Self::create_drive(&config, session_name).unwrap()),
             page_size: 1000,
             max_keys: None,
             session_name: session_name.to_string(),
-            start_page_token: GDriveInstance::read_start_page_token(&path).unwrap_or(None),
+            start_page_token: Self::read_start_page_token(&path).unwrap_or(None),
             start_page_token_filename: fname,
         }
     }
@@ -111,7 +111,7 @@ impl GDriveInstance {
 
     pub fn read_start_page_token_from_file(mut self) -> Self {
         let path = Path::new(&self.start_page_token_filename);
-        self.start_page_token = GDriveInstance::read_start_page_token(&path).unwrap_or(None);
+        self.start_page_token = Self::read_start_page_token(&path).unwrap_or(None);
         self
     }
 
