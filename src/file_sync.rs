@@ -1,4 +1,5 @@
 use failure::{err_msg, Error};
+use log::debug;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::convert::From;
@@ -184,7 +185,7 @@ impl FileSync {
                         f0.servicetype == FileService::Local || f1.servicetype == FileService::Local
                     })
                     .map(|(f0, f1)| {
-                        println!("copy {:?} {:?}", f0.urlname, f1.urlname);
+                        debug!("copy {:?} {:?}", f0.urlname, f1.urlname);
                         if f1.servicetype == FileService::Local {
                             self.copy_object(flist0, f0, f1)
                         } else {
@@ -318,7 +319,7 @@ impl FileSync {
                                         Some(f) => f,
                                         None => FileInfo::from_url(&val)?,
                                     };
-                                    println!("copy {} {}", key, val);
+                                    debug!("copy {} {}", key, val);
                                     if finfo1.servicetype == FileService::Local {
                                         self.copy_object(&flist0, &finfo0, &finfo1)?;
                                         flist0.cleanup()?;
@@ -371,11 +372,11 @@ impl FileSync {
                     FileInfo::from_url(&url)?
                 };
 
-                println!("delete {:?}", finfo);
+                debug!("delete {:?}", finfo);
                 flist.delete(&finfo)?;
             }
         }
-        println!("{:?}", group_urls(&urls));
+        debug!("{:?}", group_urls(&urls));
         Ok(())
     }
 

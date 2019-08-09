@@ -33,6 +33,8 @@ mime = "0.2"
 rand = "0.6"
 percent-encoding = "1.0"
 parking_lot = "0.8"
+log = "0.4"
+env_logger = "0.6"
 
 [[bin]]
 name = "sync-app-rust"

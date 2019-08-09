@@ -6,6 +6,7 @@ use failure::{err_msg, Error};
 use hyper::net::HttpsConnector;
 use hyper::Client;
 use hyper_native_tls::NativeTlsClient;
+use log::debug;
 use mime::Mime;
 use oauth2::{
     Authenticator, ConsoleApplicationSecret, DefaultAuthenticatorDelegate, DiskTokenStorage,
@@ -723,7 +724,7 @@ impl GDriveInstance {
                 match changelist.changes {
                     Some(changes) => all_changes.extend(changes),
                     _ => {
-                        println!("Changelist does not contain any changes!");
+                        debug!("Changelist does not contain any changes!");
                         break;
                     }
                 };

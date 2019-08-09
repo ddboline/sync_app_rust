@@ -1,6 +1,7 @@
 use google_drive3_fork as drive3;
 
 use failure::{err_msg, Error};
+use log::debug;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
 use std::path::Path;
@@ -243,7 +244,7 @@ impl FileListTrait for FileListGDrive {
             }
         };
 
-        println!("delete {} insert {}", dlist.len(), flist.len());
+        debug!("delete {} insert {}", dlist.len(), flist.len());
 
         for dfid in &dlist {
             flist_dict.remove(dfid);
@@ -282,7 +283,7 @@ impl FileListTrait for FileListGDrive {
                 FileInfoGDrive::from_object(i.clone(), &self.gdrive, &self.directory_map)
             {
                 if let Some(url) = finfo.get_finfo().urlname.as_ref() {
-                    println!("{}", url.as_str());
+                    debug!("{}", url.as_str());
                 }
             }
         })
@@ -315,12 +316,12 @@ impl FileListTrait for FileListGDrive {
                 .ok_or_else(|| err_msg("No gdrive url"))?
                 .0;
             let gfile = self.gdrive.get_file_metadata(&gdriveid)?;
-            println!("{:?}", gfile.mime_type);
+            debug!("{:?}", gfile.mime_type);
             if self.gdrive.is_unexportable(&gfile.mime_type) {
-                println!("unexportable");
+                debug!("unexportable");
                 if let Some(pool) = self.pool.as_ref() {
                     self.remove_by_id(pool, &gdriveid)?;
-                    println!("removed from database");
+                    debug!("removed from database");
                 }
                 return Ok(());
             }

@@ -30,6 +30,7 @@ pub mod ssh_instance;
 pub mod sync_opts;
 
 use failure::{err_msg, Error};
+use log::error;
 use rand::distributions::{Distribution, Uniform};
 use rand::thread_rng;
 use std::fmt;
@@ -78,7 +79,7 @@ where
         match closure() {
             Ok(x) => return Ok(x),
             Err(e) => {
-                println!("Got error {:?} , retrying", e);
+                error!("Got error {:?} , retrying", e);
                 sleep(Duration::from_millis((timeout * 1000.0) as u64));
                 timeout *= 4.0 * f64::from(range.sample(&mut rng)) / 1000.0;
                 if timeout >= 64.0 {

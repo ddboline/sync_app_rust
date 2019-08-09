@@ -117,7 +117,7 @@ impl FileInfoGDrive {
             servicesession,
         };
         if item.id == Some("1t4plcsKgXK_NB025K01yFLKwljaTeM3i".to_string()) {
-            println!("{:?}, {:?}", item, finfo);
+            debug!("{:?}, {:?}", item, finfo);
         }
 
         Ok(FileInfoGDrive(finfo))

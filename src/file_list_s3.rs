@@ -1,4 +1,5 @@
 use failure::{err_msg, Error};
+use log::debug;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::{create_dir_all, remove_file};
@@ -169,7 +170,7 @@ impl FileListTrait for FileListS3 {
                     .map(|u| u.0)
                     .unwrap_or_else(|| "".to_string())
             {
-                println!(
+                debug!(
                     "Multipart upload? {} {}",
                     finfo1
                         .urlname

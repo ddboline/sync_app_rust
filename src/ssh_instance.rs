@@ -1,4 +1,5 @@
 use failure::{err_msg, Error};
+use log::debug;
 use parking_lot::{Mutex, RwLock};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
@@ -61,7 +62,7 @@ impl SSHInstance {
         if let Some(host_lock) = LOCK_CACHE.read().get(&self.host) {
             let output: Vec<String>;
             *host_lock.lock() = {
-                println!("cmd {}", cmd);
+                debug!("cmd {}", cmd);
                 let user_host = self.get_ssh_username_host()?;
                 let command = format!(r#"ssh {} "{}""#, user_host, cmd);
                 let stream = Exec::shell(command).stream_stdout()?;
@@ -79,7 +80,7 @@ impl SSHInstance {
     pub fn run_command_print_stdout(&self, cmd: &str) -> Result<(), Error> {
         if let Some(host_lock) = LOCK_CACHE.read().get(&self.host) {
             *host_lock.lock() = {
-                println!("cmd {}", cmd);
+                debug!("cmd {}", cmd);
                 let user_host = self.get_ssh_username_host()?;
                 let command = format!(r#"ssh {} "{}""#, user_host, cmd);
                 let stream = Exec::shell(command).stream_stdout()?;
@@ -87,7 +88,7 @@ impl SSHInstance {
 
                 for line in reader.lines() {
                     if let Ok(l) = line {
-                        println!("ssh://{}{}", user_host, l);
+                        debug!("ssh://{}{}", user_host, l);
                     }
                 }
             };
@@ -107,7 +108,7 @@ impl SSHInstance {
         if let Some(host_lock) = LOCK_CACHE.read().get(&self.host) {
             let status: bool;
             *host_lock.lock() = {
-                println!("cmd {}", cmd);
+                debug!("cmd {}", cmd);
                 status = Exec::shell(cmd).join()?.success();
             };
             if !status {

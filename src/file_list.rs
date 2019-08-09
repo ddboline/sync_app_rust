@@ -128,7 +128,7 @@ pub trait FileListTrait {
                 self.get_conf().servicesession.0
             );
             let start_page_path = format!("{}.new", fname);
-            println!("{} {}", start_page_path, fname);
+            debug!("{} {}", start_page_path, fname);
             if Path::new(&start_page_path).exists() {
                 rename(&start_page_path, &fname).map_err(err_msg)
             } else {
@@ -179,7 +179,7 @@ pub trait FileListTrait {
 
                 let conn = pool.get()?;
 
-                println!("remove {:?}", k);
+                debug!("remove {:?}", k);
 
                 diesel::delete(
                     file_info_cache

@@ -1,4 +1,5 @@
 use failure::{err_msg, Error};
+use log::debug;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs::create_dir_all;
@@ -112,7 +113,7 @@ impl FileListTrait for FileListSSH {
                     .to_str()
                     .ok_or_else(|| err_msg("Invalid String"))?
             );
-            println!("command {}", command);
+            debug!("command {}", command);
             self.ssh.run_command(&command)
         } else {
             Err(err_msg(format!(
@@ -162,7 +163,7 @@ impl FileListTrait for FileListSSH {
                     .ok_or_else(|| err_msg("Invalid String"))?,
                 self.ssh.get_ssh_str(&path1)?,
             );
-            println!("command {}", command);
+            debug!("command {}", command);
             self.ssh.run_command(&command)
         } else {
             Err(err_msg(format!(
@@ -216,7 +217,7 @@ impl FileListTrait for FileListSSH {
             .to_str()
             .ok_or_else(|| err_msg("Invalid path"))?;
         let command = format!("mv {} {}", path0, path1);
-        println!("command {}", command);
+        debug!("command {}", command);
         self.ssh.run_command_ssh(&command)
     }
 

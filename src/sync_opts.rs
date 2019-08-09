@@ -1,4 +1,5 @@
 use failure::{err_msg, Error};
+use log::debug;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use structopt::StructOpt;
 use url::Url;
@@ -149,7 +150,7 @@ impl SyncOpts {
                                 .map(|finfo| {
                                     let tmp: FileInfoSerialize = finfo.clone().into();
                                     let js = serde_json::to_string(&tmp)?;
-                                    println!("{}", js);
+                                    debug!("{}", js);
                                     Ok(())
                                 })
                                 .collect();
