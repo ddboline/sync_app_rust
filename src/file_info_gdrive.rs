@@ -1,7 +1,7 @@
-use google_drive3_fork as drive3;
-
 use chrono::DateTime;
 use failure::{err_msg, Error};
+use google_drive3_fork as drive3;
+use log::debug;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use url::Url;
@@ -27,7 +27,7 @@ impl FileInfoTrait for FileInfoGDrive {
             .to_os_string()
             .into_string()
             .map_err(|_| err_msg("Parse failure"))?;
-        let serviceid = Some(filename.clone().into());
+        let serviceid = Some(filename.to_string().into());
         let servicesession = url
             .as_str()
             .trim_start_matches("gdrive://")
@@ -84,7 +84,7 @@ impl FileInfoGDrive {
         )?
         .timestamp();
         let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
-        let serviceid = item.id.as_ref().map(|x| x.clone().into());
+        let serviceid = item.id.as_ref().map(|x| x.to_string().into());
         let servicesession = Some(gdrive.session_name.parse()?);
 
         let export_path = gdrive.get_export_path(&item, &directory_map)?;
@@ -103,7 +103,7 @@ impl FileInfoGDrive {
         });
 
         let finfo = FileInfo {
-            filename: filename.clone(),
+            filename: filename.to_string(),
             filepath: Some(filepath),
             urlname: Some(urlname),
             md5sum,

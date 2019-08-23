@@ -422,7 +422,7 @@ mod tests {
         let config = Config::init_config().unwrap();
         let fsync = FileSync::new(
             FileSyncMode::OutputFile(outfile.path().to_path_buf()),
-            &config,
+            config,
         );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
@@ -464,7 +464,7 @@ mod tests {
         let config = Config::init_config().unwrap();
         let fsync = FileSync::new(
             FileSyncMode::OutputFile(outfile.path().to_path_buf()),
-            &config,
+            config.clone(),
         );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
@@ -475,7 +475,7 @@ mod tests {
         println!("{:?}", finfo0);
 
         let flist0conf = FileListLocalConf::new(current_dir().unwrap(), &config).unwrap();
-        let flist0 = FileListLocal::from_conf(flist0conf).with_list(&[finfo0.0]);
+        let flist0 = FileListLocal::from_conf(flist0conf).with_list(vec![finfo0.0]);
 
         let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
         let flist1 = FileListS3::from_conf(flist1conf);
@@ -505,7 +505,7 @@ mod tests {
         let config = Config::init_config().unwrap();
         let fsync = FileSync::new(
             FileSyncMode::OutputFile(outfile.path().to_path_buf()),
-            &config,
+            config.clone(),
         );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
@@ -535,7 +535,7 @@ mod tests {
         let finfo1 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
 
         let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
-        let flist1 = FileListS3::from_conf(flist1conf).with_list(&[finfo1.into_finfo()]);
+        let flist1 = FileListS3::from_conf(flist1conf).with_list(vec![finfo1.into_finfo()]);
 
         fsync.compare_lists(&flist0, &flist1).unwrap();
 

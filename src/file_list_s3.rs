@@ -34,9 +34,9 @@ impl FileListS3 {
         }
     }
 
-    pub fn with_list(&self, filelist: &[FileInfo]) -> FileListS3 {
+    pub fn with_list(&self, filelist: Vec<FileInfo>) -> FileListS3 {
         FileListS3 {
-            flist: self.flist.with_list(&filelist),
+            flist: self.flist.with_list(filelist),
             s3: self.s3.clone(),
         }
     }
@@ -290,7 +290,7 @@ mod tests {
 
         let config = Config::init_config().unwrap();
         let pool = PgPool::new(&config.database_url);
-        let flist = flist.with_list(&new_flist);
+        let flist = flist.with_list(new_flist);
 
         flist.cache_file_list(&pool).unwrap();
 

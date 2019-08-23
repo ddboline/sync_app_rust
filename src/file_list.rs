@@ -1,5 +1,6 @@
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use failure::{err_msg, Error};
+use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::rename;
@@ -69,18 +70,17 @@ impl FileList {
         }
     }
 
-    pub fn with_list(&self, filelist: &[FileInfo]) -> FileList {
+    pub fn with_list(&self, filelist: Vec<FileInfo>) -> FileList {
         FileList {
             conf: self.conf.clone(),
             filemap: filelist
-                .iter()
-                .map(|f| {
+                .into_iter()
+                .map(|mut f| {
                     let key = if let Some(path) = f.filepath.as_ref().and_then(|x| x.to_str()) {
                         remove_basepath(&path, &self.conf.basepath.to_str().unwrap())
                     } else {
-                        f.filename.clone()
+                        f.filename.to_string()
                     };
-                    let mut f = f.clone();
                     f.servicesession = Some(self.conf.servicesession.clone());
                     (key, f)
                 })
@@ -281,7 +281,7 @@ pub trait FileListTrait {
         let conf = &self.get_conf();
 
         file_info_cache
-            .filter(servicesession.eq(conf.servicesession.0.clone()))
+            .filter(servicesession.eq(conf.servicesession.0.to_string()))
             .filter(servicetype.eq(conf.servicetype.to_string()))
             .load::<FileInfoCache>(&conn)
             .map_err(err_msg)
@@ -297,7 +297,7 @@ pub trait FileListTrait {
             .filter_map(|entry| match key_type {
                 FileInfoKeyType::FileName => FileInfo::from_cache_info(&entry)
                     .ok()
-                    .map(|val| (entry.filename.clone(), val)),
+                    .map(|val| (entry.filename.to_string(), val)),
                 FileInfoKeyType::FilePath => entry.filepath.as_ref().and_then(|fp| {
                     let key = fp.to_string();
                     FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
@@ -331,7 +331,7 @@ pub trait FileListTrait {
         let conf = &self.get_conf();
 
         directory_info_cache
-            .filter(servicesession.eq(conf.servicesession.0.clone()))
+            .filter(servicesession.eq(conf.servicesession.0.to_string()))
             .filter(servicetype.eq(conf.servicetype.to_string()))
             .load::<DirectoryInfoCache>(&conn)
             .map_err(err_msg)
@@ -345,7 +345,7 @@ pub trait FileListTrait {
             .iter()
             .filter(|d| d.is_root)
             .nth(0)
-            .map(|d| d.directory_id.clone());
+            .map(|d| d.directory_id.to_string());
         let dmap: HashMap<_, _> = directory_list
             .into_par_iter()
             .map(|d| {
@@ -374,12 +374,12 @@ pub trait FileListTrait {
                 };
 
                 InsertDirectoryInfoCache {
-                    directory_id: d.directory_id.clone(),
-                    directory_name: d.directory_name.clone(),
+                    directory_id: d.directory_id.to_string(),
+                    directory_name: d.directory_name.to_string(),
                     parent_id: d.parentid.clone(),
                     is_root,
                     servicetype: self.get_conf().servicetype.to_string(),
-                    servicesession: self.get_conf().servicesession.0.clone(),
+                    servicesession: self.get_conf().servicesession.0.to_string(),
                 }
             })
             .collect();
@@ -406,7 +406,7 @@ pub trait FileListTrait {
 
         diesel::delete(
             file_info_cache
-                .filter(servicesession.eq(conf.servicesession.0.clone()))
+                .filter(servicesession.eq(conf.servicesession.0.to_string()))
                 .filter(servicetype.eq(conf.servicetype.to_string())),
         )
         .execute(&conn)
@@ -423,7 +423,7 @@ pub trait FileListTrait {
 
         diesel::delete(
             file_info_cache
-                .filter(servicesession.eq(conf.servicesession.0.clone()))
+                .filter(servicesession.eq(conf.servicesession.0.to_string()))
                 .filter(servicetype.eq(conf.servicetype.to_string()))
                 .filter(serviceid.eq(Some(gdriveid))),
         )
@@ -441,7 +441,7 @@ pub trait FileListTrait {
 
         diesel::delete(
             directory_info_cache
-                .filter(servicesession.eq(conf.servicesession.0.clone()))
+                .filter(servicesession.eq(conf.servicesession.0.to_string()))
                 .filter(servicetype.eq(conf.servicetype.to_string())),
         )
         .execute(&conn)
@@ -536,7 +536,8 @@ impl FileListTrait for FileList {
         let finfo1 = finfo1.get_finfo();
         match self.get_conf().servicetype {
             FileService::Local => {
-                let f = FileListLocal(self.clone());
+                let c = FileListLocalConf(self.conf.clone());
+                let f = FileListLocal::from_conf(c);
                 f.copy_from(finfo0, finfo1)
             }
             FileService::S3 => {
@@ -570,7 +571,8 @@ impl FileListTrait for FileList {
         let finfo1 = finfo1.get_finfo();
         match self.get_conf().servicetype {
             FileService::Local => {
-                let f = FileListLocal(self.clone());
+                let c = FileListLocalConf(self.conf.clone());
+                let f = FileListLocal::from_conf(c);
                 f.copy_to(finfo0, finfo1)
             }
             FileService::S3 => {
@@ -609,7 +611,8 @@ impl FileListTrait for FileList {
         }
         match self.get_conf().servicetype {
             FileService::Local => {
-                let f = FileListLocal(self.clone());
+                let c = FileListLocalConf(self.conf.clone());
+                let f = FileListLocal::from_conf(c);
                 f.move_file(finfo0, finfo1)
             }
             FileService::S3 => {

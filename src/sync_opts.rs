@@ -40,7 +40,7 @@ impl SyncOpts {
                             let pool = pool.clone();
                             let conf = FileListConf::from_url(&url, &config)?;
                             let flist = FileList::from_conf(conf);
-                            let flist = flist.with_list(&flist.fill_file_list(Some(&pool))?);
+                            let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
                             flist.cache_file_list(&pool)?;
                             Ok(flist)
                         })
@@ -65,7 +65,7 @@ impl SyncOpts {
                             let pool = pool.clone();
                             let conf = FileListConf::from_url(&url, &config)?;
                             let flist = FileList::from_conf(conf);
-                            let flist = flist.with_list(&flist.fill_file_list(Some(&pool))?);
+                            let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
                             flist.cache_file_list(&pool)?;
                             Ok(flist)
                         })
@@ -143,7 +143,7 @@ impl SyncOpts {
                             let pool = pool.clone();
                             let conf = FileListConf::from_url(&url, &config)?;
                             let flist = FileList::from_conf(conf);
-                            let flist = flist.with_list(&flist.fill_file_list(Some(&pool))?);
+                            let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
                             let results: Vec<Result<_, Error>> = flist
                                 .filemap
                                 .values()

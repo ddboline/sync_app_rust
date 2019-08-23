@@ -10,8 +10,8 @@ pub struct DirectoryInfo {
 impl DirectoryInfo {
     pub fn from_cache_info(item: &DirectoryInfoCache) -> DirectoryInfo {
         DirectoryInfo {
-            directory_id: item.directory_id.clone(),
-            directory_name: item.directory_name.clone(),
+            directory_id: item.directory_id.to_string(),
+            directory_name: item.directory_name.to_string(),
             parentid: item.parent_id.clone(),
         }
     }

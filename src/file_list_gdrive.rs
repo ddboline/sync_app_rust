@@ -69,9 +69,9 @@ impl FileListGDrive {
         Ok(self)
     }
 
-    pub fn with_list(self, filelist: &[FileInfo]) -> FileListGDrive {
+    pub fn with_list(self, filelist: Vec<FileInfo>) -> FileListGDrive {
         FileListGDrive {
-            flist: self.flist.with_list(&filelist),
+            flist: self.flist.with_list(filelist),
             gdrive: self.gdrive,
             directory_map: self.directory_map,
             root_directory: self.root_directory,
@@ -128,7 +128,7 @@ impl FileListGDrive {
                 false
             })
             .map(|mut f| {
-                f.servicesession = Some(self.get_conf().servicesession.clone());
+                f.servicesession.replace(self.get_conf().servicesession.clone());
                 f
             })
             .collect();
@@ -252,7 +252,7 @@ impl FileListTrait for FileListGDrive {
 
         for f in flist {
             if let Some(fid) = f.serviceid.as_ref() {
-                flist_dict.insert(fid.0.clone(), f);
+                flist_dict.insert(fid.0.to_string(), f);
             }
         }
 
@@ -427,7 +427,7 @@ mod tests {
         gdrive.start_page_token = None;
 
         let fconf = FileListGDriveConf::new("ddboline@gmail.com", "My Drive", &config).unwrap();
-        let flist = FileListGDrive::from_conf(fconf, &gdrive)
+        let flist = FileListGDrive::from_conf(fconf, &gdrive, None)
             .unwrap()
             .max_keys(100)
             .set_directory_map(false, None)
@@ -441,7 +441,7 @@ mod tests {
         let pool = PgPool::new(&config.database_url);
         flist.clear_file_list(&pool).unwrap();
 
-        let flist = flist.with_list(&new_flist);
+        let flist = flist.with_list(new_flist);
 
         println!("wrote {}", flist.cache_file_list(&pool).unwrap());
 

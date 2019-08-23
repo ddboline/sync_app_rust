@@ -117,7 +117,7 @@ impl GDriveInstance {
     }
 
     fn create_drive_auth(config: &Config, session_name: &str) -> Result<GCAuthenticator, Error> {
-        let secret_file = File::open(config.gdrive_secret_file.clone())?;
+        let secret_file = File::open(&config.gdrive_secret_file)?;
         let secret: ConsoleApplicationSecret = serde_json::from_reader(secret_file)?;
         let secret = secret
             .installed
@@ -316,7 +316,7 @@ impl GDriveInstance {
     pub fn upload(&self, local: &Url, parentid: &str) -> Result<drive3::File, Error> {
         let file_path = local.to_file_path().map_err(|_| err_msg("No file path"))?;
         exponential_retry(|| {
-            let file_obj = File::open(file_path.clone())?;
+            let file_obj = File::open(&file_path)?;
             let mime: Mime = "application/octet-stream"
                 .parse()
                 .map_err(|_| err_msg("bad mimetype"))?;
@@ -479,11 +479,11 @@ impl GDriveInstance {
                         if let Some(parents) = d.parents.as_ref() {
                             if !parents.is_empty() {
                                 return Some((
-                                    gdriveid.clone(),
+                                    gdriveid.to_string(),
                                     DirectoryInfo {
-                                        directory_id: gdriveid.clone(),
-                                        directory_name: name.clone(),
-                                        parentid: Some(parents[0].clone()),
+                                        directory_id: gdriveid.to_string(),
+                                        directory_name: name.to_string(),
+                                        parentid: Some(parents[0].to_string()),
                                     },
                                 ));
                             }
@@ -491,13 +491,13 @@ impl GDriveInstance {
                             if root_id.is_none()
                                 && d.name != Some("Chrome Syncable FileSystem".to_string())
                             {
-                                root_id = Some(gdriveid.clone());
+                                root_id = Some(gdriveid.to_string());
                             }
                             return Some((
-                                gdriveid.clone(),
+                                gdriveid.to_string(),
                                 DirectoryInfo {
-                                    directory_id: gdriveid.clone(),
-                                    directory_name: name.clone(),
+                                    directory_id: gdriveid.to_string(),
+                                    directory_name: name.to_string(),
                                     parentid: None,
                                 },
                             ));
@@ -512,7 +512,7 @@ impl GDriveInstance {
             .filter_map(|v| {
                 v.parentid.as_ref().and_then(|p| match dmap.get(p) {
                     Some(_) => None,
-                    None => Some(p.clone()),
+                    None => Some(p.to_string()),
                 })
             })
             .collect();
@@ -522,7 +522,7 @@ impl GDriveInstance {
                 if let Some(name) = d.name.as_ref() {
                     let parents = if let Some(p) = d.parents.as_ref() {
                         if !p.is_empty() {
-                            Some(p[0].clone())
+                            Some(p[0].to_string())
                         } else {
                             None
                         }
@@ -533,15 +533,15 @@ impl GDriveInstance {
                         && root_id.is_none()
                         && d.name != Some("Chrome Syncable FileSystem".to_string())
                     {
-                        root_id = Some(gdriveid.clone());
+                        root_id = Some(gdriveid.to_string());
                     }
                     let val = DirectoryInfo {
-                        directory_id: gdriveid.clone(),
-                        directory_name: name.clone(),
+                        directory_id: gdriveid.to_string(),
+                        directory_name: name.to_string(),
                         parentid: parents,
                     };
 
-                    dmap.entry(gdriveid.clone()).or_insert(val);
+                    dmap.entry(gdriveid.to_string()).or_insert(val);
                 }
             }
         }
@@ -552,7 +552,7 @@ impl GDriveInstance {
         directory_map: &HashMap<String, DirectoryInfo>,
     ) -> HashMap<String, Vec<DirectoryInfo>> {
         directory_map.values().fold(HashMap::new(), |mut h, m| {
-            let key = m.directory_name.clone();
+            let key = m.directory_name.to_string();
             let val = m.clone();
             h.entry(key).or_insert_with(Vec::new).push(val);
             h
@@ -570,7 +570,7 @@ impl GDriveInstance {
         }
         let mut pid = if let Some(parents) = finfo.parents.as_ref() {
             if !parents.is_empty() {
-                Some(parents[0].clone())
+                Some(parents[0].to_string())
             } else {
                 None
             }
@@ -589,7 +589,7 @@ impl GDriveInstance {
                         .and_then(|f| f.parents.as_ref())
                         .and_then(|v| {
                             if !v.is_empty() {
-                                Some(v[0].clone())
+                                Some(v[0].to_string())
                             } else {
                                 None
                             }
@@ -621,12 +621,12 @@ impl GDriveInstance {
                 if let Some(parents) = dir_name_map.get(&name) {
                     for parent in parents {
                         if previous_parent_id.is_none() {
-                            previous_parent_id = Some(parent.directory_id.clone());
-                            matching_directory = Some(parent.directory_id.clone());
+                            previous_parent_id = Some(parent.directory_id.to_string());
+                            matching_directory = Some(parent.directory_id.to_string());
                             break;
                         }
                         if parent.parentid.is_some() && parent.parentid == previous_parent_id {
-                            matching_directory = Some(parent.directory_id.clone())
+                            matching_directory = Some(parent.directory_id.to_string())
                         }
                     }
                 }

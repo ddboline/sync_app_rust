@@ -65,7 +65,7 @@ impl FileInfoTrait for FileInfoS3 {
 
 impl FileInfoS3 {
     pub fn from_object(bucket: &str, item: Object) -> Result<FileInfoS3, Error> {
-        let key = item.key.as_ref().ok_or_else(|| err_msg("No key"))?.clone();
+        let key = item.key.as_ref().ok_or_else(|| err_msg("No key"))?;
         let filepath = Path::new(&key);
         let filename = filepath
             .file_name()
@@ -73,10 +73,7 @@ impl FileInfoS3 {
             .to_os_string()
             .into_string()
             .map_err(|_| err_msg("Parse failure"))?;
-        let md5sum = item
-            .e_tag
-            .clone()
-            .and_then(|m| m.trim_matches('"').parse().ok());
+        let md5sum = item.e_tag.and_then(|m| m.trim_matches('"').parse().ok());
         let st_mtime = DateTime::parse_from_rfc3339(
             item.last_modified
                 .as_ref()

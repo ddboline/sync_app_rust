@@ -152,7 +152,7 @@ impl FileInfoTrait for FileInfo {
 impl FileInfo {
     pub fn from_cache_info(item: &FileInfoCache) -> Result<FileInfo, Error> {
         Ok(FileInfo {
-            filename: item.filename.clone(),
+            filename: item.filename.to_string(),
             filepath: item.filepath.clone().map(Into::into),
             urlname: match item.urlname.as_ref() {
                 Some(urlname) => match urlname.parse() {
@@ -201,19 +201,19 @@ impl FileInfo {
 impl From<&FileInfo> for InsertFileInfoCache {
     fn from(item: &FileInfo) -> Self {
         Self {
-            filename: item.filename.clone(),
+            filename: item.filename.to_string(),
             filepath: match item.filepath.as_ref() {
                 Some(f) => f.to_str().map(ToString::to_string),
                 None => None,
             },
             urlname: item.urlname.as_ref().map(Url::to_string),
-            md5sum: item.md5sum.as_ref().map(|m| m.0.clone()),
-            sha1sum: item.sha1sum.as_ref().map(|s| s.0.clone()),
+            md5sum: item.md5sum.as_ref().map(|m| m.0.to_string()),
+            sha1sum: item.sha1sum.as_ref().map(|s| s.0.to_string()),
             filestat_st_mtime: item.filestat.map(|f| f.st_mtime as i32),
             filestat_st_size: item.filestat.map(|f| f.st_size as i32),
-            serviceid: item.serviceid.as_ref().map(|s| s.0.clone()),
+            serviceid: item.serviceid.as_ref().map(|s| s.0.to_string()),
             servicetype: item.servicetype.to_string(),
-            servicesession: item.servicesession.as_ref().map(|s| s.0.clone()),
+            servicesession: item.servicesession.as_ref().map(|s| s.0.to_string()),
         }
     }
 }

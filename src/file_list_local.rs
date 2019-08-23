@@ -29,8 +29,8 @@ impl FileListLocal {
         })
     }
 
-    pub fn with_list(&self, filelist: &[FileInfo]) -> FileListLocal {
-        FileListLocal(self.0.with_list(&filelist))
+    pub fn with_list(&self, filelist: Vec<FileInfo>) -> FileListLocal {
+        FileListLocal(self.0.with_list(filelist))
     }
 }
 
@@ -135,7 +135,7 @@ impl FileListTrait for FileListLocal {
                 };
                 FileInfoLocal::from_direntry(
                     entry,
-                    Some(conf.servicesession.0.clone().into()),
+                    Some(conf.servicesession.0.to_string().into()),
                     Some(conf.servicesession.clone()),
                 )
                 .ok()
@@ -341,7 +341,7 @@ mod tests {
 
         println!("1 {}", new_flist.len());
 
-        let flist = FileListLocal::from_conf(conf).with_list(&new_flist);
+        let flist = FileListLocal::from_conf(conf).with_list(new_flist);
 
         println!("2 {}", flist.get_filemap().len());
 
