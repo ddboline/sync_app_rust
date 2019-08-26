@@ -176,6 +176,7 @@ impl FileSync {
                 }
             })
             .collect();
+        debug!("ab {} ba {}", list_a_not_b.len(), list_b_not_a.len());
         match &self.mode {
             FileSyncMode::Full => {
                 let result: Vec<Result<_, Error>> = list_a_not_b

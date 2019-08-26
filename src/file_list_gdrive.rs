@@ -128,7 +128,8 @@ impl FileListGDrive {
                 false
             })
             .map(|mut f| {
-                f.servicesession.replace(self.get_conf().servicesession.clone());
+                f.servicesession
+                    .replace(self.get_conf().servicesession.clone());
                 f
             })
             .collect();

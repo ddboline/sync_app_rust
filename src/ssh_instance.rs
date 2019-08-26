@@ -2,6 +2,7 @@ use failure::{err_msg, Error};
 use log::debug;
 use parking_lot::{Mutex, RwLock};
 use std::collections::HashMap;
+use std::io::{stdout, Write};
 use std::io::{BufRead, BufReader};
 use std::sync::Arc;
 use subprocess::Exec;
@@ -86,9 +87,10 @@ impl SSHInstance {
                 let stream = Exec::shell(command).stream_stdout()?;
                 let reader = BufReader::new(stream);
 
+                let stdout = stdout();
                 for line in reader.lines() {
                     if let Ok(l) = line {
-                        debug!("ssh://{}{}", user_host, l);
+                        writeln!(stdout.lock(), "ssh://{}{}", user_host, l)?;
                     }
                 }
             };

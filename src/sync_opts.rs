@@ -1,8 +1,8 @@
 use failure::{err_msg, Error};
-use log::debug;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use structopt::StructOpt;
 use url::Url;
+use std::io::{stdout, Write};
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
@@ -150,7 +150,7 @@ impl SyncOpts {
                                 .map(|finfo| {
                                     let tmp: FileInfoSerialize = finfo.clone().into();
                                     let js = serde_json::to_string(&tmp)?;
-                                    debug!("{}", js);
+                                    writeln!(stdout().lock(), "{}", js)?;
                                     Ok(())
                                 })
                                 .collect();
