@@ -1,8 +1,8 @@
 use failure::{err_msg, Error};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use std::io::{stdout, Write};
 use structopt::StructOpt;
 use url::Url;
-use std::io::{stdout, Write};
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};

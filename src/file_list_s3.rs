@@ -26,7 +26,7 @@ pub struct FileListS3Conf(pub FileListConf);
 
 impl FileListS3 {
     pub fn from_conf(conf: FileListS3Conf) -> FileListS3 {
-        let s3 = S3Instance::new(conf.get_config());
+        let s3 = S3Instance::new(&conf.get_config().aws_region_name);
 
         FileListS3 {
             flist: FileList::from_conf(conf.0),
@@ -273,7 +273,7 @@ mod tests {
     #[test]
     fn test_fill_file_list() {
         let config = Config::init_config().unwrap();
-        let s3 = S3Instance::new(&config);
+        let s3 = S3Instance::new(&config.aws_region_name);
         let blist = s3.get_list_of_buckets().unwrap();
         let bucket = blist
             .get(0)
