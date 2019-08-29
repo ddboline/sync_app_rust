@@ -10,7 +10,6 @@ use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::map_result;
 use crate::pgpool::PgPool;
 use crate::ssh_instance::SSHInstance;
 
@@ -253,8 +252,7 @@ impl FileListTrait for FileListSSH {
 
         let url_prefix = format!("ssh://{}", user_host);
 
-        let results: Vec<_> = self
-            .ssh
+        self.ssh
             .run_command_stream_stdout(&command)?
             .into_iter()
             .map(|l| {
@@ -268,11 +266,7 @@ impl FileListTrait for FileListSSH {
                 finfo.servicesession = conf.baseurl.as_str().parse().ok();
                 Ok(finfo)
             })
-            .collect();
-
-        let flist: Vec<_> = map_result(results)?;
-
-        Ok(flist)
+            .collect()
     }
 
     fn print_list(&self) -> Result<(), Error> {

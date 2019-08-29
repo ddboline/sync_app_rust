@@ -18,7 +18,6 @@ use crate::file_list::{
     FileListTrait,
 };
 use crate::file_service::FileService;
-use crate::map_result;
 use crate::pgpool::PgPool;
 
 #[derive(Debug)]
@@ -179,7 +178,7 @@ impl FileSync {
         debug!("ab {} ba {}", list_a_not_b.len(), list_b_not_a.len());
         match &self.mode {
             FileSyncMode::Full => {
-                let result: Vec<Result<_, Error>> = list_a_not_b
+                let result: Result<Vec<_>, Error> = list_a_not_b
                     .iter()
                     .chain(list_b_not_a.iter())
                     .filter(|(f0, f1)| {
@@ -194,7 +193,7 @@ impl FileSync {
                         }
                     })
                     .collect();
-                map_result(result)?;
+                result?;
                 flist0.cleanup()?;
                 flist1.cleanup()?;
             }
@@ -271,16 +270,15 @@ impl FileSync {
 
     pub fn process_file(&self, pool: &PgPool) -> Result<(), Error> {
         if let FileSyncMode::OutputFile(fname) = &self.mode {
-            let proc_list: Vec<Result<_, Error>> = BufReader::new(File::open(fname)?)
+            let proc_list: Result<Vec<_>, Error> = BufReader::new(File::open(fname)?)
                 .lines()
                 .map(|line| {
                     let v: Vec<_> = line?.split_whitespace().map(ToString::to_string).collect();
                     Ok(v)
                 })
                 .collect();
-            let proc_list: Vec<_> = map_result(proc_list)?;
 
-            let proc_list: Vec<Result<_, Error>> = proc_list
+            let proc_list: Result<Vec<_>, Error> = proc_list?
                 .into_iter()
                 .map(|v| {
                     let u0: Url = v[0].parse()?;
@@ -289,10 +287,8 @@ impl FileSync {
                 })
                 .collect();
 
-            let proc_list: Vec<_> = map_result(proc_list)?;
-
             let proc_map: HashMap<_, _> =
-                proc_list
+                proc_list?
                     .into_iter()
                     .fold(HashMap::new(), |mut h, (u0, u1)| {
                         let key = u0;
@@ -307,7 +303,7 @@ impl FileSync {
                 if let Some(u0) = urls.get(0) {
                     let conf = FileListConf::from_url(u0, &self.config)?;
                     let flist0 = FileList::from_conf(conf);
-                    let results: Vec<Result<_, Error>> = urls
+                    let results: Result<Vec<_>, Error> = urls
                         .par_iter()
                         .map(|key| {
                             if let Some(vals) = proc_map.get(&key) {
@@ -335,7 +331,7 @@ impl FileSync {
                             Ok(())
                         })
                         .collect();
-                    map_result(results)?;
+                    results?;
                 }
             }
             Ok(())
@@ -348,7 +344,7 @@ impl FileSync {
         let mut all_urls = urls.to_vec();
         if let FileSyncMode::OutputFile(fname) = &self.mode {
             let f = File::open(fname)?;
-            let proc_list: Vec<Result<_, Error>> = BufReader::new(f)
+            let proc_list: Result<Vec<_>, Error> = BufReader::new(f)
                 .lines()
                 .map(|line| {
                     let url: Url = match line?.split_whitespace().map(ToString::to_string).nth(0) {
@@ -358,8 +354,7 @@ impl FileSync {
                     Ok(url)
                 })
                 .collect();
-            let proc_list: Vec<_> = map_result(proc_list)?;
-            all_urls.extend_from_slice(&proc_list);
+            all_urls.extend_from_slice(&proc_list?);
         }
         for urls in group_urls(&all_urls).values() {
             let conf = FileListConf::from_url(&urls[0], &self.config)?;

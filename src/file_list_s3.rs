@@ -11,7 +11,6 @@ use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_info_s3::FileInfoS3;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::map_result;
 use crate::pgpool::PgPool;
 use crate::s3_instance::S3Instance;
 
@@ -104,15 +103,11 @@ impl FileListTrait for FileListS3 {
             .ok_or_else(|| err_msg("Parse error"))?;
         let prefix = conf.baseurl.path().trim_start_matches('/');
 
-        let flist: Vec<Result<_, Error>> = self
-            .s3
+        self.s3
             .get_list_of_keys(bucket, Some(prefix))?
             .into_par_iter()
             .map(|f| FileInfoS3::from_object(bucket, f).map(FileInfoTrait::into_finfo))
-            .collect();
-        let flist = map_result(flist)?;
-
-        Ok(flist)
+            .collect()
     }
 
     fn print_list(&self) -> Result<(), Error> {

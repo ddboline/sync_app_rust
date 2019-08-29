@@ -16,7 +16,6 @@ use crate::file_list_s3::{FileListS3, FileListS3Conf};
 use crate::file_list_ssh::{FileListSSH, FileListSSHConf};
 use crate::file_service::FileService;
 use crate::gdrive_instance::GDriveInstance;
-use crate::map_result;
 use crate::models::{
     DirectoryInfoCache, FileInfoCache, InsertDirectoryInfoCache, InsertFileInfoCache,
 };
@@ -170,7 +169,7 @@ pub trait FileListTrait {
             })
             .collect();
 
-        let results: Vec<_> = flist_cache_remove
+        let results: Result<Vec<_>, Error> = flist_cache_remove
             .into_par_iter()
             .map(|k| {
                 use crate::schema::file_info_cache::dsl::{
@@ -194,7 +193,7 @@ pub trait FileListTrait {
             })
             .collect();
 
-        let _: Vec<_> = map_result(results)?;
+        results?;
 
         let flist_cache_update: Vec<_> = flist_cache_map
             .par_iter()
@@ -214,7 +213,7 @@ pub trait FileListTrait {
             })
             .collect();
 
-        let results: Vec<_> = flist_cache_update
+        let results: Result<Vec<_>, Error> = flist_cache_update
             .into_par_iter()
             .map(|v| {
                 use crate::schema::file_info_cache::dsl::{
@@ -249,7 +248,7 @@ pub trait FileListTrait {
             })
             .collect();
 
-        let _: Vec<_> = map_result(results)?;
+        results?;
 
         let flist_cache_insert: Vec<_> = flist_cache_map
             .into_par_iter()
@@ -259,7 +258,7 @@ pub trait FileListTrait {
             })
             .collect();
 
-        let results: Vec<_> = flist_cache_insert
+        let results: Result<Vec<_>, Error> = flist_cache_insert
             .chunks(1000)
             .map(|v| {
                 diesel::insert_into(file_info_cache::table)
@@ -269,8 +268,7 @@ pub trait FileListTrait {
             })
             .collect();
 
-        let results: Vec<_> = map_result(results)?;
-        let result: usize = results.iter().sum();
+        let result: usize = results?.iter().sum();
         Ok(result)
     }
 
@@ -384,7 +382,7 @@ pub trait FileListTrait {
             })
             .collect();
 
-        let results: Vec<_> = dmap_cache_insert
+        let results: Result<Vec<_>, Error> = dmap_cache_insert
             .chunks(1000)
             .map(|v| {
                 diesel::insert_into(directory_info_cache::table)
@@ -393,8 +391,7 @@ pub trait FileListTrait {
                     .map_err(err_msg)
             })
             .collect();
-        let results: Vec<_> = map_result(results)?;
-        let result: usize = results.iter().sum();
+        let result: usize = results?.iter().sum();
         Ok(result)
     }
 
@@ -486,9 +483,9 @@ impl FileListTrait for FileList {
             _ => match pool {
                 Some(pool) => match self.load_file_list(&pool) {
                     Ok(v) => {
-                        let result: Vec<Result<_, Error>> =
+                        let result: Result<Vec<_>, Error> =
                             v.iter().map(FileInfo::from_cache_info).collect();
-                        map_result(result)
+                        result
                     }
                     Err(e) => Err(e),
                 },

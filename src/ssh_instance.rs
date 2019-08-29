@@ -8,8 +8,6 @@ use std::sync::Arc;
 use subprocess::Exec;
 use url::Url;
 
-use crate::map_result;
-
 lazy_static! {
     static ref LOCK_CACHE: Arc<RwLock<HashMap<String, Mutex<()>>>> =
         Arc::new(RwLock::new(HashMap::new()));
@@ -69,8 +67,8 @@ impl SSHInstance {
                 let stream = Exec::shell(command).stream_stdout()?;
                 let reader = BufReader::new(stream);
 
-                let results: Vec<_> = reader.lines().map(|line| Ok(line?)).collect();
-                output = map_result(results)?;
+                let results: Result<Vec<_>, Error> = reader.lines().map(|line| Ok(line?)).collect();
+                output = results?;
             };
             Ok(output)
         } else {

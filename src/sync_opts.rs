@@ -1,14 +1,13 @@
 use failure::{err_msg, Error};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use std::io::{stdout, Write};
 use structopt::StructOpt;
 use url::Url;
-use std::io::{stdout, Write};
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
-use crate::map_result;
 use crate::pgpool::PgPool;
 
 #[derive(StructOpt, Debug)]
@@ -33,7 +32,7 @@ impl SyncOpts {
                 } else {
                     let pool = PgPool::new(&config.database_url);
 
-                    let results: Vec<Result<_, Error>> = opts
+                    let results: Result<Vec<_>, Error> = opts
                         .urls
                         .par_iter()
                         .map(|url| {
@@ -46,9 +45,7 @@ impl SyncOpts {
                         })
                         .collect();
 
-                    let _: Vec<_> = map_result(results)?;
-
-                    Ok(())
+                    results.map(|_| ())
                 }
             }
             FileSyncAction::Sync => {
@@ -59,7 +56,7 @@ impl SyncOpts {
 
                     let fsync = FileSync::new(opts.mode, config.clone());
 
-                    let results: Vec<Result<_, Error>> = opts.urls[0..2]
+                    let results: Result<Vec<_>, Error> = opts.urls[0..2]
                         .par_iter()
                         .map(|url| {
                             let pool = pool.clone();
@@ -71,7 +68,7 @@ impl SyncOpts {
                         })
                         .collect();
 
-                    let flists: Vec<_> = map_result(results)?;
+                    let flists = results?;
 
                     fsync.compare_lists(&flists[0], &flists[1])
                 }
@@ -136,7 +133,7 @@ impl SyncOpts {
                 } else {
                     let pool = PgPool::new(&config.database_url);
 
-                    let results: Vec<Result<_, Error>> = opts
+                    let results: Result<Vec<_>, Error> = opts
                         .urls
                         .par_iter()
                         .map(|url| {
@@ -144,7 +141,7 @@ impl SyncOpts {
                             let conf = FileListConf::from_url(&url, &config)?;
                             let flist = FileList::from_conf(conf);
                             let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
-                            let results: Vec<Result<_, Error>> = flist
+                            let results: Result<Vec<_>, Error> = flist
                                 .filemap
                                 .values()
                                 .map(|finfo| {
@@ -154,14 +151,10 @@ impl SyncOpts {
                                     Ok(())
                                 })
                                 .collect();
-                            let _: Vec<_> = map_result(results)?;
-                            Ok(())
+                            results.map(|_| ())
                         })
                         .collect();
-
-                    let _: Vec<_> = map_result(results)?;
-
-                    Ok(())
+                    results.map(|_| ())
                 }
             }
         }
