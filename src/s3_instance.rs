@@ -10,7 +10,6 @@ use std::path::Path;
 use std::sync::Arc;
 use url::Url;
 
-use crate::config::Config;
 use crate::exponential_retry;
 
 #[derive(Clone)]
@@ -35,12 +34,8 @@ impl Default for S3Instance {
 }
 
 impl S3Instance {
-    pub fn new(config: &Config) -> Self {
-        let region: Region = config
-            .aws_region_name
-            .parse()
-            .ok()
-            .unwrap_or(Region::UsEast1);
+    pub fn new(aws_region_name: &str) -> Self {
+        let region: Region = aws_region_name.parse().ok().unwrap_or(Region::UsEast1);
         Self {
             s3_client: Arc::new(S3Client::new(region)),
             max_keys: None,
@@ -264,13 +259,11 @@ impl S3Instance {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::Config;
     use crate::s3_instance::S3Instance;
 
     #[test]
     fn test_list_buckets() {
-        let config = Config::init_config().unwrap();
-        let s3_instance = S3Instance::new(&config).max_keys(100);
+        let s3_instance = S3Instance::new("us-east-1").max_keys(100);
         let blist = s3_instance.get_list_of_buckets().unwrap();
         let bucket = blist
             .get(0)
