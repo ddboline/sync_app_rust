@@ -118,13 +118,13 @@ impl S3Instance {
 
     pub fn upload(&self, fname: &str, bucket_name: &str, key_name: &str) -> Result<(), Error> {
         exponential_retry(|| {
-            if Path::new(&fname).exists() {
-                return Err(err_msg("File doesn't exist"));
+            if !Path::new(fname).exists() {
+                return Err(err_msg(format!("File doesn't exist {}", fname)));
             }
             exponential_retry(|| {
                 self.s3_client
                     .upload_from_file(
-                        &fname,
+                        fname,
                         PutObjectRequest {
                             bucket: bucket_name.to_string(),
                             key: key_name.to_string(),

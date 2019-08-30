@@ -128,6 +128,7 @@ impl FileSync {
                                     serviceid: Some(conf1.servicesession.clone().into()),
                                     ..Default::default()
                                 };
+                                debug!("ab {:?} {:?}", finfo0, finfo1);
                                 Some((finfo0.clone(), finfo1.clone()))
                             } else {
                                 None
@@ -162,6 +163,7 @@ impl FileSync {
                                     serviceid: Some(conf0.servicesession.clone().into()),
                                     ..Default::default()
                                 };
+                                debug!("ba {:?} {:?}", finfo0, finfo1);
                                 Some((finfo1.clone(), finfo0.clone()))
                             } else {
                                 None

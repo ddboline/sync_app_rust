@@ -82,6 +82,7 @@ impl FileInfoS3 {
         .timestamp();
         let size = item.size.ok_or_else(|| err_msg("No file size"))?;
         let fileurl = format!("s3://{}/{}", bucket, key).parse()?;
+
         let serviceid = Some(bucket.to_string().into());
         let servicesession = Some(bucket.parse()?);
 
