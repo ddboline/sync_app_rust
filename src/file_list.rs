@@ -238,8 +238,8 @@ pub trait FileListTrait {
 
                 diesel::update(file_info_cache.filter(id.eq(id_)))
                     .set((
-                        md5sum.eq(v.md5sum.clone()),
-                        sha1sum.eq(v.sha1sum.clone()),
+                        md5sum.eq(&v.md5sum),
+                        sha1sum.eq(&v.sha1sum),
                         filestat_st_mtime.eq(v.filestat_st_mtime),
                         filestat_st_size.eq(v.filestat_st_size),
                     ))
