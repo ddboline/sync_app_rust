@@ -282,7 +282,7 @@ impl FileListTrait for FileListGDrive {
                 FileInfoGDrive::from_object(i.clone(), &self.gdrive, &self.directory_map)
             {
                 if let Some(url) = finfo.get_finfo().urlname.as_ref() {
-                    debug!("{}", url.as_str());
+                    println!(stdout().lock(), "{}", url.as_str())?;
                 }
             }
         })
