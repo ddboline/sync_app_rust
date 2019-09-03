@@ -4,6 +4,7 @@ use failure::{err_msg, Error};
 use log::debug;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
+use std::io::{stdout, Write};
 use std::path::Path;
 use std::rc::Rc;
 use url::Url;
@@ -282,9 +283,10 @@ impl FileListTrait for FileListGDrive {
                 FileInfoGDrive::from_object(i.clone(), &self.gdrive, &self.directory_map)
             {
                 if let Some(url) = finfo.get_finfo().urlname.as_ref() {
-                    println!(stdout().lock(), "{}", url.as_str())?;
+                    writeln!(stdout().lock(), "{}", url.as_str())?;
                 }
             }
+            Ok(())
         })
     }
 

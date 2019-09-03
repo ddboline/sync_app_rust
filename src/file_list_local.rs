@@ -2,6 +2,7 @@ use failure::{err_msg, Error};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::{copy, create_dir_all, remove_file, rename};
+use std::io::{stdout, Write};
 use std::path::PathBuf;
 use std::string::ToString;
 use std::time::SystemTime;
@@ -154,7 +155,7 @@ impl FileListTrait for FileListLocal {
 
         let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
-        let _: Vec<_> = entries
+        let results: Result<Vec<_>, Error> = entries
             .into_par_iter()
             .map(|entry| {
                 let filepath = entry
@@ -163,11 +164,11 @@ impl FileListTrait for FileListLocal {
                     .ok()
                     .and_then(|s| s.to_str().map(ToString::to_string))
                     .unwrap_or_else(|| "".to_string());
-                println!("{}", filepath);
+                writeln!(stdout().lock(), "{}", filepath)?;
+                Ok(())
             })
             .collect();
-
-        Ok(())
+        results.map(|_| ())
     }
 
     fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>

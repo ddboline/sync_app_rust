@@ -3,6 +3,7 @@ use log::debug;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::{create_dir_all, remove_file};
+use std::io::{stdout, Write};
 use std::path::Path;
 use url::Url;
 
@@ -119,11 +120,13 @@ impl FileListTrait for FileListS3 {
         let prefix = conf.baseurl.path().trim_start_matches('/');
 
         self.s3.process_list_of_keys(bucket, Some(prefix), |i| {
-            println!(
+            writeln!(
+                stdout().lock(),
                 "s3://{}/{}",
                 bucket,
                 i.key.as_ref().map(String::as_str).unwrap_or_else(|| "")
-            );
+            )?;
+            Ok(())
         })
     }
 

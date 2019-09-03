@@ -218,7 +218,7 @@ impl S3Instance {
         callback: T,
     ) -> Result<(), Error>
     where
-        T: Fn(&Object) -> () + Send + Sync,
+        T: Fn(&Object) -> Result<(), Error> + Send + Sync,
     {
         let mut continuation_token = None;
 
@@ -241,7 +241,7 @@ impl S3Instance {
                 Some(0) => (),
                 Some(_) => {
                     for item in current_list.contents.unwrap_or_else(Vec::new) {
-                        callback(&item);
+                        callback(&item)?;
                     }
                 }
                 None => (),

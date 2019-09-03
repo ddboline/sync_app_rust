@@ -245,7 +245,7 @@ impl GDriveInstance {
         callback: T,
     ) -> Result<(), Error>
     where
-        T: Fn(&drive3::File) -> (),
+        T: Fn(&drive3::File) -> Result<(), Error>,
     {
         let mut n_processed = 0;
         let mut page_token: Option<String> = None;
@@ -254,7 +254,7 @@ impl GDriveInstance {
 
             if let Some(files) = filelist.files {
                 for f in &files {
-                    callback(f);
+                    callback(f)?;
                     n_processed += 1;
                 }
             }
