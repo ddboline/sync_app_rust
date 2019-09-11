@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use failure::{err_msg, format_err, Error};
 use rusoto_core::Region;
 use rusoto_s3::{
     Bucket, CopyObjectRequest, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest,
@@ -119,7 +119,7 @@ impl S3Instance {
     pub fn upload(&self, fname: &str, bucket_name: &str, key_name: &str) -> Result<(), Error> {
         exponential_retry(|| {
             if !Path::new(fname).exists() {
-                return Err(err_msg(format!("File doesn't exist {}", fname)));
+                return Err(format_err!("File doesn't exist {}", fname));
             }
             exponential_retry(|| {
                 self.s3_client

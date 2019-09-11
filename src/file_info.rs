@@ -1,5 +1,5 @@
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
-use failure::{err_msg, Error};
+use failure::{err_msg, format_err, Error};
 use std::convert::Into;
 use std::convert::TryFrom;
 use std::path::PathBuf;
@@ -31,7 +31,7 @@ impl FromStr for Md5Sum {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() != 32 {
-            Err(err_msg(format!("Invalid md5sum {}", s)))
+            Err(format_err!("Invalid md5sum {}", s))
         } else {
             Ok(Self(s.to_string()))
         }
@@ -46,7 +46,7 @@ impl FromStr for Sha1Sum {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() != 40 {
-            Err(err_msg(format!("Invalid sha1sum {}", s)))
+            Err(format_err!("Invalid sha1sum {}", s))
         } else {
             Ok(Self(s.to_string()))
         }

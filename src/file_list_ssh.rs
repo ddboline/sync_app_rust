@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use failure::{err_msg, format_err, Error};
 use log::debug;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -115,10 +115,11 @@ impl FileListTrait for FileListSSH {
             debug!("command {}", command);
             self.ssh.run_command(&command)
         } else {
-            Err(err_msg(format!(
+            Err(format_err!(
                 "Invalid types {} {}",
-                finfo0.servicetype, finfo1.servicetype
-            )))
+                finfo0.servicetype,
+                finfo1.servicetype
+            ))
         }
     }
 
@@ -165,10 +166,11 @@ impl FileListTrait for FileListSSH {
             debug!("command {}", command);
             self.ssh.run_command(&command)
         } else {
-            Err(err_msg(format!(
+            Err(format_err!(
                 "Invalid types {} {}",
-                finfo0.servicetype, finfo1.servicetype
-            )))
+                finfo0.servicetype,
+                finfo1.servicetype
+            ))
         }
     }
 

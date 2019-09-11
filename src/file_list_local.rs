@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use failure::{err_msg, format_err, Error};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::{copy, create_dir_all, remove_file, rename};
@@ -179,10 +179,11 @@ impl FileListTrait for FileListLocal {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype != FileService::Local || finfo1.servicetype != FileService::Local {
-            Err(err_msg(format!(
+            Err(format_err!(
                 "Wrong fileinfo types {} {}",
-                finfo0.servicetype, finfo1.servicetype
-            )))
+                finfo0.servicetype,
+                finfo1.servicetype
+            ))
         } else {
             let local_file = finfo1
                 .filepath

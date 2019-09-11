@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use failure::{err_msg, format_err, Error};
 use log::debug;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
@@ -184,10 +184,11 @@ impl FileListTrait for FileListS3 {
             }
             Ok(())
         } else {
-            Err(err_msg(format!(
+            Err(format_err!(
                 "Invalid types {} {}",
-                finfo0.servicetype, finfo1.servicetype
-            )))
+                finfo0.servicetype,
+                finfo1.servicetype
+            ))
         }
     }
 
@@ -212,10 +213,11 @@ impl FileListTrait for FileListS3 {
             let key = remote_url.path().trim_start_matches("/");
             self.s3.upload(&local_file, &bucket, &key)
         } else {
-            Err(err_msg(format!(
+            Err(format_err!(
                 "Invalid types {} {}",
-                finfo0.servicetype, finfo1.servicetype
-            )))
+                finfo0.servicetype,
+                finfo1.servicetype
+            ))
         }
     }
 

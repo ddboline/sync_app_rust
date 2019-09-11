@@ -1,6 +1,6 @@
 use google_drive3_fork as drive3;
 
-use failure::{err_msg, Error};
+use failure::{err_msg, format_err, Error};
 use log::debug;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
@@ -329,10 +329,11 @@ impl FileListTrait for FileListGDrive {
             self.gdrive
                 .download(&gdriveid, &local_path, &gfile.mime_type)
         } else {
-            Err(err_msg(format!(
+            Err(format_err!(
                 "Invalid types {} {}",
-                finfo0.servicetype, finfo1.servicetype
-            )))
+                finfo0.servicetype,
+                finfo1.servicetype
+            ))
         }
     }
 
@@ -363,10 +364,11 @@ impl FileListTrait for FileListGDrive {
             self.gdrive.upload(&local_url, &parent_id)?;
             Ok(())
         } else {
-            Err(err_msg(format!(
+            Err(format_err!(
                 "Invalid types {} {}",
-                finfo0.servicetype, finfo1.servicetype
-            )))
+                finfo0.servicetype,
+                finfo1.servicetype
+            ))
         }
     }
 

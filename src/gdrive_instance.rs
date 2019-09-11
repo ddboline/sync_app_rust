@@ -2,7 +2,7 @@ use google_drive3_fork as drive3;
 use yup_oauth2 as oauth2;
 
 use drive3::Drive;
-use failure::{err_msg, Error};
+use failure::{err_msg, format_err, Error};
 use hyper::net::HttpsConnector;
 use hyper::Client;
 use hyper_native_tls::NativeTlsClient;
@@ -209,7 +209,7 @@ impl GDriveInstance {
             let (_, filelist) = request
                 .q(&query)
                 .doit()
-                .map_err(|e| err_msg(format!("{:#?}", e)))?;
+                .map_err(|e| format_err!("{:#?}", e))?;
             Ok(filelist)
         })
     }
@@ -281,7 +281,7 @@ impl GDriveInstance {
             .add_scope(drive3::Scope::Full)
             .doit()
             .map(|(_response, file)| file)
-            .map_err(|e| err_msg(format!("{:#?}", e)))
+            .map_err(|e| format_err!("{:#?}", e))
     }
 
     pub fn create_directory(&self, directory: &Url, parentid: &str) -> Result<(), Error> {
@@ -308,7 +308,7 @@ impl GDriveInstance {
                 .files()
                 .create(new_file)
                 .upload(dummy_file, mime)
-                .map_err(|e| err_msg(format!("{:#?}", e)))
+                .map_err(|e| format_err!("{:#?}", e))
                 .map(|(_, _)| ())
         })
     }
@@ -334,7 +334,7 @@ impl GDriveInstance {
                 .files()
                 .create(new_file)
                 .upload_resumable(file_obj, mime)
-                .map_err(|e| err_msg(format!("{:#?}", e)))
+                .map_err(|e| format_err!("{:#?}", e))
                 .map(|(_, f)| f)
         })
     }
@@ -355,7 +355,7 @@ impl GDriveInstance {
     ) -> Result<(), Error> {
         if let Some(mime) = mime_type.clone() {
             if UNEXPORTABLE_MIME_TYPES.contains::<str>(&mime) {
-                return Err(err_msg(format!(
+                return Err(format_err!(
                     "UNEXPORTABLE_FILE: The MIME type of this \
                      file is {:?}, which can not be exported from Drive. Web \
                      content link provided by Drive: {:?}\n",
@@ -364,7 +364,7 @@ impl GDriveInstance {
                         .ok()
                         .map(|metadata| metadata.web_view_link)
                         .unwrap_or_default()
-                )));
+                ));
             }
         }
 
@@ -381,7 +381,7 @@ impl GDriveInstance {
                     .export(gdriveid, &t)
                     .add_scope(drive3::Scope::Full)
                     .doit()
-                    .map_err(|e| err_msg(format!("{:#?}", e)))?,
+                    .map_err(|e| format_err!("{:#?}", e))?,
                 None => {
                     let (response, _empty_file) = self
                         .gdrive
@@ -391,7 +391,7 @@ impl GDriveInstance {
                         .param("alt", "media")
                         .add_scope(drive3::Scope::Full)
                         .doit()
-                        .map_err(|e| err_msg(format!("{:#?}", e)))?;
+                        .map_err(|e| format_err!("{:#?}", e))?;
                     response
                 }
             };
@@ -416,7 +416,7 @@ impl GDriveInstance {
                 .add_scope(drive3::Scope::Full)
                 .doit_without_upload()
                 .map(|_| ())
-                .map_err(|e| err_msg(format!("DriveFacade::move_to_trash() {}", e)))
+                .map_err(|e| format_err!("DriveFacade::move_to_trash() {}", e))
         })
     }
 
@@ -429,7 +429,7 @@ impl GDriveInstance {
                 .add_scope(drive3::Scope::Full)
                 .doit()
                 .map(|response| response.status.is_success())
-                .map_err(|e| err_msg(format!("{:#?}", e)))
+                .map_err(|e| format_err!("{:#?}", e))
         })
     }
 
@@ -451,7 +451,7 @@ impl GDriveInstance {
                 .add_parents(parent)
                 .add_scope(drive3::Scope::Full)
                 .doit_without_upload()
-                .map_err(|e| err_msg(format!("DriveFacade::move_to() {}", e)))?;
+                .map_err(|e| format_err!("DriveFacade::move_to() {}", e))?;
             Ok(())
         })
     }
@@ -646,7 +646,7 @@ impl GDriveInstance {
             .get_start_page_token()
             .add_scope(drive3::Scope::Full)
             .doit()
-            .map_err(|e| err_msg(format!("{:#?}", e)))
+            .map_err(|e| format_err!("{:#?}", e))
             .map(|result| {
                 result.1.start_page_token.unwrap_or_else(|| {
                     err_msg(
@@ -717,7 +717,7 @@ impl GDriveInstance {
                         .page_size(self.page_size)
                         .add_scope(drive3::Scope::Full)
                         .doit()
-                        .map_err(|e| err_msg(format!("{:#?}", e)))
+                        .map_err(|e| format_err!("{:#?}", e))
                 });
                 let (_response, changelist) = result?;
 

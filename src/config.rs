@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use failure::{format_err, Error};
 use std::env::var;
 use std::ops::Deref;
 use std::path::Path;
@@ -23,7 +23,7 @@ impl Config {
     pub fn init_config() -> Result<Config, Error> {
         let fname = "config.env";
 
-        let home_dir = var("HOME").map_err(|e| err_msg(format!("No HOME directory {}", e)))?;
+        let home_dir = var("HOME").map_err(|e| format_err!("No HOME directory {}", e))?;
 
         let default_fname = format!("{}/.config/sync_app_rust/config.env", home_dir);
 
@@ -47,7 +47,7 @@ impl Config {
 
         let conf = ConfigInner {
             database_url: var("DATABASE_URL")
-                .map_err(|e| err_msg(format!("DATABASE_URL must be set {}", e)))?,
+                .map_err(|e| format_err!("DATABASE_URL must be set {}", e))?,
             gdrive_secret_file: var("GDRIVE_SECRET_FILE").unwrap_or_else(|_| default_gdrive_secret),
             gdrive_token_path: var("GDRIVE_TOKEN_PATH")
                 .unwrap_or_else(|_| default_gdrive_token_path),

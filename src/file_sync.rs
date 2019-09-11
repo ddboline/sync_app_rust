@@ -272,6 +272,9 @@ impl FileSync {
 
     pub fn process_file(&self, pool: &PgPool) -> Result<(), Error> {
         if let FileSyncMode::OutputFile(fname) = &self.mode {
+            if !fname.exists() {
+                return Err(err_msg("File doesn't exist"));
+            }
             let proc_list: Result<Vec<_>, Error> = BufReader::new(File::open(fname)?)
                 .lines()
                 .map(|line| {
