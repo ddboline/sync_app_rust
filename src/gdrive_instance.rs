@@ -1,12 +1,12 @@
-use google_drive3_fork as drive3;
-use yup_oauth2 as oauth2;
-
 use drive3::Drive;
 use failure::{err_msg, format_err, Error};
+use google_drive3_fork as drive3;
 use hyper::net::HttpsConnector;
 use hyper::Client;
 use hyper_native_tls::NativeTlsClient;
+use lazy_static::lazy_static;
 use log::debug;
+use maplit::{hashmap, hashset};
 use mime::Mime;
 use oauth2::{
     Authenticator, ConsoleApplicationSecret, DefaultAuthenticatorDelegate, DiskTokenStorage,
@@ -24,6 +24,7 @@ use std::path::Path;
 use std::rc::Rc;
 use std::string::ToString;
 use url::Url;
+use yup_oauth2 as oauth2;
 
 use crate::config::Config;
 use crate::directory_info::DirectoryInfo;

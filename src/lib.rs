@@ -1,11 +1,7 @@
 #[macro_use]
-extern crate serde_derive;
-#[macro_use]
 extern crate diesel;
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate maplit;
+extern crate serde_derive;
 
 pub mod config;
 pub mod directory_info;
