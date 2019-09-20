@@ -401,8 +401,7 @@ impl GDriveInstance {
             response.read_to_end(&mut content)?;
 
             let mut outfile = File::create(local.to_path_buf())?;
-            outfile.write_all(&content)?;
-            Ok(())
+            outfile.write_all(&content).map_err(err_msg)
         })
     }
 
@@ -444,16 +443,15 @@ impl GDriveInstance {
 
             let mut file = drive3::File::default();
             file.name = Some(new_name.to_string());
-            let _ = self
-                .gdrive
+            self.gdrive
                 .files()
                 .update(file, id)
                 .remove_parents(&current_parents)
                 .add_parents(parent)
                 .add_scope(drive3::Scope::Full)
                 .doit_without_upload()
-                .map_err(|e| format_err!("DriveFacade::move_to() {}", e))?;
-            Ok(())
+                .map_err(|e| format_err!("DriveFacade::move_to() {}", e))
+                .map(|_| ())
         })
     }
 

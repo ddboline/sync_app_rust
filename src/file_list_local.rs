@@ -155,7 +155,7 @@ impl FileListTrait for FileListLocal {
 
         let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
-        let results: Result<Vec<_>, Error> = entries
+        entries
             .into_par_iter()
             .map(|entry| {
                 let filepath = entry
@@ -167,8 +167,7 @@ impl FileListTrait for FileListLocal {
                 writeln!(stdout().lock(), "{}", filepath)?;
                 Ok(())
             })
-            .collect();
-        results.map(|_| ())
+            .collect()
     }
 
     fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>

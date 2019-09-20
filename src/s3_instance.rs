@@ -132,8 +132,8 @@ impl S3Instance {
                         },
                     )
                     .map_err(err_msg)
-            })?;
-            Ok(())
+                    .map(|_| ())
+            })
         })
     }
 

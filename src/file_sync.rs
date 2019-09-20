@@ -1,6 +1,6 @@
 use failure::{err_msg, Error};
 use log::debug;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::convert::From;
 use std::fmt;
@@ -196,26 +196,28 @@ impl FileSync {
                     })
                     .collect();
                 result?;
-                flist0.cleanup()?;
-                flist1.cleanup()?;
+                flist0.cleanup().and_then(|_| flist1.cleanup())
             }
             FileSyncMode::OutputFile(fname) => {
                 let mut f = File::create(fname)?;
                 if list_a_not_b.is_empty() && list_b_not_a.is_empty() {
-                    flist0.cleanup()?;
-                    flist1.cleanup()?;
+                    flist0.cleanup().and_then(|_| flist1.cleanup())
                 } else {
-                    for (f0, f1) in list_a_not_b.iter().chain(list_b_not_a.iter()) {
-                        if let Some(u0) = f0.urlname.as_ref() {
-                            if let Some(u1) = f1.urlname.as_ref() {
-                                writeln!(f, "{} {}", u0, u1)?;
+                    list_a_not_b
+                        .iter()
+                        .chain(list_b_not_a.iter())
+                        .map(|(f0, f1)| {
+                            if let Some(u0) = f0.urlname.as_ref() {
+                                if let Some(u1) = f1.urlname.as_ref() {
+                                    writeln!(f, "{} {}", u0, u1)?;
+                                }
                             }
-                        }
-                    }
+                            Ok(())
+                        })
+                        .collect()
                 }
             }
-        };
-        Ok(())
+        }
     }
 
     pub fn compare_objects<T, U>(&self, finfo0: &T, finfo1: &U) -> bool
@@ -361,24 +363,29 @@ impl FileSync {
                 .collect();
             all_urls.extend_from_slice(&proc_list?);
         }
-        for urls in group_urls(&all_urls).values() {
-            let conf = FileListConf::from_url(&urls[0], &self.config)?;
-            let flist = FileList::from_conf(conf);
-            let fdict =
-                flist.get_file_list_dict(flist.load_file_list(&pool)?, FileInfoKeyType::UrlName);
-            for url in urls {
-                let finfo = if let Some(f) = fdict.get(&url.as_str().to_string()) {
-                    f.clone()
-                } else {
-                    FileInfo::from_url(&url)?
-                };
 
-                debug!("delete {:?}", finfo);
-                flist.delete(&finfo)?;
-            }
-        }
-        debug!("{:?}", group_urls(&urls));
-        Ok(())
+        group_urls(&all_urls)
+            .values()
+            .into_iter()
+            .map(|urls| {
+                let conf = FileListConf::from_url(&urls[0], &self.config)?;
+                let flist = FileList::from_conf(conf);
+                let fdict = flist
+                    .get_file_list_dict(flist.load_file_list(&pool)?, FileInfoKeyType::UrlName);
+                urls.into_par_iter()
+                    .map(|url| {
+                        let finfo = if let Some(f) = fdict.get(&url.as_str().to_string()) {
+                            f.clone()
+                        } else {
+                            FileInfo::from_url(&url)?
+                        };
+
+                        debug!("delete {:?}", finfo);
+                        flist.delete(&finfo)
+                    })
+                    .collect()
+            })
+            .collect()
     }
 
     pub fn copy_object<T, U, V>(&self, flist: &T, finfo0: &U, finfo1: &V) -> Result<(), Error>
