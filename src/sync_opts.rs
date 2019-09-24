@@ -9,6 +9,7 @@ use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
 use crate::pgpool::PgPool;
+use crate::file_service::FileService;
 
 #[derive(StructOpt, Debug)]
 pub struct SyncOpts {
@@ -78,11 +79,19 @@ impl SyncOpts {
                     Err(err_msg("Need 2 Urls"))
                 } else {
                     let fsync = FileSync::new(opts.mode, config.clone());
-                    let conf = FileListConf::from_url(&opts.urls[0], &config)?;
-                    let flist = FileList::from_conf(conf);
+
                     let finfo0 = FileInfo::from_url(&opts.urls[0])?;
                     let finfo1 = FileInfo::from_url(&opts.urls[1])?;
-                    fsync.copy_object(&flist, &finfo0, &finfo1)
+
+                    if finfo1.servicetype == FileService::Local {
+                        let conf = FileListConf::from_url(&opts.urls[0], &config)?;
+                        let flist = FileList::from_conf(conf);
+                        fsync.copy_object(&flist, &finfo0, &finfo1)
+                    } else {
+                        let conf = FileListConf::from_url(&opts.urls[1], &config)?;
+                        let flist = FileList::from_conf(conf);
+                        fsync.copy_object(&flist, &finfo0, &finfo1)
+                    }
                 }
             }
             FileSyncAction::List => {

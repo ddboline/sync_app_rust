@@ -1,4 +1,5 @@
 use failure::{err_msg, Error};
+use fmt::Debug;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
@@ -96,8 +97,8 @@ impl FileSync {
 
     pub fn compare_lists<T, U>(&self, flist0: &T, flist1: &U) -> Result<(), Error>
     where
-        T: FileListTrait + Send + Sync,
-        U: FileListTrait + Send + Sync,
+        T: FileListTrait + Send + Sync + Debug,
+        U: FileListTrait + Send + Sync + Debug,
     {
         let conf0 = flist0.get_conf();
         let conf1 = flist1.get_conf();
@@ -390,12 +391,14 @@ impl FileSync {
 
     pub fn copy_object<T, U, V>(&self, flist: &T, finfo0: &U, finfo1: &V) -> Result<(), Error>
     where
-        T: FileListTrait + Send + Sync,
-        U: FileInfoTrait + Send + Sync,
-        V: FileInfoTrait + Send + Sync,
+        T: FileListTrait + Send + Sync + Debug,
+        U: FileInfoTrait + Send + Sync + Debug,
+        V: FileInfoTrait + Send + Sync + Debug,
     {
         let t0 = finfo0.get_finfo().servicetype;
         let t1 = finfo1.get_finfo().servicetype;
+
+        debug!("copy from {:?} to {:?} using {:?}", t0, t1, flist);
 
         if t1 == FileService::Local {
             flist.copy_from(finfo0, finfo1)
