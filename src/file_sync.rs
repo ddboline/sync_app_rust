@@ -435,7 +435,7 @@ mod tests {
         );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
-        let serviceid: ServiceId = filepath.to_string_lossy().into();
+        let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
         let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
         let finfo0 =
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
@@ -477,7 +477,7 @@ mod tests {
         );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
-        let serviceid: ServiceId = filepath.to_string_lossy().into();
+        let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
         let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
         let finfo0 =
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
@@ -518,7 +518,7 @@ mod tests {
         );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
-        let serviceid: ServiceId = filepath.to_string_lossy().into();
+        let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
         let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
 
         let finfo0 =
