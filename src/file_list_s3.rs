@@ -142,8 +142,7 @@ impl FileListTrait for FileListS3 {
                 .filepath
                 .clone()
                 .ok_or_else(|| err_msg("No local path"))?
-                .to_str()
-                .ok_or_else(|| err_msg("Failed to parse path"))?
+                .to_string_lossy()
                 .to_string();
             let parent_dir = finfo1
                 .filepath
@@ -205,8 +204,7 @@ impl FileListTrait for FileListS3 {
                 .clone()
                 .ok_or_else(|| err_msg("No local path"))?
                 .canonicalize()?
-                .to_str()
-                .ok_or_else(|| err_msg("Failed to parse path"))?
+                .to_string_lossy()
                 .to_string();
             let remote_url = finfo1.urlname.clone().ok_or_else(|| err_msg("No s3 url"))?;
             let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;

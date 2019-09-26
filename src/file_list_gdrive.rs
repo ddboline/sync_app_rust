@@ -191,12 +191,8 @@ impl FileListConfTrait for FileListGDriveConf {
             let tmp = format!("gdrive://{}/", servicesession);
             let basepath: Url = url.as_str().replace(&tmp, "file:///").parse()?;
             let basepath = basepath.to_file_path().map_err(|_| err_msg("Failure"))?;
-            let basepath = Path::new(
-                basepath
-                    .to_str()
-                    .ok_or_else(|| err_msg("Failure"))?
-                    .trim_start_matches('/'),
-            );
+            let basepath = basepath.to_string_lossy().to_string();
+            let basepath = Path::new(basepath.trim_start_matches('/'));
             let conf = FileListConf {
                 baseurl: url.clone(),
                 basepath: basepath.to_path_buf(),

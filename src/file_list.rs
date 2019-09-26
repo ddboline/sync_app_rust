@@ -75,8 +75,8 @@ impl FileList {
             filemap: filelist
                 .into_iter()
                 .map(|mut f| {
-                    let key = if let Some(path) = f.filepath.as_ref().and_then(|x| x.to_str()) {
-                        remove_basepath(&path, &self.conf.basepath.to_str().unwrap())
+                    let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
+                        remove_basepath(&path, &self.conf.basepath.to_string_lossy())
                     } else {
                         f.filename.to_string()
                     };
@@ -684,21 +684,16 @@ pub fn remove_basepath(basename: &str, basepath: &str) -> String {
     basename.replacen(&basepath, "", 1)
 }
 
-pub fn replace_basepath(
-    basename: &Path,
-    basepath0: &Path,
-    basepath1: &Path,
-) -> Result<PathBuf, Error> {
-    let basepath0 = basepath0.to_str().ok_or_else(|| err_msg("Failure"))?;
-    let basepath1 = basepath1
-        .to_str()
-        .ok_or_else(|| err_msg("Failure"))?
-        .trim_end_matches('/');
-    let basename = basename.to_str().ok_or_else(|| err_msg("Failure"))?;
+pub fn replace_basepath(basename: &Path, basepath0: &Path, basepath1: &Path) -> PathBuf {
+    let basepath0 = basepath0.to_string_lossy();
+    let basepath1 = basepath1.to_string_lossy();
+    let basepath1 = basepath1.trim_end_matches('/');
+
+    let basename = basename.to_string_lossy();
 
     let new_path = format!("{}/{}", basepath1, remove_basepath(&basename, &basepath0));
     let new_path = Path::new(&new_path);
-    Ok(new_path.to_path_buf())
+    new_path.to_path_buf()
 }
 
 pub fn group_urls(url_list: &[Url]) -> HashMap<String, Vec<Url>> {

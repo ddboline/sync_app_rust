@@ -7,9 +7,9 @@ use url::Url;
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
+use crate::file_service::FileService;
 use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
 use crate::pgpool::PgPool;
-use crate::file_service::FileService;
 
 #[derive(StructOpt, Debug)]
 pub struct SyncOpts {

@@ -46,7 +46,7 @@ impl FileListConfTrait for FileListSSHConf {
                 username,
                 host,
                 port,
-                basepath.to_str().unwrap_or("")
+                basepath.to_string_lossy()
             );
             let conf = FileListConf {
                 baseurl: url.clone(),
@@ -88,9 +88,7 @@ impl FileListTrait for FileListSSH {
                 .urlname
                 .as_ref()
                 .ok_or_else(|| err_msg("No url"))?;
-            let path0 = Path::new(url0.path())
-                .to_str()
-                .ok_or_else(|| err_msg("Invalid path"))?;
+            let path0 = Path::new(url0.path()).to_string_lossy();
 
             let parent_dir = finfo1
                 .filepath
@@ -109,8 +107,7 @@ impl FileListTrait for FileListSSH {
                     .filepath
                     .as_ref()
                     .ok_or_else(|| err_msg("No path"))?
-                    .to_str()
-                    .ok_or_else(|| err_msg("Invalid String"))?
+                    .to_string_lossy()
             );
             debug!("command {}", command);
             self.ssh.run_command(&command)
@@ -137,9 +134,7 @@ impl FileListTrait for FileListSSH {
                 .urlname
                 .as_ref()
                 .ok_or_else(|| err_msg("No url"))?;
-            let path1 = Path::new(url1.path())
-                .to_str()
-                .ok_or_else(|| err_msg("Invalid path"))?;
+            let path1 = Path::new(url1.path()).to_string_lossy();
 
             let parent_dir = finfo1
                 .filepath
@@ -147,8 +142,7 @@ impl FileListTrait for FileListSSH {
                 .ok_or_else(|| err_msg("No local path"))?
                 .parent()
                 .ok_or_else(|| err_msg("No parent directory"))?
-                .to_str()
-                .ok_or_else(|| err_msg("Invalid path"))?;
+                .to_string_lossy();
 
             let command = format!("mkdir -p {}", parent_dir);
             self.ssh.run_command_ssh(&command)?;
@@ -159,8 +153,7 @@ impl FileListTrait for FileListSSH {
                     .filepath
                     .as_ref()
                     .ok_or_else(|| err_msg("No path"))?
-                    .to_str()
-                    .ok_or_else(|| err_msg("Invalid String"))?,
+                    .to_string_lossy(),
                 self.ssh.get_ssh_str(&path1)?,
             );
             debug!("command {}", command);
@@ -206,17 +199,13 @@ impl FileListTrait for FileListSSH {
             .urlname
             .as_ref()
             .ok_or_else(|| err_msg("No url"))?;
-        let path0 = Path::new(url0.path())
-            .to_str()
-            .ok_or_else(|| err_msg("Invalid path"))?;
+        let path0 = Path::new(url0.path()).to_string_lossy();
         let url1 = finfo1
             .get_finfo()
             .urlname
             .as_ref()
             .ok_or_else(|| err_msg("No url"))?;
-        let path1 = Path::new(url1.path())
-            .to_str()
-            .ok_or_else(|| err_msg("Invalid path"))?;
+        let path1 = Path::new(url1.path()).to_string_lossy();
         let command = format!("mv {} {}", path0, path1);
         debug!("command {}", command);
         self.ssh.run_command_ssh(&command)
@@ -232,9 +221,7 @@ impl FileListTrait for FileListSSH {
             .urlname
             .as_ref()
             .ok_or_else(|| err_msg("No url"))?;
-        let path = Path::new(url.path())
-            .to_str()
-            .ok_or_else(|| err_msg("Invalid path"))?;
+        let path = Path::new(url.path()).to_string_lossy();
         let command = format!("rm {}", path);
         self.ssh.run_command_ssh(&command)
     }
@@ -242,10 +229,7 @@ impl FileListTrait for FileListSSH {
     fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
         let conf = self.get_conf();
 
-        let path = conf
-            .basepath
-            .to_str()
-            .ok_or_else(|| err_msg("Invalid path"))?;
+        let path = conf.basepath.to_string_lossy();
         let user_host = self.ssh.get_ssh_username_host()?;
         let command = format!("sync-app-rust index -u file://{}", path);
         self.ssh.run_command_ssh(&command)?;
@@ -272,11 +256,7 @@ impl FileListTrait for FileListSSH {
     }
 
     fn print_list(&self) -> Result<(), Error> {
-        let path = self
-            .get_conf()
-            .basepath
-            .to_str()
-            .ok_or_else(|| err_msg("Invalid path"))?;
+        let path = self.get_conf().basepath.to_string_lossy();
         let command = format!("sync-app-rust ls -u file://{}", path);
         println!("{}", command);
         self.ssh.run_command_print_stdout(&command)
@@ -336,7 +316,7 @@ mod tests {
         let config = Config::init_config().unwrap();
 
         let path: PathBuf = "src/file_list_ssh.rs".parse().unwrap();
-        let url: Url = format!("file://{}", path.canonicalize().unwrap().to_str().unwrap())
+        let url: Url = format!("file://{}", path.canonicalize().unwrap().to_string_lossy())
             .parse()
             .unwrap();
         let finfo0 = FileInfoLocal::from_url(&url).unwrap();

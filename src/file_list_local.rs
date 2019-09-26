@@ -38,10 +38,7 @@ impl FileListLocal {
 impl FileListLocalConf {
     pub fn new(basedir: PathBuf, config: &Config) -> Result<FileListLocalConf, Error> {
         let basepath = basedir.canonicalize()?;
-        let basestr = basepath
-            .to_str()
-            .ok_or_else(|| err_msg("Failed to parse path"))?
-            .to_string();
+        let basestr = basepath.to_string_lossy().to_string();
         let baseurl =
             Url::from_file_path(basepath.clone()).map_err(|_| err_msg("Failed to parse url"))?;
         let conf = FileListConf {
@@ -61,10 +58,7 @@ impl FileListConfTrait for FileListLocalConf {
             Err(err_msg("Wrong scheme"))
         } else {
             let path = url.to_file_path().map_err(|_| err_msg("Parse failure"))?;
-            let basestr = path
-                .to_str()
-                .ok_or_else(|| err_msg("Failed to parse path"))?
-                .to_string();
+            let basestr = path.to_string_lossy().to_string();
             let conf = FileListConf {
                 baseurl: url.clone(),
                 basepath: path,
@@ -112,7 +106,7 @@ impl FileListTrait for FileListLocal {
                     .path()
                     .canonicalize()
                     .ok()
-                    .and_then(|s| s.to_str().map(ToString::to_string))
+                    .map(|s| s.to_string_lossy().to_string())
                     .unwrap_or_else(|| "".to_string());
                 let (modified, size) = entry
                     .metadata()
@@ -162,7 +156,7 @@ impl FileListTrait for FileListLocal {
                     .path()
                     .canonicalize()
                     .ok()
-                    .and_then(|s| s.to_str().map(ToString::to_string))
+                    .map(|s| s.to_string_lossy().to_string())
                     .unwrap_or_else(|| "".to_string());
                 writeln!(stdout().lock(), "{}", filepath)?;
                 Ok(())
@@ -275,7 +269,7 @@ mod tests {
         let basepath: PathBuf = "src".parse().unwrap();
         let baseurl: Url = format!(
             "file://{}",
-            basepath.canonicalize().unwrap().to_str().unwrap()
+            basepath.canonicalize().unwrap().to_string_lossy()
         )
         .parse()
         .unwrap();

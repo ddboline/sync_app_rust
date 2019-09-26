@@ -68,7 +68,7 @@ impl fmt::Display for FileSyncMode {
         match self {
             FileSyncMode::Full => write!(f, "Full"),
             FileSyncMode::OutputFile(pathbuf) => {
-                write!(f, "OutputFile({})", pathbuf.to_str().unwrap_or(""))
+                write!(f, "OutputFile({})", pathbuf.to_string_lossy())
             }
         }
     }
@@ -117,8 +117,7 @@ impl FileSync {
                     if let Some(path0) = finfo0.filepath.as_ref() {
                         let url0 = finfo0.urlname.as_ref().unwrap();
                         if let Ok(url1) = replace_baseurl(&url0, &conf0.baseurl, &conf1.baseurl) {
-                            let path1 =
-                                replace_basepath(&path0, &conf0.basepath, &conf1.basepath).unwrap();
+                            let path1 = replace_basepath(&path0, &conf0.basepath, &conf1.basepath);
                             if url1.as_str().contains(conf1.baseurl.as_str()) {
                                 let finfo1 = FileInfo {
                                     filename: k.clone(),
@@ -152,8 +151,7 @@ impl FileSync {
                     if let Some(path1) = finfo1.filepath.as_ref() {
                         let url1 = finfo1.urlname.as_ref().unwrap();
                         if let Ok(url0) = replace_baseurl(&url1, &conf1.baseurl, &conf0.baseurl) {
-                            let path0 =
-                                replace_basepath(&path1, &conf1.basepath, &conf0.basepath).unwrap();
+                            let path0 = replace_basepath(&path1, &conf1.basepath, &conf0.basepath);
                             if url0.as_str().contains(conf0.baseurl.as_str()) {
                                 let finfo0 = FileInfo {
                                     filename: k.clone(),
@@ -437,8 +435,8 @@ mod tests {
         );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
-        let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
-        let servicesession: ServiceSession = filepath.to_str().unwrap().parse().unwrap();
+        let serviceid: ServiceId = filepath.to_string_lossy().into();
+        let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
         let finfo0 =
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
         println!("{:?}", finfo0);
@@ -479,8 +477,8 @@ mod tests {
         );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
-        let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
-        let servicesession: ServiceSession = filepath.to_str().unwrap().parse().unwrap();
+        let serviceid: ServiceId = filepath.to_string_lossy().into();
+        let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
         let finfo0 =
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
         println!("{:?}", finfo0);
@@ -500,12 +498,12 @@ mod tests {
         assert!(bytes_read > 0);
 
         println!("{}", buffer.trim());
-        println!("{}", current_dir().unwrap().to_str().unwrap());
+        println!("{}", current_dir().unwrap().to_string_lossy());
         assert_eq!(
             buffer.trim(),
             format!(
                 "file://{}/src/file_sync.rs s3://test_bucket/src/file_sync.rs",
-                current_dir().unwrap().to_str().unwrap()
+                current_dir().unwrap().to_string_lossy()
             )
         );
     }
@@ -520,8 +518,8 @@ mod tests {
         );
 
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
-        let serviceid: ServiceId = filepath.to_str().unwrap().to_string().into();
-        let servicesession: ServiceSession = filepath.to_str().unwrap().parse().unwrap();
+        let serviceid: ServiceId = filepath.to_string_lossy().into();
+        let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
 
         let finfo0 =
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
@@ -557,12 +555,12 @@ mod tests {
         assert!(bytes_read > 0);
 
         println!("{}", buffer.trim());
-        println!("{}", current_dir().unwrap().to_str().unwrap());
+        println!("{}", current_dir().unwrap().to_string_lossy());
         assert_eq!(
             buffer.trim(),
             format!(
                 "s3://test_bucket/src/file_sync.rs file://{}/src/file_sync.rs",
-                current_dir().unwrap().to_str().unwrap()
+                current_dir().unwrap().to_string_lossy()
             )
         );
     }

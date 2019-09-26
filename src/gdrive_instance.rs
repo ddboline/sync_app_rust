@@ -291,11 +291,11 @@ impl GDriveInstance {
             .map_err(|_| err_msg("No file path"))?;
         let directory_name = directory_path
             .file_name()
-            .and_then(|d| d.to_str().map(ToString::to_string))
+            .map(|d| d.to_string_lossy())
             .ok_or_else(|| err_msg("Failed to convert string"))?;
         exponential_retry(move || {
             let new_file = drive3::File {
-                name: Some(directory_name.clone()),
+                name: Some(directory_name.to_string()),
                 mime_type: Some("application/vnd.google-apps.folder".to_string()),
                 parents: Some(vec![parentid.to_string()]),
                 ..Default::default()

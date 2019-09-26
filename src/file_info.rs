@@ -203,7 +203,7 @@ impl From<&FileInfo> for InsertFileInfoCache {
         Self {
             filename: item.filename.to_string(),
             filepath: match item.filepath.as_ref() {
-                Some(f) => f.to_str().map(ToString::to_string),
+                Some(f) => Some(f.to_string_lossy().to_string()),
                 None => None,
             },
             urlname: item.urlname.as_ref().map(Url::to_string),
