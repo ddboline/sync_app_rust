@@ -332,5 +332,4 @@ mod tests {
         flist.copy_to(&finfo0, &finfo1).unwrap();
         flist.delete(&finfo1).unwrap();
     }
-
 }

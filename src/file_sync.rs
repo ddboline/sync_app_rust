@@ -365,7 +365,6 @@ impl FileSync {
 
         group_urls(&all_urls)
             .values()
-            .into_iter()
             .map(|urls| {
                 let conf = FileListConf::from_url(&urls[0], &self.config)?;
                 let flist = FileList::from_conf(conf);

@@ -52,8 +52,13 @@ impl FileListGDrive {
         pool: Option<&PgPool>,
     ) -> Result<Self, Error> {
         let (dmap, root_dir) = if use_cache && pool.is_some() {
-            let dlist = self.load_directory_info_cache(&pool.unwrap())?;
-            self.get_directory_map_cache(dlist)
+            match pool {
+                Some(pool) => {
+                    let dlist = self.load_directory_info_cache(&pool)?;
+                    self.get_directory_map_cache(dlist)
+                }
+                _ => unreachable!(),
+            }
         } else {
             self.gdrive.get_directory_map()?
         };
