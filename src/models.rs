@@ -1,6 +1,10 @@
+use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use chrono::{DateTime, Utc};
+use failure::{err_msg, Error};
+use url::Url;
 
-use crate::schema::{directory_info_cache, file_info_cache, file_sync_cache};
+use crate::pgpool::PgPool;
+use crate::schema::{directory_info_cache, file_info_cache, file_sync_cache, file_sync_config};
 
 #[derive(Queryable, Clone)]
 pub struct FileInfoCache {
@@ -150,7 +154,7 @@ impl From<DirectoryInfoCache> for InsertDirectoryInfoCache {
     }
 }
 
-#[derive(Queryable, Clone)]
+#[derive(Queryable, Clone, Debug)]
 pub struct FileSyncCache {
     pub id: i32,
     pub src_url: String,
@@ -173,5 +177,94 @@ impl From<FileSyncCache> for InsertFileSyncCache {
             dst_url: item.dst_url,
             created_at: item.created_at,
         }
+    }
+}
+
+impl FileSyncCache {
+    pub fn get_cache_list(pool: &PgPool) -> Result<Vec<FileSyncCache>, Error> {
+        use crate::schema::file_sync_cache::dsl::file_sync_cache;
+        let conn = pool.get()?;
+        file_sync_cache.load(&conn).map_err(err_msg)
+    }
+
+    pub fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
+        use crate::schema::file_sync_cache::dsl::{file_sync_cache, id};
+        let conn = pool.get()?;
+        diesel::delete(file_sync_cache.filter(id.eq(self.id)))
+            .execute(&conn)
+            .map_err(err_msg)
+            .map(|_| ())
+    }
+}
+
+impl InsertFileSyncCache {
+    pub fn cache_sync(pool: &PgPool, src_url: &str, dst_url: &str) -> Result<FileSyncCache, Error> {
+        let conn = pool.get()?;
+        let _: Url = src_url.parse()?;
+        let _: Url = dst_url.parse()?;
+        let value = InsertFileSyncCache {
+            src_url: src_url.into(),
+            dst_url: dst_url.into(),
+            created_at: Utc::now(),
+        };
+        diesel::insert_into(file_sync_cache::table)
+            .values(&value)
+            .get_result(&conn)
+            .map_err(err_msg)
+    }
+}
+
+#[derive(Queryable, Clone)]
+pub struct FileSyncConfig {
+    pub id: i32,
+    pub src_url: String,
+    pub dst_url: String,
+    pub last_run: DateTime<Utc>,
+}
+
+#[derive(Insertable, Debug, Clone)]
+#[table_name = "file_sync_config"]
+pub struct InsertFileSyncConfig {
+    pub src_url: String,
+    pub dst_url: String,
+    pub last_run: DateTime<Utc>,
+}
+
+impl From<FileSyncConfig> for InsertFileSyncConfig {
+    fn from(item: FileSyncConfig) -> Self {
+        Self {
+            src_url: item.src_url,
+            dst_url: item.dst_url,
+            last_run: item.last_run,
+        }
+    }
+}
+
+impl FileSyncConfig {
+    pub fn get_config_list(pool: &PgPool) -> Result<Vec<FileSyncConfig>, Error> {
+        use crate::schema::file_sync_config::dsl::file_sync_config;
+        let conn = pool.get()?;
+        file_sync_config.load(&conn).map_err(err_msg)
+    }
+}
+
+impl InsertFileSyncConfig {
+    pub fn insert_config(
+        pool: &PgPool,
+        src_url: &str,
+        dst_url: &str,
+    ) -> Result<FileSyncConfig, Error> {
+        let conn = pool.get()?;
+        let _: Url = src_url.parse()?;
+        let _: Url = dst_url.parse()?;
+        let value = InsertFileSyncConfig {
+            src_url: src_url.into(),
+            dst_url: dst_url.into(),
+            last_run: Utc::now(),
+        };
+        diesel::insert_into(file_sync_config::table)
+            .values(&value)
+            .get_result(&conn)
+            .map_err(err_msg)
     }
 }

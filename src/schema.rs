@@ -35,4 +35,18 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(directory_info_cache, file_info_cache, file_sync_cache,);
+table! {
+    file_sync_config (id) {
+        id -> Int4,
+        src_url -> Text,
+        dst_url -> Text,
+        last_run -> Timestamptz,
+    }
+}
+
+allow_tables_to_appear_in_same_query!(
+    directory_info_cache,
+    file_info_cache,
+    file_sync_cache,
+    file_sync_config,
+);

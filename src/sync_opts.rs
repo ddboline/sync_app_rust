@@ -8,13 +8,12 @@ use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::file_sync::{FileSync, FileSyncAction, FileSyncMode};
+use crate::file_sync::{FileSync, FileSyncAction};
+use crate::models::InsertFileSyncConfig;
 use crate::pgpool::PgPool;
 
 #[derive(StructOpt, Debug)]
 pub struct SyncOpts {
-    #[structopt(short = "m", long = "mode", parse(from_str), default_value = "full")]
-    pub mode: FileSyncMode,
     #[structopt(parse(try_from_str))]
     pub action: FileSyncAction,
     #[structopt(short = "u", long = "urls", parse(try_from_str))]
@@ -50,12 +49,12 @@ impl SyncOpts {
                 }
             }
             FileSyncAction::Sync => {
-                if opts.urls.len() < 2 {
+                if opts.urls.len() != 2 {
                     Err(err_msg("Need 2 Urls"))
                 } else {
                     let pool = PgPool::new(&config.database_url);
 
-                    let fsync = FileSync::new(opts.mode, config.clone());
+                    let fsync = FileSync::new(config.clone());
 
                     let results: Result<Vec<_>, Error> = opts.urls[0..2]
                         .par_iter()
@@ -71,14 +70,14 @@ impl SyncOpts {
 
                     let flists = results?;
 
-                    fsync.compare_lists(&flists[0], &flists[1])
+                    fsync.compare_lists(&flists[0], &flists[1], &pool)
                 }
             }
             FileSyncAction::Copy => {
                 if opts.urls.len() < 2 {
                     Err(err_msg("Need 2 Urls"))
                 } else {
-                    let fsync = FileSync::new(opts.mode, config.clone());
+                    let fsync = FileSync::new(config.clone());
 
                     let finfo0 = FileInfo::from_url(&opts.urls[0])?;
                     let finfo1 = FileInfo::from_url(&opts.urls[1])?;
@@ -111,20 +110,20 @@ impl SyncOpts {
             }
             FileSyncAction::Process => {
                 let pool = PgPool::new(&config.database_url);
-                let fsync = FileSync::new(opts.mode, config);
-                fsync.process_file(&pool)
+                let fsync = FileSync::new(config);
+                fsync.process_sync_cache(&pool)
             }
             FileSyncAction::Delete => {
-                if opts.urls.is_empty() && opts.mode == FileSyncMode::Full {
+                if opts.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
                     let pool = PgPool::new(&config.database_url);
-                    let fsync = FileSync::new(opts.mode, config);
+                    let fsync = FileSync::new(config);
                     fsync.delete_files(&opts.urls, &pool)
                 }
             }
             FileSyncAction::Move => {
-                if opts.urls.len() < 2 {
+                if opts.urls.len() != 2 {
                     Err(err_msg("Need 2 Urls"))
                 } else {
                     let conf0 = FileListConf::from_url(&opts.urls[0], &config)?;
@@ -164,6 +163,20 @@ impl SyncOpts {
                         })
                         .collect();
                     results.map(|_| ())
+                }
+            }
+            FileSyncAction::AddConfig => {
+                if opts.urls.len() != 2 {
+                    Err(err_msg("Need exactly 2 Urls"))
+                } else {
+                    let pool = PgPool::new(&config.database_url);
+
+                    InsertFileSyncConfig::insert_config(
+                        &pool,
+                        opts.urls[0].as_str(),
+                        opts.urls[1].as_str(),
+                    )
+                    .map(|_| ())
                 }
             }
         }
