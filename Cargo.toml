@@ -12,7 +12,7 @@ s4 = { git = "https://github.com/ddboline/s4.git", branch = "upgrade_rusoto_0.40
 url = "2.1"
 dotenv = "0.15"
 r2d2 = "0.8"
-diesel = {version="1.4", features=["postgres", "r2d2"]}
+diesel = {version="1.4", features=["postgres", "r2d2", "chrono"]}
 failure = "0.1"
 subprocess = "0.1"
 walkdir = "2.2"

@@ -1,4 +1,6 @@
-use crate::schema::{directory_info_cache, file_info_cache};
+use chrono::{DateTime, Utc};
+
+use crate::schema::{directory_info_cache, file_info_cache, file_sync_cache};
 
 #[derive(Queryable, Clone)]
 pub struct FileInfoCache {
@@ -144,6 +146,32 @@ impl From<DirectoryInfoCache> for InsertDirectoryInfoCache {
             is_root: item.is_root,
             servicetype: item.servicetype,
             servicesession: item.servicesession,
+        }
+    }
+}
+
+#[derive(Queryable, Clone)]
+pub struct FileSyncCache {
+    pub id: i32,
+    pub src_url: String,
+    pub dst_url: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Debug, Clone)]
+#[table_name = "file_sync_cache"]
+pub struct InsertFileSyncCache {
+    pub src_url: String,
+    pub dst_url: String,
+    pub created_at: DateTime<Utc>,
+}
+
+impl From<FileSyncCache> for InsertFileSyncCache {
+    fn from(item: FileSyncCache) -> Self {
+        Self {
+            src_url: item.src_url,
+            dst_url: item.dst_url,
+            created_at: item.created_at,
         }
     }
 }
