@@ -53,6 +53,12 @@ impl SyncOpts {
             }
             FileSyncAction::Sync => {
                 let urls = if opts.urls.is_empty() {
+                    let result: Result<(), Error> = FileSyncCache::get_cache_list(&pool)?
+                        .into_iter()
+                        .map(|v| v.delete_cache_entry(&pool))
+                        .collect();
+                    result?;
+
                     FileSyncConfig::get_url_list(&pool)?
                 } else {
                     opts.urls
