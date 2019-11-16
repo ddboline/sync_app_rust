@@ -1,5 +1,8 @@
 use failure::{err_msg, Error};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use log::debug;
+use rayon::iter::{
+    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
+};
 use std::io::{stdout, Write};
 use structopt::StructOpt;
 use url::Url;
@@ -9,7 +12,7 @@ use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
 use crate::file_sync::{FileSync, FileSyncAction};
-use crate::models::InsertFileSyncConfig;
+use crate::models::{FileSyncCache, FileSyncConfig, InsertFileSyncConfig};
 use crate::pgpool::PgPool;
 
 #[derive(StructOpt, Debug)]
@@ -24,54 +27,69 @@ impl SyncOpts {
     pub fn process_args() -> Result<(), Error> {
         let opts = SyncOpts::from_args();
         let config = Config::init_config()?;
+        let pool = PgPool::new(&config.database_url);
 
         match opts.action {
             FileSyncAction::Index => {
-                if opts.urls.is_empty() {
-                    Err(err_msg("Need at least 1 Url"))
+                let urls = if opts.urls.is_empty() {
+                    FileSyncConfig::get_url_list(&pool)?
                 } else {
-                    let pool = PgPool::new(&config.database_url);
+                    opts.urls
+                };
+                debug!("urls: {:?}", urls);
+                let results: Result<Vec<_>, Error> = urls
+                    .par_iter()
+                    .map(|url| {
+                        let pool = pool.clone();
+                        let conf = FileListConf::from_url(&url, &config)?;
+                        let flist = FileList::from_conf(conf);
+                        let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
+                        flist.cache_file_list(&pool)?;
+                        Ok(flist)
+                    })
+                    .collect();
 
-                    let results: Result<Vec<_>, Error> = opts
-                        .urls
-                        .par_iter()
-                        .map(|url| {
-                            let pool = pool.clone();
-                            let conf = FileListConf::from_url(&url, &config)?;
-                            let flist = FileList::from_conf(conf);
-                            let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
-                            flist.cache_file_list(&pool)?;
-                            Ok(flist)
-                        })
-                        .collect();
-
-                    results.map(|_| ())
-                }
+                results.map(|_| ())
             }
             FileSyncAction::Sync => {
-                if opts.urls.len() != 2 {
-                    Err(err_msg("Need 2 Urls"))
+                let urls = if opts.urls.is_empty() {
+                    FileSyncConfig::get_url_list(&pool)?
                 } else {
-                    let pool = PgPool::new(&config.database_url);
+                    opts.urls
+                };
 
-                    let fsync = FileSync::new(config.clone());
+                let fsync = FileSync::new(config.clone());
 
-                    let results: Result<Vec<_>, Error> = opts.urls[0..2]
-                        .par_iter()
-                        .map(|url| {
-                            let pool = pool.clone();
-                            let conf = FileListConf::from_url(&url, &config)?;
-                            let flist = FileList::from_conf(conf);
-                            let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
-                            flist.cache_file_list(&pool)?;
-                            Ok(flist)
-                        })
-                        .collect();
+                let results: Result<Vec<_>, Error> = urls
+                    .par_iter()
+                    .map(|url| {
+                        let pool = pool.clone();
+                        let conf = FileListConf::from_url(&url, &config)?;
+                        let flist = FileList::from_conf(conf);
+                        let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
+                        flist.cache_file_list(&pool)?;
+                        Ok(flist)
+                    })
+                    .collect();
 
-                    let flists = results?;
+                let flists = results?;
 
-                    fsync.compare_lists(&flists[0], &flists[1], &pool)
+                let results: Result<Vec<_>, Error> = flists
+                    .into_par_iter()
+                    .chunks(2)
+                    .map(|f| {
+                        if f.len() == 2 {
+                            fsync.compare_lists(&f[0], &f[1], &pool)?;
+                        }
+                        Ok(())
+                    })
+                    .collect();
+                results?;
+
+                for entry in FileSyncCache::get_cache_list(&pool)? {
+                    writeln!(stdout().lock(), "{} {}", entry.src_url, entry.dst_url)?;
                 }
+                Ok(())
             }
             FileSyncAction::Copy => {
                 if opts.urls.len() < 2 {

@@ -252,6 +252,7 @@ impl FileSync {
             .map(|v| {
                 let u0: Url = v.src_url.parse()?;
                 let u1: Url = v.dst_url.parse()?;
+                v.delete_cache_entry(pool)?;
                 Ok((u0, u1))
             })
             .collect();
