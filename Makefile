@@ -53,6 +53,7 @@ build_test:
 
 install:
 	cp target/$(build_type)/sync-app-rust /usr/bin/sync-app-rust
+	cp target/$(build_type)/sync-app-http /usr/bin/sync-app-http
 
 pull:
 	`aws ecr --region us-east-1 get-login --no-include-email`
