@@ -7,14 +7,22 @@ edition = "2018"
 [dependencies]
 log = "0.4"
 env_logger = "0.7"
+actix-rt = "0.2"
 sync_app_lib = {path = "sync_app_lib"}
+sync_app_http = {path = "sync_app_http"}
 
 [workspace]
 members = [
+    "sync_app_http",
     "sync_app_lib",
 ]
 
 [[bin]]
 name = "sync-app-rust"
 path = "src/main.rs"
+doc = false
+
+[[bin]]
+name = "sync-app-http"
+path = "src/sync_rust_http.rs"
 doc = false

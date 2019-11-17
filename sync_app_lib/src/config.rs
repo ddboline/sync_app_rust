@@ -10,6 +10,10 @@ pub struct ConfigInner {
     pub gdrive_secret_file: String,
     pub gdrive_token_path: String,
     pub aws_region_name: String,
+    pub secret_key: String,
+    pub domain: String,
+    pub port: u32,
+    pub n_db_workers: usize,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -52,6 +56,16 @@ impl Config {
             gdrive_token_path: var("GDRIVE_TOKEN_PATH")
                 .unwrap_or_else(|_| default_gdrive_token_path),
             aws_region_name: var("AWS_REGION_NAME").unwrap_or_else(|_| "us-east-1".to_string()),
+            secret_key: var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(8)),
+            domain: var("DOMAIN").unwrap_or_else(|_| "localhost".to_string()),
+            port: var("PORT")
+                .ok()
+                .and_then(|p| p.parse().ok())
+                .unwrap_or(3084),
+            n_db_workers: var("N_DB_WORKERS")
+                .ok()
+                .and_then(|n| n.parse().ok())
+                .unwrap_or(2),
         };
 
         Ok(Config(Arc::new(conf)))

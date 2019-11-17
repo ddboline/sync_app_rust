@@ -24,17 +24,28 @@ pub struct SyncOpts {
 }
 
 impl SyncOpts {
+    pub fn new(action: FileSyncAction, urls: &[Url]) -> Self {
+        Self {
+            action,
+            urls: urls.to_vec(),
+        }
+    }
+
     pub fn process_args() -> Result<(), Error> {
         let opts = SyncOpts::from_args();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
-        match opts.action {
+        opts.process_sync_opts(&config, &pool)
+    }
+
+    pub fn process_sync_opts(&self, config: &Config, pool: &PgPool) -> Result<(), Error> {
+        match self.action {
             FileSyncAction::Index => {
-                let urls = if opts.urls.is_empty() {
+                let urls = if self.urls.is_empty() {
                     FileSyncConfig::get_url_list(&pool)?
                 } else {
-                    opts.urls
+                    self.urls.to_vec()
                 };
                 debug!("urls: {:?}", urls);
                 let results: Result<Vec<_>, Error> = urls
@@ -52,7 +63,7 @@ impl SyncOpts {
                 results.map(|_| ())
             }
             FileSyncAction::Sync => {
-                let urls = if opts.urls.is_empty() {
+                let urls = if self.urls.is_empty() {
                     let result: Result<(), Error> = FileSyncCache::get_cache_list(&pool)?
                         .into_iter()
                         .map(|v| v.delete_cache_entry(&pool))
@@ -61,7 +72,7 @@ impl SyncOpts {
 
                     FileSyncConfig::get_url_list(&pool)?
                 } else {
-                    opts.urls
+                    self.urls.to_vec()
                 };
 
                 let fsync = FileSync::new(config.clone());
@@ -98,30 +109,30 @@ impl SyncOpts {
                 Ok(())
             }
             FileSyncAction::Copy => {
-                if opts.urls.len() < 2 {
+                if self.urls.len() < 2 {
                     Err(err_msg("Need 2 Urls"))
                 } else {
                     let fsync = FileSync::new(config.clone());
 
-                    let finfo0 = FileInfo::from_url(&opts.urls[0])?;
-                    let finfo1 = FileInfo::from_url(&opts.urls[1])?;
+                    let finfo0 = FileInfo::from_url(&self.urls[0])?;
+                    let finfo1 = FileInfo::from_url(&self.urls[1])?;
 
                     if finfo1.servicetype == FileService::Local {
-                        let conf = FileListConf::from_url(&opts.urls[0], &config)?;
+                        let conf = FileListConf::from_url(&self.urls[0], &config)?;
                         let flist = FileList::from_conf(conf);
                         fsync.copy_object(&flist, &finfo0, &finfo1)
                     } else {
-                        let conf = FileListConf::from_url(&opts.urls[1], &config)?;
+                        let conf = FileListConf::from_url(&self.urls[1], &config)?;
                         let flist = FileList::from_conf(conf);
                         fsync.copy_object(&flist, &finfo0, &finfo1)
                     }
                 }
             }
             FileSyncAction::List => {
-                if opts.urls.is_empty() {
+                if self.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
-                    for urls in group_urls(&opts.urls).values() {
+                    for urls in group_urls(&self.urls).values() {
                         let conf = FileListConf::from_url(&urls[0], &config)?;
                         let mut flist = FileList::from_conf(conf);
                         for url in urls {
@@ -134,24 +145,24 @@ impl SyncOpts {
             }
             FileSyncAction::Process => {
                 let pool = PgPool::new(&config.database_url);
-                let fsync = FileSync::new(config);
+                let fsync = FileSync::new(config.clone());
                 fsync.process_sync_cache(&pool)
             }
             FileSyncAction::Delete => {
-                if opts.urls.is_empty() {
+                if self.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
                     let pool = PgPool::new(&config.database_url);
-                    let fsync = FileSync::new(config);
-                    fsync.delete_files(&opts.urls, &pool)
+                    let fsync = FileSync::new(config.clone());
+                    fsync.delete_files(&self.urls, &pool)
                 }
             }
             FileSyncAction::Move => {
-                if opts.urls.len() != 2 {
+                if self.urls.len() != 2 {
                     Err(err_msg("Need 2 Urls"))
                 } else {
-                    let conf0 = FileListConf::from_url(&opts.urls[0], &config)?;
-                    let conf1 = FileListConf::from_url(&opts.urls[1], &config)?;
+                    let conf0 = FileListConf::from_url(&self.urls[0], &config)?;
+                    let conf1 = FileListConf::from_url(&self.urls[1], &config)?;
                     if conf0.servicetype != conf1.servicetype {
                         Err(err_msg("Can only move within servicetype"))
                     } else {
@@ -160,12 +171,12 @@ impl SyncOpts {
                 }
             }
             FileSyncAction::Serialize => {
-                if opts.urls.is_empty() {
+                if self.urls.is_empty() {
                     Err(err_msg("Need at least 1 Url"))
                 } else {
                     let pool = PgPool::new(&config.database_url);
 
-                    let results: Result<Vec<_>, Error> = opts
+                    let results: Result<Vec<_>, Error> = self
                         .urls
                         .par_iter()
                         .map(|url| {
@@ -190,15 +201,15 @@ impl SyncOpts {
                 }
             }
             FileSyncAction::AddConfig => {
-                if opts.urls.len() != 2 {
+                if self.urls.len() != 2 {
                     Err(err_msg("Need exactly 2 Urls"))
                 } else {
                     let pool = PgPool::new(&config.database_url);
 
                     InsertFileSyncConfig::insert_config(
                         &pool,
-                        opts.urls[0].as_str(),
-                        opts.urls[1].as_str(),
+                        self.urls[0].as_str(),
+                        self.urls[1].as_str(),
                     )
                     .map(|_| ())
                 }

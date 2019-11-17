@@ -4,7 +4,9 @@ use failure::{err_msg, Error};
 use url::Url;
 
 use crate::pgpool::PgPool;
-use crate::schema::{directory_info_cache, file_info_cache, file_sync_cache, file_sync_config};
+use crate::schema::{
+    authorized_users, directory_info_cache, file_info_cache, file_sync_cache, file_sync_config,
+};
 
 #[derive(Queryable, Clone)]
 pub struct FileInfoCache {
@@ -188,9 +190,13 @@ impl FileSyncCache {
     }
 
     pub fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
+        Self::delete_by_id(pool, self.id)
+    }
+
+    pub fn delete_by_id(pool: &PgPool, id_: i32) -> Result<(), Error> {
         use crate::schema::file_sync_cache::dsl::{file_sync_cache, id};
         let conn = pool.get()?;
-        diesel::delete(file_sync_cache.filter(id.eq(self.id)))
+        diesel::delete(file_sync_cache.filter(id.eq(id_)))
             .execute(&conn)
             .map_err(err_msg)
             .map(|_| ())
@@ -278,5 +284,19 @@ impl InsertFileSyncConfig {
             .values(&value)
             .get_result(&conn)
             .map_err(err_msg)
+    }
+}
+
+#[derive(Queryable, Insertable, Clone, Debug)]
+#[table_name = "authorized_users"]
+pub struct AuthorizedUsers {
+    pub email: String,
+}
+
+impl AuthorizedUsers {
+    pub fn get_authorized_users(pool: &PgPool) -> Result<Vec<AuthorizedUsers>, Error> {
+        use crate::schema::authorized_users::dsl::authorized_users;
+        let conn = pool.get()?;
+        authorized_users.load(&conn).map_err(err_msg)
     }
 }
