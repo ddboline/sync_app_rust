@@ -8,3 +8,5 @@ ADD src /sync_app_rust/src
 ADD scripts /sync_app_rust/scripts
 ADD Makefile /sync_app_rust
 ADD sync_app_lib /sync_app_rust/sync_app_lib
+ADD sync_app_http /sync_app_rust/sync_app_http
+ADD templates /sync_app_rust/templates
