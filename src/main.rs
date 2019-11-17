@@ -1,4 +1,4 @@
-use sync_app_rust::sync_opts::SyncOpts;
+use sync_app_lib::sync_opts::SyncOpts;
 
 fn main() {
     env_logger::init();

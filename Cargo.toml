@@ -5,6 +5,14 @@ authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+log = "0.4"
+env_logger = "0.7"
+sync_app_lib = {path = "sync_app_lib"}
+
+[workspace]
+members = [
+    "sync_app_lib",
+]
 
 [[bin]]
 name = "sync-app-rust"
