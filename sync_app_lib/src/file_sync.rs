@@ -30,6 +30,7 @@ pub enum FileSyncAction {
     Move,
     Serialize,
     AddConfig,
+    ShowCache,
 }
 
 impl FromStr for FileSyncAction {
@@ -46,6 +47,7 @@ impl FromStr for FileSyncAction {
             "move" | "mv" => Ok(FileSyncAction::Move),
             "ser" | "serialize" => Ok(FileSyncAction::Serialize),
             "add" | "add_config" => Ok(FileSyncAction::AddConfig),
+            "show" | "show_cache" => Ok(FileSyncAction::ShowCache),
             _ => Err(err_msg("Parse failure")),
         }
     }
@@ -248,7 +250,7 @@ impl FileSync {
 
     pub fn process_sync_cache(&self, pool: &PgPool) -> Result<(), Error> {
         let proc_list: Result<Vec<_>, Error> = FileSyncCache::get_cache_list(pool)?
-            .into_iter()
+            .into_par_iter()
             .map(|v| {
                 let u0: Url = v.src_url.parse()?;
                 let u1: Url = v.dst_url.parse()?;

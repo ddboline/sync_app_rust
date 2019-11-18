@@ -1,5 +1,5 @@
 use actix_web::http::StatusCode;
-use actix_web::web::{Data, Json, Query};
+use actix_web::web::{Data, Query};
 use actix_web::HttpResponse;
 use failure::Error;
 use futures::Future;
