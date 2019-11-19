@@ -1,5 +1,4 @@
 use chrono::{DateTime, Duration, Utc};
-use crossbeam_utils::thread;
 use failure::{err_msg, Error};
 use maplit::hashmap;
 use reqwest::header::HeaderMap;
