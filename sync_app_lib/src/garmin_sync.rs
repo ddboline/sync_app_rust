@@ -180,7 +180,7 @@ impl GarminSync {
             if measurements.len() < 20 {
                 output.push(format!("{:?}", measurements));
             } else {
-                output.push(format!("{}", measurements.len()));
+                output.push(format!("session1 {}", measurements.len()));
             }
             let url = to_url.join(path)?;
             for meas in measurements.chunks(100) {
@@ -201,9 +201,9 @@ impl GarminSync {
             if measurements.len() < 20 {
                 output.push(format!("{:?}", measurements));
             } else {
-                output.push(format!("{}", measurements.len()));
+                output.push(format!("session0 {}", measurements.len()));
             }
-            let url = to_url.join(path)?;
+            let url = from_url.join(path)?;
             for meas in measurements.chunks(100) {
                 let data = hashmap! {
                     js_prefix => meas,
