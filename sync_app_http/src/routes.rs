@@ -8,7 +8,9 @@ use sync_app_lib::file_sync::FileSyncAction;
 
 use super::app::AppState;
 use super::logged_user::LoggedUser;
-use super::requests::{ListSyncCacheRequest, SyncEntryDeleteRequest, SyncRequest};
+use super::requests::{
+    GarminSyncRequest, ListSyncCacheRequest, SyncEntryDeleteRequest, SyncRequest,
+};
 
 fn form_http_response(body: String) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::build(StatusCode::OK)
@@ -101,4 +103,14 @@ pub fn delete_cache_entry(
         .send(query)
         .from_err()
         .and_then(move |res| res.and_then(|_| form_http_response("finished".to_string())))
+}
+
+pub fn sync_garmin(
+    _: LoggedUser,
+    data: Data<AppState>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    data.db
+        .send(GarminSyncRequest {})
+        .from_err()
+        .and_then(move |res| res.and_then(|body| form_http_response(body.join("\n"))))
 }

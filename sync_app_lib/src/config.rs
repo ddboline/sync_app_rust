@@ -14,6 +14,10 @@ pub struct ConfigInner {
     pub domain: String,
     pub port: u32,
     pub n_db_workers: usize,
+    pub garmin_username: Option<String>,
+    pub garmin_password: Option<String>,
+    pub garmin_from_url: Option<String>,
+    pub garmin_to_url: Option<String>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -66,6 +70,10 @@ impl Config {
                 .ok()
                 .and_then(|n| n.parse().ok())
                 .unwrap_or(2),
+            garmin_username: var("GARMIN_USERNAME").ok(),
+            garmin_password: var("GARMIN_PASSWORD").ok(),
+            garmin_from_url: var("GARMIN_FROM_URL").ok(),
+            garmin_to_url: var("GARMIN_TO_URL").ok(),
         };
 
         Ok(Config(Arc::new(conf)))

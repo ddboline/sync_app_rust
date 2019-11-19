@@ -12,7 +12,9 @@ use sync_app_lib::config::Config;
 use sync_app_lib::pgpool::PgPool;
 
 use super::logged_user::AUTHORIZED_USERS;
-use super::routes::{delete_cache_entry, list_sync_cache, proc_all, sync_all, sync_frontpage};
+use super::routes::{
+    delete_cache_entry, list_sync_cache, proc_all, sync_all, sync_frontpage, sync_garmin,
+};
 
 pub struct AppState {
     pub db: Addr<PgPool>,
@@ -58,6 +60,7 @@ pub fn start_app() {
                 web::resource("/sync/delete_cache_entry")
                     .route(web::get().to_async(delete_cache_entry)),
             )
+            .service(web::resource("/sync/sync_garmin").route(web::get().to_async(sync_garmin)))
     })
     .bind(&format!("127.0.0.1:{}", port))
     .unwrap_or_else(|_| panic!("Failed to bind to port {}", port))
