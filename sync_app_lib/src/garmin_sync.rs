@@ -1,10 +1,10 @@
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use failure::{err_msg, Error};
 use maplit::hashmap;
 use reqwest::header::HeaderMap;
 use reqwest::{Response, Url};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::Debug;
 
 use super::config::Config;
@@ -96,20 +96,19 @@ impl GarminSync {
         let results =
             self.run_single_sync("garmin/scale_measurements", "measurements", |mut resp| {
                 let results: Vec<ScaleMeasurement> = resp.json()?;
-                output.push(format!("measurements {}", results.len()));
+                output.push(format!("measurements {} {}", resp.url(), results.len()));
                 let results: HashMap<_, _> =
                     results.into_iter().map(|val| (val.datetime, val)).collect();
                 Ok(results)
             })?;
         output.extend_from_slice(&results);
 
-        for i in 0..10 {
-            let date = (Utc::now() - Duration::days(i)).naive_local().date();
+        for date in self.get_heartrate_dates(10)? {
             let url = format!("garmin/fitbit/heartrate_db?date={}", date);
             output.push(format!("start update {}", url));
             let results = self.run_single_sync(&url, "updates", |mut resp| {
                 let results: Vec<FitbitHeartRate> = resp.json()?;
-                output.push(format!("updates {} {}", i, results.len()));
+                output.push(format!("updates {} {} {}", date, resp.url(), results.len()));
                 let results: HashMap<_, _> =
                     results.into_iter().map(|val| (val.datetime, val)).collect();
                 Ok(results)
@@ -118,6 +117,38 @@ impl GarminSync {
         }
 
         Ok(output)
+    }
+
+    fn get_heartrate_dates(&self, ndays: i64) -> Result<BTreeSet<NaiveDate>, Error> {
+        let start_date = (Utc::now() - Duration::days(ndays)).naive_local().date();
+        let query = format!("start_date={}", start_date);
+        let path = "/garmin/fitbit/heartrate_count";
+        let (from_url, to_url) = self.get_urls()?;
+        let mut url = from_url.join(path)?;
+        url.set_query(Some(&query));
+        let counts0: Vec<(NaiveDate, i64)> = self.session0.get(&url, HeaderMap::new())?.json()?;
+        let dates0: BTreeSet<NaiveDate> = counts0.iter().map(|(x, _)| *x).collect();
+        let counts0: BTreeMap<_, _> = counts0.into_iter().collect();
+        let mut url = to_url.join(path)?;
+        url.set_query(Some(&query));
+        let counts1: Vec<(NaiveDate, i64)> = self.session1.get(&url, HeaderMap::new())?.json()?;
+        let dates1: BTreeSet<NaiveDate> = counts0.iter().map(|(x, _)| *x).collect();
+        let counts1: BTreeMap<_, _> = counts1.into_iter().collect();
+
+        let dates: BTreeSet<NaiveDate> = dates0
+            .intersection(&dates1)
+            .filter_map(|d| {
+                let count0 = counts0.get(&d).unwrap_or(&-1);
+                let count1 = counts1.get(&d).unwrap_or(&-1);
+
+                if (count0 == count1) && (*count0 > 0) && (*count1 > 0) {
+                    None
+                } else {
+                    Some(*d)
+                }
+            })
+            .collect();
+        Ok(dates)
     }
 
     fn run_single_sync<T, F>(
