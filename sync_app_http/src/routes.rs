@@ -112,5 +112,5 @@ pub fn sync_garmin(
     data.db
         .send(GarminSyncRequest {})
         .from_err()
-        .and_then(move |res| res.and_then(|body| form_http_response(body.join("\n"))))
+        .and_then(move |res| res.and_then(|body| form_http_response(body.join("<br>"))))
 }
