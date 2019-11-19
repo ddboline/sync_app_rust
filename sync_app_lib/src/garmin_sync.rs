@@ -6,6 +6,7 @@ use reqwest::{Response, Url};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::Debug;
+use log::debug;
 
 use super::config::Config;
 use super::reqwest_session::ReqwestSession;
@@ -124,16 +125,21 @@ impl GarminSync {
         let query = format!("start_date={}", start_date);
         let path = "/garmin/fitbit/heartrate_count";
         let (from_url, to_url) = self.get_urls()?;
+
         let mut url = from_url.join(path)?;
         url.set_query(Some(&query));
         let counts0: Vec<(NaiveDate, i64)> = self.session0.get(&url, HeaderMap::new())?.json()?;
         let dates0: BTreeSet<NaiveDate> = counts0.iter().map(|(x, _)| *x).collect();
         let counts0: BTreeMap<_, _> = counts0.into_iter().collect();
+
         let mut url = to_url.join(path)?;
         url.set_query(Some(&query));
         let counts1: Vec<(NaiveDate, i64)> = self.session1.get(&url, HeaderMap::new())?.json()?;
-        let dates1: BTreeSet<NaiveDate> = counts0.iter().map(|(x, _)| *x).collect();
+        let dates1: BTreeSet<NaiveDate> = counts1.iter().map(|(x, _)| *x).collect();
         let counts1: BTreeMap<_, _> = counts1.into_iter().collect();
+
+        debug!("dates0 {:?}", dates0);
+        debug!("dates1 {:?}", dates1);
 
         let dates: BTreeSet<NaiveDate> = dates0
             .union(&dates1)
@@ -148,6 +154,7 @@ impl GarminSync {
                 }
             })
             .collect();
+        debug!("got dates {:?}", dates);
         Ok(dates)
     }
 
@@ -214,5 +221,20 @@ impl GarminSync {
             }
         }
         Ok(output)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::config::Config;
+    use crate::garmin_sync::GarminSync;
+
+    #[test]
+    fn test_get_heartrate_dates() {
+        let config = Config::init_config().unwrap();
+        let s = GarminSync::new(config);
+        s.init().unwrap();
+        let result = s.get_heartrate_dates(10).unwrap();
+        assert!(result.len() <= 10);
     }
 }
