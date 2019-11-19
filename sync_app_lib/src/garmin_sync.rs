@@ -136,7 +136,7 @@ impl GarminSync {
         let counts1: BTreeMap<_, _> = counts1.into_iter().collect();
 
         let dates: BTreeSet<NaiveDate> = dates0
-            .intersection(&dates1)
+            .union(&dates1)
             .filter_map(|d| {
                 let count0 = counts0.get(&d).unwrap_or(&-1);
                 let count1 = counts1.get(&d).unwrap_or(&-1);
