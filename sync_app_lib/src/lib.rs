@@ -20,6 +20,7 @@ pub mod file_sync;
 pub mod garmin_sync;
 pub mod gdrive_instance;
 pub mod models;
+pub mod movie_sync;
 pub mod pgpool;
 pub mod reqwest_session;
 pub mod s3_instance;

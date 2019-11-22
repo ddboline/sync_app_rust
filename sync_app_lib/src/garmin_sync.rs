@@ -1,12 +1,12 @@
 use chrono::{DateTime, Duration, NaiveDate, Utc};
 use failure::{err_msg, Error};
+use log::debug;
 use maplit::hashmap;
 use reqwest::header::HeaderMap;
 use reqwest::{Response, Url};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::Debug;
-use log::debug;
 
 use super::config::Config;
 use super::reqwest_session::ReqwestSession;
