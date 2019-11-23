@@ -333,4 +333,13 @@ impl BlackList {
         }
         false
     }
+
+    pub fn could_be_in_blacklist(&self, url: &Url) -> bool {
+        for item in &self.blacklist {
+            if item.blacklist_url.contains(url.as_str()) {
+                return true;
+            }
+        }
+        false
+    }
 }
