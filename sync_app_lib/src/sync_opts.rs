@@ -12,7 +12,7 @@ use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
 use crate::file_sync::{FileSync, FileSyncAction};
-use crate::models::{FileSyncCache, FileSyncConfig, InsertFileSyncConfig};
+use crate::models::{BlackList, FileSyncCache, FileSyncConfig, InsertFileSyncConfig};
 use crate::pgpool::PgPool;
 
 #[derive(StructOpt, Debug)]
@@ -43,6 +43,8 @@ impl SyncOpts {
     }
 
     pub fn process_sync_opts(&self, config: &Config, pool: &PgPool) -> Result<(), Error> {
+        let blacklist = BlackList::new(pool)?;
+
         match self.action {
             FileSyncAction::Index => {
                 let urls = if self.urls.is_empty() {
@@ -57,7 +59,18 @@ impl SyncOpts {
                         let pool = pool.clone();
                         let conf = FileListConf::from_url(&url, &config)?;
                         let flist = FileList::from_conf(conf);
-                        let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
+                        let list: Vec<_> = flist
+                            .fill_file_list(Some(&pool))?
+                            .into_iter()
+                            .filter(|entry| {
+                                if let Some(url) = entry.urlname.as_ref() {
+                                    !blacklist.is_in_blacklist(url)
+                                } else {
+                                    true
+                                }
+                            })
+                            .collect();
+                        let flist = flist.with_list(list);
                         flist.cache_file_list(&pool)?;
                         Ok(flist)
                     })
@@ -86,7 +99,18 @@ impl SyncOpts {
                         let pool = pool.clone();
                         let conf = FileListConf::from_url(&url, &config)?;
                         let flist = FileList::from_conf(conf);
-                        let flist = flist.with_list(flist.fill_file_list(Some(&pool))?);
+                        let list: Vec<_> = flist
+                            .fill_file_list(Some(&pool))?
+                            .into_iter()
+                            .filter(|entry| {
+                                if let Some(url) = entry.urlname.as_ref() {
+                                    !blacklist.is_in_blacklist(url)
+                                } else {
+                                    true
+                                }
+                            })
+                            .collect();
+                        let flist = flist.with_list(list);
                         flist.cache_file_list(&pool)?;
                         Ok(flist)
                     })

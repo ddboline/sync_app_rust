@@ -33,6 +33,13 @@ table! {
 }
 
 table! {
+    file_sync_blacklist (id) {
+        id -> Int4,
+        blacklist_url -> Text,
+    }
+}
+
+table! {
     file_sync_cache (id) {
         id -> Int4,
         src_url -> Text,
@@ -54,6 +61,7 @@ allow_tables_to_appear_in_same_query!(
     authorized_users,
     directory_info_cache,
     file_info_cache,
+    file_sync_blacklist,
     file_sync_cache,
     file_sync_config,
 );

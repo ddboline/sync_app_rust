@@ -300,3 +300,37 @@ impl AuthorizedUsers {
         authorized_users.load(&conn).map_err(err_msg)
     }
 }
+
+#[derive(Queryable, Clone, Debug)]
+pub struct FileSyncBlacklist {
+    pub id: i32,
+    pub blacklist_url: String,
+}
+
+impl FileSyncBlacklist {
+    fn get_blacklist(pool: &PgPool) -> Result<Vec<FileSyncBlacklist>, Error> {
+        use crate::schema::file_sync_blacklist::dsl::file_sync_blacklist;
+        let conn = pool.get()?;
+        file_sync_blacklist.load(&conn).map_err(err_msg)
+    }
+}
+
+#[derive(Default)]
+pub struct BlackList {
+    blacklist: Vec<FileSyncBlacklist>,
+}
+
+impl BlackList {
+    pub fn new(pool: &PgPool) -> Result<Self, Error> {
+        FileSyncBlacklist::get_blacklist(pool).map(|blacklist| Self { blacklist })
+    }
+
+    pub fn is_in_blacklist(&self, url: &Url) -> bool {
+        for item in &self.blacklist {
+            if url.as_str().contains(&item.blacklist_url) {
+                return true;
+            }
+        }
+        false
+    }
+}
