@@ -198,23 +198,23 @@ impl MovieSync {
         let (from_url, to_url) = self.get_urls()?;
         if last_modified0 > last_modified1 {
             self._run_single_sync(
-                &to_url,
-                &self.session1,
-                &from_url,
-                &self.session0,
-                table,
-                last_modified0,
-                js_prefix,
-                transform,
-            )
-        } else {
-            self._run_single_sync(
                 &from_url,
                 &self.session0,
                 &to_url,
                 &self.session1,
                 table,
                 last_modified1,
+                js_prefix,
+                transform,
+            )
+        } else {
+            self._run_single_sync(
+                &to_url,
+                &self.session1,
+                &from_url,
+                &self.session0,
+                table,
+                last_modified0,
                 js_prefix,
                 transform,
             )
@@ -250,7 +250,7 @@ impl MovieSync {
 
         let path = format!("list/{}", table);
         let url = endpoint1.join(&path)?;
-        println!("{} {}", url, data.len());
+        println!("{} {:#?}", url, data);
         output.push(format!("{}", url));
         for chunk in data.chunks(100) {
             let js = hashmap! {
