@@ -58,6 +58,9 @@ footer {
 <form action="javascript:searchDiary();">
     <input type="button" name="sync_button" value="Sync" onclick="syncAll();"/>
     <input type="button" name="proc_button" value="Process" onclick="processAll();"/>
+    <input type="button" name="sync_garmin" value="Scale Sync" onclick="heartrateSync();"/>
+    <input type="button" name="sync_movie" value="Movie Sync" onclick="movieSync();"/>
+    <button name="garminconnectoutput" id="garminconnectoutput"> &nbsp; </button>
 </form>
 
 <article id="main_article">
@@ -69,6 +72,7 @@ DISPLAY_TEXT
         let xmlhttp = new XMLHttpRequest();
         xmlhttp.onload = function f() {
             location.reload();
+            document.getElementById("garminconnectoutput").innerHTML = "done";
         }
         xmlhttp.open("GET", url, true);
         xmlhttp.send(null);
@@ -105,85 +109,22 @@ DISPLAY_TEXT
     }
     function syncAll() {
         updateMainArticle('/sync/sync');
-        document.getElementById("main_article").innerHTML = "waiting..."
+        document.getElementById("garminconnectoutput").innerHTML = "syncing..."
     }
     function processAll() {
         updateMainArticle('/sync/proc');
-        document.getElementById("main_article").innerHTML = "waiting..."
+        document.getElementById("garminconnectoutput").innerHTML = "processing..."
     }
-    function updateNavigation( url ) {
+    function heartrateSync() {
+        let ostr = '/sync/sync_garmin';
         let xmlhttp = new XMLHttpRequest();
-        xmlhttp.onload = function f() {
-            document.getElementById("navigation").innerHTML = xmlhttp.responseText;
+        xmlhttp.open("GET", ostr, true);
+        xmlhttp.onload = function nothing() {
+            document.getElementById("garminconnectoutput").innerHTML = "done";
+            document.getElementById("main_article").innerHTML = xmlhttp.responseText;
         }
-        xmlhttp.open("GET", url, true);
         xmlhttp.send(null);
-    }
-    function gotoEntries( increment ) {
-        increment = Number(increment);
-        let start = Number(document.getElementById('navigation').getAttribute('start'));
-        start = start + increment;
-        let url = '/sync/list';
-        if (start > 0) {
-            url = url + '?start=' + start + '&limit=10';
-            document.getElementById('navigation').setAttribute('start', start);
-        } else {
-            url = url + '?limit=10';
-            document.getElementById('navigation').setAttribute('start', 0);
-        }
-        updateNavigation(url);
-    }
-    function switchToList() {
-        location.replace('/sync/index.html');
-    }
-    function submitFormData( date ) {
-        let url = '/sync/replace';
-        let text = document.getElementById( 'diary_editor_form' );
-        let data = JSON.stringify({'date': date, 'text': text.value});
-        let xmlhttp = new XMLHttpRequest();
-        xmlhttp.open('POST', url, true);
-        xmlhttp.onload = function see_result() {
-            switchToDate( date );
-        }
-        xmlhttp.setRequestHeader('Content-Type', 'application/json');
-        xmlhttp.send(data);
-    }
-    function switchToDisplay( date ) {
-        switchToDate( date );
-    }
-    function switchToEditor( date ) {
-        let url = '/sync/edit?date=' + date;
-        updateMainArticle(url);
-    }
-    function addTabEventHandler() {
-        let editor_form = document.getElementById( 'diary_editor_form' );
-        if (editor_form) {
-            editor_form.addEventListener(
-                'keydown',
-                function(e) {
-                    if(e.keyCode === 9) { // tab was pressed
-                        // get caret position/selection
-                        let start = this.selectionStart;
-                        let end = this.selectionEnd;
-
-                        let target = e.target;
-                        let value = target.value;
-
-                        // set textarea value to: text before caret + tab + text after caret
-                        target.value = value.substring(0, start)
-                                    + "    "
-                                    + value.substring(end);
-
-                        // put caret at right position again (add one for the tab)
-                        this.selectionStart = this.selectionEnd = start + 4;
-
-                        // prevent the focus lose
-                        e.preventDefault();
-                    }
-                },
-                false
-            );
-        }
+        document.getElementById("garminconnectoutput").innerHTML = "syncing";
     }
 </script>
 

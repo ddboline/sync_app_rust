@@ -1,11 +1,11 @@
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use failure::{err_msg, Error};
 use log::debug;
 use maplit::hashmap;
 use reqwest::header::HeaderMap;
 use reqwest::{Response, Url};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 use super::config::Config;
@@ -17,7 +17,7 @@ struct LastModifiedStruct {
     last_modified: DateTime<Utc>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ImdbEpisodes {
     pub show: String,
     pub title: String,
@@ -52,7 +52,7 @@ pub enum TvShowSource {
     All,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct MovieCollectionRow {
     pub idx: i32,
     pub path: String,
@@ -137,42 +137,36 @@ impl MovieSync {
         let mut output = Vec::new();
 
         let (from_url, to_url) = self.get_urls()?;
-        let url = from_url.join("last_modified")?;
+        let url = from_url.join("list/last_modified")?;
+        debug!("{}", url);
         let last_modified0 = Self::get_last_modified(&url, &self.session0)?;
-        let url = to_url.join("last_modified")?;
+        let url = to_url.join("list/last_modified")?;
+        debug!("{}", url);
         let last_modified1 = Self::get_last_modified(&url, &self.session1)?;
 
-        println!("{:?} {:?}", last_modified0, last_modified1);
+        debug!("{:?} {:?}", last_modified0, last_modified1);
 
-        let entry_map = hashmap! {
-            "imdb_episodes" => "episodes",
-            "imdb_ratings" => "shows",
-            "movie_collection" => "collection",
-            "movie_queue" => "queue",
-        };
+        macro_rules! sync_single_table {
+            ($table:expr, $js_prefix:expr, $T:ty) => {
+                let table = $table;
+                let js_prefix = $js_prefix;
+                debug!("{} {}", table, js_prefix);
+                let now = Utc::now();
+                let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
+                let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
+                let results =
+                    self.run_single_sync(table, *last_mod0, *last_mod1, js_prefix, |mut resp| {
+                        let result: Vec<$T> = resp.json()?;
+                        Ok(result)
+                    })?;
+                output.extend_from_slice(&results);
+            };
+        }
 
-        // let results =
-        //     self.run_single_sync("garmin/scale_measurements", "measurements", |mut resp| {
-        //         let results: Vec<ScaleMeasurement> = resp.json()?;
-        //         output.push(format!("measurements {} {}", resp.url(), results.len()));
-        //         let results: HashMap<_, _> =
-        //             results.into_iter().map(|val| (val.datetime, val)).collect();
-        //         Ok(results)
-        //     })?;
-        // output.extend_from_slice(&results);
-
-        // for date in self.get_heartrate_dates(10)? {
-        //     let url = format!("garmin/fitbit/heartrate_db?date={}", date);
-        //     output.push(format!("start update {}", url));
-        //     let results = self.run_single_sync(&url, "updates", |mut resp| {
-        //         let results: Vec<FitbitHeartRate> = resp.json()?;
-        //         output.push(format!("updates {} {} {}", date, resp.url(), results.len()));
-        //         let results: HashMap<_, _> =
-        //             results.into_iter().map(|val| (val.datetime, val)).collect();
-        //         Ok(results)
-        //     })?;
-        //     output.extend_from_slice(&results);
-        // }
+        sync_single_table!("imdb_episodes", "episodes", ImdbEpisodes);
+        sync_single_table!("imdb_ratings", "shows", ImdbRatings);
+        sync_single_table!("movie_collection", "collection", MovieCollectionRow);
+        sync_single_table!("movie_queue", "queue", MovieQueueRow);
 
         Ok(output)
     }
@@ -191,6 +185,44 @@ impl MovieSync {
 
     fn run_single_sync<T, F>(
         &self,
+        table: &str,
+        last_modified0: DateTime<Utc>,
+        last_modified1: DateTime<Utc>,
+        js_prefix: &str,
+        transform: F,
+    ) -> Result<Vec<String>, Error>
+    where
+        T: Debug + Serialize,
+        F: FnMut(Response) -> Result<Vec<T>, Error>,
+    {
+        let (from_url, to_url) = self.get_urls()?;
+        if last_modified0 > last_modified1 {
+            self._run_single_sync(
+                &to_url,
+                &self.session1,
+                &from_url,
+                &self.session0,
+                table,
+                last_modified0,
+                js_prefix,
+                transform,
+            )
+        } else {
+            self._run_single_sync(
+                &from_url,
+                &self.session0,
+                &to_url,
+                &self.session1,
+                table,
+                last_modified1,
+                js_prefix,
+                transform,
+            )
+        }
+    }
+
+    fn _run_single_sync<T, F>(
+        &self,
         endpoint0: &Url,
         session0: &ReqwestSession,
         endpoint1: &Url,
@@ -206,13 +238,19 @@ impl MovieSync {
     {
         let mut output = Vec::new();
 
-        let path = format!("list/{}?start_timestamp={}", table, last_modified);
+        let path = format!(
+            "list/{}?start_timestamp={}",
+            table,
+            last_modified.format("%Y-%m-%dT%H:%M:%S%.fZ")
+        );
         let url = endpoint0.join(&path)?;
+        println!("{}", url);
         output.push(format!("{}", url));
         let data = transform(session0.get(&url, HeaderMap::new())?)?;
 
         let path = format!("list/{}", table);
         let url = endpoint1.join(&path)?;
+        println!("{} {}", url, data.len());
         output.push(format!("{}", url));
         for chunk in data.chunks(100) {
             let js = hashmap! {
@@ -232,11 +270,12 @@ mod tests {
     use crate::movie_sync::MovieSync;
 
     #[test]
-    fn test_get_heartrate_dates() {
+    fn test_movie_sync() {
         let config = Config::init_config().unwrap();
         let s = MovieSync::new(config);
         s.init().unwrap();
-        let result = s.get_heartrate_dates(10).unwrap();
-        assert!(result.len() <= 10);
+        let result = s.run_sync().unwrap();
+        println!("{:?}", result);
+        assert!(false);
     }
 }
