@@ -276,6 +276,6 @@ mod tests {
         s.init().unwrap();
         let result = s.run_sync().unwrap();
         println!("{:?}", result);
-        assert!(false);
+        assert!(result.len() > 0);
     }
 }
