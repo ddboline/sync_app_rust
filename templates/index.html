@@ -77,22 +77,6 @@ DISPLAY_TEXT
         xmlhttp.open("GET", url, true);
         xmlhttp.send(null);
     }
-    function setTextAreaRowsCols() {
-        let textarea = document.getElementById('diary_editor_form');
-        textarea.setAttribute('rows', Math.floor(window.innerHeight * 45 / 856.));
-        textarea.setAttribute('cols', Math.floor(window.innerWidth * 100 / 1105.));
-    }
-    function switchToDate( date ) {
-        updateMainArticle('/sync/display?date=' + date)
-    }
-    function listConflicts( date ) {
-        let url = '/sync/list_conflicts?date=' + date;
-        updateNavigation(url);
-    }
-    function showConflict( date, datetime ) {
-        let url = '/sync/show_conflict?date=' + date + '&datetime=' + datetime;
-        updateMainArticle(url, () => listConflicts(date));
-    }
     function removeCacheEntry( id ) {
         let url = '/sync/delete_cache_entry?id=' + id;
         let xmlhttp = new XMLHttpRequest();
