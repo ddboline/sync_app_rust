@@ -105,7 +105,7 @@ impl FileSync {
         let conf1 = flist1.get_conf();
         let list_a_not_b: Vec<_> = flist0
             .get_filemap()
-            .iter()
+            .par_iter()
             .filter_map(|(k, finfo0)| match flist1.get_filemap().get(k) {
                 Some(finfo1) => {
                     if self.compare_objects(finfo0, finfo1) {
@@ -145,7 +145,7 @@ impl FileSync {
             .collect();
         let list_b_not_a: Vec<_> = flist1
             .get_filemap()
-            .iter()
+            .par_iter()
             .filter_map(|(k, finfo1)| match flist0.get_filemap().get(k) {
                 Some(_) => None,
                 None => {
@@ -182,8 +182,8 @@ impl FileSync {
             flist0.cleanup().and_then(|_| flist1.cleanup())
         } else {
             list_a_not_b
-                .iter()
-                .chain(list_b_not_a.iter())
+                .par_iter()
+                .chain(list_b_not_a.par_iter())
                 .map(|(f0, f1)| {
                     if let Some(u0) = f0.urlname.as_ref() {
                         if let Some(u1) = f1.urlname.as_ref() {
@@ -312,14 +312,14 @@ impl FileSync {
     pub fn delete_files(&self, urls: &[Url], pool: &PgPool) -> Result<(), Error> {
         let all_urls: Vec<_> = if urls.is_empty() {
             let proc_list: Result<Vec<_>, Error> = FileSyncCache::get_cache_list(pool)?
-                .into_iter()
+                .into_par_iter()
                 .map(|v| {
                     let u0: Url = v.src_url.parse()?;
                     let u1: Url = v.dst_url.parse()?;
                     Ok(vec![u0, u1])
                 })
                 .collect();
-            proc_list?.into_iter().flatten().collect()
+            proc_list?.into_par_iter().flatten().collect()
         } else {
             urls.to_vec()
         };
