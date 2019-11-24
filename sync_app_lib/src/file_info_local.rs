@@ -1,12 +1,12 @@
 use checksums::{hash_file, Algorithm};
 use failure::{err_msg, Error};
-use jwalk::DirEntry;
 use std::fs;
 use std::fs::File;
 use std::fs::Metadata;
 use std::path::Path;
 use std::time::SystemTime;
 use url::Url;
+use walkdir::DirEntry;
 
 use crate::file_info::{
     FileInfo, FileInfoTrait, FileStat, Md5Sum, ServiceId, ServiceSession, Sha1Sum,
@@ -170,16 +170,11 @@ impl FileInfoLocal {
         serviceid: Option<ServiceId>,
         servicesession: Option<ServiceSession>,
     ) -> Result<FileInfoLocal, Error> {
-        if item
-            .file_type
-            .as_ref()
-            .map(|f| f.is_dir())
-            .unwrap_or_else(|_| true)
-        {
+        if item.file_type().is_dir() {
             return Err(err_msg("Is a directory, skipping"));
         }
         let path = item.path();
-        let metadata = item.metadata.and_then(|m| m.ok());
+        let metadata = item.metadata().ok();
         FileInfoLocal::from_path_and_metadata(&path, metadata, serviceid, servicesession)
     }
 }

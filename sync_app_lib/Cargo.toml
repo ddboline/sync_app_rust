@@ -17,7 +17,7 @@ r2d2 = "0.8"
 diesel = {version="1.4", features=["postgres", "r2d2", "chrono"]}
 failure = "0.1"
 subprocess = "0.1"
-jwalk = "0.4"
+walkdir = "2.2"
 rayon = "1.2"
 checksums = "0.6"
 chrono = "0.4"

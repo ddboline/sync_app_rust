@@ -1,5 +1,4 @@
 use failure::{err_msg, format_err, Error};
-use jwalk::WalkDir;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::{copy, create_dir_all, remove_file, rename};
@@ -8,6 +7,7 @@ use std::path::PathBuf;
 use std::string::ToString;
 use std::time::SystemTime;
 use url::Url;
+use walkdir::WalkDir;
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
@@ -95,7 +95,7 @@ impl FileListTrait for FileListLocal {
             None => HashMap::new(),
         };
 
-        let wdir = WalkDir::new(&basedir).preload_metadata(true);
+        let wdir = WalkDir::new(&basedir).same_file_system(true);
 
         let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
@@ -109,9 +109,7 @@ impl FileListTrait for FileListLocal {
                     .map(|s| s.to_string_lossy().to_string())
                     .unwrap_or_else(|| "".to_string());
                 let (modified, size) = entry
-                    .metadata
-                    .as_ref()
-                    .and_then(|m| m.as_ref().ok())
+                    .metadata()
                     .map(|metadata| {
                         let modified = metadata
                             .modified()
@@ -122,7 +120,7 @@ impl FileListTrait for FileListLocal {
                         let size = metadata.len() as u32;
                         (modified, size)
                     })
-                    .unwrap_or_else(|| (0, 0));
+                    .unwrap_or_else(|_| (0, 0));
                 if let Some(finfo) = flist_dict.get(&filepath) {
                     if let Some(fstat) = finfo.filestat {
                         if fstat.st_mtime >= modified && fstat.st_size == size {
@@ -147,7 +145,7 @@ impl FileListTrait for FileListLocal {
         let conf = self.get_conf();
         let basedir = conf.baseurl.path();
 
-        let wdir = WalkDir::new(&basedir);
+        let wdir = WalkDir::new(&basedir).same_file_system(true).max_depth(1);
 
         let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
