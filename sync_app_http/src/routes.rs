@@ -9,7 +9,8 @@ use sync_app_lib::file_sync::FileSyncAction;
 use super::app::AppState;
 use super::logged_user::LoggedUser;
 use super::requests::{
-    GarminSyncRequest, ListSyncCacheRequest, MovieSyncRequest, SyncEntryDeleteRequest, SyncRequest,
+    GarminSyncRequest, ListSyncCacheRequest, MovieSyncRequest, SyncEntryDeleteRequest,
+    SyncRemoveRequest, SyncRequest,
 };
 
 fn form_http_response(body: String) -> Result<HttpResponse, Error> {
@@ -32,7 +33,8 @@ pub fn sync_frontpage(
                     .map(|v| {
                         format!(
                             r#"
-                    <input type="button" name="{id}" value="{id}" onclick="removeCacheEntry({id})">
+                    <input type="button" name="Rm" value="Rm" onclick="removeCacheEntry({id})">
+                    <input type="button" name="Del" value="Del" onclick="deleteEntry('{src}')">
                     {src} {dst}"#,
                             id = v.id,
                             src = v.src_url,
@@ -123,4 +125,16 @@ pub fn sync_movie(
         .send(MovieSyncRequest {})
         .from_err()
         .and_then(move |res| res.and_then(|body| form_http_response(body.join("<br>"))))
+}
+
+pub fn remove(
+    query: Query<SyncRemoveRequest>,
+    _: LoggedUser,
+    data: Data<AppState>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    let query = query.into_inner();
+    data.db
+        .send(query)
+        .from_err()
+        .and_then(move |res| res.and_then(|_| form_http_response("finished".to_string())))
 }

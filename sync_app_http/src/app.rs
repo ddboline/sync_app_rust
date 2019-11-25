@@ -13,7 +13,7 @@ use sync_app_lib::pgpool::PgPool;
 
 use super::logged_user::AUTHORIZED_USERS;
 use super::routes::{
-    delete_cache_entry, list_sync_cache, proc_all, sync_all, sync_frontpage, sync_garmin,
+    delete_cache_entry, list_sync_cache, proc_all, remove, sync_all, sync_frontpage, sync_garmin,
     sync_movie,
 };
 
@@ -54,6 +54,7 @@ pub fn start_app() {
             .service(web::resource("/sync/index.html").route(web::get().to_async(sync_frontpage)))
             .service(web::resource("/sync/sync").route(web::get().to_async(sync_all)))
             .service(web::resource("/sync/proc").route(web::get().to_async(proc_all)))
+            .service(web::resource("/sync/remove").route(web::get().to_async(remove)))
             .service(
                 web::resource("/sync/list_sync_cache").route(web::get().to_async(list_sync_cache)),
             )

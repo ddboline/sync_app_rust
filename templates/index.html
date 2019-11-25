@@ -86,6 +86,15 @@ DISPLAY_TEXT
         }
         xmlhttp.send(null);
     }
+    function deleteEntry( url ) {
+        let url = '/sync/remove?url=' + url;
+        let xmlhttp = new XMLHttpRequest();
+        xmlhttp.open('GET', url, true);
+        xmlhttp.onload = function see_result() {
+            location.reload();
+        }
+        xmlhttp.send(null);
+    }
     function searchDiary() {
         let text_form = document.getElementById( 'search_text' );
         let url = encodeURI('/sync/search?text=' + text_form.value);

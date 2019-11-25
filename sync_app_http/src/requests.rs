@@ -85,3 +85,22 @@ impl Handler<MovieSyncRequest> for PgPool {
         sync.run_sync()
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct SyncRemoveRequest {
+    pub url: String,
+}
+
+impl Message for SyncRemoveRequest {
+    type Result = Result<(), Error>;
+}
+
+impl Handler<SyncRemoveRequest> for PgPool {
+    type Result = Result<(), Error>;
+    fn handle(&mut self, req: SyncRemoveRequest, _: &mut Self::Context) -> Self::Result {
+        let config = Config::init_config()?;
+        let url = req.url.parse()?;
+        let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
+        sync.process_sync_opts(&config, self)
+    }
+}
