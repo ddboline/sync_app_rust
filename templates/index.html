@@ -86,8 +86,8 @@ DISPLAY_TEXT
         }
         xmlhttp.send(null);
     }
-    function deleteEntry( url ) {
-        let url = '/sync/remove?url=' + url;
+    function deleteEntry( url_ ) {
+        let url = '/sync/remove?url=' + url_;
         let xmlhttp = new XMLHttpRequest();
         xmlhttp.open('GET', url, true);
         xmlhttp.onload = function see_result() {
