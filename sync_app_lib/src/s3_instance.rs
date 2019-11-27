@@ -262,6 +262,7 @@ mod tests {
     use crate::s3_instance::S3Instance;
 
     #[test]
+    #[ignore]
     fn test_list_buckets() {
         let s3_instance = S3Instance::new("us-east-1").max_keys(100);
         let blist = s3_instance.get_list_of_buckets().unwrap();

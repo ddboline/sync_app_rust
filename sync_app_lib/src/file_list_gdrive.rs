@@ -425,6 +425,7 @@ mod tests {
     use crate::pgpool::PgPool;
 
     #[test]
+    #[ignore]
     fn test_gdrive_fill_file_list() {
         let config = Config::init_config().unwrap();
         let mut gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");

@@ -230,6 +230,7 @@ mod tests {
     use crate::garmin_sync::GarminSync;
 
     #[test]
+    #[ignore]
     fn test_get_heartrate_dates() {
         let config = Config::init_config().unwrap();
         let s = GarminSync::new(config);

@@ -270,6 +270,7 @@ mod tests {
     use crate::movie_sync::MovieSync;
 
     #[test]
+    #[ignore]
     fn test_movie_sync() {
         let config = Config::init_config().unwrap();
         let s = MovieSync::new(config);

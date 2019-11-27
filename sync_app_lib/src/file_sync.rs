@@ -424,6 +424,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_compare_lists_0() {
         let config = Config::init_config().unwrap();
         let pool = PgPool::new(&config.database_url);
@@ -467,6 +468,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_compare_lists_1() {
         let config = Config::init_config().unwrap();
         let pool = PgPool::new(&config.database_url);

@@ -799,6 +799,7 @@ mod tests {
     use crate::gdrive_instance::GDriveInstance;
 
     #[test]
+    #[ignore]
     fn test_create_drive() {
         let config = Config::init_config().unwrap();
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")
@@ -865,6 +866,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_gdrive_store_read_change_token() {
         let config = Config::init_config().unwrap();
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com")

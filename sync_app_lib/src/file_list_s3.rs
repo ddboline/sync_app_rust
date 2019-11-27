@@ -269,6 +269,7 @@ mod tests {
     use crate::s3_instance::S3Instance;
 
     #[test]
+    #[ignore]
     fn test_fill_file_list() {
         let config = Config::init_config().unwrap();
         let s3 = S3Instance::new(&config.aws_region_name);

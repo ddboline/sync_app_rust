@@ -156,6 +156,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_file_info_from_object() {
         let config = Config::init_config().unwrap();
         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");

@@ -290,6 +290,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_file_list_ssh_copy_from() {
         let config = Config::init_config().unwrap();
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/temp0.txt"
@@ -312,6 +313,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_file_list_ssh_copy_to() {
         let config = Config::init_config().unwrap();
 
