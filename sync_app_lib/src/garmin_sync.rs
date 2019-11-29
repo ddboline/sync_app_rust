@@ -1,11 +1,10 @@
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use failure::{err_msg, Error};
-use log::debug;
 use maplit::hashmap;
 use reqwest::header::HeaderMap;
 use reqwest::{Response, Url};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{ HashMap};
 use std::fmt::Debug;
 
 use super::config::Config;
@@ -132,7 +131,7 @@ impl GarminSync {
             .filter(|(k, _)| !measurements1.contains_key(&k))
             .map(|(_, v)| v)
             .collect();
-        if measurements.len() > 0 {
+        if !measurements.is_empty() {
             if measurements.len() < 20 {
                 output.push(format!("{:?}", measurements));
             } else {
@@ -153,7 +152,7 @@ impl GarminSync {
             .filter(|(k, _)| !measurements0.contains_key(&k))
             .map(|(_, v)| v)
             .collect();
-        if measurements.len() > 0 {
+        if !measurements.is_empty() {
             if measurements.len() < 20 {
                 output.push(format!("{:?}", measurements));
             } else {

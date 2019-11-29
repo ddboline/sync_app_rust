@@ -283,7 +283,8 @@ mod tests {
         assert_eq!(conf.0.baseurl, baseurl);
     }
 
-    #[test] #[ignore]
+    #[test]
+    #[ignore]
     fn test_fill_file_list() {
         let basepath = "src".parse().unwrap();
         let config = Config::init_config().unwrap();
