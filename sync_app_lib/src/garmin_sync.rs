@@ -104,58 +104,7 @@ impl GarminSync {
             })?;
         output.extend_from_slice(&results);
 
-        for date in self.get_heartrate_dates(10)? {
-            let url = format!("garmin/fitbit/heartrate_db?date={}", date);
-            output.push(format!("start update {}", url));
-            let results = self.run_single_sync(&url, "updates", |mut resp| {
-                let results: Vec<FitbitHeartRate> = resp.json()?;
-                output.push(format!("updates {} {} {}", date, resp.url(), results.len()));
-                let results: HashMap<_, _> =
-                    results.into_iter().map(|val| (val.datetime, val)).collect();
-                Ok(results)
-            })?;
-            output.extend_from_slice(&results);
-        }
-
         Ok(output)
-    }
-
-    fn get_heartrate_dates(&self, ndays: i64) -> Result<BTreeSet<NaiveDate>, Error> {
-        let start_date = (Utc::now() - Duration::days(ndays)).naive_local().date();
-        let query = format!("start_date={}", start_date);
-        let path = "/garmin/fitbit/heartrate_count";
-        let (from_url, to_url) = self.get_urls()?;
-
-        let mut url = from_url.join(path)?;
-        url.set_query(Some(&query));
-        let counts0: Vec<(NaiveDate, i64)> = self.session0.get(&url, HeaderMap::new())?.json()?;
-        let dates0: BTreeSet<NaiveDate> = counts0.iter().map(|(x, _)| *x).collect();
-        let counts0: BTreeMap<_, _> = counts0.into_iter().collect();
-
-        let mut url = to_url.join(path)?;
-        url.set_query(Some(&query));
-        let counts1: Vec<(NaiveDate, i64)> = self.session1.get(&url, HeaderMap::new())?.json()?;
-        let dates1: BTreeSet<NaiveDate> = counts1.iter().map(|(x, _)| *x).collect();
-        let counts1: BTreeMap<_, _> = counts1.into_iter().collect();
-
-        debug!("dates0 {:?}", dates0);
-        debug!("dates1 {:?}", dates1);
-
-        let dates: BTreeSet<NaiveDate> = dates0
-            .union(&dates1)
-            .filter_map(|d| {
-                let count0 = counts0.get(&d).unwrap_or(&-1);
-                let count1 = counts1.get(&d).unwrap_or(&-1);
-
-                if (count0 == count1) && (*count0 > 0) && (*count1 > 0) {
-                    None
-                } else {
-                    Some(*d)
-                }
-            })
-            .collect();
-        debug!("got dates {:?}", dates);
-        Ok(dates)
     }
 
     fn run_single_sync<T, F>(
@@ -221,21 +170,5 @@ impl GarminSync {
             }
         }
         Ok(output)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::config::Config;
-    use crate::garmin_sync::GarminSync;
-
-    #[test]
-    #[ignore]
-    fn test_get_heartrate_dates() {
-        let config = Config::init_config().unwrap();
-        let s = GarminSync::new(config);
-        s.init().unwrap();
-        let result = s.get_heartrate_dates(10).unwrap();
-        assert!(result.len() <= 10);
     }
 }
