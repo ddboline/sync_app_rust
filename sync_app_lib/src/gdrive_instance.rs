@@ -12,6 +12,7 @@ use oauth2::{
     Authenticator, ConsoleApplicationSecret, DefaultAuthenticatorDelegate, DiskTokenStorage,
     FlowType,
 };
+use parking_lot::Mutex;
 use percent_encoding::percent_decode;
 use std::cmp;
 use std::collections::{HashMap, HashSet};
@@ -21,8 +22,8 @@ use std::fs::{create_dir_all, File};
 use std::io;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
-use std::rc::Rc;
 use std::string::ToString;
+use std::sync::Arc;
 use url::Url;
 use yup_oauth2 as oauth2;
 
@@ -65,7 +66,7 @@ lazy_static! {
 
 #[derive(Clone)]
 pub struct GDriveInstance {
-    pub gdrive: Rc<GCDrive>,
+    pub gdrive: Arc<Mutex<GCDrive>>,
     pub page_size: i32,
     pub max_keys: Option<usize>,
     pub session_name: String,
@@ -87,7 +88,9 @@ impl GDriveInstance {
         );
         let path = Path::new(&fname);
         Self {
-            gdrive: Rc::new(Self::create_drive(&config, session_name).unwrap()),
+            gdrive: Arc::new(Mutex::new(
+                Self::create_drive(&config, session_name).unwrap(),
+            )),
             page_size: 1000,
             max_keys: None,
             session_name: session_name.to_string(),
@@ -175,8 +178,8 @@ impl GDriveInstance {
         ];
         let fields = format!("nextPageToken,files({})", fields.join(","));
         exponential_retry(|| {
-            let mut request = self
-                .gdrive
+            let _gdrive = self.gdrive.lock();
+            let mut request = _gdrive
                 .files()
                 .list()
                 .param("fields", &fields)
@@ -276,6 +279,7 @@ impl GDriveInstance {
 
     pub fn get_file_metadata(&self, id: &str) -> Result<drive3::File, Error> {
         self.gdrive
+            .lock()
             .files()
             .get(id)
             .param("fields", "id,name,parents,mimeType,webContentLink")
@@ -306,6 +310,7 @@ impl GDriveInstance {
             let dummy_file = DummyFile::new(&[]);
 
             self.gdrive
+                .lock()
                 .files()
                 .create(new_file)
                 .upload(dummy_file, mime)
@@ -332,6 +337,7 @@ impl GDriveInstance {
             };
 
             self.gdrive
+                .lock()
                 .files()
                 .create(new_file)
                 .upload_resumable(file_obj, mime)
@@ -378,6 +384,7 @@ impl GDriveInstance {
             let mut response = match export_type {
                 Some(t) => self
                     .gdrive
+                    .lock()
                     .files()
                     .export(gdriveid, &t)
                     .add_scope(drive3::Scope::Full)
@@ -386,6 +393,7 @@ impl GDriveInstance {
                 None => {
                     let (response, _empty_file) = self
                         .gdrive
+                        .lock()
                         .files()
                         .get(&gdriveid)
                         .supports_team_drives(false)
@@ -411,6 +419,7 @@ impl GDriveInstance {
             f.trashed = Some(true);
 
             self.gdrive
+                .lock()
                 .files()
                 .update(f, id)
                 .add_scope(drive3::Scope::Full)
@@ -423,6 +432,7 @@ impl GDriveInstance {
     pub fn delete_permanently(&self, id: &str) -> Result<bool, Error> {
         exponential_retry(|| {
             self.gdrive
+                .lock()
                 .files()
                 .delete(&id)
                 .supports_team_drives(false)
@@ -444,6 +454,7 @@ impl GDriveInstance {
             let mut file = drive3::File::default();
             file.name = Some(new_name.to_string());
             self.gdrive
+                .lock()
                 .files()
                 .update(file, id)
                 .remove_parents(&current_parents)
@@ -641,6 +652,7 @@ impl GDriveInstance {
 
     pub fn get_start_page_token(&self) -> Result<String, Error> {
         self.gdrive
+            .lock()
             .changes()
             .get_start_page_token()
             .add_scope(drive3::Scope::Full)
@@ -705,6 +717,7 @@ impl GDriveInstance {
             loop {
                 let result = exponential_retry(|| {
                     self.gdrive
+                        .lock()
                         .changes()
                         .list(&start_page_token)
                         .param("fields", &fields)

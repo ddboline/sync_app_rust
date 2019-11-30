@@ -4,7 +4,7 @@ use maplit::hashmap;
 use reqwest::header::HeaderMap;
 use reqwest::{Response, Url};
 use serde::{Deserialize, Serialize};
-use std::collections::{ HashMap};
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 use super::config::Config;

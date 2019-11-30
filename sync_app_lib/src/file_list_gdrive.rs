@@ -2,11 +2,12 @@ use google_drive3_fork as drive3;
 
 use failure::{err_msg, format_err, Error};
 use log::debug;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::create_dir_all;
 use std::io::{stdout, Write};
 use std::path::Path;
-use std::rc::Rc;
+use std::sync::Arc;
 use url::Url;
 
 use crate::config::Config;
@@ -22,7 +23,7 @@ use crate::pgpool::PgPool;
 pub struct FileListGDrive {
     pub flist: FileList,
     pub gdrive: GDriveInstance,
-    pub directory_map: Rc<HashMap<String, DirectoryInfo>>,
+    pub directory_map: Arc<HashMap<String, DirectoryInfo>>,
     pub root_directory: Option<String>,
     pub pool: Option<PgPool>,
 }
@@ -39,7 +40,7 @@ impl FileListGDrive {
         let f = FileListGDrive {
             flist: FileList::from_conf(conf.0),
             gdrive: gdrive.clone(),
-            directory_map: Rc::new(HashMap::new()),
+            directory_map: Arc::new(HashMap::new()),
             root_directory: None,
             pool: pool.cloned(),
         };
@@ -68,7 +69,7 @@ impl FileListGDrive {
                 self.cache_directory_map(&pool, &dmap, &root_dir)?;
             }
         }
-        self.directory_map = Rc::new(dmap);
+        self.directory_map = Arc::new(dmap);
         self.root_directory = root_dir;
 
         Ok(self)
@@ -96,10 +97,10 @@ impl FileListGDrive {
 
     fn convert_file_list_to_file_info(
         &self,
-        flist: Vec<drive3::File>,
+        flist: &[drive3::File],
     ) -> Result<Vec<FileInfo>, Error> {
         let flist: Result<Vec<_>, Error> = flist
-            .into_iter()
+            .par_iter()
             .filter(|f| {
                 if let Some(owners) = f.owners.as_ref() {
                     if owners.is_empty() {
@@ -117,12 +118,12 @@ impl FileListGDrive {
                 true
             })
             .map(|f| {
-                FileInfoGDrive::from_object(f, &self.gdrive, &self.directory_map)
+                FileInfoGDrive::from_object(f.clone(), &self.gdrive, &self.directory_map)
                     .map(FileInfoTrait::into_finfo)
             })
             .collect();
         let flist: Vec<_> = flist?
-            .into_iter()
+            .into_par_iter()
             .filter(|f| {
                 if let Some(url) = f.urlname.as_ref() {
                     if url.as_str().contains(self.get_conf().baseurl.as_str()) {
@@ -143,7 +144,7 @@ impl FileListGDrive {
     fn get_all_files(&self) -> Result<Vec<FileInfo>, Error> {
         let flist: Vec<_> = self.gdrive.get_all_files(false)?;
 
-        let flist = self.convert_file_list_to_file_info(flist)?;
+        let flist = self.convert_file_list_to_file_info(&flist)?;
 
         Ok(flist)
     }
@@ -159,7 +160,7 @@ impl FileListGDrive {
             .collect();
         let flist: Vec<_> = chlist.into_iter().filter_map(|ch| ch.file).collect();
 
-        let flist = self.convert_file_list_to_file_info(flist)?;
+        let flist = self.convert_file_list_to_file_info(&flist)?;
         Ok((delete_list, flist))
     }
 }

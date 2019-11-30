@@ -73,7 +73,7 @@ impl FileList {
         FileList {
             conf: self.conf.clone(),
             filemap: filelist
-                .into_iter()
+                .into_par_iter()
                 .map(|mut f| {
                     let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
                         remove_basepath(&path, &self.conf.basepath.to_string_lossy())
@@ -143,7 +143,7 @@ pub trait FileListTrait {
 
         let current_cache: HashMap<_, _> = self
             .load_file_list(pool)?
-            .into_iter()
+            .into_par_iter()
             .filter_map(|item| {
                 let key = item.get_key();
                 key.map(|k| (k, item))
@@ -484,7 +484,7 @@ impl FileListTrait for FileList {
                 Some(pool) => match self.load_file_list(&pool) {
                     Ok(v) => {
                         let result: Result<Vec<_>, Error> =
-                            v.iter().map(FileInfo::from_cache_info).collect();
+                            v.par_iter().map(FileInfo::from_cache_info).collect();
                         result
                     }
                     Err(e) => Err(e),
