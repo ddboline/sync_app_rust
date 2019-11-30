@@ -408,7 +408,7 @@ impl FileListTrait for FileListGDrive {
         if finfo.servicetype != FileService::GDrive {
             Err(err_msg("Wrong service type"))
         } else if let Some(gdriveid) = finfo.serviceid.as_ref() {
-            self.gdrive.move_to_trash(&gdriveid.0)
+            self.gdrive.delete_permanently(&gdriveid.0).map(|_| ())
         } else {
             Ok(())
         }
