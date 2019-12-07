@@ -19,6 +19,7 @@ pub mod file_service;
 pub mod file_sync;
 pub mod garmin_sync;
 pub mod gdrive_instance;
+pub mod iso_8601_datetime;
 pub mod models;
 pub mod movie_sync;
 pub mod pgpool;

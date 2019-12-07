@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use super::config::Config;
+use super::iso_8601_datetime;
 use super::reqwest_session::ReqwestSession;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
@@ -24,6 +25,13 @@ struct ScaleMeasurement {
 struct FitbitHeartRate {
     pub datetime: DateTime<Utc>,
     pub value: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct StravaItem {
+    #[serde(with = "iso_8601_datetime")]
+    pub begin_datetime: DateTime<Utc>,
+    pub title: String,
 }
 
 pub struct GarminSync {
@@ -99,6 +107,18 @@ impl GarminSync {
                 output.push(format!("measurements {} {}", resp.url(), results.len()));
                 let results: HashMap<_, _> =
                     results.into_iter().map(|val| (val.datetime, val)).collect();
+                Ok(results)
+            })?;
+        output.extend_from_slice(&results);
+
+        let results =
+            self.run_single_sync("garmin/strava/activities_db", "updates", |mut resp| {
+                let results: HashMap<String, StravaItem> = resp.json()?;
+                output.push(format!("activities {} {}", resp.url(), results.len()));
+                let results: HashMap<_, _> = results
+                    .into_iter()
+                    .map(|(_, v)| (v.begin_datetime, v))
+                    .collect();
                 Ok(results)
             })?;
         output.extend_from_slice(&results);
