@@ -184,9 +184,9 @@ impl From<FileSyncCache> for InsertFileSyncCache {
 
 impl FileSyncCache {
     pub fn get_cache_list(pool: &PgPool) -> Result<Vec<FileSyncCache>, Error> {
-        use crate::schema::file_sync_cache::dsl::file_sync_cache;
+        use crate::schema::file_sync_cache::dsl::{file_sync_cache, src_url};
         let conn = pool.get()?;
-        file_sync_cache.load(&conn).map_err(err_msg)
+        file_sync_cache.order(src_url).load(&conn).map_err(err_msg)
     }
 
     pub fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
