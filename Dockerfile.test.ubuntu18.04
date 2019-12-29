@@ -15,3 +15,4 @@ ADD Makefile /sync_app_rust
 ADD sync_app_lib /sync_app_rust/sync_app_lib
 ADD sync_app_http /sync_app_rust/sync_app_http
 ADD templates /sync_app_rust/templates
+ADD gdrive_lib /sync_app_rust/gdrive_lib
