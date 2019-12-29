@@ -1,5 +1,3 @@
-use actix::sync::SyncContext;
-use actix::Actor;
 use diesel::pg::PgConnection;
 use diesel::r2d2::ConnectionManager;
 use failure::{err_msg, Error};
@@ -30,8 +28,4 @@ impl PgPool {
     pub fn get(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>, Error> {
         self.pool.get().map_err(err_msg)
     }
-}
-
-impl Actor for PgPool {
-    type Context = SyncContext<Self>;
 }

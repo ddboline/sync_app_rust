@@ -1,5 +1,3 @@
-use google_drive3_fork as drive3;
-
 use failure::{err_msg, format_err, Error};
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
@@ -10,13 +8,14 @@ use std::path::Path;
 use std::sync::Arc;
 use url::Url;
 
+use gdrive_lib::directory_info::DirectoryInfo;
+use gdrive_lib::gdrive_instance::{GDriveInfo, GDriveInstance};
+
 use crate::config::Config;
-use crate::directory_info::DirectoryInfo;
 use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
 use crate::file_info_gdrive::FileInfoGDrive;
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
-use crate::gdrive_instance::GDriveInstance;
 use crate::pgpool::PgPool;
 
 #[derive(Debug, Clone)]
@@ -95,32 +94,13 @@ impl FileListGDrive {
         self
     }
 
-    fn convert_file_list_to_file_info(
+    fn convert_gdriveinfo_to_file_info(
         &self,
-        flist: &[drive3::File],
+        flist: &[GDriveInfo],
     ) -> Result<Vec<FileInfo>, Error> {
         let flist: Result<Vec<_>, Error> = flist
             .par_iter()
-            .filter(|f| {
-                if let Some(owners) = f.owners.as_ref() {
-                    if owners.is_empty() {
-                        return false;
-                    }
-                    if owners[0].me != Some(true) {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-                if self.gdrive.is_unexportable(&f.mime_type) {
-                    return false;
-                }
-                true
-            })
-            .map(|f| {
-                FileInfoGDrive::from_object(f.clone(), &self.gdrive, &self.directory_map)
-                    .map(FileInfoTrait::into_finfo)
-            })
+            .map(|f| FileInfoGDrive::from_gdriveinfo(f.clone()).map(FileInfoTrait::into_finfo))
             .collect();
         let flist: Vec<_> = flist?
             .into_par_iter()
@@ -142,9 +122,9 @@ impl FileListGDrive {
     }
 
     fn get_all_files(&self) -> Result<Vec<FileInfo>, Error> {
-        let flist: Vec<_> = self.gdrive.get_all_files(false)?;
+        let flist: Vec<_> = self.gdrive.get_all_file_info(false, &self.directory_map)?;
 
-        let flist = self.convert_file_list_to_file_info(&flist)?;
+        let flist = self.convert_gdriveinfo_to_file_info(&flist)?;
 
         Ok(flist)
     }
@@ -160,7 +140,10 @@ impl FileListGDrive {
             .collect();
         let flist: Vec<_> = chlist.into_iter().filter_map(|ch| ch.file).collect();
 
-        let flist = self.convert_file_list_to_file_info(&flist)?;
+        let flist = self
+            .gdrive
+            .convert_file_list_to_gdrive_info(&flist, &self.directory_map)?;
+        let flist = self.convert_gdriveinfo_to_file_info(&flist)?;
         Ok((delete_list, flist))
     }
 }
@@ -281,8 +264,8 @@ impl FileListTrait for FileListGDrive {
             None
         };
         self.gdrive.process_list_of_keys(parents, |i| {
-            if let Ok(finfo) =
-                FileInfoGDrive::from_object(i.clone(), &self.gdrive, &self.directory_map)
+            if let Ok(finfo) = GDriveInfo::from_object(i.clone(), &self.gdrive, &self.directory_map)
+                .and_then(|f| FileInfoGDrive::from_gdriveinfo(f))
             {
                 if let Some(url) = finfo.get_finfo().urlname.as_ref() {
                     writeln!(stdout().lock(), "{}", url.as_str())?;
@@ -419,17 +402,22 @@ impl FileListTrait for FileListGDrive {
 mod tests {
     use std::collections::HashMap;
 
+    use gdrive_lib::gdrive_instance::GDriveInstance;
+
     use crate::config::Config;
     use crate::file_list::FileListTrait;
     use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
-    use crate::gdrive_instance::GDriveInstance;
     use crate::pgpool::PgPool;
 
     #[test]
     #[ignore]
     fn test_gdrive_fill_file_list() {
         let config = Config::init_config().unwrap();
-        let mut gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
+        let mut gdrive = GDriveInstance::new(
+            &config.gdrive_token_path,
+            &config.gdrive_secret_file,
+            "ddboline@gmail.com",
+        );
         gdrive.start_page_token = None;
 
         let fconf = FileListGDriveConf::new("ddboline@gmail.com", "My Drive", &config).unwrap();

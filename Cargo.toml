@@ -7,14 +7,16 @@ edition = "2018"
 [dependencies]
 log = "0.4"
 env_logger = "0.7"
-actix-rt = "0.2"
+actix-rt = "1.0"
 sync_app_lib = {path = "sync_app_lib"}
 sync_app_http = {path = "sync_app_http"}
+gdrive_lib = {path="gdrive_lib"}
 
 [workspace]
 members = [
     "sync_app_http",
     "sync_app_lib",
+    "gdrive_lib",
 ]
 
 [[bin]]

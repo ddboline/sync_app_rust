@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::Arc;
 use url::Url;
 
-use crate::exponential_retry;
+use gdrive_lib::exponential_retry;
 
 #[derive(Clone)]
 pub struct S3Instance {

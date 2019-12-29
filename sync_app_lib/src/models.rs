@@ -3,6 +3,8 @@ use chrono::{DateTime, Utc};
 use failure::{err_msg, Error};
 use url::Url;
 
+use gdrive_lib::directory_info::DirectoryInfo;
+
 use crate::pgpool::PgPool;
 use crate::schema::{
     authorized_users, directory_info_cache, file_info_cache, file_sync_cache, file_sync_config,
@@ -152,6 +154,16 @@ impl From<DirectoryInfoCache> for InsertDirectoryInfoCache {
             is_root: item.is_root,
             servicetype: item.servicetype,
             servicesession: item.servicesession,
+        }
+    }
+}
+
+impl DirectoryInfoCache {
+    pub fn into_directory_info(&self) -> DirectoryInfo {
+        DirectoryInfo {
+            directory_id: self.directory_id.to_string(),
+            directory_name: self.directory_name.to_string(),
+            parentid: self.parent_id.clone(),
         }
     }
 }

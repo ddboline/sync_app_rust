@@ -1,4 +1,3 @@
-use actix::{Handler, Message};
 use failure::Error;
 use serde::{Deserialize, Serialize};
 
@@ -10,17 +9,18 @@ use sync_app_lib::movie_sync::MovieSync;
 use sync_app_lib::pgpool::PgPool;
 use sync_app_lib::sync_opts::SyncOpts;
 
+pub trait HandleRequest<T> {
+    type Result;
+    fn handle(&self, req: T) -> Self::Result;
+}
+
 pub struct SyncRequest {
     pub action: FileSyncAction,
 }
 
-impl Message for SyncRequest {
+impl HandleRequest<SyncRequest> for PgPool {
     type Result = Result<(), Error>;
-}
-
-impl Handler<SyncRequest> for PgPool {
-    type Result = Result<(), Error>;
-    fn handle(&mut self, req: SyncRequest, _: &mut Self::Context) -> Self::Result {
+    fn handle(&self, req: SyncRequest) -> Self::Result {
         let config = Config::init_config()?;
         let opts = SyncOpts::new(req.action, &[]);
         opts.process_sync_opts(&config, self)
@@ -29,13 +29,9 @@ impl Handler<SyncRequest> for PgPool {
 
 pub struct ListSyncCacheRequest {}
 
-impl Message for ListSyncCacheRequest {
+impl HandleRequest<ListSyncCacheRequest> for PgPool {
     type Result = Result<Vec<FileSyncCache>, Error>;
-}
-
-impl Handler<ListSyncCacheRequest> for PgPool {
-    type Result = Result<Vec<FileSyncCache>, Error>;
-    fn handle(&mut self, _: ListSyncCacheRequest, _: &mut Self::Context) -> Self::Result {
+    fn handle(&self, _: ListSyncCacheRequest) -> Self::Result {
         FileSyncCache::get_cache_list(self)
     }
 }
@@ -45,26 +41,18 @@ pub struct SyncEntryDeleteRequest {
     pub id: i32,
 }
 
-impl Message for SyncEntryDeleteRequest {
+impl HandleRequest<SyncEntryDeleteRequest> for PgPool {
     type Result = Result<(), Error>;
-}
-
-impl Handler<SyncEntryDeleteRequest> for PgPool {
-    type Result = Result<(), Error>;
-    fn handle(&mut self, req: SyncEntryDeleteRequest, _: &mut Self::Context) -> Self::Result {
+    fn handle(&self, req: SyncEntryDeleteRequest) -> Self::Result {
         FileSyncCache::delete_by_id(self, req.id)
     }
 }
 
 pub struct GarminSyncRequest {}
 
-impl Message for GarminSyncRequest {
+impl HandleRequest<GarminSyncRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
-}
-
-impl Handler<GarminSyncRequest> for PgPool {
-    type Result = Result<Vec<String>, Error>;
-    fn handle(&mut self, _: GarminSyncRequest, _: &mut Self::Context) -> Self::Result {
+    fn handle(&self, _: GarminSyncRequest) -> Self::Result {
         let config = Config::init_config()?;
         let sync = GarminSync::new(config);
         sync.run_sync()
@@ -73,13 +61,9 @@ impl Handler<GarminSyncRequest> for PgPool {
 
 pub struct MovieSyncRequest {}
 
-impl Message for MovieSyncRequest {
+impl HandleRequest<MovieSyncRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
-}
-
-impl Handler<MovieSyncRequest> for PgPool {
-    type Result = Result<Vec<String>, Error>;
-    fn handle(&mut self, _: MovieSyncRequest, _: &mut Self::Context) -> Self::Result {
+    fn handle(&self, _: MovieSyncRequest) -> Self::Result {
         let config = Config::init_config()?;
         let sync = MovieSync::new(config);
         sync.run_sync()
@@ -91,13 +75,9 @@ pub struct SyncRemoveRequest {
     pub url: String,
 }
 
-impl Message for SyncRemoveRequest {
+impl HandleRequest<SyncRemoveRequest> for PgPool {
     type Result = Result<(), Error>;
-}
-
-impl Handler<SyncRemoveRequest> for PgPool {
-    type Result = Result<(), Error>;
-    fn handle(&mut self, req: SyncRemoveRequest, _: &mut Self::Context) -> Self::Result {
+    fn handle(&self, req: SyncRemoveRequest) -> Self::Result {
         let config = Config::init_config()?;
         let url = req.url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);

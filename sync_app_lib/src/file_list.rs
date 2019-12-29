@@ -7,15 +7,16 @@ use std::fs::rename;
 use std::path::{Path, PathBuf};
 use url::Url;
 
+use gdrive_lib::directory_info::DirectoryInfo;
+use gdrive_lib::gdrive_instance::GDriveInstance;
+
 use crate::config::Config;
-use crate::directory_info::DirectoryInfo;
 use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession};
 use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
 use crate::file_list_local::{FileListLocal, FileListLocalConf};
 use crate::file_list_s3::{FileListS3, FileListS3Conf};
 use crate::file_list_ssh::{FileListSSH, FileListSSHConf};
 use crate::file_service::FileService;
-use crate::gdrive_instance::GDriveInstance;
 use crate::models::{
     DirectoryInfoCache, FileInfoCache, InsertDirectoryInfoCache, InsertFileInfoCache,
 };
@@ -347,7 +348,7 @@ pub trait FileListTrait {
         let dmap: HashMap<_, _> = directory_list
             .into_par_iter()
             .map(|d| {
-                let dinfo = DirectoryInfo::from_cache_info(&d);
+                let dinfo = d.into_directory_info();
                 (d.directory_id, dinfo)
             })
             .collect();
@@ -470,7 +471,11 @@ impl FileListTrait for FileList {
             FileService::GDrive => {
                 let conf = FileListGDriveConf(self.get_conf().clone());
                 let config = Config::init_config()?;
-                let gdrive = GDriveInstance::new(&config, &conf.0.servicesession.0);
+                let gdrive = GDriveInstance::new(
+                    &config.gdrive_token_path,
+                    &config.gdrive_secret_file,
+                    &conf.0.servicesession.0,
+                );
                 let flist = FileListGDrive::from_conf(conf, &gdrive, pool)?;
                 let flist = flist.set_directory_map(false, pool)?;
                 flist.fill_file_list(pool)
@@ -510,7 +515,11 @@ impl FileListTrait for FileList {
             FileService::GDrive => {
                 let config = Config::init_config()?;
                 let fconf = FileListGDriveConf(conf.clone());
-                let gdrive = GDriveInstance::new(&config, &fconf.0.servicesession.0);
+                let gdrive = GDriveInstance::new(
+                    &config.gdrive_token_path,
+                    &config.gdrive_secret_file,
+                    &fconf.0.servicesession.0,
+                );
                 let flist = FileListGDrive::from_conf(fconf, &gdrive, None)?;
                 let flist = flist.set_directory_map(false, None)?;
                 flist.print_list()
@@ -545,7 +554,12 @@ impl FileListTrait for FileList {
             FileService::GDrive => {
                 let c = FileListGDriveConf(self.conf.clone());
                 let pool = PgPool::new(&c.get_config().database_url);
-                let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
+                let config = self.conf.get_config();
+                let g = GDriveInstance::new(
+                    &config.gdrive_token_path,
+                    &config.gdrive_secret_file,
+                    &self.conf.servicesession.0,
+                );
                 let f = FileListGDrive::from_conf(c, &g, Some(&pool))?
                     .set_directory_map(true, Some(&pool))?;
                 f.copy_from(finfo0, finfo1)
@@ -580,7 +594,12 @@ impl FileListTrait for FileList {
             FileService::GDrive => {
                 let c = FileListGDriveConf(self.conf.clone());
                 let pool = PgPool::new(&c.get_config().database_url);
-                let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
+                let config = self.conf.get_config();
+                let g = GDriveInstance::new(
+                    &config.gdrive_token_path,
+                    &config.gdrive_secret_file,
+                    &self.conf.servicesession.0,
+                );
                 let f = FileListGDrive::from_conf(c, &g, Some(&pool))?
                     .set_directory_map(true, Some(&pool))?;
                 f.copy_to(finfo0, finfo1)
@@ -620,7 +639,12 @@ impl FileListTrait for FileList {
             FileService::GDrive => {
                 let c = FileListGDriveConf(self.conf.clone());
                 let pool = PgPool::new(&c.get_config().database_url);
-                let g = GDriveInstance::new(self.conf.get_config(), &self.conf.servicesession.0);
+                let config = self.conf.get_config();
+                let g = GDriveInstance::new(
+                    &config.gdrive_token_path,
+                    &config.gdrive_secret_file,
+                    &self.conf.servicesession.0,
+                );
                 let f = FileListGDrive::from_conf(c, &g, Some(&pool))?
                     .set_directory_map(true, Some(&pool))?;
                 f.move_file(finfo0, finfo1)
@@ -652,7 +676,12 @@ impl FileListTrait for FileList {
             FileService::GDrive => {
                 let c = FileListGDriveConf(self.get_conf().clone());
                 let pool = PgPool::new(&c.get_config().database_url);
-                let gdrive = GDriveInstance::new(&self.conf.get_config(), &c.0.servicesession.0);
+                let config = self.conf.get_config();
+                let gdrive = GDriveInstance::new(
+                    &config.gdrive_token_path,
+                    &config.gdrive_secret_file,
+                    &c.0.servicesession.0,
+                );
                 let flist = FileListGDrive::from_conf(c, &gdrive, Some(&pool))?
                     .set_directory_map(true, Some(&pool))?;
                 flist.delete(finfo)

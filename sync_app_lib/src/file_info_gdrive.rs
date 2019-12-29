@@ -1,15 +1,11 @@
-use chrono::DateTime;
 use failure::{err_msg, Error};
-use google_drive3_fork as drive3;
-use log::debug;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use url::Url;
 
-use crate::directory_info::DirectoryInfo;
+use gdrive_lib::gdrive_instance::GDriveInfo;
+
 use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
 use crate::file_service::FileService;
-use crate::gdrive_instance::GDriveInstance;
 
 #[derive(Debug, Default)]
 pub struct FileInfoGDrive(pub FileInfo);
@@ -70,79 +66,42 @@ impl FileInfoTrait for FileInfoGDrive {
 }
 
 impl FileInfoGDrive {
-    pub fn from_object(
-        item: drive3::File,
-        gdrive: &GDriveInstance,
-        directory_map: &HashMap<String, DirectoryInfo>,
-    ) -> Result<FileInfoGDrive, Error> {
-        let filename = item.name.as_ref().ok_or_else(|| err_msg("No filename"))?;
-        let md5sum = item.md5_checksum.as_ref().and_then(|x| x.parse().ok());
-        let st_mtime = DateTime::parse_from_rfc3339(
-            item.modified_time
-                .as_ref()
-                .ok_or_else(|| err_msg("No last modified"))?,
-        )?
-        .timestamp();
-        let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
-        let serviceid = item.id.as_ref().map(|x| x.to_string().into());
-        let servicesession = Some(gdrive.session_name.parse()?);
-
-        let export_path = gdrive.get_export_path(&item, &directory_map)?;
-        let filepath = export_path.iter().fold(PathBuf::new(), |mut p, e| {
-            p.push(e);
-            p
-        });
-        let urlname = format!("gdrive://{}/", gdrive.session_name);
-        let urlname = Url::parse(&urlname)?;
-        let urlname = export_path.iter().fold(urlname, |u, e| {
-            if e.contains('#') {
-                u.join(&e.replace("#", "%35")).unwrap()
-            } else {
-                u.join(e).unwrap()
-            }
-        });
+    pub fn from_gdriveinfo(item: GDriveInfo) -> Result<FileInfoGDrive, Error> {
+        let md5sum = item.md5sum.and_then(|m| m.parse().ok());
+        let serviceid = item.serviceid.map(|x| x.into());
+        let servicesession = item.servicesession.and_then(|s| s.parse().ok());
 
         let finfo = FileInfo {
-            filename: filename.to_string(),
-            filepath: Some(filepath),
-            urlname: Some(urlname),
+            filename: item.filename,
+            filepath: item.filepath,
+            urlname: item.urlname,
             md5sum,
             sha1sum: None,
-            filestat: Some(FileStat {
-                st_mtime: st_mtime as u32,
-                st_size: size as u32,
+            filestat: item.filestat.map(|i| FileStat {
+                st_mtime: i.0,
+                st_size: i.1,
             }),
             serviceid,
             servicetype: FileService::GDrive,
             servicesession,
         };
-        if item.id == Some("1t4plcsKgXK_NB025K01yFLKwljaTeM3i".to_string()) {
-            debug!("{:?}, {:?}", item, finfo);
-        }
 
         Ok(FileInfoGDrive(finfo))
-    }
-
-    pub fn from_changes_object(
-        item: drive3::Change,
-        gdrive: &GDriveInstance,
-        directory_map: &HashMap<String, DirectoryInfo>,
-    ) -> Result<FileInfoGDrive, Error> {
-        let file = item.file.ok_or_else(|| err_msg("No file"))?;
-        FileInfoGDrive::from_object(file, gdrive, directory_map)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use google_drive3_fork as drive3;
+    use std::collections::HashMap;
+    use std::path::Path;
     use url::Url;
+
+    use gdrive_lib::gdrive_instance::{GDriveInfo, GDriveInstance};
 
     use crate::config::Config;
     use crate::file_info::FileInfoTrait;
     use crate::file_info_gdrive::FileInfoGDrive;
     use crate::file_service::FileService;
-    use crate::gdrive_instance::GDriveInstance;
 
     #[test]
     fn test_file_info_gdrive() {
@@ -158,36 +117,115 @@ mod tests {
     #[test]
     #[ignore]
     fn test_file_info_from_object() {
-        let config = Config::init_config().unwrap();
-        let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
-        let (dmap, _) = gdrive.get_directory_map().unwrap();
-        let f = drive3::File {
-            mime_type: Some("application/pdf".to_string()),
-            viewed_by_me_time: Some("2019-04-20T21:18:40.865Z".to_string()),
-            id: Some("1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb".to_string()),
-            size: Some("859249".to_string()),
-            parents: Some(vec!["0ABGM0lfCdptnUk9PVA".to_string()]),
-            md5_checksum: Some("2196a214fd7eccc6292adb96602f5827".to_string()),
-            modified_time: Some("2019-04-20T21:18:40.865Z".to_string()),
-            created_time: Some("2019-04-20T21:18:40.865Z".to_string()),
-            owners: Some(vec![drive3::User { me: Some(true),
-            kind: Some("drive#user".to_string()),
-            display_name: Some("Daniel Boline".to_string()),
-            photo_link: Some("https://lh5.googleusercontent.com/-dHefkGDbPx4/AAAAAAAAAAI/AAAAAAAAUik/4rvsDcSqY0U/s64/photo.jpg".to_string()),
-            email_address: Some("ddboline@gmail.com".to_string()),
-            permission_id: Some("15472502093706922513".to_string()) }]),
-            name: Some("armstrong_thesis_2003.pdf".to_string()),
-            web_content_link: Some("https://drive.google.com/uc?id=1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb&export=download".to_string()),
-            trashed: Some(false),
-            file_extension: Some("pdf".to_string()),
-            ..Default::default()
+        let f = GDriveInfo {
+            filename: "armstrong_thesis_2003.pdf".to_string(),
+            filepath: Some("armstrong_thesis_2003.pdf".parse().unwrap()),
+            urlname: Some(
+                "gdrive://ddboline@gmail.com/My%20Drive/armstrong_thesis_2003.pdf"
+                    .parse()
+                    .unwrap(),
+            ),
+            md5sum: Some("afde42b3861d522796faeb33a9eaec8a".to_string()),
+            sha1sum: None,
+            filestat: Some((123, 123)),
+            serviceid: Some("1REd76oJ6YheyjF2R9Il0E8xbjalgpNgG".to_string()),
+            servicesession: Some("ddboline@gmail.com".to_string()),
         };
 
-        let finfo = FileInfoGDrive::from_object(f, &gdrive, &dmap).unwrap();
+        let finfo = FileInfoGDrive::from_gdriveinfo(f).unwrap();
         assert_eq!(finfo.get_finfo().filename, "armstrong_thesis_2003.pdf");
         assert_eq!(
             finfo.get_finfo().serviceid.as_ref().unwrap().0.as_str(),
             "1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb"
         );
+    }
+
+    #[test]
+    #[ignore]
+    fn test_create_drive() {
+        let config = Config::init_config().unwrap();
+        let gdrive = GDriveInstance::new(
+            &config.gdrive_token_path,
+            &config.gdrive_secret_file,
+            "ddboline@gmail.com",
+        )
+        .with_max_keys(10)
+        .with_page_size(10)
+        .read_start_page_token_from_file();
+
+        let list = gdrive.get_all_files(false).unwrap();
+        assert_eq!(list.len(), 10);
+        let test_info = list.iter().filter(|f| !f.parents.is_none()).nth(0).unwrap();
+        println!("test_info {:?}", test_info);
+
+        let gdriveid = test_info.id.as_ref().unwrap();
+        let parent = &test_info.parents.as_ref().unwrap()[0];
+        let local_path = Path::new("/tmp/temp.file");
+        let mime = test_info.mime_type.as_ref().unwrap().to_string();
+        println!("mime {}", mime);
+        gdrive
+            .download(&gdriveid, &local_path, &Some(mime))
+            .unwrap();
+
+        let basepath = Path::new("src/gdrive_instance.rs").canonicalize().unwrap();
+        let local_url = Url::from_file_path(basepath).unwrap();
+        let new_file = gdrive.upload(&local_url, &parent).unwrap();
+        println!("new_file {:?}", new_file);
+        println!("start_page_token {:?}", gdrive.start_page_token);
+        println!(
+            "current_start_page_token {:?}",
+            gdrive.get_start_page_token().unwrap()
+        );
+
+        let changes = gdrive.get_all_changes().unwrap();
+        let changes_map: HashMap<_, _> = changes
+            .into_iter()
+            .filter_map(|c| {
+                if let Some((t, f)) = c
+                    .file_id
+                    .as_ref()
+                    .and_then(|f| c.time.as_ref().and_then(|t| Some((f.clone(), t.clone()))))
+                {
+                    Some(((t, f), c))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        println!("N files {}", changes_map.len());
+        for ((f, t), ch) in changes_map {
+            println!("ch {:?} {:?} {:?}", f, t, ch.file);
+        }
+
+        let new_driveid = new_file.id.unwrap();
+        gdrive.move_to_trash(&new_driveid).unwrap();
+        println!(
+            "trash {:?}",
+            gdrive.get_file_metadata(&new_driveid).unwrap()
+        );
+
+        gdrive.delete_permanently(&new_driveid).unwrap();
+        println!(
+            "error {}",
+            gdrive.get_file_metadata(&new_driveid).unwrap_err()
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn test_gdrive_store_read_change_token() {
+        let config = Config::init_config().unwrap();
+        let gdrive = GDriveInstance::new(
+            &config.gdrive_token_path,
+            &config.gdrive_secret_file,
+            "ddboline@gmail.com",
+        )
+        .with_max_keys(10)
+        .with_page_size(10)
+        .with_start_page_token("test_string");
+        let p = Path::new("/tmp/temp_start_page_token.txt");
+        gdrive.store_start_page_token(&p).unwrap();
+        let result = GDriveInstance::read_start_page_token(&p).unwrap();
+        assert_eq!(result, Some("test_string".to_string()));
     }
 }

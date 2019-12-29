@@ -4,7 +4,6 @@ extern crate diesel;
 extern crate serde_derive;
 
 pub mod config;
-pub mod directory_info;
 pub mod file_info;
 pub mod file_info_gdrive;
 pub mod file_info_local;
@@ -18,7 +17,6 @@ pub mod file_list_ssh;
 pub mod file_service;
 pub mod file_sync;
 pub mod garmin_sync;
-pub mod gdrive_instance;
 pub mod iso_8601_datetime;
 pub mod models;
 pub mod movie_sync;
@@ -29,9 +27,7 @@ pub mod schema;
 pub mod ssh_instance;
 pub mod sync_opts;
 
-use failure::{err_msg, format_err, Error};
-use log::error;
-use retry::{delay::jitter, delay::Exponential, retry};
+use failure::{err_msg, Error};
 use std::fmt;
 use std::str::FromStr;
 
@@ -44,23 +40,4 @@ where
         Some(y) => Ok(Some(y.parse::<T>().map_err(err_msg)?)),
         None => Ok(None),
     }
-}
-
-pub fn exponential_retry<T, U>(closure: T) -> Result<U, Error>
-where
-    T: Fn() -> Result<U, Error>,
-{
-    retry(
-        Exponential::from_millis(2)
-            .map(jitter)
-            .map(|x| x * 500)
-            .take(6),
-        || {
-            closure().map_err(|e| {
-                error!("Got error {:?} , retrying", e);
-                e
-            })
-        },
-    )
-    .map_err(|e| format_err!("{:?}", e))
 }
