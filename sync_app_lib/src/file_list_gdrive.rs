@@ -257,7 +257,7 @@ impl FileListTrait for FileListGDrive {
             .gdrive
             .get_parent_id(&self.get_conf().baseurl, &dnamemap)
         {
-            Some(vec![p.clone()])
+            Some(vec![p])
         } else if let Some(root_dir) = self.root_directory.as_ref() {
             Some(vec![root_dir.clone()])
         } else {
@@ -265,7 +265,7 @@ impl FileListTrait for FileListGDrive {
         };
         self.gdrive.process_list_of_keys(parents, |i| {
             if let Ok(finfo) = GDriveInfo::from_object(i.clone(), &self.gdrive, &self.directory_map)
-                .and_then(|f| FileInfoGDrive::from_gdriveinfo(f))
+                .and_then(FileInfoGDrive::from_gdriveinfo)
             {
                 if let Some(url) = finfo.get_finfo().urlname.as_ref() {
                     writeln!(stdout().lock(), "{}", url.as_str())?;

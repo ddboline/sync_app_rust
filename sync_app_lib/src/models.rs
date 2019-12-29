@@ -159,11 +159,11 @@ impl From<DirectoryInfoCache> for InsertDirectoryInfoCache {
 }
 
 impl DirectoryInfoCache {
-    pub fn into_directory_info(&self) -> DirectoryInfo {
+    pub fn into_directory_info(self) -> DirectoryInfo {
         DirectoryInfo {
-            directory_id: self.directory_id.to_string(),
-            directory_name: self.directory_name.to_string(),
-            parentid: self.parent_id.clone(),
+            directory_id: self.directory_id,
+            directory_name: self.directory_name,
+            parentid: self.parent_id,
         }
     }
 }

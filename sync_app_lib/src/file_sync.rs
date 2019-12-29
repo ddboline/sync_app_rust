@@ -130,7 +130,7 @@ impl FileSync {
                                     ..Default::default()
                                 };
                                 debug!("ab {:?} {:?}", finfo0, finfo1);
-                                Some((finfo0.clone(), finfo1.clone()))
+                                Some((finfo0.clone(), finfo1))
                             } else {
                                 None
                             }
@@ -164,7 +164,7 @@ impl FileSync {
                                     ..Default::default()
                                 };
                                 debug!("ba {:?} {:?}", finfo0, finfo1);
-                                Some((finfo1.clone(), finfo0.clone()))
+                                Some((finfo1.clone(), finfo0))
                             } else {
                                 None
                             }

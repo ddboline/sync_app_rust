@@ -349,7 +349,7 @@ pub trait FileListTrait {
             .into_par_iter()
             .map(|d| {
                 let dinfo = d.into_directory_info();
-                (d.directory_id, dinfo)
+                (dinfo.directory_id.clone(), dinfo)
             })
             .collect();
         (dmap, root_id)

@@ -212,7 +212,7 @@ impl GarminSync {
                 for activity in activities.chunks(100) {
                     let act: HashMap<String, StravaItem> = activity
                         .iter()
-                        .map(|(k, v)| (k.to_string(), v.clone()))
+                        .map(|(k, v)| ((*k).to_string(), v.clone()))
                         .collect();
                     let data = hashmap! {
                         js_prefix => act,
