@@ -826,7 +826,7 @@ impl GDriveInfo {
         )?
         .timestamp();
         let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
-        let serviceid = item.id.as_ref().map(|x| x.to_string().into());
+        let serviceid = item.id.as_ref().map(|x| x.to_string());
         let servicesession = Some(gdrive.session_name.parse()?);
 
         let export_path = gdrive.get_export_path(&item, &directory_map)?;
