@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
 use failure::{err_msg, Error};
 use maplit::hashmap;
+use reqwest::blocking::Response;
 use reqwest::header::HeaderMap;
-use reqwest::{Response, Url};
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -104,9 +105,10 @@ impl GarminSync {
         let results = self.run_single_sync_scale_measurement(
             "garmin/scale_measurements",
             "measurements",
-            |mut resp| {
+            |resp| {
+                let url = resp.url().clone();
                 let results: Vec<ScaleMeasurement> = resp.json()?;
-                output.push(format!("measurements {} {}", resp.url(), results.len()));
+                output.push(format!("measurements {} {}", url, results.len()));
                 let results: HashMap<_, _> =
                     results.into_iter().map(|val| (val.datetime, val)).collect();
                 Ok(results)
@@ -117,9 +119,10 @@ impl GarminSync {
         let results = self.run_single_sync_activities(
             "garmin/strava/activities_db",
             "updates",
-            |mut resp| {
+            |resp| {
+                let url = resp.url().clone();
                 let results: HashMap<String, StravaItem> = resp.json()?;
-                output.push(format!("activities {} {}", resp.url(), results.len()));
+                output.push(format!("activities {} {}", url, results.len()));
                 Ok(results)
             },
         )?;

@@ -35,5 +35,5 @@ parking_lot = "0.10"
 log = "0.4"
 env_logger = "0.7"
 retry = "0.5"
-reqwest = "0.9"
+reqwest = {version="0.10", features=["cookies", "blocking", "json"]}
 crossbeam-utils = "0.7"

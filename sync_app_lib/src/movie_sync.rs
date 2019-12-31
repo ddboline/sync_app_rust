@@ -4,8 +4,9 @@ use chrono::{DateTime, NaiveDate, Utc};
 use failure::{err_msg, Error};
 use log::debug;
 use maplit::hashmap;
+use reqwest::blocking::Response;
 use reqwest::header::HeaderMap;
-use reqwest::{Response, Url};
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -157,7 +158,7 @@ impl MovieSync {
                 let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
                 let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
                 let results =
-                    self.run_single_sync(table, *last_mod0, *last_mod1, js_prefix, |mut resp| {
+                    self.run_single_sync(table, *last_mod0, *last_mod1, js_prefix, |resp| {
                         let result: Vec<$T> = resp.json()?;
                         Ok(result)
                     })?;

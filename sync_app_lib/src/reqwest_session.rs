@@ -2,8 +2,10 @@ use failure::{err_msg, Error};
 use parking_lot::Mutex;
 use rand::distributions::{Distribution, Uniform};
 use rand::thread_rng;
+use reqwest::blocking::{Client, Response};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-use reqwest::{Client, RedirectPolicy, Response, Url};
+use reqwest::redirect::Policy;
+use reqwest::Url;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -62,9 +64,9 @@ impl ReqwestSessionInner {
 impl ReqwestSession {
     pub fn new(allow_redirects: bool) -> Self {
         let redirect_policy = if allow_redirects {
-            RedirectPolicy::default()
+            Policy::default()
         } else {
-            RedirectPolicy::none()
+            Policy::none()
         };
         ReqwestSession {
             client: Arc::new(Mutex::new(ReqwestSessionInner {
