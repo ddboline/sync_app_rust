@@ -116,16 +116,13 @@ impl GarminSync {
         )?;
         output.extend_from_slice(&results);
 
-        let results = self.run_single_sync_activities(
-            "garmin/strava/activities_db",
-            "updates",
-            |resp| {
+        let results =
+            self.run_single_sync_activities("garmin/strava/activities_db", "updates", |resp| {
                 let url = resp.url().clone();
                 let results: HashMap<String, StravaItem> = resp.json()?;
                 output.push(format!("activities {} {}", url, results.len()));
                 Ok(results)
-            },
-        )?;
+            })?;
         output.extend_from_slice(&results);
 
         Ok(output)

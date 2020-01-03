@@ -37,3 +37,4 @@ env_logger = "0.7"
 retry = "0.5"
 reqwest = {version="0.10", features=["cookies", "blocking", "json"]}
 crossbeam-utils = "0.7"
+sts_profile_auth = { git = "https://github.com/ddboline/sts_profile_auth.git", tag="0.1.3" }

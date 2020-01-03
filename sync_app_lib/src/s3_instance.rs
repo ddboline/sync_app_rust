@@ -7,27 +7,30 @@ use rusoto_s3::{
 use s4::S4;
 use std::fmt;
 use std::path::Path;
-use std::sync::Arc;
+use sts_profile_auth::sts_instance::StsInstance;
 use url::Url;
 
 use gdrive_lib::exponential_retry;
 
 #[derive(Clone)]
 pub struct S3Instance {
-    s3_client: Arc<S3Client>,
+    s3_client: S3Client,
     max_keys: Option<usize>,
 }
 
 impl fmt::Debug for S3Instance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Arc<S3Instance>")
+        write!(f, "S3Instance")
     }
 }
 
 impl Default for S3Instance {
     fn default() -> Self {
+        let sts = StsInstance::new(None).expect("Failed to obtain client");
         Self {
-            s3_client: Arc::new(S3Client::new(Region::UsEast1)),
+            s3_client: sts
+                .get_s3_client(Region::UsEast1)
+                .expect("Failed to obtain client"),
             max_keys: None,
         }
     }
@@ -36,8 +39,9 @@ impl Default for S3Instance {
 impl S3Instance {
     pub fn new(aws_region_name: &str) -> Self {
         let region: Region = aws_region_name.parse().ok().unwrap_or(Region::UsEast1);
+        let sts = StsInstance::new(None).expect("Failed to obtain client");
         Self {
-            s3_client: Arc::new(S3Client::new(region)),
+            s3_client: sts.get_s3_client(region).expect("Failed to obtain client"),
             max_keys: None,
         }
     }
