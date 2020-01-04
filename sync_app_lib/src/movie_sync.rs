@@ -200,7 +200,7 @@ impl MovieSync {
     {
         let (from_url, to_url) = self.get_urls()?;
         if last_modified0 > last_modified1 {
-            self._run_single_sync(
+            _run_single_sync(
                 &from_url,
                 &self.session0,
                 &to_url,
@@ -211,7 +211,7 @@ impl MovieSync {
                 transform,
             )
         } else {
-            self._run_single_sync(
+            _run_single_sync(
                 &to_url,
                 &self.session1,
                 &from_url,
@@ -223,48 +223,47 @@ impl MovieSync {
             )
         }
     }
+}
 
-    fn _run_single_sync<T, F>(
-        &self,
-        endpoint0: &Url,
-        session0: &ReqwestSession,
-        endpoint1: &Url,
-        session1: &ReqwestSession,
-        table: &str,
-        last_modified: DateTime<Utc>,
-        js_prefix: &str,
-        mut transform: F,
-    ) -> Result<Vec<String>, Error>
-    where
-        T: Debug + Serialize,
-        F: FnMut(Response) -> Result<Vec<T>, Error>,
-    {
-        let mut output = Vec::new();
+fn _run_single_sync<T, F>(
+    endpoint0: &Url,
+    session0: &ReqwestSession,
+    endpoint1: &Url,
+    session1: &ReqwestSession,
+    table: &str,
+    last_modified: DateTime<Utc>,
+    js_prefix: &str,
+    mut transform: F,
+) -> Result<Vec<String>, Error>
+where
+    T: Debug + Serialize,
+    F: FnMut(Response) -> Result<Vec<T>, Error>,
+{
+    let mut output = Vec::new();
 
-        let path = format!(
-            "list/{}?start_timestamp={}",
-            table,
-            last_modified.format("%Y-%m-%dT%H:%M:%S%.fZ")
-        );
-        let url = endpoint0.join(&path)?;
-        println!("{}", url);
-        output.push(format!("{}", url));
-        let data = transform(session0.get(&url, HeaderMap::new())?)?;
+    let path = format!(
+        "list/{}?start_timestamp={}",
+        table,
+        last_modified.format("%Y-%m-%dT%H:%M:%S%.fZ")
+    );
+    let url = endpoint0.join(&path)?;
+    println!("{}", url);
+    output.push(format!("{}", url));
+    let data = transform(session0.get(&url, HeaderMap::new())?)?;
 
-        let path = format!("list/{}", table);
-        let url = endpoint1.join(&path)?;
-        println!("{} {:#?}", url, data);
-        output.push(format!("{}", url));
-        for chunk in data.chunks(100) {
-            let js = hashmap! {
-                js_prefix=> chunk,
-            };
-            session1
-                .post(&url, HeaderMap::new(), &js)?
-                .error_for_status()?;
-        }
-        Ok(output)
+    let path = format!("list/{}", table);
+    let url = endpoint1.join(&path)?;
+    println!("{} {:#?}", url, data);
+    output.push(format!("{}", url));
+    for chunk in data.chunks(100) {
+        let js = hashmap! {
+            js_prefix=> chunk,
+        };
+        session1
+            .post(&url, HeaderMap::new(), &js)?
+            .error_for_status()?;
     }
+    Ok(output)
 }
 
 #[cfg(test)]

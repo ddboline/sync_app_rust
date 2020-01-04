@@ -94,8 +94,6 @@ impl SyncOpts {
                     self.urls.to_vec()
                 };
 
-                let fsync = FileSync::new(config.clone());
-
                 let results: Result<Vec<_>, Error> = urls
                     .par_iter()
                     .map(|url| {
@@ -129,7 +127,7 @@ impl SyncOpts {
                     .chunks(2)
                     .map(|f| {
                         if f.len() == 2 {
-                            fsync.compare_lists(&f[0], &f[1], &pool)?;
+                            FileSync::compare_lists(&f[0], &f[1], &pool)?;
                         }
                         Ok(())
                     })
@@ -145,19 +143,17 @@ impl SyncOpts {
                 if self.urls.len() < 2 {
                     Err(err_msg("Need 2 Urls"))
                 } else {
-                    let fsync = FileSync::new(config.clone());
-
                     let finfo0 = FileInfo::from_url(&self.urls[0])?;
                     let finfo1 = FileInfo::from_url(&self.urls[1])?;
 
                     if finfo1.servicetype == FileService::Local {
                         let conf = FileListConf::from_url(&self.urls[0], &config)?;
                         let flist = FileList::from_conf(conf);
-                        fsync.copy_object(&flist, &finfo0, &finfo1)
+                        FileSync::copy_object(&flist, &finfo0, &finfo1)
                     } else {
                         let conf = FileListConf::from_url(&self.urls[1], &config)?;
                         let flist = FileList::from_conf(conf);
-                        fsync.copy_object(&flist, &finfo0, &finfo1)
+                        FileSync::copy_object(&flist, &finfo0, &finfo1)
                     }
                 }
             }

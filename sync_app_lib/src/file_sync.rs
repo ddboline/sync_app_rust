@@ -38,16 +38,16 @@ impl FromStr for FileSyncAction {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "index" => Ok(FileSyncAction::Index),
-            "sync" => Ok(FileSyncAction::Sync),
-            "process" | "proc" => Ok(FileSyncAction::Process),
-            "copy" | "cp" => Ok(FileSyncAction::Copy),
-            "list" | "ls" => Ok(FileSyncAction::List),
-            "delete" | "rm" => Ok(FileSyncAction::Delete),
-            "move" | "mv" => Ok(FileSyncAction::Move),
-            "ser" | "serialize" => Ok(FileSyncAction::Serialize),
-            "add" | "add_config" => Ok(FileSyncAction::AddConfig),
-            "show" | "show_cache" => Ok(FileSyncAction::ShowCache),
+            "index" => Ok(Self::Index),
+            "sync" => Ok(Self::Sync),
+            "process" | "proc" => Ok(Self::Process),
+            "copy" | "cp" => Ok(Self::Copy),
+            "list" | "ls" => Ok(Self::List),
+            "delete" | "rm" => Ok(Self::Delete),
+            "move" | "mv" => Ok(Self::Move),
+            "ser" | "serialize" => Ok(Self::Serialize),
+            "add" | "add_config" => Ok(Self::AddConfig),
+            "show" | "show_cache" => Ok(Self::ShowCache),
             _ => Err(err_msg("Parse failure")),
         }
     }
@@ -60,18 +60,16 @@ pub enum FileSyncMode {
 }
 
 impl Default for FileSyncMode {
-    fn default() -> FileSyncMode {
-        FileSyncMode::Full
+    fn default() -> Self {
+        Self::Full
     }
 }
 
 impl fmt::Display for FileSyncMode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            FileSyncMode::Full => write!(f, "Full"),
-            FileSyncMode::OutputFile(pathbuf) => {
-                write!(f, "OutputFile({})", pathbuf.to_string_lossy())
-            }
+            Self::Full => write!(f, "Full"),
+            Self::OutputFile(pathbuf) => write!(f, "OutputFile({})", pathbuf.to_string_lossy()),
         }
     }
 }
@@ -79,9 +77,9 @@ impl fmt::Display for FileSyncMode {
 impl From<&str> for FileSyncMode {
     fn from(s: &str) -> Self {
         if s == "full" {
-            FileSyncMode::Full
+            Self::Full
         } else {
-            FileSyncMode::OutputFile(Path::new(&s).to_path_buf())
+            Self::OutputFile(Path::new(&s).to_path_buf())
         }
     }
 }
@@ -92,11 +90,11 @@ pub struct FileSync {
 }
 
 impl FileSync {
-    pub fn new(config: Config) -> FileSync {
-        FileSync { config }
+    pub fn new(config: Config) -> Self {
+        Self { config }
     }
 
-    pub fn compare_lists<T, U>(&self, flist0: &T, flist1: &U, pool: &PgPool) -> Result<(), Error>
+    pub fn compare_lists<T, U>(flist0: &T, flist1: &U, pool: &PgPool) -> Result<(), Error>
     where
         T: FileListTrait + Send + Sync + Debug,
         U: FileListTrait + Send + Sync + Debug,
@@ -108,7 +106,7 @@ impl FileSync {
             .par_iter()
             .filter_map(|(k, finfo0)| match flist1.get_filemap().get(k) {
                 Some(finfo1) => {
-                    if self.compare_objects(finfo0, finfo1) {
+                    if Self::compare_objects(finfo0, finfo1) {
                         Some((finfo0.clone(), finfo1.clone()))
                     } else {
                         None
@@ -127,7 +125,7 @@ impl FileSync {
                                     servicesession: Some(conf1.servicesession.clone()),
                                     servicetype: conf1.servicetype,
                                     serviceid: Some(conf1.servicesession.clone().into()),
-                                    ..Default::default()
+                                    ..FileInfo::default()
                                 };
                                 debug!("ab {:?} {:?}", finfo0, finfo1);
                                 Some((finfo0.clone(), finfo1))
@@ -161,7 +159,7 @@ impl FileSync {
                                     servicesession: Some(conf0.servicesession.clone()),
                                     servicetype: conf0.servicetype,
                                     serviceid: Some(conf0.servicesession.clone().into()),
-                                    ..Default::default()
+                                    ..FileInfo::default()
                                 };
                                 debug!("ba {:?} {:?}", finfo0, finfo1);
                                 Some((finfo1.clone(), finfo0))
@@ -196,7 +194,7 @@ impl FileSync {
         }
     }
 
-    pub fn compare_objects<T, U>(&self, finfo0: &T, finfo1: &U) -> bool
+    pub fn compare_objects<T, U>(finfo0: &T, finfo1: &U) -> bool
     where
         T: FileInfoTrait + Send + Sync,
         U: FileInfoTrait + Send + Sync,
@@ -290,12 +288,12 @@ impl FileSync {
                                 };
                                 debug!("copy {} {}", key, val);
                                 if finfo1.servicetype == FileService::Local {
-                                    self.copy_object(&flist0, &finfo0, &finfo1)?;
+                                    Self::copy_object(&flist0, &finfo0, &finfo1)?;
                                     flist0.cleanup()?;
                                 } else {
                                     let conf = FileListConf::from_url(&val, &self.config)?;
                                     let flist1 = FileList::from_conf(conf);
-                                    self.copy_object(&flist1, &finfo0, &finfo1)?;
+                                    Self::copy_object(&flist1, &finfo0, &finfo1)?;
                                     flist1.cleanup()?;
                                 }
                             }
@@ -347,7 +345,7 @@ impl FileSync {
             .collect()
     }
 
-    pub fn copy_object<T, U, V>(&self, flist: &T, finfo0: &U, finfo1: &V) -> Result<(), Error>
+    pub fn copy_object<T, U, V>(flist: &T, finfo0: &U, finfo1: &V) -> Result<(), Error>
     where
         T: FileListTrait + Send + Sync + Debug,
         U: FileInfoTrait + Send + Sync + Debug,
@@ -403,7 +401,7 @@ mod tests {
         fstat.st_size += 100;
         finfo1.0.filestat = Some(fstat);
         println!("{:?}", finfo1);
-        assert!(fsync.compare_objects(&finfo0, &finfo1));
+        assert!(FileSync::compare_objects(&finfo0, &finfo1));
 
         let test_owner = Owner {
             display_name: Some("me".to_string()),
@@ -420,7 +418,7 @@ mod tests {
 
         let finfo2 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
         println!("{:?}", finfo2);
-        assert!(fsync.compare_objects(&finfo0, &finfo2));
+        assert!(FileSync::compare_objects(&finfo0, &finfo2));
     }
 
     #[test]
@@ -443,7 +441,7 @@ mod tests {
         let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
         let flist1 = FileListS3::from_conf(flist1conf);
 
-        fsync.compare_lists(&flist0, &flist1, &pool).unwrap();
+        FileSync::compare_lists(&flist0, &flist1, &pool).unwrap();
 
         let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)
             .unwrap()
@@ -503,7 +501,7 @@ mod tests {
         let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
         let flist1 = FileListS3::from_conf(flist1conf).with_list(vec![finfo1.into_finfo()]);
 
-        fsync.compare_lists(&flist0, &flist1, &pool).unwrap();
+        FileSync::compare_lists(&flist0, &flist1, &pool).unwrap();
 
         let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)
             .unwrap()

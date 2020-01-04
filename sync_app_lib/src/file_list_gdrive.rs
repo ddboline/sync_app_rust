@@ -253,9 +253,8 @@ impl FileListTrait for FileListGDrive {
 
     fn print_list(&self) -> Result<(), Error> {
         let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
-        let parents = if let Ok(Some(p)) = self
-            .gdrive
-            .get_parent_id(&self.get_conf().baseurl, &dnamemap)
+        let parents = if let Ok(Some(p)) =
+            GDriveInstance::get_parent_id(&self.get_conf().baseurl, &dnamemap)
         {
             Some(vec![p])
         } else if let Some(root_dir) = self.root_directory.as_ref() {
@@ -303,7 +302,7 @@ impl FileListTrait for FileListGDrive {
                 .0;
             let gfile = self.gdrive.get_file_metadata(&gdriveid)?;
             debug!("{:?}", gfile.mime_type);
-            if self.gdrive.is_unexportable(&gfile.mime_type) {
+            if GDriveInstance::is_unexportable(&gfile.mime_type) {
                 debug!("unexportable");
                 if let Some(pool) = self.pool.as_ref() {
                     self.remove_by_id(pool, &gdriveid)?;
@@ -342,9 +341,7 @@ impl FileListTrait for FileListGDrive {
                 .clone()
                 .ok_or_else(|| err_msg("No remote url"))?;
             let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
-            let parent_id = self
-                .gdrive
-                .get_parent_id(&remote_url, &dnamemap)?
+            let parent_id = GDriveInstance::get_parent_id(&remote_url, &dnamemap)?
                 .ok_or_else(|| err_msg("No parent id!"))?;
             self.gdrive.upload(&local_url, &parent_id)?;
             Ok(())
@@ -376,9 +373,7 @@ impl FileListTrait for FileListGDrive {
             .0;
         let url = finfo1.urlname.as_ref().ok_or_else(|| err_msg("No url"))?;
         let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
-        let parentid = self
-            .gdrive
-            .get_parent_id(&url, &dnamemap)?
+        let parentid = GDriveInstance::get_parent_id(&url, &dnamemap)?
             .ok_or_else(|| err_msg("No parentid"))?;
         self.gdrive.move_to(gdriveid, &parentid, &finfo1.filename)
     }
@@ -450,7 +445,7 @@ mod tests {
         let dnamemap = GDriveInstance::get_directory_name_map(&flist.directory_map);
         for f in flist.get_filemap().values() {
             let u = f.urlname.as_ref().unwrap();
-            let parent_id = gdrive.get_parent_id(u, &dnamemap).unwrap();
+            let parent_id = GDriveInstance::get_parent_id(u, &dnamemap).unwrap();
             assert!(!parent_id.is_none());
             println!("{} {:?}", u, parent_id);
         }

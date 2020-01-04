@@ -67,8 +67,8 @@ impl From<FileInfoCache> for InsertFileInfoCache {
 }
 
 impl FileInfoCache {
-    pub fn from_insert(item: InsertFileInfoCache, id: i32) -> FileInfoCache {
-        FileInfoCache {
+    pub fn from_insert(item: InsertFileInfoCache, id: i32) -> Self {
+        Self {
             id,
             filename: item.filename,
             filepath: item.filepath,
@@ -195,7 +195,7 @@ impl From<FileSyncCache> for InsertFileSyncCache {
 }
 
 impl FileSyncCache {
-    pub fn get_cache_list(pool: &PgPool) -> Result<Vec<FileSyncCache>, Error> {
+    pub fn get_cache_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::file_sync_cache::dsl::{file_sync_cache, src_url};
         let conn = pool.get()?;
         file_sync_cache.order(src_url).load(&conn).map_err(err_msg)
@@ -220,7 +220,7 @@ impl InsertFileSyncCache {
         let conn = pool.get()?;
         let _: Url = src_url.parse()?;
         let _: Url = dst_url.parse()?;
-        let value = InsertFileSyncCache {
+        let value = Self {
             src_url: src_url.into(),
             dst_url: dst_url.into(),
             created_at: Utc::now(),
@@ -259,14 +259,14 @@ impl From<FileSyncConfig> for InsertFileSyncConfig {
 }
 
 impl FileSyncConfig {
-    pub fn get_config_list(pool: &PgPool) -> Result<Vec<FileSyncConfig>, Error> {
+    pub fn get_config_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::file_sync_config::dsl::file_sync_config;
         let conn = pool.get()?;
         file_sync_config.load(&conn).map_err(err_msg)
     }
 
     pub fn get_url_list(pool: &PgPool) -> Result<Vec<Url>, Error> {
-        let proc_list: Result<Vec<_>, Error> = FileSyncConfig::get_config_list(pool)?
+        let proc_list: Result<Vec<_>, Error> = Self::get_config_list(pool)?
             .into_iter()
             .map(|v| {
                 let u0: Url = v.src_url.parse()?;
@@ -287,7 +287,7 @@ impl InsertFileSyncConfig {
         let conn = pool.get()?;
         let _: Url = src_url.parse()?;
         let _: Url = dst_url.parse()?;
-        let value = InsertFileSyncConfig {
+        let value = Self {
             src_url: src_url.into(),
             dst_url: dst_url.into(),
             last_run: Utc::now(),
@@ -306,7 +306,7 @@ pub struct AuthorizedUsers {
 }
 
 impl AuthorizedUsers {
-    pub fn get_authorized_users(pool: &PgPool) -> Result<Vec<AuthorizedUsers>, Error> {
+    pub fn get_authorized_users(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::authorized_users::dsl::authorized_users;
         let conn = pool.get()?;
         authorized_users.load(&conn).map_err(err_msg)
@@ -320,7 +320,7 @@ pub struct FileSyncBlacklist {
 }
 
 impl FileSyncBlacklist {
-    fn get_blacklist(pool: &PgPool) -> Result<Vec<FileSyncBlacklist>, Error> {
+    fn get_blacklist(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::file_sync_blacklist::dsl::file_sync_blacklist;
         let conn = pool.get()?;
         file_sync_blacklist.load(&conn).map_err(err_msg)

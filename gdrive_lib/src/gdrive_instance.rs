@@ -185,8 +185,8 @@ impl GDriveInstance {
         ];
         let fields = format!("nextPageToken,files({})", fields.join(","));
         exponential_retry(|| {
-            let _gdrive = self.gdrive.lock();
-            let mut request = _gdrive
+            let gdrive = self.gdrive.lock();
+            let mut request = gdrive
                 .files()
                 .list()
                 .param("fields", &fields)
@@ -277,7 +277,7 @@ impl GDriveInstance {
                 } else {
                     return false;
                 }
-                if self.is_unexportable(&f.mime_type) {
+                if Self::is_unexportable(&f.mime_type) {
                     return false;
                 }
                 true
@@ -389,7 +389,7 @@ impl GDriveInstance {
         })
     }
 
-    pub fn is_unexportable(&self, mime_type: &Option<String>) -> bool {
+    pub fn is_unexportable(mime_type: &Option<String>) -> bool {
         if let Some(mime) = mime_type.clone() {
             UNEXPORTABLE_MIME_TYPES.contains::<str>(&mime)
         } else {
@@ -574,10 +574,10 @@ impl GDriveInstance {
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
                     let parents = if let Some(p) = d.parents.as_ref() {
-                        if !p.is_empty() {
-                            Some(p[0].to_string())
-                        } else {
+                        if p.is_empty() {
                             None
+                        } else {
+                            Some(p[0].to_string())
                         }
                     } else {
                         None
@@ -622,10 +622,10 @@ impl GDriveInstance {
             fullpath.push(name.to_string());
         }
         let mut pid = if let Some(parents) = finfo.parents.as_ref() {
-            if !parents.is_empty() {
-                Some(parents[0].to_string())
-            } else {
+            if parents.is_empty() {
                 None
+            } else {
+                Some(parents[0].to_string())
             }
         } else {
             None
@@ -641,10 +641,10 @@ impl GDriveInstance {
                         .as_ref()
                         .and_then(|f| f.parents.as_ref())
                         .and_then(|v| {
-                            if !v.is_empty() {
-                                Some(v[0].to_string())
-                            } else {
+                            if v.is_empty() {
                                 None
+                            } else {
+                                Some(v[0].to_string())
                             }
                         })
                 }
@@ -660,7 +660,6 @@ impl GDriveInstance {
     }
 
     pub fn get_parent_id(
-        &self,
         url: &Url,
         dir_name_map: &HashMap<String, Vec<DirectoryInfo>>,
     ) -> Result<Option<String>, Error> {

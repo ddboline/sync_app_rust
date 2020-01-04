@@ -150,8 +150,13 @@ impl GarminSync {
          -> Result<(), Error> {
             let measurements: Vec<_> = measurements0
                 .iter()
-                .filter(|(k, _)| !measurements1.contains_key(&k))
-                .map(|(_, v)| v)
+                .filter_map(|(k, v)| {
+                    if measurements1.contains_key(&k) {
+                        None
+                    } else {
+                        Some(v)
+                    }
+                })
                 .collect();
             if !measurements.is_empty() {
                 if measurements.len() < 20 {
@@ -199,8 +204,13 @@ impl GarminSync {
          -> Result<(), Error> {
             let activities: Vec<_> = activities0
                 .iter()
-                .filter(|(k, _)| !activities1.contains_key(k.as_str()))
-                .map(|(k, v)| (k, v.clone()))
+                .filter_map(|(k, v)| {
+                    if activities1.contains_key(k.as_str()) {
+                        None
+                    } else {
+                        Some((k, v.clone()))
+                    }
+                })
                 .collect();
             if !activities.is_empty() {
                 if activities.len() < 20 {

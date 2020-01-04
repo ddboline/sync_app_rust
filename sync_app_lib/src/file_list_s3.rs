@@ -124,7 +124,7 @@ impl FileListTrait for FileListS3 {
                 stdout().lock(),
                 "s3://{}/{}",
                 bucket,
-                i.key.as_ref().map(String::as_str).unwrap_or_else(|| "")
+                i.key.as_ref().map_or_else(|| "", String::as_str)
             )?;
             Ok(())
         })

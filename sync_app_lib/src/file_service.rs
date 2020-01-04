@@ -12,8 +12,8 @@ pub enum FileService {
 }
 
 impl Default for FileService {
-    fn default() -> FileService {
-        FileService::Local
+    fn default() -> Self {
+        Self::Local
     }
 }
 
@@ -22,11 +22,11 @@ impl FromStr for FileService {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "local" => Ok(FileService::Local),
-            "gdrive" => Ok(FileService::GDrive),
-            "onedrive" => Ok(FileService::OneDrive),
-            "s3" => Ok(FileService::S3),
-            "ssh" => Ok(FileService::SSH),
+            "local" => Ok(Self::Local),
+            "gdrive" => Ok(Self::GDrive),
+            "onedrive" => Ok(Self::OneDrive),
+            "s3" => Ok(Self::S3),
+            "ssh" => Ok(Self::SSH),
             _ => Err(err_msg("Failed to parse FileService")),
         }
     }
@@ -35,11 +35,11 @@ impl FromStr for FileService {
 impl fmt::Display for FileService {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            FileService::Local => write!(f, "local"),
-            FileService::GDrive => write!(f, "gdrive"),
-            FileService::OneDrive => write!(f, "onedrive"),
-            FileService::S3 => write!(f, "s3"),
-            FileService::SSH => write!(f, "ssh"),
+            Self::Local => write!(f, "local"),
+            Self::GDrive => write!(f, "gdrive"),
+            Self::OneDrive => write!(f, "onedrive"),
+            Self::S3 => write!(f, "s3"),
+            Self::SSH => write!(f, "ssh"),
         }
     }
 }
