@@ -18,7 +18,6 @@ use percent_encoding::percent_decode;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::cmp;
 use std::collections::{HashMap, HashSet};
-use std::ffi::OsStr;
 use std::fmt;
 use std::fs::{create_dir_all, File};
 use std::io;
@@ -29,6 +28,7 @@ use std::string::ToString;
 use std::sync::Arc;
 use url::Url;
 use yup_oauth2 as oauth2;
+use std::ffi::OsStr;
 
 use crate::directory_info::DirectoryInfo;
 use crate::exponential_retry;
@@ -282,13 +282,13 @@ impl GDriveInstance {
                 }
                 true
             })
-            .map(|f| GDriveInfo::from_object(f.clone(), &self, directory_map))
+            .map(|f| GDriveInfo::from_object(f, &self, directory_map))
             .collect()
     }
 
     pub fn process_list_of_keys<T>(
         &self,
-        parents: Option<Vec<String>>,
+        parents: &Option<Vec<String>>,
         callback: T,
     ) -> Result<(), Error>
     where
@@ -297,7 +297,7 @@ impl GDriveInstance {
         let mut n_processed = 0;
         let mut page_token: Option<String> = None;
         loop {
-            let filelist = self.get_filelist(&page_token, false, &parents)?;
+            let filelist = self.get_filelist(&page_token, false, parents)?;
 
             if let Some(files) = filelist.files {
                 for f in &files {
@@ -338,14 +338,14 @@ impl GDriveInstance {
             .map_err(|_| err_msg("No file path"))?;
         let directory_name = directory_path
             .file_name()
-            .map(|d| d.to_string_lossy())
+            .map(OsStr::to_string_lossy)
             .ok_or_else(|| err_msg("Failed to convert string"))?;
         exponential_retry(move || {
             let new_file = drive3::File {
                 name: Some(directory_name.to_string()),
                 mime_type: Some("application/vnd.google-apps.folder".to_string()),
                 parents: Some(vec![parentid.to_string()]),
-                ..Default::default()
+                ..drive3::File::default()
             };
             let mime: Mime = "application/octet-stream"
                 .parse()
@@ -376,7 +376,7 @@ impl GDriveInstance {
                     .and_then(OsStr::to_str)
                     .map(ToString::to_string),
                 parents: Some(vec![parentid.to_string()]),
-                ..Default::default()
+                ..drive3::File::default()
             };
 
             self.gdrive
@@ -775,13 +775,12 @@ impl GDriveInstance {
                 });
                 let (_response, changelist) = result?;
 
-                match changelist.changes {
-                    Some(changes) => all_changes.extend(changes),
-                    _ => {
-                        debug!("Changelist does not contain any changes!");
-                        break;
-                    }
-                };
+                if let Some(changes) = changelist.changes {
+                    all_changes.extend(changes);
+                } else {
+                    debug!("Changelist does not contain any changes!");
+                    break;
+                }
                 if changelist.new_start_page_token.is_some() {
                     break;
                 }
@@ -812,10 +811,10 @@ pub struct GDriveInfo {
 
 impl GDriveInfo {
     pub fn from_object(
-        item: drive3::File,
+        item: &drive3::File,
         gdrive: &GDriveInstance,
         directory_map: &HashMap<String, DirectoryInfo>,
-    ) -> Result<GDriveInfo, Error> {
+    ) -> Result<Self, Error> {
         let filename = item.name.as_ref().ok_or_else(|| err_msg("No filename"))?;
         let md5sum = item.md5_checksum.as_ref().and_then(|x| x.parse().ok());
         let st_mtime = DateTime::parse_from_rfc3339(
@@ -825,7 +824,7 @@ impl GDriveInfo {
         )?
         .timestamp();
         let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
-        let serviceid = item.id.as_ref().map(|x| x.to_string());
+        let serviceid = item.id.as_ref().map(ToString::to_string);
         let servicesession = Some(gdrive.session_name.parse()?);
 
         let export_path = gdrive.get_export_path(&item, &directory_map)?;
@@ -843,7 +842,7 @@ impl GDriveInfo {
             }
         });
 
-        let finfo = GDriveInfo {
+        let finfo = Self {
             filename: filename.to_string(),
             filepath: Some(filepath),
             urlname: Some(urlname),
@@ -864,9 +863,9 @@ impl GDriveInfo {
         item: drive3::Change,
         gdrive: &GDriveInstance,
         directory_map: &HashMap<String, DirectoryInfo>,
-    ) -> Result<GDriveInfo, Error> {
+    ) -> Result<Self, Error> {
         let file = item.file.ok_or_else(|| err_msg("No file"))?;
-        GDriveInfo::from_object(file, gdrive, directory_map)
+        Self::from_object(&file, gdrive, directory_map)
     }
 }
 
@@ -876,8 +875,8 @@ struct DummyFile {
 }
 
 impl DummyFile {
-    fn new(data: &[u8]) -> DummyFile {
-        DummyFile {
+    fn new(data: &[u8]) -> Self {
+        Self {
             cursor: 0,
             data: Vec::from(data),
         }

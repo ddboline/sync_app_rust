@@ -41,7 +41,7 @@ where
 }
 
 impl FileListConfTrait for FileListConf {
-    fn from_url(url: &Url, config: &Config) -> Result<FileListConf, Error> {
+    fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
         match url.scheme() {
             "gdrive" => FileListGDriveConf::from_url(url, config).map(|f| f.0),
             "file" => FileListLocalConf::from_url(url, config).map(|f| f.0),
@@ -63,15 +63,15 @@ pub struct FileList {
 }
 
 impl FileList {
-    pub fn from_conf(conf: FileListConf) -> FileList {
-        FileList {
+    pub fn from_conf(conf: FileListConf) -> Self {
+        Self {
             conf,
             filemap: HashMap::new(),
         }
     }
 
-    pub fn with_list(&self, filelist: Vec<FileInfo>) -> FileList {
-        FileList {
+    pub fn with_list(&self, filelist: Vec<FileInfo>) -> Self {
+        Self {
             conf: self.conf.clone(),
             filemap: filelist
                 .into_par_iter()

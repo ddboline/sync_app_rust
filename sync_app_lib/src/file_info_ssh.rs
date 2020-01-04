@@ -10,9 +10,7 @@ pub struct FileInfoSSH(pub FileInfo);
 
 impl FileInfoTrait for FileInfoSSH {
     fn from_url(url: &Url) -> Result<FileInfoSSH, Error> {
-        if url.scheme() != "ssh" {
-            Err(err_msg("Wrong scheme"))
-        } else {
+        if url.scheme() == "ssh" {
             let path = url.path();
             let filepath = Path::new(&path);
             let filename = filepath
@@ -33,6 +31,8 @@ impl FileInfoTrait for FileInfoSSH {
                 servicesession: None,
             };
             Ok(FileInfoSSH(finfo))
+        } else {
+            Err(err_msg("Wrong scheme"))
         }
     }
 

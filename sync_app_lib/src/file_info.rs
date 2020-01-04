@@ -30,10 +30,10 @@ impl FromStr for Md5Sum {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() != 32 {
-            Err(format_err!("Invalid md5sum {}", s))
-        } else {
+        if s.len() == 32 {
             Ok(Self(s.to_string()))
+        } else {
+            Err(format_err!("Invalid md5sum {}", s))
         }
     }
 }
@@ -45,10 +45,10 @@ impl FromStr for Sha1Sum {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() != 40 {
-            Err(format_err!("Invalid sha1sum {}", s))
-        } else {
+        if s.len() == 40 {
             Ok(Self(s.to_string()))
+        } else {
+            Err(format_err!("Invalid sha1sum {}", s))
         }
     }
 }

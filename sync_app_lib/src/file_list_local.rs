@@ -3,7 +3,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::{copy, create_dir_all, remove_file, rename};
 use std::io::{stdout, Write};
-use std::path::PathBuf;
+use std::path::Path;
 use std::string::ToString;
 use std::time::SystemTime;
 use url::Url;
@@ -23,20 +23,20 @@ pub struct FileListLocal(pub FileList);
 pub struct FileListLocalConf(pub FileListConf);
 
 impl FileListLocal {
-    pub fn from_conf(conf: FileListLocalConf) -> FileListLocal {
-        FileListLocal(FileList {
+    pub fn from_conf(conf: FileListLocalConf) -> Self {
+        Self(FileList {
             conf: conf.0,
             filemap: HashMap::new(),
         })
     }
 
-    pub fn with_list(&self, filelist: Vec<FileInfo>) -> FileListLocal {
-        FileListLocal(self.0.with_list(filelist))
+    pub fn with_list(&self, filelist: Vec<FileInfo>) -> Self {
+        Self(self.0.with_list(filelist))
     }
 }
 
 impl FileListLocalConf {
-    pub fn new(basedir: PathBuf, config: &Config) -> Result<FileListLocalConf, Error> {
+    pub fn new(basedir: &Path, config: &Config) -> Result<Self, Error> {
         let basepath = basedir.canonicalize()?;
         let basestr = basepath.to_string_lossy().to_string();
         let baseurl =
@@ -48,15 +48,13 @@ impl FileListLocalConf {
             servicetype: FileService::Local,
             servicesession: basestr.parse()?,
         };
-        Ok(FileListLocalConf(conf))
+        Ok(Self(conf))
     }
 }
 
 impl FileListConfTrait for FileListLocalConf {
-    fn from_url(url: &Url, config: &Config) -> Result<FileListLocalConf, Error> {
-        if url.scheme() != "file" {
-            Err(err_msg("Wrong scheme"))
-        } else {
+    fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
+        if url.scheme() == "file" {
             let path = url.to_file_path().map_err(|_| err_msg("Parse failure"))?;
             let basestr = path.to_string_lossy().to_string();
             let conf = FileListConf {
@@ -66,7 +64,9 @@ impl FileListConfTrait for FileListLocalConf {
                 servicetype: FileService::Local,
                 servicesession: basestr.parse()?,
             };
-            Ok(FileListLocalConf(conf))
+            Ok(Self(conf))
+        } else {
+            Err(err_msg("Wrong scheme"))
         }
     }
 
@@ -106,11 +106,9 @@ impl FileListTrait for FileListLocal {
                     .path()
                     .canonicalize()
                     .ok()
-                    .map(|s| s.to_string_lossy().to_string())
-                    .unwrap_or_else(|| "".to_string());
+                    .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
                 let (modified, size) = entry
-                    .metadata()
-                    .map(|metadata| {
+                    .metadata().ok().map_or_else(|| (0, 0), |metadata| {
                         let modified = metadata
                             .modified()
                             .unwrap()
@@ -119,8 +117,7 @@ impl FileListTrait for FileListLocal {
                             .as_secs() as u32;
                         let size = metadata.len() as u32;
                         (modified, size)
-                    })
-                    .unwrap_or_else(|_| (0, 0));
+                    });
                 if let Some(finfo) = flist_dict.get(&filepath) {
                     if let Some(fstat) = finfo.filestat {
                         if fstat.st_mtime >= modified && fstat.st_size == size {
@@ -129,7 +126,7 @@ impl FileListTrait for FileListLocal {
                     }
                 };
                 FileInfoLocal::from_direntry(
-                    entry,
+                    &entry,
                     Some(conf.servicesession.0.to_string().into()),
                     Some(conf.servicesession.clone()),
                 )
@@ -156,8 +153,7 @@ impl FileListTrait for FileListLocal {
                     .path()
                     .canonicalize()
                     .ok()
-                    .map(|s| s.to_string_lossy().to_string())
-                    .unwrap_or_else(|| "".to_string());
+                    .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
                 writeln!(stdout().lock(), "{}", filepath)?;
                 Ok(())
             })

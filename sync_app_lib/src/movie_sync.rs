@@ -151,18 +151,20 @@ impl MovieSync {
 
         macro_rules! sync_single_table {
             ($table:expr, $js_prefix:expr, $T:ty) => {
-                let table = $table;
-                let js_prefix = $js_prefix;
-                debug!("{} {}", table, js_prefix);
-                let now = Utc::now();
-                let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
-                let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
-                let results =
-                    self.run_single_sync(table, *last_mod0, *last_mod1, js_prefix, |resp| {
-                        let result: Vec<$T> = resp.json()?;
-                        Ok(result)
-                    })?;
-                output.extend_from_slice(&results);
+                {
+                    let table = $table;
+                    let js_prefix = $js_prefix;
+                    debug!("{} {}", table, js_prefix);
+                    let now = Utc::now();
+                    let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
+                    let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
+                    let results =
+                        self.run_single_sync(table, *last_mod0, *last_mod1, js_prefix, |resp| {
+                            let result: Vec<$T> = resp.json()?;
+                            Ok(result)
+                        })?;
+                    output.extend_from_slice(&results);
+                }
             };
         }
 

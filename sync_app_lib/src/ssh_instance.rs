@@ -112,10 +112,10 @@ impl SSHInstance {
                 debug!("cmd {}", cmd);
                 status = Exec::shell(cmd).join()?.success();
             };
-            if !status {
-                Err(format_err!("{} failed", cmd))
-            } else {
+            if status {
                 Ok(())
+            } else {
+                Err(format_err!("{} failed", cmd))
             }
         } else {
             Err(err_msg("Failed to acquire lock"))

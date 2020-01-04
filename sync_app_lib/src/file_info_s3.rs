@@ -11,7 +11,7 @@ use crate::file_service::FileService;
 pub struct FileInfoS3(FileInfo);
 
 impl FileInfoTrait for FileInfoS3 {
-    fn from_url(url: &Url) -> Result<FileInfoS3, Error> {
+    fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "s3" {
             return Err(err_msg("Invalid URL"));
         }
@@ -39,7 +39,7 @@ impl FileInfoTrait for FileInfoS3 {
             servicetype: FileService::S3,
             servicesession,
         };
-        Ok(FileInfoS3(finfo))
+        Ok(Self(finfo))
     }
 
     fn get_finfo(&self) -> &FileInfo {
@@ -64,7 +64,7 @@ impl FileInfoTrait for FileInfoS3 {
 }
 
 impl FileInfoS3 {
-    pub fn from_object(bucket: &str, item: Object) -> Result<FileInfoS3, Error> {
+    pub fn from_object(bucket: &str, item: Object) -> Result<Self, Error> {
         let key = item.key.as_ref().ok_or_else(|| err_msg("No key"))?;
         let filepath = Path::new(&key);
         let filename = filepath
@@ -101,7 +101,7 @@ impl FileInfoS3 {
             servicesession,
         };
 
-        Ok(FileInfoS3(finfo))
+        Ok(Self(finfo))
     }
 }
 

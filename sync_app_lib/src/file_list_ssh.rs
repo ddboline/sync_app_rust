@@ -34,9 +34,7 @@ pub struct FileListSSHConf(pub FileListConf);
 
 impl FileListConfTrait for FileListSSHConf {
     fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
-        if url.scheme() != "ssh" {
-            Err(err_msg("Wrong scheme"))
-        } else {
+        if url.scheme() == "ssh" {
             let basepath = Path::new(url.path());
             let host = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
             let port = url.port().unwrap_or(22);
@@ -56,7 +54,9 @@ impl FileListConfTrait for FileListSSHConf {
                 servicesession: session.parse()?,
             };
 
-            Ok(FileListSSHConf(conf))
+            Ok(Self(conf))
+        } else {
+            Err(err_msg("Wrong scheme"))
         }
     }
 
@@ -194,17 +194,7 @@ impl FileListTrait for FileListSSH {
             return Ok(());
         }
 
-        let url0 = finfo0
-            .get_finfo()
-            .urlname
-            .as_ref()
-            .ok_or_else(|| err_msg("No url"))?;
         let path0 = Path::new(url0.path()).to_string_lossy();
-        let url1 = finfo1
-            .get_finfo()
-            .urlname
-            .as_ref()
-            .ok_or_else(|| err_msg("No url"))?;
         let path1 = Path::new(url1.path()).to_string_lossy();
         let command = format!("mv {} {}", path0, path1);
         debug!("command {}", command);

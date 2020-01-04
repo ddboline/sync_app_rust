@@ -185,16 +185,16 @@ impl SyncOpts {
                 }
             }
             FileSyncAction::Move => {
-                if self.urls.len() != 2 {
-                    Err(err_msg("Need 2 Urls"))
-                } else {
+                if self.urls.len() == 2 {
                     let conf0 = FileListConf::from_url(&self.urls[0], &config)?;
                     let conf1 = FileListConf::from_url(&self.urls[1], &config)?;
-                    if conf0.servicetype != conf1.servicetype {
-                        Err(err_msg("Can only move within servicetype"))
-                    } else {
+                    if conf0.servicetype == conf1.servicetype {
                         Ok(())
+                    } else {
+                        Err(err_msg("Can only move within servicetype"))
                     }
+                } else {
+                    Err(err_msg("Need 2 Urls"))
                 }
             }
             FileSyncAction::Serialize => {
@@ -226,15 +226,15 @@ impl SyncOpts {
                 }
             }
             FileSyncAction::AddConfig => {
-                if self.urls.len() != 2 {
-                    Err(err_msg("Need exactly 2 Urls"))
-                } else {
+                if self.urls.len() == 2 {
                     InsertFileSyncConfig::insert_config(
                         &pool,
                         self.urls[0].as_str(),
                         self.urls[1].as_str(),
                     )
                     .map(|_| ())
+                } else {
+                    Err(err_msg("Need exactly 2 Urls"))
                 }
             }
             FileSyncAction::ShowCache => {

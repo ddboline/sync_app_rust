@@ -35,8 +35,8 @@ impl FileListGDrive {
         conf: FileListGDriveConf,
         gdrive: &GDriveInstance,
         pool: Option<&PgPool>,
-    ) -> Result<FileListGDrive, Error> {
-        let f = FileListGDrive {
+    ) -> Result<Self, Error> {
+        let f = Self {
             flist: FileList::from_conf(conf.0),
             gdrive: gdrive.clone(),
             directory_map: Arc::new(HashMap::new()),
@@ -74,8 +74,8 @@ impl FileListGDrive {
         Ok(self)
     }
 
-    pub fn with_list(self, filelist: Vec<FileInfo>) -> FileListGDrive {
-        FileListGDrive {
+    pub fn with_list(self, filelist: Vec<FileInfo>) -> Self {
+        Self {
             flist: self.flist.with_list(filelist),
             gdrive: self.gdrive,
             directory_map: self.directory_map,
@@ -153,7 +153,7 @@ impl FileListGDriveConf {
         servicesession: &str,
         basepath: &str,
         config: &Config,
-    ) -> Result<FileListGDriveConf, Error> {
+    ) -> Result<Self, Error> {
         let baseurl: Url = format!("gdrive://{}/{}", servicesession, basepath).parse()?;
         let basepath = Path::new(basepath);
 
@@ -164,15 +164,13 @@ impl FileListGDriveConf {
             servicetype: FileService::GDrive,
             servicesession: servicesession.parse()?,
         };
-        Ok(FileListGDriveConf(conf))
+        Ok(Self(conf))
     }
 }
 
 impl FileListConfTrait for FileListGDriveConf {
-    fn from_url(url: &Url, config: &Config) -> Result<FileListGDriveConf, Error> {
-        if url.scheme() != "gdrive" {
-            Err(err_msg("Wrong scheme"))
-        } else {
+    fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
+        if url.scheme() == "gdrive" {
             let servicesession = url
                 .as_str()
                 .trim_start_matches("gdrive://")
@@ -190,7 +188,9 @@ impl FileListConfTrait for FileListGDriveConf {
                 servicesession: servicesession.parse()?,
             };
 
-            Ok(FileListGDriveConf(conf))
+            Ok(Self(conf))
+        } else {
+            Err(err_msg("Wrong scheme"))
         }
     }
 
@@ -219,9 +219,10 @@ impl FileListTrait for FileListGDrive {
             None => HashMap::new(),
         };
 
-        let (dlist, flist) = match self.gdrive.start_page_token {
-            Some(_) => self.get_all_changes()?,
-            None => {
+        let (dlist, flist) = if self.gdrive.start_page_token.is_some() {
+            self.get_all_changes()?
+        } else {
+            {
                 if let Some(pool) = pool {
                     self.clear_file_list(&pool)?;
                 }
@@ -262,8 +263,8 @@ impl FileListTrait for FileListGDrive {
         } else {
             None
         };
-        self.gdrive.process_list_of_keys(parents, |i| {
-            if let Ok(finfo) = GDriveInfo::from_object(i.clone(), &self.gdrive, &self.directory_map)
+        self.gdrive.process_list_of_keys(&parents, |i| {
+            if let Ok(finfo) = GDriveInfo::from_object(i, &self.gdrive, &self.directory_map)
                 .and_then(FileInfoGDrive::from_gdriveinfo)
             {
                 if let Some(url) = finfo.get_finfo().urlname.as_ref() {

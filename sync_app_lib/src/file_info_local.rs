@@ -18,9 +18,7 @@ pub struct FileInfoLocal(pub FileInfo);
 
 impl FileInfoTrait for FileInfoLocal {
     fn from_url(url: &Url) -> Result<FileInfoLocal, Error> {
-        if url.scheme() != "file" {
-            Err(err_msg("Wrong scheme"))
-        } else {
+        if url.scheme() == "file" {
             let path = url.to_file_path().map_err(|_| err_msg("Parse failure"))?;
             let filename = path
                 .file_name()
@@ -40,6 +38,8 @@ impl FileInfoTrait for FileInfoLocal {
                 servicesession: None,
             };
             Ok(FileInfoLocal(finfo))
+        } else {
+            Err(err_msg("Wrong scheme"))
         }
     }
 
@@ -166,7 +166,7 @@ impl FileInfoLocal {
     }
 
     pub fn from_direntry(
-        item: DirEntry,
+        item: &DirEntry,
         serviceid: Option<ServiceId>,
         servicesession: Option<ServiceSession>,
     ) -> Result<FileInfoLocal, Error> {

@@ -25,17 +25,17 @@ pub struct FileListS3 {
 pub struct FileListS3Conf(pub FileListConf);
 
 impl FileListS3 {
-    pub fn from_conf(conf: FileListS3Conf) -> FileListS3 {
+    pub fn from_conf(conf: FileListS3Conf) -> Self {
         let s3 = S3Instance::new(&conf.get_config().aws_region_name);
 
-        FileListS3 {
+        Self {
             flist: FileList::from_conf(conf.0),
             s3,
         }
     }
 
-    pub fn with_list(&self, filelist: Vec<FileInfo>) -> FileListS3 {
-        FileListS3 {
+    pub fn with_list(&self, filelist: Vec<FileInfo>) -> Self {
+        Self {
             flist: self.flist.with_list(filelist),
             s3: self.s3.clone(),
         }
@@ -48,7 +48,7 @@ impl FileListS3 {
 }
 
 impl FileListS3Conf {
-    pub fn new(bucket: &str, config: &Config) -> Result<FileListS3Conf, Error> {
+    pub fn new(bucket: &str, config: &Config) -> Result<Self, Error> {
         let baseurl: Url = format!("s3://{}", bucket).parse()?;
         let basepath = Path::new("");
 
@@ -59,15 +59,13 @@ impl FileListS3Conf {
             servicetype: FileService::S3,
             servicesession: bucket.parse()?,
         };
-        Ok(FileListS3Conf(conf))
+        Ok(Self(conf))
     }
 }
 
 impl FileListConfTrait for FileListS3Conf {
-    fn from_url(url: &Url, config: &Config) -> Result<FileListS3Conf, Error> {
-        if url.scheme() != "s3" {
-            Err(err_msg("Wrong scheme"))
-        } else {
+    fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
+        if url.scheme() == "s3" {
             let basepath = Path::new(url.path());
             let bucket = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
             let conf = FileListConf {
@@ -78,7 +76,9 @@ impl FileListConfTrait for FileListS3Conf {
                 servicesession: bucket.parse()?,
             };
 
-            Ok(FileListS3Conf(conf))
+            Ok(Self(conf))
+        } else {
+            Err(err_msg("Wrong scheme"))
         }
     }
 
@@ -164,21 +164,18 @@ impl FileListTrait for FileListS3 {
                 != finfo1
                     .md5sum
                     .clone()
-                    .map(|u| u.0)
-                    .unwrap_or_else(|| "".to_string())
+                    .map_or_else(|| "".to_string(), |u| u.0)
             {
                 debug!(
                     "Multipart upload? {} {}",
                     finfo1
                         .urlname
                         .clone()
-                        .map(Url::into_string)
-                        .unwrap_or_else(|| "".to_string()),
+                        .map_or_else(|| "".to_string(), Url::into_string),
                     finfo0
                         .urlname
                         .clone()
-                        .map(Url::into_string)
-                        .unwrap_or_else(|| "".to_string())
+                        .map_or_else(|| "".to_string(), Url::into_string),
                 );
             }
             Ok(())
@@ -249,13 +246,13 @@ impl FileListTrait for FileListS3 {
         T: FileInfoTrait,
     {
         let finfo = finfo.get_finfo();
-        if finfo.servicetype != FileService::S3 {
-            Err(err_msg("Wrong service type"))
-        } else {
+        if finfo.servicetype == FileService::S3 {
             let url = finfo.urlname.clone().ok_or_else(|| err_msg("No s3 url"))?;
             let bucket = url.host_str().ok_or_else(|| err_msg("No bucket"))?;
             let key = url.path();
             self.s3.delete_key(&bucket, &key)
+        } else {
+            Err(err_msg("Wrong service type"))
         }
     }
 }
