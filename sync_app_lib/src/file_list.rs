@@ -121,7 +121,7 @@ pub trait FileListTrait {
 
     fn cleanup(&self) -> Result<(), Error> {
         if self.get_conf().servicetype == FileService::GDrive {
-            let config = Config::init_config()?;
+            let config = &self.get_conf().config;
             let fname = format!(
                 "{}/{}_start_page_token",
                 config.gdrive_token_path,
@@ -470,7 +470,7 @@ impl FileListTrait for FileList {
             }
             FileService::GDrive => {
                 let conf = FileListGDriveConf(self.get_conf().clone());
-                let config = Config::init_config()?;
+                let config = &self.get_conf().config;
                 let gdrive = GDriveInstance::new(
                     &config.gdrive_token_path,
                     &config.gdrive_secret_file,
@@ -513,7 +513,7 @@ impl FileListTrait for FileList {
                 flist.print_list()
             }
             FileService::GDrive => {
-                let config = Config::init_config()?;
+                let config = &self.get_conf().config;
                 let fconf = FileListGDriveConf(conf.clone());
                 let gdrive = GDriveInstance::new(
                     &config.gdrive_token_path,
