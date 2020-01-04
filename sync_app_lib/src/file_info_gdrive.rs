@@ -136,7 +136,7 @@ mod tests {
         assert_eq!(finfo.get_finfo().filename, "armstrong_thesis_2003.pdf");
         assert_eq!(
             finfo.get_finfo().serviceid.as_ref().unwrap().0.as_str(),
-            "1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb"
+            "1REd76oJ6YheyjF2R9Il0E8xbjalgpNgG"
         );
     }
 
@@ -167,7 +167,7 @@ mod tests {
             .download(&gdriveid, &local_path, &Some(mime))
             .unwrap();
 
-        let basepath = Path::new("src/gdrive_instance.rs").canonicalize().unwrap();
+        let basepath = Path::new("../gdrive_lib/src/gdrive_instance.rs").canonicalize().unwrap();
         let local_url = Url::from_file_path(basepath).unwrap();
         let new_file = gdrive.upload(&local_url, &parent).unwrap();
         println!("new_file {:?}", new_file);

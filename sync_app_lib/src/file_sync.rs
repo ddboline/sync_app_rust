@@ -385,9 +385,6 @@ mod tests {
 
     #[test]
     fn test_compare_objects() {
-        let config = Config::init_config().unwrap();
-        let fsync = FileSync::new(config);
-
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
         let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
@@ -426,8 +423,6 @@ mod tests {
     fn test_compare_lists_0() {
         let config = Config::init_config().unwrap();
         let pool = PgPool::new(&config.database_url);
-        let fsync = FileSync::new(config.clone());
-
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
         let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
@@ -435,7 +430,7 @@ mod tests {
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
         println!("{:?}", finfo0);
 
-        let flist0conf = FileListLocalConf::new(current_dir().unwrap(), &config).unwrap();
+        let flist0conf = FileListLocalConf::new(&current_dir().unwrap(), &config).unwrap();
         let flist0 = FileListLocal::from_conf(flist0conf).with_list(vec![finfo0.0]);
 
         let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
@@ -470,8 +465,6 @@ mod tests {
     fn test_compare_lists_1() {
         let config = Config::init_config().unwrap();
         let pool = PgPool::new(&config.database_url);
-        let fsync = FileSync::new(config.clone());
-
         let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
         let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
@@ -480,7 +473,7 @@ mod tests {
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
         println!("{:?}", finfo0);
 
-        let flist0conf = FileListLocalConf::new(current_dir().unwrap(), &config).unwrap();
+        let flist0conf = FileListLocalConf::new(&current_dir().unwrap(), &config).unwrap();
         let flist0 = FileListLocal::from_conf(flist0conf);
 
         let test_owner = Owner {

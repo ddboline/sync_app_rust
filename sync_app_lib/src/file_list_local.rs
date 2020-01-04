@@ -270,7 +270,7 @@ mod tests {
         .parse()
         .unwrap();
         let config = Config::init_config().unwrap();
-        let conf = FileListLocalConf::new(basepath, &config);
+        let conf = FileListLocalConf::new(&basepath, &config);
         println!("{:?}", conf);
         assert_eq!(conf.is_ok(), true);
         let conf = conf.unwrap();
@@ -282,9 +282,9 @@ mod tests {
     #[test]
     #[ignore]
     fn test_fill_file_list() {
-        let basepath = "src".parse().unwrap();
+        let basepath: PathBuf = "src".parse().unwrap();
         let config = Config::init_config().unwrap();
-        let conf = FileListLocalConf::new(basepath, &config).unwrap();
+        let conf = FileListLocalConf::new(&basepath, &config).unwrap();
         let flist = FileListLocal(FileList {
             conf: conf.0.clone(),
             filemap: HashMap::new(),
