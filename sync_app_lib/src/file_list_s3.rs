@@ -264,6 +264,7 @@ mod tests {
     use crate::file_list_s3::{FileListS3, FileListS3Conf};
     use crate::pgpool::PgPool;
     use crate::s3_instance::S3Instance;
+    use std::io::{stdout, Write};
 
     #[test]
     #[ignore]
@@ -281,7 +282,7 @@ mod tests {
 
         let new_flist = flist.fill_file_list(None).unwrap();
 
-        println!("{} {:?}", bucket, new_flist.get(0));
+        writeln!(stdout(), "{} {:?}", bucket, new_flist.get(0)).unwrap();
         assert!(new_flist.len() > 0);
 
         let config = Config::init_config().unwrap();

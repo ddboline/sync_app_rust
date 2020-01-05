@@ -18,6 +18,7 @@ use percent_encoding::percent_decode;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::cmp;
 use std::collections::{HashMap, HashSet};
+use std::ffi::OsStr;
 use std::fmt;
 use std::fs::{create_dir_all, File};
 use std::io;
@@ -28,7 +29,6 @@ use std::string::ToString;
 use std::sync::Arc;
 use url::Url;
 use yup_oauth2 as oauth2;
-use std::ffi::OsStr;
 
 use crate::directory_info::DirectoryInfo;
 use crate::exponential_retry;

@@ -10,6 +10,7 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::io::{stdout, Write};
 
 use super::config::Config;
 use super::reqwest_session::ReqwestSession;
@@ -150,22 +151,20 @@ impl MovieSync {
         debug!("{:?} {:?}", last_modified0, last_modified1);
 
         macro_rules! sync_single_table {
-            ($table:expr, $js_prefix:expr, $T:ty) => {
-                {
-                    let table = $table;
-                    let js_prefix = $js_prefix;
-                    debug!("{} {}", table, js_prefix);
-                    let now = Utc::now();
-                    let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
-                    let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
-                    let results =
-                        self.run_single_sync(table, *last_mod0, *last_mod1, js_prefix, |resp| {
-                            let result: Vec<$T> = resp.json()?;
-                            Ok(result)
-                        })?;
-                    output.extend_from_slice(&results);
-                }
-            };
+            ($table:expr, $js_prefix:expr, $T:ty) => {{
+                let table = $table;
+                let js_prefix = $js_prefix;
+                debug!("{} {}", table, js_prefix);
+                let now = Utc::now();
+                let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
+                let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
+                let results =
+                    self.run_single_sync(table, *last_mod0, *last_mod1, js_prefix, |resp| {
+                        let result: Vec<$T> = resp.json()?;
+                        Ok(result)
+                    })?;
+                output.extend_from_slice(&results);
+            }};
         }
 
         sync_single_table!("imdb_ratings", "shows", ImdbRatings);
@@ -249,13 +248,13 @@ where
         last_modified.format("%Y-%m-%dT%H:%M:%S%.fZ")
     );
     let url = endpoint0.join(&path)?;
-    println!("{}", url);
+    writeln!(stdout(), "{}", url)?;
     output.push(format!("{}", url));
     let data = transform(session0.get(&url, HeaderMap::new())?)?;
 
     let path = format!("list/{}", table);
     let url = endpoint1.join(&path)?;
-    println!("{} {:#?}", url, data);
+    writeln!(stdout(), "{} {:#?}", url, data)?;
     output.push(format!("{}", url));
     for chunk in data.chunks(100) {
         let js = hashmap! {
@@ -270,6 +269,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::io::{stdout, Write};
+
     use crate::config::Config;
     use crate::movie_sync::MovieSync;
 
@@ -280,7 +281,7 @@ mod tests {
         let s = MovieSync::new(config);
         s.init().unwrap();
         let result = s.run_sync().unwrap();
-        println!("{:?}", result);
+        writeln!(stdout(), "{:?}", result).unwrap();
         assert!(result.len() > 0);
     }
 }

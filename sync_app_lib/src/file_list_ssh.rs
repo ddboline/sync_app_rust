@@ -3,6 +3,7 @@ use log::debug;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs::create_dir_all;
+use std::io::{stdout, Write};
 use std::path::Path;
 use url::Url;
 
@@ -248,7 +249,7 @@ impl FileListTrait for FileListSSH {
     fn print_list(&self) -> Result<(), Error> {
         let path = self.get_conf().basepath.to_string_lossy();
         let command = format!("sync-app-rust ls -u file://{}", path);
-        println!("{}", command);
+        writeln!(stdout(), "{}", command)?;
         self.ssh.run_command_print_stdout(&command)
     }
 }
@@ -256,6 +257,7 @@ impl FileListTrait for FileListSSH {
 #[cfg(test)]
 mod tests {
     use std::fs::remove_file;
+    use std::io::{stdout, Write};
     use std::path::{Path, PathBuf};
     use url::Url;
 
@@ -274,7 +276,7 @@ mod tests {
             .parse()
             .unwrap();
         let conf = FileListSSHConf::from_url(&url, &config).unwrap();
-        println!("{:?}", conf);
+        writeln!(stdout(), "{:?}", conf).unwrap();
         assert_eq!(conf.0.baseurl, url);
         assert_eq!(conf.0.servicetype, FileService::SSH);
     }

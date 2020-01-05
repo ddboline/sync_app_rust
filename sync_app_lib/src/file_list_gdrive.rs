@@ -149,11 +149,7 @@ impl FileListGDrive {
 }
 
 impl FileListGDriveConf {
-    pub fn new(
-        servicesession: &str,
-        basepath: &str,
-        config: &Config,
-    ) -> Result<Self, Error> {
+    pub fn new(servicesession: &str, basepath: &str, config: &Config) -> Result<Self, Error> {
         let baseurl: Url = format!("gdrive://{}/{}", servicesession, basepath).parse()?;
         let basepath = Path::new(basepath);
 
@@ -397,6 +393,7 @@ impl FileListTrait for FileListGDrive {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use std::io::{stdout, Write};
 
     use gdrive_lib::gdrive_instance::GDriveInstance;
 
@@ -433,7 +430,7 @@ mod tests {
 
         let flist = flist.with_list(new_flist);
 
-        println!("wrote {}", flist.cache_file_list(&pool).unwrap());
+        writeln!(stdout(), "wrote {}", flist.cache_file_list(&pool).unwrap()).unwrap();
 
         let new_flist = flist.load_file_list(&pool).unwrap();
 
@@ -441,21 +438,21 @@ mod tests {
 
         flist.clear_file_list(&pool).unwrap();
 
-        println!("dmap {}", flist.directory_map.len());
+        writeln!(stdout(), "dmap {}", flist.directory_map.len()).unwrap();
 
         let dnamemap = GDriveInstance::get_directory_name_map(&flist.directory_map);
         for f in flist.get_filemap().values() {
             let u = f.urlname.as_ref().unwrap();
             let parent_id = GDriveInstance::get_parent_id(u, &dnamemap).unwrap();
             assert!(!parent_id.is_none());
-            println!("{} {:?}", u, parent_id);
+            writeln!(stdout(), "{} {:?}", u, parent_id).unwrap();
         }
 
         let multimap: HashMap<_, _> = dnamemap.iter().filter(|(_, v)| v.len() > 1).collect();
-        println!("multimap {}", multimap.len());
+        writeln!(stdout(), "multimap {}", multimap.len()).unwrap();
         for (key, val) in &multimap {
             if val.len() > 1 {
-                println!("{} {}", key, val.len());
+                writeln!(stdout(), "{} {}", key, val.len()).unwrap();
             }
         }
     }

@@ -107,8 +107,9 @@ impl FileListTrait for FileListLocal {
                     .canonicalize()
                     .ok()
                     .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
-                let (modified, size) = entry
-                    .metadata().ok().map_or_else(|| (0, 0), |metadata| {
+                let (modified, size) = entry.metadata().ok().map_or_else(
+                    || (0, 0),
+                    |metadata| {
                         let modified = metadata
                             .modified()
                             .unwrap()
@@ -117,7 +118,8 @@ impl FileListTrait for FileListLocal {
                             .as_secs() as u32;
                         let size = metadata.len() as u32;
                         (modified, size)
-                    });
+                    },
+                );
                 if let Some(finfo) = flist_dict.get(&filepath) {
                     if let Some(fstat) = finfo.filestat {
                         if fstat.st_mtime >= modified && fstat.st_size == size {
@@ -249,6 +251,7 @@ impl FileListTrait for FileListLocal {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use std::io::{stdout, Write};
     use std::path::PathBuf;
     use url::Url;
 
@@ -271,11 +274,11 @@ mod tests {
         .unwrap();
         let config = Config::init_config().unwrap();
         let conf = FileListLocalConf::new(&basepath, &config);
-        println!("{:?}", conf);
+        writeln!(stdout(), "{:?}", conf).unwrap();
         assert_eq!(conf.is_ok(), true);
         let conf = conf.unwrap();
         assert_eq!(conf.0.servicetype, FileService::Local);
-        println!("{:?}", conf.0.baseurl);
+        writeln!(stdout(), "{:?}", conf.0.baseurl).unwrap();
         assert_eq!(conf.0.baseurl, baseurl);
     }
 
@@ -292,7 +295,7 @@ mod tests {
 
         let new_flist = flist.fill_file_list(None).unwrap();
 
-        println!("0 {}", new_flist.len());
+        writeln!(stdout(), "0 {}", new_flist.len()).unwrap();
 
         let fset: HashMap<_, _> = new_flist
             .iter()
@@ -303,7 +306,7 @@ mod tests {
 
         let result = fset.get("file_list_local.rs").unwrap();
 
-        println!("{:?}", result);
+        writeln!(stdout(), "{:?}", result).unwrap();
 
         assert!(result
             .filepath
@@ -318,7 +321,7 @@ mod tests {
             .ends_with("file_list_local.rs"));
 
         let cache_info: InsertFileInfoCache = result.into();
-        println!("{:?}", cache_info);
+        writeln!(stdout(), "{:?}", cache_info).unwrap();
         assert_eq!(
             &result.md5sum.as_ref().unwrap().0,
             cache_info.md5sum.as_ref().unwrap()
@@ -331,28 +334,28 @@ mod tests {
         let config = Config::init_config().unwrap();
         let pool = PgPool::new(&config.database_url);
 
-        println!("1 {}", new_flist.len());
+        writeln!(stdout(), "1 {}", new_flist.len()).unwrap();
 
         let flist = FileListLocal::from_conf(conf).with_list(new_flist);
 
-        println!("2 {}", flist.get_filemap().len());
+        writeln!(stdout(), "2 {}", flist.get_filemap().len()).unwrap();
 
-        println!("wrote {}", flist.cache_file_list(&pool).unwrap());
+        writeln!(stdout(), "wrote {}", flist.cache_file_list(&pool).unwrap()).unwrap();
 
-        println!("{:?}", flist.get_conf().servicesession);
+        writeln!(stdout(), "{:?}", flist.get_conf().servicesession).unwrap();
 
         let new_flist = flist.load_file_list(&pool).unwrap();
 
         assert_eq!(new_flist.len(), flist.0.filemap.len());
 
-        println!("{}", new_flist.len());
+        writeln!(stdout(), "{}", new_flist.len()).unwrap();
         assert!(new_flist.len() != 0);
 
         let new_flist = flist.fill_file_list(Some(&pool)).unwrap();
 
         assert_eq!(new_flist.len(), flist.0.filemap.len());
 
-        println!("{}", new_flist.len());
+        writeln!(stdout(), "{}", new_flist.len()).unwrap();
         assert!(new_flist.len() != 0);
 
         flist.clear_file_list(&pool).unwrap();

@@ -371,6 +371,7 @@ mod tests {
     use rusoto_s3::{Object, Owner};
     use std::collections::HashMap;
     use std::env::current_dir;
+    use std::io::{stdout, Write};
     use std::path::Path;
 
     use crate::config::Config;
@@ -390,14 +391,14 @@ mod tests {
         let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
         let finfo0 =
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
-        println!("{:?}", finfo0);
+        writeln!(stdout(), "{:?}", finfo0).unwrap();
         let mut finfo1 = finfo0.clone();
         finfo1.0.md5sum = Some("51e3cc2c6f64d24ff55fae262325edee".parse().unwrap());
         let mut fstat = finfo1.0.filestat.unwrap();
         fstat.st_mtime += 100;
         fstat.st_size += 100;
         finfo1.0.filestat = Some(fstat);
-        println!("{:?}", finfo1);
+        writeln!(stdout(), "{:?}", finfo1).unwrap();
         assert!(FileSync::compare_objects(&finfo0, &finfo1));
 
         let test_owner = Owner {
@@ -414,7 +415,7 @@ mod tests {
         };
 
         let finfo2 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
-        println!("{:?}", finfo2);
+        writeln!(stdout(), "{:?}", finfo2).unwrap();
         assert!(FileSync::compare_objects(&finfo0, &finfo2));
     }
 
@@ -428,7 +429,7 @@ mod tests {
         let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
         let finfo0 =
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
-        println!("{:?}", finfo0);
+        writeln!(stdout(), "{:?}", finfo0).unwrap();
 
         let flist0conf = FileListLocalConf::new(&current_dir().unwrap(), &config).unwrap();
         let flist0 = FileListLocal::from_conf(flist0conf).with_list(vec![finfo0.0]);
@@ -447,7 +448,7 @@ mod tests {
 
         assert!(cache_list.len() > 0);
 
-        println!("{:?}", cache_list);
+        writeln!(stdout(), "{:?}", cache_list).unwrap();
 
         let test_key = format!(
             "file://{}/src/file_sync.rs",
@@ -471,7 +472,7 @@ mod tests {
 
         let finfo0 =
             FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
-        println!("{:?}", finfo0);
+        writeln!(stdout(), "{:?}", finfo0).unwrap();
 
         let flist0conf = FileListLocalConf::new(&current_dir().unwrap(), &config).unwrap();
         let flist0 = FileListLocal::from_conf(flist0conf);
@@ -505,7 +506,7 @@ mod tests {
 
         assert!(cache_list.len() > 0);
 
-        println!("{:?}", cache_list);
+        writeln!(stdout(), "{:?}", cache_list).unwrap();
 
         let test_key = "s3://test_bucket/src/file_sync.rs".to_string();
         assert!(cache_list.contains_key(&test_key));
