@@ -110,7 +110,7 @@ mod tests {
             .parse()
             .unwrap();
         let finfo = FileInfoGDrive::from_url(&url).unwrap();
-        writeln!(stdout(), "{:?}", finfo).unwrap().unwrap();
+        writeln!(stdout(), "{:?}", finfo).unwrap();
         assert_eq!(finfo.get_finfo().filename, "test.txt");
         assert_eq!(finfo.get_finfo().servicetype, FileService::GDrive);
     }
