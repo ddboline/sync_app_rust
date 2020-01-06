@@ -17,7 +17,7 @@ use crate::file_service::FileService;
 pub struct FileInfoLocal(pub FileInfo);
 
 impl FileInfoTrait for FileInfoLocal {
-    fn from_url(url: &Url) -> Result<FileInfoLocal, Error> {
+    fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() == "file" {
             let path = url.to_file_path().map_err(|_| err_msg("Parse failure"))?;
             let filename = path
@@ -37,7 +37,7 @@ impl FileInfoTrait for FileInfoLocal {
                 servicetype: FileService::Local,
                 servicesession: None,
             };
-            Ok(FileInfoLocal(finfo))
+            Ok(Self(finfo))
         } else {
             Err(err_msg("Wrong scheme"))
         }
@@ -108,7 +108,7 @@ impl FileInfoLocal {
         metadata: Option<Metadata>,
         serviceid: Option<ServiceId>,
         servicesession: Option<ServiceSession>,
-    ) -> Result<FileInfoLocal, Error> {
+    ) -> Result<Self, Error> {
         if path.is_dir() {
             return Err(err_msg("Is a directory, skipping"));
         }
@@ -150,31 +150,31 @@ impl FileInfoLocal {
             servicetype: FileService::Local,
             servicesession,
         };
-        Ok(FileInfoLocal(finfo))
+        Ok(Self(finfo))
     }
 
     pub fn from_path(
         path: &Path,
         serviceid: Option<ServiceId>,
         servicesession: Option<ServiceSession>,
-    ) -> Result<FileInfoLocal, Error> {
+    ) -> Result<Self, Error> {
         if path.is_dir() {
             return Err(err_msg("Is a directory, skipping"));
         }
         let metadata = path.metadata().ok();
-        FileInfoLocal::from_path_and_metadata(&path, metadata, serviceid, servicesession)
+        Self::from_path_and_metadata(&path, metadata, serviceid, servicesession)
     }
 
     pub fn from_direntry(
         item: &DirEntry,
         serviceid: Option<ServiceId>,
         servicesession: Option<ServiceSession>,
-    ) -> Result<FileInfoLocal, Error> {
+    ) -> Result<Self, Error> {
         if item.file_type().is_dir() {
             return Err(err_msg("Is a directory, skipping"));
         }
         let path = item.path();
         let metadata = item.metadata().ok();
-        FileInfoLocal::from_path_and_metadata(&path, metadata, serviceid, servicesession)
+        Self::from_path_and_metadata(&path, metadata, serviceid, servicesession)
     }
 }

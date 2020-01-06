@@ -87,13 +87,13 @@ impl GarminSync {
         let url = from_url.join("api/auth")?;
         let resp = self
             .session0
-            .post(&url, HeaderMap::new(), &data)?
+            .post(&url, &HeaderMap::new(), &data)?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
         let url = to_url.join("api/auth")?;
         let resp = self
             .session1
-            .post(&url, HeaderMap::new(), &data)?
+            .post(&url, &HeaderMap::new(), &data)?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
         Ok(())
@@ -141,9 +141,9 @@ impl GarminSync {
         let (from_url, to_url) = self.get_urls()?;
 
         let url = from_url.join(path)?;
-        let measurements0 = transform(self.session0.get(&url, HeaderMap::new())?)?;
+        let measurements0 = transform(self.session0.get(&url, &HeaderMap::new())?)?;
         let url = to_url.join(path)?;
-        let measurements1 = transform(self.session1.get(&url, HeaderMap::new())?)?;
+        let measurements1 = transform(self.session1.get(&url, &HeaderMap::new())?)?;
 
         let mut combine = |measurements0: &HashMap<DateTime<Utc>, ScaleMeasurement>,
                            measurements1: &HashMap<DateTime<Utc>, ScaleMeasurement>|
@@ -170,7 +170,7 @@ impl GarminSync {
                         js_prefix => meas,
                     };
                     self.session1
-                        .post(&url, HeaderMap::new(), &data)?
+                        .post(&url, &HeaderMap::new(), &data)?
                         .error_for_status()?;
                 }
             }
@@ -195,9 +195,9 @@ impl GarminSync {
         let (from_url, to_url) = self.get_urls()?;
 
         let url = from_url.join(path)?;
-        let activities0 = transform(self.session0.get(&url, HeaderMap::new())?)?;
+        let activities0 = transform(self.session0.get(&url, &HeaderMap::new())?)?;
         let url = to_url.join(path)?;
-        let activities1 = transform(self.session1.get(&url, HeaderMap::new())?)?;
+        let activities1 = transform(self.session1.get(&url, &HeaderMap::new())?)?;
 
         let mut combine = |activities0: &HashMap<String, StravaItem>,
                            activities1: &HashMap<String, StravaItem>|
@@ -228,7 +228,7 @@ impl GarminSync {
                         js_prefix => act,
                     };
                     self.session1
-                        .post(&url, HeaderMap::new(), &data)?
+                        .post(&url, &HeaderMap::new(), &data)?
                         .error_for_status()?;
                 }
             }

@@ -124,13 +124,13 @@ impl MovieSync {
         let url = from_url.join("api/auth")?;
         let resp = self
             .session0
-            .post(&url, HeaderMap::new(), &data)?
+            .post(&url, &HeaderMap::new(), &data)?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
         let url = to_url.join("api/auth")?;
         let resp = self
             .session1
-            .post(&url, HeaderMap::new(), &data)?
+            .post(&url, &HeaderMap::new(), &data)?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
         Ok(())
@@ -179,7 +179,7 @@ impl MovieSync {
         url: &Url,
         session: &ReqwestSession,
     ) -> Result<HashMap<String, DateTime<Utc>>, Error> {
-        let last_modified: Vec<LastModifiedStruct> = session.get(url, HeaderMap::new())?.json()?;
+        let last_modified: Vec<LastModifiedStruct> = session.get(url, &HeaderMap::new())?.json()?;
         let results = last_modified
             .into_iter()
             .map(|entry| (entry.table, entry.last_modified))
@@ -250,7 +250,7 @@ where
     let url = endpoint0.join(&path)?;
     writeln!(stdout(), "{}", url)?;
     output.push(format!("{}", url));
-    let data = transform(session0.get(&url, HeaderMap::new())?)?;
+    let data = transform(session0.get(&url, &HeaderMap::new())?)?;
 
     let path = format!("list/{}", table);
     let url = endpoint1.join(&path)?;
@@ -261,7 +261,7 @@ where
             js_prefix=> chunk,
         };
         session1
-            .post(&url, HeaderMap::new(), &js)?
+            .post(&url, &HeaderMap::new(), &js)?
             .error_for_status()?;
     }
     Ok(output)

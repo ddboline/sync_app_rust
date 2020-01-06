@@ -9,7 +9,7 @@ use crate::file_service::FileService;
 pub struct FileInfoSSH(pub FileInfo);
 
 impl FileInfoTrait for FileInfoSSH {
-    fn from_url(url: &Url) -> Result<FileInfoSSH, Error> {
+    fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() == "ssh" {
             let path = url.path();
             let filepath = Path::new(&path);
@@ -30,7 +30,7 @@ impl FileInfoTrait for FileInfoSSH {
                 servicetype: FileService::SSH,
                 servicesession: None,
             };
-            Ok(FileInfoSSH(finfo))
+            Ok(Self(finfo))
         } else {
             Err(err_msg("Wrong scheme"))
         }

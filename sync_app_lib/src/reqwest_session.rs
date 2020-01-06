@@ -68,7 +68,7 @@ impl ReqwestSession {
         } else {
             Policy::none()
         };
-        ReqwestSession {
+        Self {
             client: Arc::new(Mutex::new(ReqwestSessionInner {
                 client: Client::builder()
                     .cookie_store(true)
@@ -80,7 +80,7 @@ impl ReqwestSession {
         }
     }
 
-    fn exponential_retry<T, U>(&self, f: T) -> Result<U, Error>
+    fn exponential_retry<T, U>(f: T) -> Result<U, Error>
     where
         T: Fn() -> Result<U, Error>,
     {
@@ -102,20 +102,20 @@ impl ReqwestSession {
         }
     }
 
-    pub fn get(&self, url: &Url, headers: HeaderMap) -> Result<Response, Error> {
-        self.exponential_retry(|| self.client.lock().get(url.clone(), headers.clone()))
+    pub fn get(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
+        Self::exponential_retry(|| self.client.lock().get(url.clone(), headers.clone()))
     }
 
     pub fn post<T>(
         &self,
         url: &Url,
-        headers: HeaderMap,
+        headers: &HeaderMap,
         form: &HashMap<&str, T>,
     ) -> Result<Response, Error>
     where
         T: Serialize,
     {
-        self.exponential_retry(|| self.client.lock().post(url.clone(), headers.clone(), form))
+        Self::exponential_retry(|| self.client.lock().post(url.clone(), headers.clone(), form))
     }
 
     pub fn set_default_headers(&self, headers: HashMap<&str, &str>) -> Result<(), Error> {

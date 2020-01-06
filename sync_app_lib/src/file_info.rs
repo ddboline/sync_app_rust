@@ -118,7 +118,7 @@ where
 }
 
 impl FileInfoTrait for FileInfo {
-    fn from_url(url: &Url) -> Result<FileInfo, Error> {
+    fn from_url(url: &Url) -> Result<Self, Error> {
         match url.scheme() {
             "file" => FileInfoLocal::from_url(url).map(FileInfoTrait::into_finfo),
             "s3" => FileInfoS3::from_url(url).map(FileInfoTrait::into_finfo),
@@ -128,11 +128,11 @@ impl FileInfoTrait for FileInfo {
         }
     }
 
-    fn get_finfo(&self) -> &FileInfo {
+    fn get_finfo(&self) -> &Self {
         &self
     }
 
-    fn into_finfo(self) -> FileInfo {
+    fn into_finfo(self) -> Self {
         self
     }
 
@@ -150,8 +150,8 @@ impl FileInfoTrait for FileInfo {
 }
 
 impl FileInfo {
-    pub fn from_cache_info(item: &FileInfoCache) -> Result<FileInfo, Error> {
-        Ok(FileInfo {
+    pub fn from_cache_info(item: &FileInfoCache) -> Result<Self, Error> {
+        Ok(Self {
             filename: item.filename.to_string(),
             filepath: item.filepath.clone().map(Into::into),
             urlname: match item.urlname.as_ref() {
@@ -179,7 +179,7 @@ impl FileInfo {
         })
     }
 
-    pub fn from_database(pool: &PgPool, url: &Url) -> Result<Option<FileInfo>, Error> {
+    pub fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
         use crate::schema::file_info_cache::dsl::*;
 
         let conn = pool.get()?;
@@ -190,7 +190,7 @@ impl FileInfo {
             .map_err(err_msg)?
             .get(0)
         {
-            Some(f) => Some(FileInfo::from_cache_info(&f)?),
+            Some(f) => Some(Self::from_cache_info(&f)?),
             None => None,
         };
 

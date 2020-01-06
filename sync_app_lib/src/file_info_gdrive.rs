@@ -11,7 +11,7 @@ use crate::file_service::FileService;
 pub struct FileInfoGDrive(pub FileInfo);
 
 impl FileInfoTrait for FileInfoGDrive {
-    fn from_url(url: &Url) -> Result<FileInfoGDrive, Error> {
+    fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "gdrive" {
             return Err(err_msg("Invalid URL"));
         }
@@ -41,7 +41,7 @@ impl FileInfoTrait for FileInfoGDrive {
             servicetype: FileService::GDrive,
             servicesession: Some(servicesession),
         };
-        Ok(FileInfoGDrive(finfo))
+        Ok(Self(finfo))
     }
 
     fn get_finfo(&self) -> &FileInfo {
@@ -66,7 +66,7 @@ impl FileInfoTrait for FileInfoGDrive {
 }
 
 impl FileInfoGDrive {
-    pub fn from_gdriveinfo(item: GDriveInfo) -> Result<FileInfoGDrive, Error> {
+    pub fn from_gdriveinfo(item: GDriveInfo) -> Result<Self, Error> {
         let md5sum = item.md5sum.and_then(|m| m.parse().ok());
         let serviceid = item.serviceid.map(|x| x.into());
         let servicesession = item.servicesession.and_then(|s| s.parse().ok());
@@ -86,7 +86,7 @@ impl FileInfoGDrive {
             servicesession,
         };
 
-        Ok(FileInfoGDrive(finfo))
+        Ok(Self(finfo))
     }
 }
 

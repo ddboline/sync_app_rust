@@ -66,7 +66,7 @@ impl S3Instance {
             self.s3_client
                 .create_bucket(CreateBucketRequest {
                     bucket: bucket_name.to_string(),
-                    ..Default::default()
+                    ..CreateBucketRequest::default()
                 })
                 .sync()?
                 .location
@@ -91,7 +91,7 @@ impl S3Instance {
                 .delete_object(DeleteObjectRequest {
                     bucket: bucket_name.to_string(),
                     key: key_name.to_string(),
-                    ..Default::default()
+                    ..DeleteObjectRequest::default()
                 })
                 .sync()
                 .map(|_| ())
@@ -112,7 +112,7 @@ impl S3Instance {
                     copy_source,
                     bucket: bucket_to.to_string(),
                     key: key_to.to_string(),
-                    ..Default::default()
+                    ..CopyObjectRequest::default()
                 })
                 .sync()
                 .map_err(err_msg)
@@ -132,7 +132,7 @@ impl S3Instance {
                         PutObjectRequest {
                             bucket: bucket_name.to_string(),
                             key: key_name.to_string(),
-                            ..Default::default()
+                            ..PutObjectRequest::default()
                         },
                     )
                     .map_err(err_msg)
@@ -153,16 +153,14 @@ impl S3Instance {
                     GetObjectRequest {
                         bucket: bucket_name.to_string(),
                         key: key_name.to_string(),
-                        ..Default::default()
+                        ..GetObjectRequest::default()
                     },
                     fname,
                 )
                 .map(|x| {
                     x.e_tag
                         .as_ref()
-                        .map(|y| y.trim_matches('"'))
-                        .unwrap_or("")
-                        .to_string()
+                        .map_or("", |y| y.trim_matches('"')).to_string()
                 })
                 .map_err(err_msg)
         })
@@ -184,7 +182,7 @@ impl S3Instance {
                         bucket: bucket.to_string(),
                         continuation_token: continuation_token.clone(),
                         prefix: prefix.map(ToString::to_string),
-                        ..Default::default()
+                        ..ListObjectsV2Request::default()
                     })
                     .sync()
                     .map_err(err_msg)
@@ -193,11 +191,10 @@ impl S3Instance {
             continuation_token = current_list.next_continuation_token.clone();
 
             match current_list.key_count {
-                Some(0) => (),
+                Some(0) | None => (),
                 Some(_) => {
                     list_of_keys.extend_from_slice(&current_list.contents.unwrap_or_else(Vec::new));
                 }
-                None => (),
             };
 
             match &continuation_token {
@@ -206,7 +203,7 @@ impl S3Instance {
             };
             if let Some(max_keys) = self.max_keys {
                 if list_of_keys.len() > max_keys {
-                    list_of_keys.resize(max_keys, Default::default());
+                    list_of_keys.resize(max_keys, Object::default());
                     break;
                 }
             }
@@ -233,7 +230,7 @@ impl S3Instance {
                         bucket: bucket.to_string(),
                         continuation_token: continuation_token.clone(),
                         prefix: prefix.map(ToString::to_string),
-                        ..Default::default()
+                        ..ListObjectsV2Request::default()
                     })
                     .sync()
                     .map_err(err_msg)
@@ -242,13 +239,12 @@ impl S3Instance {
             continuation_token = current_list.next_continuation_token.clone();
 
             match current_list.key_count {
-                Some(0) => (),
+                Some(0) | None => (),
                 Some(_) => {
                     for item in current_list.contents.unwrap_or_else(Vec::new) {
                         callback(&item)?;
                     }
                 }
-                None => (),
             };
 
             match &continuation_token {

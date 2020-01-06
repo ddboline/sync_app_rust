@@ -17,9 +17,9 @@ impl fmt::Debug for PgPool {
 }
 
 impl PgPool {
-    pub fn new(pgurl: &str) -> PgPool {
+    pub fn new(pgurl: &str) -> Self {
         let manager = ConnectionManager::new(pgurl);
-        PgPool {
+        Self {
             pgurl: pgurl.to_string(),
             pool: Pool::new(manager).expect("Failed to open DB connection"),
         }

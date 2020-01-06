@@ -35,7 +35,7 @@ impl SyncOpts {
     }
 
     pub fn process_args() -> Result<(), Error> {
-        let opts = SyncOpts::from_args();
+        let opts = Self::from_args();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
