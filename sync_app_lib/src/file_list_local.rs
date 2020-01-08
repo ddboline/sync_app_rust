@@ -1,4 +1,4 @@
-use failure::{err_msg, format_err, Error};
+use anyhow::{format_err, Error};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::{copy, create_dir_all, remove_file, rename};
@@ -39,8 +39,8 @@ impl FileListLocalConf {
     pub fn new(basedir: &Path, config: &Config) -> Result<Self, Error> {
         let basepath = basedir.canonicalize()?;
         let basestr = basepath.to_string_lossy().to_string();
-        let baseurl =
-            Url::from_file_path(basepath.clone()).map_err(|_| err_msg("Failed to parse url"))?;
+        let baseurl = Url::from_file_path(basepath.clone())
+            .map_err(|_| format_err!("Failed to parse url"))?;
         let conf = FileListConf {
             baseurl,
             basepath,
@@ -55,7 +55,9 @@ impl FileListLocalConf {
 impl FileListConfTrait for FileListLocalConf {
     fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
         if url.scheme() == "file" {
-            let path = url.to_file_path().map_err(|_| err_msg("Parse failure"))?;
+            let path = url
+                .to_file_path()
+                .map_err(|_| format_err!("Parse failure"))?;
             let basestr = path.to_string_lossy().to_string();
             let conf = FileListConf {
                 baseurl: url.clone(),
@@ -66,7 +68,7 @@ impl FileListConfTrait for FileListLocalConf {
             };
             Ok(Self(conf))
         } else {
-            Err(err_msg("Wrong scheme"))
+            Err(format_err!("Wrong scheme"))
         }
     }
 
@@ -179,17 +181,17 @@ impl FileListTrait for FileListLocal {
             let local_file = finfo1
                 .filepath
                 .as_ref()
-                .ok_or_else(|| err_msg("No local path"))?;
+                .ok_or_else(|| format_err!("No local path"))?;
             let remote_file = finfo0
                 .filepath
                 .clone()
-                .ok_or_else(|| err_msg("No local path"))?;
+                .ok_or_else(|| format_err!("No local path"))?;
             let parent_dir = finfo1
                 .filepath
                 .as_ref()
-                .ok_or_else(|| err_msg("No local path"))?
+                .ok_or_else(|| format_err!("No local path"))?
                 .parent()
-                .ok_or_else(|| err_msg("No parent directory"))?;
+                .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
                 create_dir_all(&parent_dir)?;
             }
@@ -217,11 +219,11 @@ impl FileListTrait for FileListLocal {
         let path0 = finfo0
             .filepath
             .as_ref()
-            .ok_or_else(|| err_msg("No file path"))?;
+            .ok_or_else(|| format_err!("No file path"))?;
         let path1 = finfo1
             .filepath
             .as_ref()
-            .ok_or_else(|| err_msg("No file path"))?;
+            .ok_or_else(|| format_err!("No file path"))?;
         if finfo0.servicetype != FileService::Local || finfo1.servicetype != FileService::Local {
             Ok(())
         } else {
@@ -239,9 +241,9 @@ impl FileListTrait for FileListLocal {
     {
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::Local {
-            Err(err_msg("Wrong service type"))
+            Err(format_err!("Wrong service type"))
         } else if let Some(filepath) = finfo.filepath.as_ref() {
-            remove_file(filepath).map_err(err_msg)
+            remove_file(filepath).map_err(Into::into)
         } else {
             Ok(())
         }

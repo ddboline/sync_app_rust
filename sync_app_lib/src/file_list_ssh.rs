@@ -1,4 +1,4 @@
-use failure::{err_msg, format_err, Error};
+use anyhow::{format_err, Error};
 use log::debug;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -37,7 +37,7 @@ impl FileListConfTrait for FileListSSHConf {
     fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
         if url.scheme() == "ssh" {
             let basepath = Path::new(url.path());
-            let host = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
+            let host = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
             let port = url.port().unwrap_or(22);
             let username = url.username().to_string();
             let session = format!(
@@ -57,7 +57,7 @@ impl FileListConfTrait for FileListSSHConf {
 
             Ok(Self(conf))
         } else {
-            Err(err_msg("Wrong scheme"))
+            Err(format_err!("Wrong scheme"))
         }
     }
 
@@ -88,15 +88,15 @@ impl FileListTrait for FileListSSH {
                 .get_finfo()
                 .urlname
                 .as_ref()
-                .ok_or_else(|| err_msg("No url"))?;
+                .ok_or_else(|| format_err!("No url"))?;
             let path0 = Path::new(url0.path()).to_string_lossy();
 
             let parent_dir = finfo1
                 .filepath
                 .as_ref()
-                .ok_or_else(|| err_msg("No local path"))?
+                .ok_or_else(|| format_err!("No local path"))?
                 .parent()
-                .ok_or_else(|| err_msg("No parent directory"))?;
+                .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
                 create_dir_all(&parent_dir)?;
             }
@@ -107,7 +107,7 @@ impl FileListTrait for FileListSSH {
                 finfo1
                     .filepath
                     .as_ref()
-                    .ok_or_else(|| err_msg("No path"))?
+                    .ok_or_else(|| format_err!("No path"))?
                     .to_string_lossy()
             );
             debug!("command {}", command);
@@ -134,15 +134,15 @@ impl FileListTrait for FileListSSH {
                 .get_finfo()
                 .urlname
                 .as_ref()
-                .ok_or_else(|| err_msg("No url"))?;
+                .ok_or_else(|| format_err!("No url"))?;
             let path1 = Path::new(url1.path()).to_string_lossy();
 
             let parent_dir = finfo1
                 .filepath
                 .as_ref()
-                .ok_or_else(|| err_msg("No local path"))?
+                .ok_or_else(|| format_err!("No local path"))?
                 .parent()
-                .ok_or_else(|| err_msg("No parent directory"))?
+                .ok_or_else(|| format_err!("No parent directory"))?
                 .to_string_lossy();
 
             let command = format!("mkdir -p {}", parent_dir);
@@ -153,7 +153,7 @@ impl FileListTrait for FileListSSH {
                 finfo0
                     .filepath
                     .as_ref()
-                    .ok_or_else(|| err_msg("No path"))?
+                    .ok_or_else(|| format_err!("No path"))?
                     .to_string_lossy(),
                 self.ssh.get_ssh_str(&path1)?,
             );
@@ -184,12 +184,12 @@ impl FileListTrait for FileListSSH {
             .get_finfo()
             .urlname
             .as_ref()
-            .ok_or_else(|| err_msg("No url"))?;
+            .ok_or_else(|| format_err!("No url"))?;
         let url1 = finfo1
             .get_finfo()
             .urlname
             .as_ref()
-            .ok_or_else(|| err_msg("No url"))?;
+            .ok_or_else(|| format_err!("No url"))?;
 
         if url0.username() != url1.username() || url0.host_str() != url1.host_str() {
             return Ok(());
@@ -211,7 +211,7 @@ impl FileListTrait for FileListSSH {
             .get_finfo()
             .urlname
             .as_ref()
-            .ok_or_else(|| err_msg("No url"))?;
+            .ok_or_else(|| format_err!("No url"))?;
         let path = Path::new(url.path()).to_string_lossy();
         let command = format!("rm {}", path);
         self.ssh.run_command_ssh(&command)

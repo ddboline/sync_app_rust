@@ -1,4 +1,4 @@
-use failure::{err_msg, format_err, Error};
+use anyhow::{format_err, Error};
 use lazy_static::lazy_static;
 use log::debug;
 use parking_lot::{Mutex, RwLock};
@@ -32,7 +32,7 @@ impl SSHInstance {
     }
 
     pub fn from_url(url: &Url) -> Result<Self, Error> {
-        let host = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
+        let host = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let port = url.port().unwrap_or(22);
         let user = url.username();
         Ok(Self::new(user, host, port))
@@ -73,7 +73,7 @@ impl SSHInstance {
             };
             Ok(output)
         } else {
-            Err(err_msg("Failed to acquire lock"))
+            Err(format_err!("Failed to acquire lock"))
         }
     }
 
@@ -95,7 +95,7 @@ impl SSHInstance {
             };
             Ok(())
         } else {
-            Err(err_msg("Failed to acquire lock"))
+            Err(format_err!("Failed to acquire lock"))
         }
     }
 
@@ -118,7 +118,7 @@ impl SSHInstance {
                 Err(format_err!("{} failed", cmd))
             }
         } else {
-            Err(err_msg("Failed to acquire lock"))
+            Err(format_err!("Failed to acquire lock"))
         }
     }
 }

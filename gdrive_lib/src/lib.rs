@@ -1,7 +1,7 @@
 pub mod directory_info;
 pub mod gdrive_instance;
 
-use failure::{format_err, Error};
+use anyhow::{format_err, Error};
 use log::error;
 use retry::{delay::jitter, delay::Exponential, retry};
 

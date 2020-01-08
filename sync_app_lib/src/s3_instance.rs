@@ -1,4 +1,4 @@
-use failure::{err_msg, format_err, Error};
+use anyhow::{format_err, Error};
 use rusoto_core::Region;
 use rusoto_s3::{
     Bucket, CopyObjectRequest, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest,
@@ -57,7 +57,7 @@ impl S3Instance {
                 .list_buckets()
                 .sync()
                 .map(|l| l.buckets.unwrap_or_default())
-                .map_err(err_msg)
+                .map_err(Into::into)
         })
     }
 
@@ -70,7 +70,7 @@ impl S3Instance {
                 })
                 .sync()?
                 .location
-                .ok_or_else(|| err_msg("Failed to create bucket"))
+                .ok_or_else(|| format_err!("Failed to create bucket"))
         })
     }
 
@@ -81,7 +81,7 @@ impl S3Instance {
                     bucket: bucket_name.to_string(),
                 })
                 .sync()
-                .map_err(err_msg)
+                .map_err(Into::into)
         })
     }
 
@@ -95,7 +95,7 @@ impl S3Instance {
                 })
                 .sync()
                 .map(|_| ())
-                .map_err(err_msg)
+                .map_err(Into::into)
         })
     }
 
@@ -115,7 +115,7 @@ impl S3Instance {
                     ..CopyObjectRequest::default()
                 })
                 .sync()
-                .map_err(err_msg)
+                .map_err(Into::into)
         })
         .map(|x| x.copy_object_result.and_then(|s| s.e_tag))
     }
@@ -135,8 +135,8 @@ impl S3Instance {
                             ..PutObjectRequest::default()
                         },
                     )
-                    .map_err(err_msg)
                     .map(|_| ())
+                    .map_err(Into::into)
             })
         })
     }
@@ -160,9 +160,10 @@ impl S3Instance {
                 .map(|x| {
                     x.e_tag
                         .as_ref()
-                        .map_or("", |y| y.trim_matches('"')).to_string()
+                        .map_or("", |y| y.trim_matches('"'))
+                        .to_string()
                 })
-                .map_err(err_msg)
+                .map_err(Into::into)
         })
     }
 
@@ -185,7 +186,7 @@ impl S3Instance {
                         ..ListObjectsV2Request::default()
                     })
                     .sync()
-                    .map_err(err_msg)
+                    .map_err(Into::into)
             })?;
 
             continuation_token = current_list.next_continuation_token.clone();
@@ -233,7 +234,7 @@ impl S3Instance {
                         ..ListObjectsV2Request::default()
                     })
                     .sync()
-                    .map_err(err_msg)
+                    .map_err(Into::into)
             })?;
 
             continuation_token = current_list.next_continuation_token.clone();

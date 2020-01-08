@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use anyhow::{format_err, Error};
 use std::path::Path;
 use url::Url;
 
@@ -13,16 +13,16 @@ pub struct FileInfoGDrive(pub FileInfo);
 impl FileInfoTrait for FileInfoGDrive {
     fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "gdrive" {
-            return Err(err_msg("Invalid URL"));
+            return Err(format_err!("Invalid URL"));
         }
         let path = url.path();
         let filepath = Path::new(&path);
         let filename = filepath
             .file_name()
-            .ok_or_else(|| err_msg("Parse failure"))?
+            .ok_or_else(|| format_err!("Parse failure"))?
             .to_os_string()
             .into_string()
-            .map_err(|_| err_msg("Parse failure"))?;
+            .map_err(|_| format_err!("Parse failure"))?;
         let serviceid = Some(filename.to_string().into());
         let servicesession = url
             .as_str()

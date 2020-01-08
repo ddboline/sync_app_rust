@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use anyhow::{format_err, Error};
 use fmt::Debug;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
@@ -48,7 +48,7 @@ impl FromStr for FileSyncAction {
             "ser" | "serialize" => Ok(Self::Serialize),
             "add" | "add_config" => Ok(Self::AddConfig),
             "show" | "show_cache" => Ok(Self::ShowCache),
-            _ => Err(err_msg("Parse failure")),
+            _ => Err(format_err!("Parse failure")),
         }
     }
 }
@@ -361,7 +361,7 @@ impl FileSync {
         } else if t0 == FileService::Local {
             flist.copy_to(finfo0, finfo1)
         } else {
-            Err(err_msg("Invalid request"))
+            Err(format_err!("Invalid request"))
         }
     }
 }

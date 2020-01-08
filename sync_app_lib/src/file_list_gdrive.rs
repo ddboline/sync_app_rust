@@ -1,4 +1,4 @@
-use failure::{err_msg, format_err, Error};
+use anyhow::{format_err, Error};
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
@@ -173,7 +173,9 @@ impl FileListConfTrait for FileListGDriveConf {
                 .replace(url.path(), "");
             let tmp = format!("gdrive://{}/", servicesession);
             let basepath: Url = url.as_str().replace(&tmp, "file:///").parse()?;
-            let basepath = basepath.to_file_path().map_err(|_| err_msg("Failure"))?;
+            let basepath = basepath
+                .to_file_path()
+                .map_err(|_| format_err!("Failure"))?;
             let basepath = basepath.to_string_lossy().to_string();
             let basepath = Path::new(basepath.trim_start_matches('/'));
             let conf = FileListConf {
@@ -186,7 +188,7 @@ impl FileListConfTrait for FileListGDriveConf {
 
             Ok(Self(conf))
         } else {
-            Err(err_msg("Wrong scheme"))
+            Err(format_err!("Wrong scheme"))
         }
     }
 
@@ -282,20 +284,20 @@ impl FileListTrait for FileListGDrive {
             let local_path = finfo1
                 .filepath
                 .as_ref()
-                .ok_or_else(|| err_msg("No local path"))?;
+                .ok_or_else(|| format_err!("No local path"))?;
             let parent_dir = finfo1
                 .filepath
                 .as_ref()
-                .ok_or_else(|| err_msg("No local path"))?
+                .ok_or_else(|| format_err!("No local path"))?
                 .parent()
-                .ok_or_else(|| err_msg("No parent directory"))?;
+                .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
                 create_dir_all(&parent_dir)?;
             }
             let gdriveid = finfo0
                 .serviceid
                 .clone()
-                .ok_or_else(|| err_msg("No gdrive url"))?
+                .ok_or_else(|| format_err!("No gdrive url"))?
                 .0;
             let gfile = self.gdrive.get_file_metadata(&gdriveid)?;
             debug!("{:?}", gfile.mime_type);
@@ -329,17 +331,17 @@ impl FileListTrait for FileListGDrive {
             let local_file = finfo0
                 .filepath
                 .clone()
-                .ok_or_else(|| err_msg("No local path"))?
+                .ok_or_else(|| format_err!("No local path"))?
                 .canonicalize()?;
-            let local_url = Url::from_file_path(local_file).map_err(|_| err_msg("failure"))?;
+            let local_url = Url::from_file_path(local_file).map_err(|_| format_err!("failure"))?;
 
             let remote_url = finfo1
                 .urlname
                 .clone()
-                .ok_or_else(|| err_msg("No remote url"))?;
+                .ok_or_else(|| format_err!("No remote url"))?;
             let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
             let parent_id = GDriveInstance::get_parent_id(&remote_url, &dnamemap)?
-                .ok_or_else(|| err_msg("No parent id!"))?;
+                .ok_or_else(|| format_err!("No parent id!"))?;
             self.gdrive.upload(&local_url, &parent_id)?;
             Ok(())
         } else {
@@ -366,12 +368,15 @@ impl FileListTrait for FileListGDrive {
         let gdriveid = &finfo0
             .serviceid
             .as_ref()
-            .ok_or_else(|| err_msg("No serviceid"))?
+            .ok_or_else(|| format_err!("No serviceid"))?
             .0;
-        let url = finfo1.urlname.as_ref().ok_or_else(|| err_msg("No url"))?;
+        let url = finfo1
+            .urlname
+            .as_ref()
+            .ok_or_else(|| format_err!("No url"))?;
         let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
         let parentid = GDriveInstance::get_parent_id(&url, &dnamemap)?
-            .ok_or_else(|| err_msg("No parentid"))?;
+            .ok_or_else(|| format_err!("No parentid"))?;
         self.gdrive.move_to(gdriveid, &parentid, &finfo1.filename)
     }
 
@@ -381,7 +386,7 @@ impl FileListTrait for FileListGDrive {
     {
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::GDrive {
-            Err(err_msg("Wrong service type"))
+            Err(format_err!("Wrong service type"))
         } else if let Some(gdriveid) = finfo.serviceid.as_ref() {
             self.gdrive.delete_permanently(&gdriveid.0).map(|_| ())
         } else {

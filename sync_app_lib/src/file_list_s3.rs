@@ -1,4 +1,4 @@
-use failure::{err_msg, format_err, Error};
+use anyhow::{format_err, Error};
 use log::debug;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
@@ -67,7 +67,7 @@ impl FileListConfTrait for FileListS3Conf {
     fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
         if url.scheme() == "s3" {
             let basepath = Path::new(url.path());
-            let bucket = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
+            let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
             let conf = FileListConf {
                 baseurl: url.clone(),
                 basepath: basepath.to_path_buf(),
@@ -78,7 +78,7 @@ impl FileListConfTrait for FileListS3Conf {
 
             Ok(Self(conf))
         } else {
-            Err(err_msg("Wrong scheme"))
+            Err(format_err!("Wrong scheme"))
         }
     }
 
@@ -101,7 +101,7 @@ impl FileListTrait for FileListS3 {
         let bucket = conf
             .baseurl
             .host_str()
-            .ok_or_else(|| err_msg("Parse error"))?;
+            .ok_or_else(|| format_err!("Parse error"))?;
         let prefix = conf.baseurl.path().trim_start_matches('/');
 
         self.s3
@@ -116,7 +116,7 @@ impl FileListTrait for FileListS3 {
         let bucket = conf
             .baseurl
             .host_str()
-            .ok_or_else(|| err_msg("Parse error"))?;
+            .ok_or_else(|| format_err!("Parse error"))?;
         let prefix = conf.baseurl.path().trim_start_matches('/');
 
         self.s3.process_list_of_keys(bucket, Some(prefix), |i| {
@@ -141,20 +141,25 @@ impl FileListTrait for FileListS3 {
             let local_file = finfo1
                 .filepath
                 .clone()
-                .ok_or_else(|| err_msg("No local path"))?
+                .ok_or_else(|| format_err!("No local path"))?
                 .to_string_lossy()
                 .to_string();
             let parent_dir = finfo1
                 .filepath
                 .as_ref()
-                .ok_or_else(|| err_msg("No local path"))?
+                .ok_or_else(|| format_err!("No local path"))?
                 .parent()
-                .ok_or_else(|| err_msg("No parent directory"))?;
+                .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
                 create_dir_all(&parent_dir)?;
             }
-            let remote_url = finfo0.urlname.clone().ok_or_else(|| err_msg("No s3 url"))?;
-            let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
+            let remote_url = finfo0
+                .urlname
+                .clone()
+                .ok_or_else(|| format_err!("No s3 url"))?;
+            let bucket = remote_url
+                .host_str()
+                .ok_or_else(|| format_err!("No bucket"))?;
             let key = remote_url.path().trim_start_matches('/');
             if Path::new(&local_file).exists() {
                 remove_file(&local_file)?;
@@ -199,12 +204,17 @@ impl FileListTrait for FileListS3 {
             let local_file = finfo0
                 .filepath
                 .clone()
-                .ok_or_else(|| err_msg("No local path"))?
+                .ok_or_else(|| format_err!("No local path"))?
                 .canonicalize()?
                 .to_string_lossy()
                 .to_string();
-            let remote_url = finfo1.urlname.clone().ok_or_else(|| err_msg("No s3 url"))?;
-            let bucket = remote_url.host_str().ok_or_else(|| err_msg("No bucket"))?;
+            let remote_url = finfo1
+                .urlname
+                .clone()
+                .ok_or_else(|| format_err!("No s3 url"))?;
+            let bucket = remote_url
+                .host_str()
+                .ok_or_else(|| format_err!("No bucket"))?;
             let key = remote_url.path().trim_start_matches('/');
             self.s3.upload(&local_file, &bucket, &key)
         } else {
@@ -228,11 +238,17 @@ impl FileListTrait for FileListS3 {
         {
             return Ok(());
         }
-        let url0 = finfo0.urlname.as_ref().ok_or_else(|| err_msg("No url"))?;
-        let bucket0 = url0.host_str().ok_or_else(|| err_msg("Parse error"))?;
+        let url0 = finfo0
+            .urlname
+            .as_ref()
+            .ok_or_else(|| format_err!("No url"))?;
+        let bucket0 = url0.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let key0 = url0.path();
-        let url1 = finfo1.urlname.as_ref().ok_or_else(|| err_msg("No url"))?;
-        let bucket1 = url1.host_str().ok_or_else(|| err_msg("Parse error"))?;
+        let url1 = finfo1
+            .urlname
+            .as_ref()
+            .ok_or_else(|| format_err!("No url"))?;
+        let bucket1 = url1.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let key1 = url1.path();
         let new_tag = self.s3.copy_key(url0, &bucket1, &key1)?;
         if new_tag.is_some() {
@@ -247,12 +263,15 @@ impl FileListTrait for FileListS3 {
     {
         let finfo = finfo.get_finfo();
         if finfo.servicetype == FileService::S3 {
-            let url = finfo.urlname.clone().ok_or_else(|| err_msg("No s3 url"))?;
-            let bucket = url.host_str().ok_or_else(|| err_msg("No bucket"))?;
+            let url = finfo
+                .urlname
+                .clone()
+                .ok_or_else(|| format_err!("No s3 url"))?;
+            let bucket = url.host_str().ok_or_else(|| format_err!("No bucket"))?;
             let key = url.path();
             self.s3.delete_key(&bucket, &key)
         } else {
-            Err(err_msg("Wrong service type"))
+            Err(format_err!("Wrong service type"))
         }
     }
 }

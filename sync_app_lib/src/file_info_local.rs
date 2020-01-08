@@ -1,5 +1,5 @@
+use anyhow::{format_err, Error};
 use checksums::{hash_file, Algorithm};
-use failure::{err_msg, Error};
 use std::fs;
 use std::fs::File;
 use std::fs::Metadata;
@@ -19,13 +19,15 @@ pub struct FileInfoLocal(pub FileInfo);
 impl FileInfoTrait for FileInfoLocal {
     fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() == "file" {
-            let path = url.to_file_path().map_err(|_| err_msg("Parse failure"))?;
+            let path = url
+                .to_file_path()
+                .map_err(|_| format_err!("Parse failure"))?;
             let filename = path
                 .file_name()
-                .ok_or_else(|| err_msg("Parse failure"))?
+                .ok_or_else(|| format_err!("Parse failure"))?
                 .to_os_string()
                 .into_string()
-                .map_err(|_| err_msg("Parse failure"))?;
+                .map_err(|_| format_err!("Parse failure"))?;
             let finfo = FileInfo {
                 filename,
                 filepath: Some(path),
@@ -39,7 +41,7 @@ impl FileInfoTrait for FileInfoLocal {
             };
             Ok(Self(finfo))
         } else {
-            Err(err_msg("Wrong scheme"))
+            Err(format_err!("Wrong scheme"))
         }
     }
 
@@ -110,14 +112,14 @@ impl FileInfoLocal {
         servicesession: Option<ServiceSession>,
     ) -> Result<Self, Error> {
         if path.is_dir() {
-            return Err(err_msg("Is a directory, skipping"));
+            return Err(format_err!("Is a directory, skipping"));
         }
         let filename = path
             .file_name()
-            .ok_or_else(|| err_msg("Parse failure"))?
+            .ok_or_else(|| format_err!("Parse failure"))?
             .to_os_string()
             .into_string()
-            .map_err(|_| err_msg("Parse failure"))?;
+            .map_err(|_| format_err!("Parse failure"))?;
         let filestat = match metadata {
             Some(metadata) => {
                 let modified = metadata
@@ -134,8 +136,8 @@ impl FileInfoLocal {
         };
 
         let filepath = path.canonicalize()?;
-        let fileurl =
-            Url::from_file_path(filepath.clone()).map_err(|_| err_msg("Failed to parse url"))?;
+        let fileurl = Url::from_file_path(filepath.clone())
+            .map_err(|_| format_err!("Failed to parse url"))?;
         let md5sum = _get_md5sum(&filepath).ok().map(Md5Sum);
         let sha1sum = _get_sha1sum(&filepath).ok().map(Sha1Sum);
 
@@ -159,7 +161,7 @@ impl FileInfoLocal {
         servicesession: Option<ServiceSession>,
     ) -> Result<Self, Error> {
         if path.is_dir() {
-            return Err(err_msg("Is a directory, skipping"));
+            return Err(format_err!("Is a directory, skipping"));
         }
         let metadata = path.metadata().ok();
         Self::from_path_and_metadata(&path, metadata, serviceid, servicesession)
@@ -171,7 +173,7 @@ impl FileInfoLocal {
         servicesession: Option<ServiceSession>,
     ) -> Result<Self, Error> {
         if item.file_type().is_dir() {
-            return Err(err_msg("Is a directory, skipping"));
+            return Err(format_err!("Is a directory, skipping"));
         }
         let path = item.path();
         let metadata = item.metadata().ok();

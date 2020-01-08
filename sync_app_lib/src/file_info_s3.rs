@@ -1,5 +1,5 @@
+use anyhow::{format_err, Error};
 use chrono::DateTime;
-use failure::{err_msg, Error};
 use rusoto_s3::Object;
 use std::path::Path;
 use url::Url;
@@ -13,17 +13,17 @@ pub struct FileInfoS3(FileInfo);
 impl FileInfoTrait for FileInfoS3 {
     fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "s3" {
-            return Err(err_msg("Invalid URL"));
+            return Err(format_err!("Invalid URL"));
         }
-        let bucket = url.host_str().ok_or_else(|| err_msg("Parse error"))?;
+        let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let key = url.path();
         let filepath = Path::new(&key);
         let filename = filepath
             .file_name()
-            .ok_or_else(|| err_msg("Parse failure"))?
+            .ok_or_else(|| format_err!("Parse failure"))?
             .to_os_string()
             .into_string()
-            .map_err(|_| err_msg("Parse failure"))?;
+            .map_err(|_| format_err!("Parse failure"))?;
         let fileurl = format!("s3://{}/{}", bucket, key).parse()?;
         let serviceid = Some(bucket.to_string().into());
         let servicesession = Some(bucket.parse()?);
@@ -65,22 +65,22 @@ impl FileInfoTrait for FileInfoS3 {
 
 impl FileInfoS3 {
     pub fn from_object(bucket: &str, item: Object) -> Result<Self, Error> {
-        let key = item.key.as_ref().ok_or_else(|| err_msg("No key"))?;
+        let key = item.key.as_ref().ok_or_else(|| format_err!("No key"))?;
         let filepath = Path::new(&key);
         let filename = filepath
             .file_name()
-            .ok_or_else(|| err_msg("Parse failure"))?
+            .ok_or_else(|| format_err!("Parse failure"))?
             .to_os_string()
             .into_string()
-            .map_err(|_| err_msg("Parse failure"))?;
+            .map_err(|_| format_err!("Parse failure"))?;
         let md5sum = item.e_tag.and_then(|m| m.trim_matches('"').parse().ok());
         let st_mtime = DateTime::parse_from_rfc3339(
             item.last_modified
                 .as_ref()
-                .ok_or_else(|| err_msg("No last modified"))?,
+                .ok_or_else(|| format_err!("No last modified"))?,
         )?
         .timestamp();
-        let size = item.size.ok_or_else(|| err_msg("No file size"))?;
+        let size = item.size.ok_or_else(|| format_err!("No file size"))?;
         let fileurl = format!("s3://{}/{}", bucket, key).parse()?;
 
         let serviceid = Some(bucket.to_string().into());

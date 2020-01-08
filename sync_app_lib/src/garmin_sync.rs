@@ -1,5 +1,5 @@
+use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
-use failure::{err_msg, Error};
 use maplit::hashmap;
 use reqwest::blocking::Response;
 use reqwest::header::HeaderMap;
@@ -55,13 +55,13 @@ impl GarminSync {
             .config
             .garmin_from_url
             .as_ref()
-            .ok_or_else(|| err_msg("No From URL"))?
+            .ok_or_else(|| format_err!("No From URL"))?
             .parse()?;
         let to_url: Url = self
             .config
             .garmin_to_url
             .as_ref()
-            .ok_or_else(|| err_msg("No To URL"))?
+            .ok_or_else(|| format_err!("No To URL"))?
             .parse()?;
         Ok((from_url, to_url))
     }
@@ -72,12 +72,12 @@ impl GarminSync {
             .config
             .garmin_username
             .as_ref()
-            .ok_or_else(|| err_msg("No Username"))?;
+            .ok_or_else(|| format_err!("No Username"))?;
         let password = self
             .config
             .garmin_password
             .as_ref()
-            .ok_or_else(|| err_msg("No Password"))?;
+            .ok_or_else(|| format_err!("No Password"))?;
 
         let data = hashmap! {
             "email" => user.as_str(),

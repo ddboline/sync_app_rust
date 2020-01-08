@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use anyhow::{format_err, Error};
 use std::path::Path;
 use url::Url;
 
@@ -15,10 +15,10 @@ impl FileInfoTrait for FileInfoSSH {
             let filepath = Path::new(&path);
             let filename = filepath
                 .file_name()
-                .ok_or_else(|| err_msg("Parse failure"))?
+                .ok_or_else(|| format_err!("Parse failure"))?
                 .to_os_string()
                 .into_string()
-                .map_err(|_| err_msg("Parse failure"))?;
+                .map_err(|_| format_err!("Parse failure"))?;
             let finfo = FileInfo {
                 filename,
                 filepath: Some(filepath.to_path_buf()),
@@ -32,7 +32,7 @@ impl FileInfoTrait for FileInfoSSH {
             };
             Ok(Self(finfo))
         } else {
-            Err(err_msg("Wrong scheme"))
+            Err(format_err!("Wrong scheme"))
         }
     }
 

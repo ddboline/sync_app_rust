@@ -1,4 +1,4 @@
-use failure::{format_err, Error};
+use anyhow::{format_err, Error};
 use std::env::var;
 use std::ops::Deref;
 use std::path::Path;

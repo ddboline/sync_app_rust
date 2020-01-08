@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use anyhow::{format_err, Error};
 use parking_lot::Mutex;
 use rand::distributions::{Distribution, Uniform};
 use rand::thread_rng;
@@ -37,7 +37,7 @@ impl ReqwestSessionInner {
             .get(url)
             .headers(headers)
             .send()
-            .map_err(err_msg)
+            .map_err(Into::into)
     }
 
     pub fn post<T>(
@@ -57,7 +57,7 @@ impl ReqwestSessionInner {
             .headers(headers)
             .json(form)
             .send()
-            .map_err(err_msg)
+            .map_err(Into::into)
     }
 }
 
@@ -95,7 +95,7 @@ impl ReqwestSession {
                     sleep(Duration::from_millis((timeout * 1000.0) as u64));
                     timeout *= 4.0 * f64::from(range.sample(&mut rng)) / 1000.0;
                     if timeout >= 64.0 {
-                        return Err(err_msg(e));
+                        return Err(format_err!(e));
                     }
                 }
             }

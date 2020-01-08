@@ -1,6 +1,6 @@
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use anyhow::Error;
 use chrono::{DateTime, Utc};
-use failure::{err_msg, Error};
 use url::Url;
 
 use gdrive_lib::directory_info::DirectoryInfo;
@@ -198,7 +198,10 @@ impl FileSyncCache {
     pub fn get_cache_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::file_sync_cache::dsl::{file_sync_cache, src_url};
         let conn = pool.get()?;
-        file_sync_cache.order(src_url).load(&conn).map_err(err_msg)
+        file_sync_cache
+            .order(src_url)
+            .load(&conn)
+            .map_err(Into::into)
     }
 
     pub fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
@@ -210,8 +213,8 @@ impl FileSyncCache {
         let conn = pool.get()?;
         diesel::delete(file_sync_cache.filter(id.eq(id_)))
             .execute(&conn)
-            .map_err(err_msg)
             .map(|_| ())
+            .map_err(Into::into)
     }
 }
 
@@ -228,7 +231,7 @@ impl InsertFileSyncCache {
         diesel::insert_into(file_sync_cache::table)
             .values(&value)
             .get_result(&conn)
-            .map_err(err_msg)
+            .map_err(Into::into)
     }
 }
 
@@ -262,7 +265,7 @@ impl FileSyncConfig {
     pub fn get_config_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::file_sync_config::dsl::file_sync_config;
         let conn = pool.get()?;
-        file_sync_config.load(&conn).map_err(err_msg)
+        file_sync_config.load(&conn).map_err(Into::into)
     }
 
     pub fn get_url_list(pool: &PgPool) -> Result<Vec<Url>, Error> {
@@ -295,7 +298,7 @@ impl InsertFileSyncConfig {
         diesel::insert_into(file_sync_config::table)
             .values(&value)
             .get_result(&conn)
-            .map_err(err_msg)
+            .map_err(Into::into)
     }
 }
 
@@ -309,7 +312,7 @@ impl AuthorizedUsers {
     pub fn get_authorized_users(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::authorized_users::dsl::authorized_users;
         let conn = pool.get()?;
-        authorized_users.load(&conn).map_err(err_msg)
+        authorized_users.load(&conn).map_err(Into::into)
     }
 }
 
@@ -323,7 +326,7 @@ impl FileSyncBlacklist {
     fn get_blacklist(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::file_sync_blacklist::dsl::file_sync_blacklist;
         let conn = pool.get()?;
-        file_sync_blacklist.load(&conn).map_err(err_msg)
+        file_sync_blacklist.load(&conn).map_err(Into::into)
     }
 }
 

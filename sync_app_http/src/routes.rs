@@ -1,11 +1,11 @@
 use actix_web::http::StatusCode;
 use actix_web::web::{block, Data, Query};
 use actix_web::HttpResponse;
-use failure::{err_msg, Error};
 
 use sync_app_lib::file_sync::FileSyncAction;
 
 use super::app::AppState;
+use super::errors::ServiceError as Error;
 use super::logged_user::LoggedUser;
 use super::requests::{
     GarminSyncRequest, HandleRequest, ListSyncCacheRequest, MovieSyncRequest,
@@ -19,9 +19,7 @@ fn form_http_response(body: String) -> Result<HttpResponse, Error> {
 }
 
 pub async fn sync_frontpage(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
-    let clist = block(move || data.db.handle(ListSyncCacheRequest {}))
-        .await
-        .map_err(err_msg)?;
+    let clist = block(move || data.db.handle(ListSyncCacheRequest {})).await?;
     let clist: Vec<_> = clist
         .into_iter()
         .map(|v| {
@@ -44,7 +42,7 @@ pub async fn sync_all(_: LoggedUser, data: Data<AppState>) -> Result<HttpRespons
     let req = SyncRequest {
         action: FileSyncAction::Sync,
     };
-    block(move || data.db.handle(req)).await.map_err(err_msg)?;
+    block(move || data.db.handle(req)).await?;
     form_http_response("finished".to_string())
 }
 
@@ -52,14 +50,12 @@ pub async fn proc_all(_: LoggedUser, data: Data<AppState>) -> Result<HttpRespons
     let req = SyncRequest {
         action: FileSyncAction::Process,
     };
-    block(move || data.db.handle(req)).await.map_err(err_msg)?;
+    block(move || data.db.handle(req)).await?;
     form_http_response("finished".to_string())
 }
 
 pub async fn list_sync_cache(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
-    let clist = block(move || data.db.handle(ListSyncCacheRequest {}))
-        .await
-        .map_err(err_msg)?;
+    let clist = block(move || data.db.handle(ListSyncCacheRequest {})).await?;
     let clist: Vec<_> = clist
         .into_iter()
         .map(|v| format!("{} {}", v.src_url, v.dst_url))
@@ -74,23 +70,17 @@ pub async fn delete_cache_entry(
     data: Data<AppState>,
 ) -> Result<HttpResponse, Error> {
     let query = query.into_inner();
-    block(move || data.db.handle(query))
-        .await
-        .map_err(err_msg)?;
+    block(move || data.db.handle(query)).await?;
     form_http_response("finished".to_string())
 }
 
 pub async fn sync_garmin(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
-    let body = block(move || data.db.handle(GarminSyncRequest {}))
-        .await
-        .map_err(err_msg)?;
+    let body = block(move || data.db.handle(GarminSyncRequest {})).await?;
     form_http_response(body.join("<br>"))
 }
 
 pub async fn sync_movie(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
-    let body = block(move || data.db.handle(MovieSyncRequest {}))
-        .await
-        .map_err(err_msg)?;
+    let body = block(move || data.db.handle(MovieSyncRequest {})).await?;
     form_http_response(body.join("<br>"))
 }
 
@@ -100,8 +90,6 @@ pub async fn remove(
     data: Data<AppState>,
 ) -> Result<HttpResponse, Error> {
     let query = query.into_inner();
-    block(move || data.db.handle(query))
-        .await
-        .map_err(err_msg)?;
+    block(move || data.db.handle(query)).await?;
     form_http_response("finished".to_string())
 }

@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use anyhow::{format_err, Error};
 use std::fmt;
 use std::str::FromStr;
 
@@ -27,7 +27,7 @@ impl FromStr for FileService {
             "onedrive" => Ok(Self::OneDrive),
             "s3" => Ok(Self::S3),
             "ssh" => Ok(Self::SSH),
-            _ => Err(err_msg("Failed to parse FileService")),
+            _ => Err(format_err!("Failed to parse FileService")),
         }
     }
 }

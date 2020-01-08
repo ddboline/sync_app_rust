@@ -1,4 +1,4 @@
-use failure::{err_msg, Error};
+use anyhow::{format_err, Error};
 use log::debug;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
@@ -141,7 +141,7 @@ impl SyncOpts {
             }
             FileSyncAction::Copy => {
                 if self.urls.len() < 2 {
-                    Err(err_msg("Need 2 Urls"))
+                    Err(format_err!("Need 2 Urls"))
                 } else {
                     let finfo0 = FileInfo::from_url(&self.urls[0])?;
                     let finfo1 = FileInfo::from_url(&self.urls[1])?;
@@ -159,7 +159,7 @@ impl SyncOpts {
             }
             FileSyncAction::List => {
                 if self.urls.is_empty() {
-                    Err(err_msg("Need at least 1 Url"))
+                    Err(format_err!("Need at least 1 Url"))
                 } else {
                     for urls in group_urls(&self.urls).values() {
                         let conf = FileListConf::from_url(&urls[0], &config)?;
@@ -178,7 +178,7 @@ impl SyncOpts {
             }
             FileSyncAction::Delete => {
                 if self.urls.is_empty() {
-                    Err(err_msg("Need at least 1 Url"))
+                    Err(format_err!("Need at least 1 Url"))
                 } else {
                     let fsync = FileSync::new(config.clone());
                     fsync.delete_files(&self.urls, &pool)
@@ -191,15 +191,15 @@ impl SyncOpts {
                     if conf0.servicetype == conf1.servicetype {
                         Ok(())
                     } else {
-                        Err(err_msg("Can only move within servicetype"))
+                        Err(format_err!("Can only move within servicetype"))
                     }
                 } else {
-                    Err(err_msg("Need 2 Urls"))
+                    Err(format_err!("Need 2 Urls"))
                 }
             }
             FileSyncAction::Serialize => {
                 if self.urls.is_empty() {
-                    Err(err_msg("Need at least 1 Url"))
+                    Err(format_err!("Need at least 1 Url"))
                 } else {
                     let results: Result<Vec<_>, Error> = self
                         .urls
@@ -234,7 +234,7 @@ impl SyncOpts {
                     )
                     .map(|_| ())
                 } else {
-                    Err(err_msg("Need exactly 2 Urls"))
+                    Err(format_err!("Need exactly 2 Urls"))
                 }
             }
             FileSyncAction::ShowCache => {

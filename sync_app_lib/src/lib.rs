@@ -27,17 +27,17 @@ pub mod schema;
 pub mod ssh_instance;
 pub mod sync_opts;
 
-use failure::{err_msg, Error};
-use std::fmt;
+use anyhow::Error;
+
 use std::str::FromStr;
 
 pub fn map_parse<T>(x: &Option<String>) -> Result<Option<T>, Error>
 where
     T: FromStr,
-    <T as std::str::FromStr>::Err: 'static + Send + Sync + fmt::Debug + fmt::Display,
+    <T as std::str::FromStr>::Err: Into<Error>,
 {
-    match x {
-        Some(y) => Ok(Some(y.parse::<T>().map_err(err_msg)?)),
-        None => Ok(None),
-    }
+    x.as_ref()
+        .map(|y| y.parse::<T>())
+        .transpose()
+        .map_err(Into::into)
 }

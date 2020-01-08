@@ -1,6 +1,6 @@
+use anyhow::{format_err, Error};
 use chrono::DateTime;
 use drive3::Drive;
-use failure::{err_msg, format_err, Error};
 use google_drive3_fork as drive3;
 use hyper::net::HttpsConnector;
 use hyper::Client;
@@ -128,7 +128,7 @@ impl GDriveInstance {
         let secret: ConsoleApplicationSecret = serde_json::from_reader(secret_file)?;
         let secret = secret
             .installed
-            .ok_or_else(|| err_msg("ConsoleApplicationSecret.installed is None"))?;
+            .ok_or_else(|| format_err!("ConsoleApplicationSecret.installed is None"))?;
         let token_file = format!("{}/{}.json", gdrive_token_path, session_name);
 
         let parent = Path::new(gdrive_token_path);
@@ -335,11 +335,11 @@ impl GDriveInstance {
     pub fn create_directory(&self, directory: &Url, parentid: &str) -> Result<(), Error> {
         let directory_path = directory
             .to_file_path()
-            .map_err(|_| err_msg("No file path"))?;
+            .map_err(|_| format_err!("No file path"))?;
         let directory_name = directory_path
             .file_name()
             .map(OsStr::to_string_lossy)
-            .ok_or_else(|| err_msg("Failed to convert string"))?;
+            .ok_or_else(|| format_err!("Failed to convert string"))?;
         exponential_retry(move || {
             let new_file = drive3::File {
                 name: Some(directory_name.to_string()),
@@ -349,7 +349,7 @@ impl GDriveInstance {
             };
             let mime: Mime = "application/octet-stream"
                 .parse()
-                .map_err(|_| err_msg("bad mimetype"))?;
+                .map_err(|_| format_err!("bad mimetype"))?;
             let dummy_file = DummyFile::new(&[]);
 
             self.gdrive
@@ -363,12 +363,14 @@ impl GDriveInstance {
     }
 
     pub fn upload(&self, local: &Url, parentid: &str) -> Result<drive3::File, Error> {
-        let file_path = local.to_file_path().map_err(|_| err_msg("No file path"))?;
+        let file_path = local
+            .to_file_path()
+            .map_err(|_| format_err!("No file path"))?;
         exponential_retry(|| {
             let file_obj = File::open(&file_path)?;
             let mime: Mime = "application/octet-stream"
                 .parse()
-                .map_err(|_| err_msg("bad mimetype"))?;
+                .map_err(|_| format_err!("bad mimetype"))?;
             let new_file = drive3::File {
                 name: file_path
                     .as_path()
@@ -452,7 +454,7 @@ impl GDriveInstance {
             response.read_to_end(&mut content)?;
 
             let mut outfile = File::create(local.to_path_buf())?;
-            outfile.write_all(&content).map_err(err_msg)
+            outfile.write_all(&content).map_err(Into::into)
         })
     }
 
@@ -702,7 +704,7 @@ impl GDriveInstance {
             .map_err(|e| format_err!("{:#?}", e))
             .map(|result| {
                 result.1.start_page_token.unwrap_or_else(|| {
-                    err_msg(
+                    format_err!(
                         "Received OK response from drive but there is no startPageToken included.",
                     )
                     .to_string()
@@ -815,12 +817,15 @@ impl GDriveInfo {
         gdrive: &GDriveInstance,
         directory_map: &HashMap<String, DirectoryInfo>,
     ) -> Result<Self, Error> {
-        let filename = item.name.as_ref().ok_or_else(|| err_msg("No filename"))?;
+        let filename = item
+            .name
+            .as_ref()
+            .ok_or_else(|| format_err!("No filename"))?;
         let md5sum = item.md5_checksum.as_ref().and_then(|x| x.parse().ok());
         let st_mtime = DateTime::parse_from_rfc3339(
             item.modified_time
                 .as_ref()
-                .ok_or_else(|| err_msg("No last modified"))?,
+                .ok_or_else(|| format_err!("No last modified"))?,
         )?
         .timestamp();
         let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
@@ -864,7 +869,7 @@ impl GDriveInfo {
         gdrive: &GDriveInstance,
         directory_map: &HashMap<String, DirectoryInfo>,
     ) -> Result<Self, Error> {
-        let file = item.file.ok_or_else(|| err_msg("No file"))?;
+        let file = item.file.ok_or_else(|| format_err!("No file"))?;
         Self::from_object(&file, gdrive, directory_map)
     }
 }

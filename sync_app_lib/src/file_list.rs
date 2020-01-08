@@ -1,5 +1,5 @@
+use anyhow::{format_err, Error};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
-use failure::{err_msg, Error};
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
@@ -47,7 +47,7 @@ impl FileListConfTrait for FileListConf {
             "file" => FileListLocalConf::from_url(url, config).map(|f| f.0),
             "s3" => FileListS3Conf::from_url(url, config).map(|f| f.0),
             "ssh" => FileListSSHConf::from_url(url, config).map(|f| f.0),
-            _ => Err(err_msg("Bad scheme")),
+            _ => Err(format_err!("Bad scheme")),
         }
     }
 
@@ -130,7 +130,7 @@ pub trait FileListTrait {
             let start_page_path = format!("{}.new", fname);
             debug!("{} {}", start_page_path, fname);
             if Path::new(&start_page_path).exists() {
-                rename(&start_page_path, &fname).map_err(err_msg)
+                rename(&start_page_path, &fname).map_err(Into::into)
             } else {
                 Ok(())
             }
@@ -190,7 +190,7 @@ pub trait FileListTrait {
                         .filter(urlname.eq(k.urlname)),
                 )
                 .execute(&conn)
-                .map_err(err_msg)
+                .map_err(Into::into)
             })
             .collect();
 
@@ -230,10 +230,9 @@ pub trait FileListTrait {
                     .filter(urlname.eq(v.urlname))
                     .filter(serviceid.eq(v.serviceid))
                     .filter(servicesession.eq(v.servicesession))
-                    .load::<FileInfoCache>(&conn)
-                    .map_err(err_msg)?;
+                    .load::<FileInfoCache>(&conn)?;
                 if cache.len() != 1 {
-                    return Err(err_msg("There should only be one entry"));
+                    return Err(format_err!("There should only be one entry"));
                 }
                 let id_ = cache[0].id;
 
@@ -245,7 +244,7 @@ pub trait FileListTrait {
                         filestat_st_size.eq(v.filestat_st_size),
                     ))
                     .execute(&conn)
-                    .map_err(err_msg)
+                    .map_err(Into::into)
             })
             .collect();
 
@@ -265,7 +264,7 @@ pub trait FileListTrait {
                 diesel::insert_into(file_info_cache::table)
                     .values(v)
                     .execute(&pool.get()?)
-                    .map_err(err_msg)
+                    .map_err(Into::into)
             })
             .collect();
 
@@ -283,7 +282,7 @@ pub trait FileListTrait {
             .filter(servicesession.eq(conf.servicesession.0.to_string()))
             .filter(servicetype.eq(conf.servicetype.to_string()))
             .load::<FileInfoCache>(&conn)
-            .map_err(err_msg)
+            .map_err(Into::into)
     }
 
     fn get_file_list_dict(
@@ -333,7 +332,7 @@ pub trait FileListTrait {
             .filter(servicesession.eq(conf.servicesession.0.to_string()))
             .filter(servicetype.eq(conf.servicetype.to_string()))
             .load::<DirectoryInfoCache>(&conn)
-            .map_err(err_msg)
+            .map_err(Into::into)
     }
 
     fn get_directory_map_cache(
@@ -389,7 +388,7 @@ pub trait FileListTrait {
                 diesel::insert_into(directory_info_cache::table)
                     .values(v)
                     .execute(&pool.get()?)
-                    .map_err(err_msg)
+                    .map_err(Into::into)
             })
             .collect();
         let result: usize = results?.iter().sum();
@@ -408,7 +407,7 @@ pub trait FileListTrait {
                 .filter(servicetype.eq(conf.servicetype.to_string())),
         )
         .execute(&conn)
-        .map_err(err_msg)
+        .map_err(Into::into)
     }
 
     fn remove_by_id(&self, pool: &PgPool, gdriveid: &str) -> Result<usize, Error> {
@@ -426,7 +425,7 @@ pub trait FileListTrait {
                 .filter(serviceid.eq(Some(gdriveid))),
         )
         .execute(&conn)
-        .map_err(err_msg)
+        .map_err(Into::into)
     }
 
     fn clear_directory_list(&self, pool: &PgPool) -> Result<usize, Error> {
@@ -443,7 +442,7 @@ pub trait FileListTrait {
                 .filter(servicetype.eq(conf.servicetype.to_string())),
         )
         .execute(&conn)
-        .map_err(err_msg)
+        .map_err(Into::into)
     }
 }
 
@@ -529,7 +528,7 @@ impl FileListTrait for FileList {
                 let flist = FileListSSH::from_conf(fconf)?;
                 flist.print_list()
             }
-            _ => Err(err_msg("Not implemented")),
+            _ => Err(format_err!("Not implemented")),
         }
     }
 
@@ -705,7 +704,7 @@ pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<
     let baseurl1 = baseurl1.as_str().trim_end_matches('/');
 
     let urlstr = format!("{}/{}", baseurl1, remove_baseurl(&urlname, baseurl0));
-    Url::parse(&urlstr).map_err(err_msg)
+    Url::parse(&urlstr).map_err(Into::into)
 }
 
 pub fn remove_basepath(basename: &str, basepath: &str) -> String {

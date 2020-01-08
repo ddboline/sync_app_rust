@@ -1,5 +1,5 @@
+use anyhow::{format_err, Error};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
-use failure::{err_msg, format_err, Error};
 use std::convert::Into;
 use std::convert::TryFrom;
 use std::path::PathBuf;
@@ -76,7 +76,7 @@ impl FromStr for ServiceSession {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            Err(err_msg("Session name must not be empty"))
+            Err(format_err!("Session name must not be empty"))
         } else {
             Ok(Self(s.to_string()))
         }
@@ -124,7 +124,7 @@ impl FileInfoTrait for FileInfo {
             "s3" => FileInfoS3::from_url(url).map(FileInfoTrait::into_finfo),
             "gdrive" => FileInfoGDrive::from_url(url).map(FileInfoTrait::into_finfo),
             "ssh" => FileInfoSSH::from_url(url).map(FileInfoTrait::into_finfo),
-            _ => Err(err_msg("Bad scheme")),
+            _ => Err(format_err!("Bad scheme")),
         }
     }
 
@@ -186,8 +186,7 @@ impl FileInfo {
 
         let result = match file_info_cache
             .filter(urlname.eq(url.as_str().to_string()))
-            .load::<FileInfoCache>(&conn)
-            .map_err(err_msg)?
+            .load::<FileInfoCache>(&conn)?
             .get(0)
         {
             Some(f) => Some(Self::from_cache_info(&f)?),
@@ -232,7 +231,7 @@ pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, 
     diesel::insert_into(file_info_cache::table)
         .values(&finfo_cache)
         .get_result(&conn)
-        .map_err(err_msg)
+        .map_err(Into::into)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
