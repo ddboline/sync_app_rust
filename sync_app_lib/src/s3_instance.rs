@@ -7,7 +7,7 @@ use rusoto_s3::{
 use s4::S4;
 use std::fmt;
 use std::path::Path;
-use sts_profile_auth::sts_instance::StsInstance;
+use sts_profile_auth::get_client_sts;
 use url::Url;
 
 use gdrive_lib::exponential_retry;
@@ -26,11 +26,8 @@ impl fmt::Debug for S3Instance {
 
 impl Default for S3Instance {
     fn default() -> Self {
-        let sts = StsInstance::new(None).expect("Failed to obtain client");
         Self {
-            s3_client: sts
-                .get_s3_client(Region::UsEast1)
-                .expect("Failed to obtain client"),
+            s3_client: get_client_sts!(S3Client, Region::UsEast1).expect("Failed to obtain client"),
             max_keys: None,
         }
     }
@@ -39,9 +36,8 @@ impl Default for S3Instance {
 impl S3Instance {
     pub fn new(aws_region_name: &str) -> Self {
         let region: Region = aws_region_name.parse().ok().unwrap_or(Region::UsEast1);
-        let sts = StsInstance::new(None).expect("Failed to obtain client");
         Self {
-            s3_client: sts.get_s3_client(region).expect("Failed to obtain client"),
+            s3_client: get_client_sts!(S3Client, region).expect("Failed to obtain client"),
             max_keys: None,
         }
     }
