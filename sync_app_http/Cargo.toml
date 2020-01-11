@@ -12,7 +12,6 @@ actix = "0.9"
 actix-identity = "0.2"
 actix-rt = "1.0"
 chrono = "0.4"
-jsonwebtoken = "7.0.0-alpha.2"
 lazy_static = "1.4"
 parking_lot = "0.10"
 sync_app_lib = {path = "../sync_app_lib"}
@@ -26,3 +25,4 @@ url = "2.1"
 anyhow = "1.0"
 thiserror = "1.0"
 actix-threadpool = "0.3"
+rust_auth_server = { git = "https://github.com/ddboline/rust-auth-server.git", tag="0.3.6" }
