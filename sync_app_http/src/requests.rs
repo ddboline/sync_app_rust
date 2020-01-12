@@ -1,5 +1,6 @@
 use anyhow::Error;
 use lazy_static::lazy_static;
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 
 use sync_app_lib::config::Config;
@@ -12,6 +13,7 @@ use sync_app_lib::sync_opts::SyncOpts;
 
 lazy_static! {
     static ref CONFIG: Config = Config::init_config().expect("Failed to load config");
+    static ref SYNCLOCK: Mutex<()> = Mutex::new(());
 }
 
 pub trait HandleRequest<T> {
@@ -26,6 +28,7 @@ pub struct SyncRequest {
 impl HandleRequest<SyncRequest> for PgPool {
     type Result = Result<(), Error>;
     fn handle(&self, req: SyncRequest) -> Self::Result {
+        let _ = SYNCLOCK.lock();
         let opts = SyncOpts::new(req.action, &[]);
         opts.process_sync_opts(&CONFIG, self)
     }
@@ -57,6 +60,7 @@ pub struct GarminSyncRequest {}
 impl HandleRequest<GarminSyncRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
     fn handle(&self, _: GarminSyncRequest) -> Self::Result {
+        let _ = SYNCLOCK.lock();
         let config = CONFIG.clone();
         let sync = GarminSync::new(config);
         sync.run_sync()
@@ -68,6 +72,7 @@ pub struct MovieSyncRequest {}
 impl HandleRequest<MovieSyncRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
     fn handle(&self, _: MovieSyncRequest) -> Self::Result {
+        let _ = SYNCLOCK.lock();
         let config = CONFIG.clone();
         let sync = MovieSync::new(config);
         sync.run_sync()

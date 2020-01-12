@@ -398,8 +398,8 @@ impl FileListTrait for FileListGDrive {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    use std::io::{stdout, Write};
     use std::fs::remove_file;
+    use std::io::{stdout, Write};
 
     use gdrive_lib::gdrive_instance::GDriveInstance;
 
