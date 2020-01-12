@@ -399,6 +399,7 @@ impl FileListTrait for FileListGDrive {
 mod tests {
     use std::collections::HashMap;
     use std::io::{stdout, Write};
+    use std::fs::remove_file;
 
     use gdrive_lib::gdrive_instance::GDriveInstance;
 
@@ -460,5 +461,12 @@ mod tests {
                 writeln!(stdout(), "{} {}", key, val.len()).unwrap();
             }
         }
+
+        let fname = format!(
+            "{}/{}_start_page_token",
+            config.gdrive_token_path,
+            flist.get_conf().servicesession.0
+        );
+        remove_file(&fname).unwrap();
     }
 }
