@@ -7,7 +7,7 @@ use tokio::time::interval;
 use sync_app_lib::config::Config;
 use sync_app_lib::pgpool::PgPool;
 
-use super::logged_user::AUTHORIZED_USERS;
+use super::logged_user::fill_from_db;
 use super::routes::{
     delete_cache_entry, list_sync_cache, proc_all, remove, sync_all, sync_frontpage, sync_garmin,
     sync_movie,
@@ -25,7 +25,7 @@ pub async fn start_app() {
         let mut i = interval(time::Duration::from_secs(60));
         loop {
             i.tick().await;
-            AUTHORIZED_USERS.fill_from_db(&pool).unwrap_or(());
+            fill_from_db(&pool).unwrap_or(());
         }
     }
 
