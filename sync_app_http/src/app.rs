@@ -18,9 +18,6 @@ pub struct AppState {
 }
 
 pub async fn start_app() {
-    let config = Config::init_config().expect("Failed to load config");
-    let pool = PgPool::new(&config.database_url);
-
     async fn _update_db(pool: PgPool) {
         let mut i = interval(time::Duration::from_secs(60));
         loop {
@@ -28,6 +25,9 @@ pub async fn start_app() {
             fill_from_db(&pool).unwrap_or(());
         }
     }
+
+    let config = Config::init_config().expect("Failed to load config");
+    let pool = PgPool::new(&config.database_url);
 
     actix_rt::spawn(_update_db(pool.clone()));
 

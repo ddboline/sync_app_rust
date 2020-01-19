@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use serde::{Deserialize, Serialize};
 use std::convert::Into;
 use std::convert::TryFrom;
 use std::path::PathBuf;

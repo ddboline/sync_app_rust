@@ -426,28 +426,26 @@ impl GDriveInstance {
             .cloned();
 
         exponential_retry(move || {
-            let mut response = match export_type {
-                Some(t) => self
-                    .gdrive
+            let mut response = if let Some(t) = export_type {
+                self.gdrive
                     .lock()
                     .files()
                     .export(gdriveid, &t)
                     .add_scope(drive3::Scope::Full)
                     .doit()
-                    .map_err(|e| format_err!("{:#?}", e))?,
-                None => {
-                    let (response, _empty_file) = self
-                        .gdrive
-                        .lock()
-                        .files()
-                        .get(&gdriveid)
-                        .supports_team_drives(false)
-                        .param("alt", "media")
-                        .add_scope(drive3::Scope::Full)
-                        .doit()
-                        .map_err(|e| format_err!("{:#?}", e))?;
-                    response
-                }
+                    .map_err(|e| format_err!("{:#?}", e))?
+            } else {
+                let (response, _empty_file) = self
+                    .gdrive
+                    .lock()
+                    .files()
+                    .get(&gdriveid)
+                    .supports_team_drives(false)
+                    .param("alt", "media")
+                    .add_scope(drive3::Scope::Full)
+                    .doit()
+                    .map_err(|e| format_err!("{:#?}", e))?;
+                response
             };
 
             let mut content: Vec<u8> = Vec::new();
