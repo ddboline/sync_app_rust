@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_lib"
-version = "0.3.11"
+version = "0.3.12"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -35,6 +35,7 @@ env_logger = "0.7"
 retry = "0.5"
 reqwest = {version="0.10", features=["cookies", "blocking", "json"]}
 crossbeam-utils = "0.7"
-sts_profile_auth = { git = "https://github.com/ddboline/sts_profile_auth.git", tag="0.3.0" }
+sts_profile_auth = "0.3"
 anyhow = "1.0"
 thiserror = "1.0"
+dirs = "2.0"
