@@ -25,11 +25,11 @@ pub struct FileListS3 {
 pub struct FileListS3Conf(pub FileListConf);
 
 impl FileListS3 {
-    pub fn from_conf(conf: FileListS3Conf) -> Self {
+    pub fn from_conf(conf: FileListS3Conf, pool: PgPool) -> Self {
         let s3 = S3Instance::new(&conf.get_config().aws_region_name);
 
         Self {
-            flist: FileList::from_conf(conf.0),
+            flist: FileList::from_conf(conf.0, pool),
             s3,
         }
     }
@@ -88,6 +88,10 @@ impl FileListConfTrait for FileListS3Conf {
 }
 
 impl FileListTrait for FileListS3 {
+    fn get_pool(&self) -> &PgPool {
+        &self.flist.pool
+    }
+
     fn get_conf(&self) -> &FileListConf {
         &self.flist.conf
     }
@@ -96,7 +100,7 @@ impl FileListTrait for FileListS3 {
         &self.flist.filemap
     }
 
-    fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let conf = self.get_conf();
         let bucket = conf
             .baseurl

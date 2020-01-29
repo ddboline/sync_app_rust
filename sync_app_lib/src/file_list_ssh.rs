@@ -22,10 +22,10 @@ pub struct FileListSSH {
 }
 
 impl FileListSSH {
-    pub fn from_conf(conf: FileListSSHConf) -> Result<Self, Error> {
+    pub fn from_conf(conf: FileListSSHConf, pool: PgPool) -> Result<Self, Error> {
         let ssh = SSHInstance::from_url(&conf.0.baseurl)?;
         Ok(Self {
-            flist: FileList::from_conf(conf.0),
+            flist: FileList::from_conf(conf.0, pool),
             ssh,
         })
     }
@@ -68,6 +68,10 @@ impl FileListConfTrait for FileListSSHConf {
 }
 
 impl FileListTrait for FileListSSH {
+    fn get_pool(&self) -> &PgPool {
+        &self.flist.pool
+    }
+
     fn get_conf(&self) -> &FileListConf {
         &self.flist.conf
     }
@@ -218,7 +222,7 @@ impl FileListTrait for FileListSSH {
         self.ssh.run_command_ssh(&command)
     }
 
-    fn fill_file_list(&self, _: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let conf = self.get_conf();
 
         let path = conf.basepath.to_string_lossy();

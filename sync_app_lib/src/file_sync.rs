@@ -272,7 +272,7 @@ impl FileSync {
         for urls in group_urls(&key_list).values() {
             if let Some(u0) = urls.get(0) {
                 let conf = FileListConf::from_url(u0, &self.config)?;
-                let flist0 = FileList::from_conf(conf);
+                let flist0 = FileList::from_conf(conf, pool.clone());
                 let results: Result<Vec<_>, Error> = urls
                     .par_iter()
                     .map(|key| {
@@ -292,7 +292,7 @@ impl FileSync {
                                     flist0.cleanup()?;
                                 } else {
                                     let conf = FileListConf::from_url(&val, &self.config)?;
-                                    let flist1 = FileList::from_conf(conf);
+                                    let flist1 = FileList::from_conf(conf, pool.clone());
                                     Self::copy_object(&flist1, &finfo0, &finfo1)?;
                                     flist1.cleanup()?;
                                 }
@@ -326,9 +326,9 @@ impl FileSync {
             .values()
             .map(|urls| {
                 let conf = FileListConf::from_url(&urls[0], &self.config)?;
-                let flist = FileList::from_conf(conf);
-                let fdict = flist
-                    .get_file_list_dict(flist.load_file_list(&pool)?, FileInfoKeyType::UrlName);
+                let flist = FileList::from_conf(conf, pool.clone());
+                let fdict =
+                    flist.get_file_list_dict(flist.load_file_list()?, FileInfoKeyType::UrlName);
                 urls.into_par_iter()
                     .map(|url| {
                         let finfo = if let Some(f) = fdict.get(&url.as_str().to_string()) {

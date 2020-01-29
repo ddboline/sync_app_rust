@@ -23,11 +23,8 @@ pub struct FileListLocal(pub FileList);
 pub struct FileListLocalConf(pub FileListConf);
 
 impl FileListLocal {
-    pub fn from_conf(conf: FileListLocalConf) -> Self {
-        Self(FileList {
-            conf: conf.0,
-            filemap: HashMap::new(),
-        })
+    pub fn from_conf(conf: FileListLocalConf, pool: PgPool) -> Self {
+        Self(FileList::from_conf(conf.0, pool))
     }
 
     pub fn with_list(&self, filelist: Vec<FileInfo>) -> Self {
@@ -78,6 +75,10 @@ impl FileListConfTrait for FileListLocalConf {
 }
 
 impl FileListTrait for FileListLocal {
+    fn get_pool(&self) -> &PgPool {
+        &self.0.pool
+    }
+
     fn get_conf(&self) -> &FileListConf {
         &self.0.conf
     }
@@ -86,16 +87,11 @@ impl FileListTrait for FileListLocal {
         &self.0.filemap
     }
 
-    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let conf = self.get_conf();
         let basedir = conf.baseurl.path();
-        let flist_dict = match pool {
-            Some(pool) => {
-                let file_list = self.load_file_list(&pool)?;
-                self.get_file_list_dict(file_list, FileInfoKeyType::FilePath)
-            }
-            None => HashMap::new(),
-        };
+        let file_list = self.load_file_list()?;
+        let flist_dict = self.get_file_list_dict(file_list, FileInfoKeyType::FilePath);
 
         let wdir = WalkDir::new(&basedir).same_file_system(true);
 

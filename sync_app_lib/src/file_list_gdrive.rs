@@ -24,7 +24,6 @@ pub struct FileListGDrive {
     pub gdrive: GDriveInstance,
     pub directory_map: Arc<HashMap<String, DirectoryInfo>>,
     pub root_directory: Option<String>,
-    pub pool: Option<PgPool>,
 }
 
 #[derive(Debug, Clone)]
@@ -33,40 +32,28 @@ pub struct FileListGDriveConf(pub FileListConf);
 impl FileListGDrive {
     pub fn from_conf(
         conf: FileListGDriveConf,
-        gdrive: &GDriveInstance,
-        pool: Option<&PgPool>,
+        gdrive: GDriveInstance,
+        pool: PgPool,
     ) -> Result<Self, Error> {
         let f = Self {
-            flist: FileList::from_conf(conf.0),
-            gdrive: gdrive.clone(),
+            flist: FileList::from_conf(conf.0, pool),
+            gdrive,
             directory_map: Arc::new(HashMap::new()),
             root_directory: None,
-            pool: pool.cloned(),
         };
         Ok(f)
     }
 
-    pub fn set_directory_map(
-        mut self,
-        use_cache: bool,
-        pool: Option<&PgPool>,
-    ) -> Result<Self, Error> {
-        let (dmap, root_dir) = if use_cache && pool.is_some() {
-            match pool {
-                Some(pool) => {
-                    let dlist = self.load_directory_info_cache(&pool)?;
-                    self.get_directory_map_cache(dlist)
-                }
-                _ => unreachable!(),
-            }
+    pub fn set_directory_map(mut self, use_cache: bool) -> Result<Self, Error> {
+        let (dmap, root_dir) = if use_cache {
+            let dlist = self.load_directory_info_cache()?;
+            self.get_directory_map_cache(dlist)
         } else {
             self.gdrive.get_directory_map()?
         };
         if !use_cache {
-            if let Some(pool) = pool {
-                self.clear_directory_list(&pool)?;
-                self.cache_directory_map(&pool, &dmap, &root_dir)?;
-            }
+            self.clear_directory_list()?;
+            self.cache_directory_map(&dmap, &root_dir)?;
         }
         self.directory_map = Arc::new(dmap);
         self.root_directory = root_dir;
@@ -80,7 +67,6 @@ impl FileListGDrive {
             gdrive: self.gdrive,
             directory_map: self.directory_map,
             root_directory: self.root_directory,
-            pool: self.pool,
         }
     }
 
@@ -198,6 +184,10 @@ impl FileListConfTrait for FileListGDriveConf {
 }
 
 impl FileListTrait for FileListGDrive {
+    fn get_pool(&self) -> &PgPool {
+        &self.flist.pool
+    }
+
     fn get_conf(&self) -> &FileListConf {
         &self.flist.conf
     }
@@ -206,24 +196,16 @@ impl FileListTrait for FileListGDrive {
         &self.flist.filemap
     }
 
-    fn fill_file_list(&self, pool: Option<&PgPool>) -> Result<Vec<FileInfo>, Error> {
+    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let start_page_token = self.gdrive.get_start_page_token()?;
-
-        let mut flist_dict = match pool {
-            Some(pool) => {
-                let file_list = self.load_file_list(&pool)?;
-                self.get_file_list_dict(file_list, FileInfoKeyType::ServiceId)
-            }
-            None => HashMap::new(),
-        };
+        let file_list = self.load_file_list()?;
+        let mut flist_dict = { self.get_file_list_dict(file_list, FileInfoKeyType::ServiceId) };
 
         let (dlist, flist) = if self.gdrive.start_page_token.is_some() {
             self.get_all_changes()?
         } else {
             {
-                if let Some(pool) = pool {
-                    self.clear_file_list(&pool)?;
-                }
+                self.clear_file_list()?;
                 (Vec::new(), self.get_all_files()?)
             }
         };
@@ -303,10 +285,8 @@ impl FileListTrait for FileListGDrive {
             debug!("{:?}", gfile.mime_type);
             if GDriveInstance::is_unexportable(&gfile.mime_type) {
                 debug!("unexportable");
-                if let Some(pool) = self.pool.as_ref() {
-                    self.remove_by_id(pool, &gdriveid)?;
-                    debug!("removed from database");
-                }
+                self.remove_by_id(&gdriveid)?;
+                debug!("removed from database");
                 return Ok(());
             }
             self.gdrive
