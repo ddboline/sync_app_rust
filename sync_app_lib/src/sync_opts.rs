@@ -58,7 +58,7 @@ impl SyncOpts {
                     .map(|url| {
                         let pool = pool.clone();
                         let conf = FileListConf::from_url(&url, &config)?;
-                        let flist = FileList::from_conf(conf, pool.clone());
+                        let flist = FileList::from_conf(conf, pool);
                         let list = flist.fill_file_list()?;
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                             list.into_par_iter()
@@ -99,7 +99,7 @@ impl SyncOpts {
                     .map(|url| {
                         let pool = pool.clone();
                         let conf = FileListConf::from_url(&url, &config)?;
-                        let flist = FileList::from_conf(conf, pool.clone());
+                        let flist = FileList::from_conf(conf, pool);
                         let list = flist.fill_file_list()?;
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                             list.into_par_iter()
@@ -207,7 +207,7 @@ impl SyncOpts {
                         .map(|url| {
                             let pool = pool.clone();
                             let conf = FileListConf::from_url(&url, &config)?;
-                            let flist = FileList::from_conf(conf, pool.clone());
+                            let flist = FileList::from_conf(conf, pool);
                             let flist = flist.with_list(flist.fill_file_list()?);
                             let results: Result<Vec<_>, Error> = flist
                                 .filemap
