@@ -261,6 +261,7 @@ impl FileListTrait for FileListSSH {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Error;
     use std::fs::remove_file;
     use std::io::{stdout, Write};
     use std::path::{Path, PathBuf};
@@ -273,62 +274,58 @@ mod tests {
     use crate::file_list::{FileListConfTrait, FileListTrait};
     use crate::file_list_ssh::{FileListSSH, FileListSSHConf};
     use crate::file_service::FileService;
+    use crate::pgpool::PgPool;
 
     #[test]
-    fn test_file_list_ssh_conf_from_url() {
-        let config = Config::init_config().unwrap();
-        let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/"
-            .parse()
-            .unwrap();
-        let conf = FileListSSHConf::from_url(&url, &config).unwrap();
-        writeln!(stdout(), "{:?}", conf).unwrap();
+    fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
+        let config = Config::init_config()?;
+        let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
+        let conf = FileListSSHConf::from_url(&url, &config)?;
+        writeln!(stdout(), "{:?}", conf)?;
         assert_eq!(conf.0.baseurl, url);
         assert_eq!(conf.0.servicetype, FileService::SSH);
+        Ok(())
     }
 
     #[test]
     #[ignore]
-    fn test_file_list_ssh_copy_from() {
-        let config = Config::init_config().unwrap();
-        let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/temp0.txt"
-            .parse()
-            .unwrap();
-        let finfo0 = FileInfoSSH::from_url(&url).unwrap();
-        let url: Url = "file:///tmp/temp0.txt".parse().unwrap();
-        let finfo1 = FileInfoLocal::from_url(&url).unwrap();
+    fn test_file_list_ssh_copy_from() -> Result<(), Error> {
+        let config = Config::init_config()?;
+        let pool = PgPool::new(&config.database_url);
+        let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/temp0.txt".parse()?;
+        let finfo0 = FileInfoSSH::from_url(&url)?;
+        let url: Url = "file:///tmp/temp0.txt".parse()?;
+        let finfo1 = FileInfoLocal::from_url(&url)?;
 
-        let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/"
-            .parse()
-            .unwrap();
-        let conf = FileListSSHConf::from_url(&url, &config).unwrap();
-        let flist = FileListSSH::from_conf(conf).unwrap();
-        flist.copy_from(&finfo0, &finfo1).unwrap();
+        let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
+        let conf = FileListSSHConf::from_url(&url, &config)?;
+        let flist = FileListSSH::from_conf(conf, pool)?;
+        flist.copy_from(&finfo0, &finfo1)?;
         let p = Path::new("/tmp/temp0.txt");
         if p.exists() {
-            remove_file(p).unwrap();
+            remove_file(p)?;
         }
+        Ok(())
     }
 
     #[test]
     #[ignore]
-    fn test_file_list_ssh_copy_to() {
-        let config = Config::init_config().unwrap();
+    fn test_file_list_ssh_copy_to() -> Result<(), Error> {
+        let config = Config::init_config()?;
+        let pool = PgPool::new(&config.database_url);
 
-        let path: PathBuf = "src/file_list_ssh.rs".parse().unwrap();
-        let url: Url = format!("file://{}", path.canonicalize().unwrap().to_string_lossy())
-            .parse()
-            .unwrap();
-        let finfo0 = FileInfoLocal::from_url(&url).unwrap();
-        let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/file_list_ssh.rs"
-            .parse()
-            .unwrap();
-        let finfo1 = FileInfoSSH::from_url(&url).unwrap();
+        let path: PathBuf = "src/file_list_ssh.rs".parse()?;
+        let url: Url = format!("file://{}", path.canonicalize()?.to_string_lossy()).parse()?;
+        let finfo0 = FileInfoLocal::from_url(&url)?;
+        let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/file_list_ssh.rs".parse()?;
+        let finfo1 = FileInfoSSH::from_url(&url)?;
 
-        let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/".parse().unwrap();
-        let conf = FileListSSHConf::from_url(&url, &config).unwrap();
-        let flist = FileListSSH::from_conf(conf).unwrap();
+        let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/".parse()?;
+        let conf = FileListSSHConf::from_url(&url, &config)?;
+        let flist = FileListSSH::from_conf(conf, pool)?;
 
-        flist.copy_to(&finfo0, &finfo1).unwrap();
-        flist.delete(&finfo1).unwrap();
+        flist.copy_to(&finfo0, &finfo1)?;
+        flist.delete(&finfo1)?;
+        Ok(())
     }
 }

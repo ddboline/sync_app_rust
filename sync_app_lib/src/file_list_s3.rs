@@ -282,42 +282,44 @@ impl FileListTrait for FileListS3 {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Error;
+    use std::io::{stdout, Write};
+
     use crate::config::Config;
     use crate::file_list::FileListTrait;
     use crate::file_list_s3::{FileListS3, FileListS3Conf};
     use crate::pgpool::PgPool;
     use crate::s3_instance::S3Instance;
-    use std::io::{stdout, Write};
 
     #[test]
     #[ignore]
-    fn test_fill_file_list() {
-        let config = Config::init_config().unwrap();
+    fn test_fill_file_list() -> Result<(), Error> {
+        let config = Config::init_config()?;
+        let pool = PgPool::new(&config.database_url);
         let s3 = S3Instance::new(&config.aws_region_name);
-        let blist = s3.get_list_of_buckets().unwrap();
+        let blist = s3.get_list_of_buckets()?;
         let bucket = blist
             .get(0)
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
 
-        let conf = FileListS3Conf::new(&bucket, &config).unwrap();
-        let flist = FileListS3::from_conf(conf).max_keys(100);
+        let conf = FileListS3Conf::new(&bucket, &config)?;
+        let flist = FileListS3::from_conf(conf, pool.clone()).max_keys(100);
 
-        let new_flist = flist.fill_file_list(None).unwrap();
+        let new_flist = flist.fill_file_list()?;
 
-        writeln!(stdout(), "{} {:?}", bucket, new_flist.get(0)).unwrap();
+        writeln!(stdout(), "{} {:?}", bucket, new_flist.get(0))?;
         assert!(new_flist.len() > 0);
 
-        let config = Config::init_config().unwrap();
-        let pool = PgPool::new(&config.database_url);
         let flist = flist.with_list(new_flist);
 
-        flist.cache_file_list(&pool).unwrap();
+        flist.cache_file_list()?;
 
-        let new_flist = flist.load_file_list(&pool).unwrap();
+        let new_flist = flist.load_file_list()?;
 
         assert_eq!(flist.flist.filemap.len(), new_flist.len());
 
-        flist.clear_file_list(&pool).unwrap();
+        flist.clear_file_list()?;
+        Ok(())
     }
 }

@@ -377,6 +377,7 @@ impl FileListTrait for FileListGDrive {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Error;
     use std::collections::HashMap;
     use std::fs::remove_file;
     use std::io::{stdout, Write};
@@ -390,8 +391,9 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn test_gdrive_fill_file_list() {
-        let config = Config::init_config().unwrap();
+    fn test_gdrive_fill_file_list() -> Result<(), Error> {
+        let config = Config::init_config()?;
+        let pool = PgPool::new(&config.database_url);
         let mut gdrive = GDriveInstance::new(
             &config.gdrive_token_path,
             &config.gdrive_secret_file,
@@ -399,46 +401,42 @@ mod tests {
         );
         gdrive.start_page_token = None;
 
-        let fconf = FileListGDriveConf::new("ddboline@gmail.com", "My Drive", &config).unwrap();
-        let flist = FileListGDrive::from_conf(fconf, &gdrive, None)
-            .unwrap()
+        let fconf = FileListGDriveConf::new("ddboline@gmail.com", "My Drive", &config)?;
+        let flist = FileListGDrive::from_conf(fconf, gdrive, pool.clone())?
             .max_keys(100)
-            .set_directory_map(false, None)
-            .unwrap();
+            .set_directory_map(false)?;
 
-        let new_flist = flist.fill_file_list(None).unwrap();
+        let new_flist = flist.fill_file_list()?;
 
         assert!(new_flist.len() > 0);
 
-        let config = Config::init_config().unwrap();
-        let pool = PgPool::new(&config.database_url);
-        flist.clear_file_list(&pool).unwrap();
+        flist.clear_file_list()?;
 
         let flist = flist.with_list(new_flist);
 
-        writeln!(stdout(), "wrote {}", flist.cache_file_list(&pool).unwrap()).unwrap();
+        writeln!(stdout(), "wrote {}", flist.cache_file_list()?)?;
 
-        let new_flist = flist.load_file_list(&pool).unwrap();
+        let new_flist = flist.load_file_list()?;
 
         assert_eq!(flist.flist.filemap.len(), new_flist.len());
 
-        flist.clear_file_list(&pool).unwrap();
+        flist.clear_file_list()?;
 
-        writeln!(stdout(), "dmap {}", flist.directory_map.len()).unwrap();
+        writeln!(stdout(), "dmap {}", flist.directory_map.len())?;
 
         let dnamemap = GDriveInstance::get_directory_name_map(&flist.directory_map);
         for f in flist.get_filemap().values() {
             let u = f.urlname.as_ref().unwrap();
-            let parent_id = GDriveInstance::get_parent_id(u, &dnamemap).unwrap();
+            let parent_id = GDriveInstance::get_parent_id(u, &dnamemap)?;
             assert!(!parent_id.is_none());
-            writeln!(stdout(), "{} {:?}", u, parent_id).unwrap();
+            writeln!(stdout(), "{} {:?}", u, parent_id)?;
         }
 
         let multimap: HashMap<_, _> = dnamemap.iter().filter(|(_, v)| v.len() > 1).collect();
-        writeln!(stdout(), "multimap {}", multimap.len()).unwrap();
+        writeln!(stdout(), "multimap {}", multimap.len())?;
         for (key, val) in &multimap {
             if val.len() > 1 {
-                writeln!(stdout(), "{} {}", key, val.len()).unwrap();
+                writeln!(stdout(), "{} {}", key, val.len())?;
             }
         }
 
@@ -447,6 +445,7 @@ mod tests {
             config.gdrive_token_path,
             flist.get_conf().servicesession.0
         );
-        remove_file(&fname).unwrap();
+        remove_file(&fname)?;
+        Ok(())
     }
 }

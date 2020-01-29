@@ -368,6 +368,7 @@ impl FileSync {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Error;
     use rusoto_s3::{Object, Owner};
     use std::collections::HashMap;
     use std::env::current_dir;
@@ -385,20 +386,19 @@ mod tests {
     use crate::pgpool::PgPool;
 
     #[test]
-    fn test_compare_objects() {
-        let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
+    fn test_compare_objects() -> Result<(), Error> {
+        let filepath = Path::new("src/file_sync.rs").canonicalize()?;
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
-        let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
-        let finfo0 =
-            FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
-        writeln!(stdout(), "{:?}", finfo0).unwrap();
+        let servicesession: ServiceSession = filepath.to_string_lossy().parse()?;
+        let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession))?;
+        writeln!(stdout(), "{:?}", finfo0)?;
         let mut finfo1 = finfo0.clone();
-        finfo1.0.md5sum = Some("51e3cc2c6f64d24ff55fae262325edee".parse().unwrap());
+        finfo1.0.md5sum = Some("51e3cc2c6f64d24ff55fae262325edee".parse()?);
         let mut fstat = finfo1.0.filestat.unwrap();
         fstat.st_mtime += 100;
         fstat.st_size += 100;
         finfo1.0.filestat = Some(fstat);
-        writeln!(stdout(), "{:?}", finfo1).unwrap();
+        writeln!(stdout(), "{:?}", finfo1)?;
         assert!(FileSync::compare_objects(&finfo0, &finfo1));
 
         let test_owner = Owner {
@@ -414,33 +414,32 @@ mod tests {
             storage_class: Some("Standard".to_string()),
         };
 
-        let finfo2 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
-        writeln!(stdout(), "{:?}", finfo2).unwrap();
+        let finfo2 = FileInfoS3::from_object("test_bucket", test_object)?;
+        writeln!(stdout(), "{:?}", finfo2)?;
         assert!(FileSync::compare_objects(&finfo0, &finfo2));
+        Ok(())
     }
 
     #[test]
     #[ignore]
-    fn test_compare_lists_0() {
-        let config = Config::init_config().unwrap();
+    fn test_compare_lists_0() -> Result<(), Error> {
+        let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
-        let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
+        let filepath = Path::new("src/file_sync.rs").canonicalize()?;
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
-        let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
-        let finfo0 =
-            FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
-        writeln!(stdout(), "{:?}", finfo0).unwrap();
+        let servicesession: ServiceSession = filepath.to_string_lossy().parse()?;
+        let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession))?;
+        writeln!(stdout(), "{:?}", finfo0)?;
 
-        let flist0conf = FileListLocalConf::new(&current_dir().unwrap(), &config).unwrap();
-        let flist0 = FileListLocal::from_conf(flist0conf).with_list(vec![finfo0.0]);
+        let flist0conf = FileListLocalConf::new(&current_dir()?, &config)?;
+        let flist0 = FileListLocal::from_conf(flist0conf, pool.clone()).with_list(vec![finfo0.0]);
 
-        let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
-        let flist1 = FileListS3::from_conf(flist1conf);
+        let flist1conf = FileListS3Conf::new("test_bucket", &config)?;
+        let flist1 = FileListS3::from_conf(flist1conf, pool.clone());
 
-        FileSync::compare_lists(&flist0, &flist1, &pool).unwrap();
+        FileSync::compare_lists(&flist0, &flist1, &pool)?;
 
-        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)
-            .unwrap()
+        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)?
             .into_iter()
             .filter(|v| v.src_url.starts_with("file://"))
             .map(|v| (v.src_url.clone(), v))
@@ -448,34 +447,34 @@ mod tests {
 
         assert!(cache_list.len() > 0);
 
-        writeln!(stdout(), "{:?}", cache_list).unwrap();
+        writeln!(stdout(), "{:?}", cache_list)?;
 
         let test_key = format!(
             "file://{}/src/file_sync.rs",
-            current_dir().unwrap().to_string_lossy()
+            current_dir()?.to_string_lossy()
         );
         assert!(cache_list.contains_key(&test_key));
 
         for val in cache_list.values() {
-            val.delete_cache_entry(&pool).unwrap();
+            val.delete_cache_entry(&pool)?;
         }
+        Ok(())
     }
 
     #[test]
     #[ignore]
-    fn test_compare_lists_1() {
-        let config = Config::init_config().unwrap();
+    fn test_compare_lists_1() -> Result<(), Error> {
+        let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
-        let filepath = Path::new("src/file_sync.rs").canonicalize().unwrap();
+        let filepath = Path::new("src/file_sync.rs").canonicalize()?;
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
-        let servicesession: ServiceSession = filepath.to_string_lossy().parse().unwrap();
+        let servicesession: ServiceSession = filepath.to_string_lossy().parse()?;
 
-        let finfo0 =
-            FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession)).unwrap();
-        writeln!(stdout(), "{:?}", finfo0).unwrap();
+        let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession))?;
+        writeln!(stdout(), "{:?}", finfo0)?;
 
-        let flist0conf = FileListLocalConf::new(&current_dir().unwrap(), &config).unwrap();
-        let flist0 = FileListLocal::from_conf(flist0conf);
+        let flist0conf = FileListLocalConf::new(&current_dir()?, &config)?;
+        let flist0 = FileListLocal::from_conf(flist0conf, pool.clone());
 
         let test_owner = Owner {
             display_name: Some("me".to_string()),
@@ -490,15 +489,14 @@ mod tests {
             storage_class: Some("Standard".to_string()),
         };
 
-        let finfo1 = FileInfoS3::from_object("test_bucket", test_object).unwrap();
+        let finfo1 = FileInfoS3::from_object("test_bucket", test_object)?;
 
-        let flist1conf = FileListS3Conf::new("test_bucket", &config).unwrap();
-        let flist1 = FileListS3::from_conf(flist1conf).with_list(vec![finfo1.into_finfo()]);
+        let flist1conf = FileListS3Conf::new("test_bucket", &config)?;
+        let flist1 = FileListS3::from_conf(flist1conf, pool.clone()).with_list(vec![finfo1.into_finfo()]);
 
-        FileSync::compare_lists(&flist0, &flist1, &pool).unwrap();
+        FileSync::compare_lists(&flist0, &flist1, &pool)?;
 
-        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)
-            .unwrap()
+        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)?
             .into_iter()
             .filter(|v| v.src_url.starts_with("s3://"))
             .map(|v| (v.src_url.clone(), v))
@@ -506,13 +504,14 @@ mod tests {
 
         assert!(cache_list.len() > 0);
 
-        writeln!(stdout(), "{:?}", cache_list).unwrap();
+        writeln!(stdout(), "{:?}", cache_list)?;
 
         let test_key = "s3://test_bucket/src/file_sync.rs".to_string();
         assert!(cache_list.contains_key(&test_key));
 
         for val in cache_list.values() {
-            val.delete_cache_entry(&pool).unwrap();
+            val.delete_cache_entry(&pool)?;
         }
+        Ok(())
     }
 }

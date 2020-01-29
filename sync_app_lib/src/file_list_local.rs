@@ -248,6 +248,7 @@ impl FileListTrait for FileListLocal {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Error;
     use std::collections::HashMap;
     use std::io::{stdout, Write};
     use std::path::PathBuf;
@@ -262,38 +263,33 @@ mod tests {
     use crate::pgpool::PgPool;
 
     #[test]
-    fn create_conf() {
-        let basepath: PathBuf = "src".parse().unwrap();
-        let baseurl: Url = format!(
-            "file://{}",
-            basepath.canonicalize().unwrap().to_string_lossy()
-        )
-        .parse()
-        .unwrap();
-        let config = Config::init_config().unwrap();
+    fn create_conf() -> Result<(), Error> {
+        let basepath: PathBuf = "src".parse()?;
+        let baseurl: Url =
+            format!("file://{}", basepath.canonicalize()?.to_string_lossy()).parse()?;
+        let config = Config::init_config()?;
         let conf = FileListLocalConf::new(&basepath, &config);
-        writeln!(stdout(), "{:?}", conf).unwrap();
+        writeln!(stdout(), "{:?}", conf)?;
         assert_eq!(conf.is_ok(), true);
-        let conf = conf.unwrap();
+        let conf = conf?;
         assert_eq!(conf.0.servicetype, FileService::Local);
-        writeln!(stdout(), "{:?}", conf.0.baseurl).unwrap();
+        writeln!(stdout(), "{:?}", conf.0.baseurl)?;
         assert_eq!(conf.0.baseurl, baseurl);
+        Ok(())
     }
 
     #[test]
     #[ignore]
-    fn test_fill_file_list() {
-        let basepath: PathBuf = "src".parse().unwrap();
-        let config = Config::init_config().unwrap();
-        let conf = FileListLocalConf::new(&basepath, &config).unwrap();
-        let flist = FileListLocal(FileList {
-            conf: conf.0.clone(),
-            filemap: HashMap::new(),
-        });
+    fn test_fill_file_list() -> Result<(), Error> {
+        let basepath: PathBuf = "src".parse()?;
+        let config = Config::init_config()?;
+        let pool = PgPool::new(&config.database_url);
+        let conf = FileListLocalConf::new(&basepath, &config)?;
+        let flist = FileListLocal(FileList::from_conf(conf.0.clone(), pool.clone()));
 
-        let new_flist = flist.fill_file_list(None).unwrap();
+        let new_flist = flist.fill_file_list()?;
 
-        writeln!(stdout(), "0 {}", new_flist.len()).unwrap();
+        writeln!(stdout(), "0 {}", new_flist.len())?;
 
         let fset: HashMap<_, _> = new_flist
             .iter()
@@ -304,7 +300,7 @@ mod tests {
 
         let result = fset.get("file_list_local.rs").unwrap();
 
-        writeln!(stdout(), "{:?}", result).unwrap();
+        writeln!(stdout(), "{:?}", result)?;
 
         assert!(result
             .filepath
@@ -319,47 +315,48 @@ mod tests {
             .ends_with("file_list_local.rs"));
 
         let cache_info: InsertFileInfoCache = result.into();
-        writeln!(stdout(), "{:?}", cache_info).unwrap();
+        writeln!(stdout(), "{:?}", cache_info)?;
         assert_eq!(
             &result.md5sum.as_ref().unwrap().0,
             cache_info.md5sum.as_ref().unwrap()
         );
 
         let cache_info = FileInfoCache::from_insert(cache_info, 5);
-        let test_result = FileInfo::from_cache_info(&cache_info).unwrap();
+        let test_result = FileInfo::from_cache_info(&cache_info)?;
         assert_eq!(*result, test_result);
 
-        let config = Config::init_config().unwrap();
+        let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
-        writeln!(stdout(), "1 {}", new_flist.len()).unwrap();
+        writeln!(stdout(), "1 {}", new_flist.len())?;
 
-        let flist = FileListLocal::from_conf(conf).with_list(new_flist);
+        let flist = FileListLocal::from_conf(conf, pool.clone()).with_list(new_flist);
 
-        writeln!(stdout(), "2 {}", flist.get_filemap().len()).unwrap();
+        writeln!(stdout(), "2 {}", flist.get_filemap().len())?;
 
-        writeln!(stdout(), "wrote {}", flist.cache_file_list(&pool).unwrap()).unwrap();
+        writeln!(stdout(), "wrote {}", flist.cache_file_list()?)?;
 
-        writeln!(stdout(), "{:?}", flist.get_conf().servicesession).unwrap();
+        writeln!(stdout(), "{:?}", flist.get_conf().servicesession)?;
 
-        let new_flist = flist.load_file_list(&pool).unwrap();
-
-        assert_eq!(new_flist.len(), flist.0.filemap.len());
-
-        writeln!(stdout(), "{}", new_flist.len()).unwrap();
-        assert!(new_flist.len() != 0);
-
-        let new_flist = flist.fill_file_list(Some(&pool)).unwrap();
+        let new_flist = flist.load_file_list()?;
 
         assert_eq!(new_flist.len(), flist.0.filemap.len());
 
-        writeln!(stdout(), "{}", new_flist.len()).unwrap();
+        writeln!(stdout(), "{}", new_flist.len())?;
         assert!(new_flist.len() != 0);
 
-        flist.clear_file_list(&pool).unwrap();
+        let new_flist = flist.fill_file_list()?;
 
-        let new_flist = flist.load_file_list(&pool).unwrap();
+        assert_eq!(new_flist.len(), flist.0.filemap.len());
+
+        writeln!(stdout(), "{}", new_flist.len())?;
+        assert!(new_flist.len() != 0);
+
+        flist.clear_file_list()?;
+
+        let new_flist = flist.load_file_list()?;
 
         assert_eq!(new_flist.len(), 0);
+        Ok(())
     }
 }
