@@ -179,12 +179,12 @@ impl FileListTrait for FileListS3 {
                     "Multipart upload? {} {}",
                     finfo1
                         .urlname
-                        .clone()
-                        .map_or_else(|| "".to_string(), Url::into_string),
+                        .as_ref()
+                        .map_or_else(|| "", |u| u.as_str()),
                     finfo0
                         .urlname
-                        .clone()
-                        .map_or_else(|| "".to_string(), Url::into_string),
+                        .as_ref()
+                        .map_or_else(|| "", |u| u.as_str()),
                 );
             }
             Ok(())

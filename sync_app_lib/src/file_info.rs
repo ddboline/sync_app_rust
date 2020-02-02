@@ -15,8 +15,10 @@ use crate::file_info_ssh::FileInfoSSH;
 use crate::file_service::FileService;
 use crate::map_parse;
 use crate::models::{FileInfoCache, InsertFileInfoCache};
+use crate::path_buf_wrapper::PathBufWrapper;
 use crate::pgpool::PgPool;
 use crate::schema::file_info_cache;
+use crate::url_wrapper::UrlWrapper;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileStat {
@@ -84,11 +86,11 @@ impl FromStr for ServiceSession {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct FileInfo {
     pub filename: String,
-    pub filepath: Option<PathBuf>,
-    pub urlname: Option<Url>,
+    pub filepath: Option<PathBufWrapper>,
+    pub urlname: Option<UrlWrapper>,
     pub md5sum: Option<Md5Sum>,
     pub sha1sum: Option<Sha1Sum>,
     pub filestat: Option<FileStat>,
@@ -206,7 +208,7 @@ impl From<&FileInfo> for InsertFileInfoCache {
                 Some(f) => Some(f.to_string_lossy().to_string()),
                 None => None,
             },
-            urlname: item.urlname.as_ref().map(Url::to_string),
+            urlname: item.urlname.as_ref().map(UrlWrapper::to_string),
             md5sum: item.md5sum.as_ref().map(|m| m.0.to_string()),
             sha1sum: item.sha1sum.as_ref().map(|s| s.0.to_string()),
             filestat_st_mtime: item.filestat.map(|f| f.st_mtime as i32),
@@ -233,57 +235,6 @@ pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, 
         .values(&finfo_cache)
         .get_result(&conn)
         .map_err(Into::into)
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub struct FileInfoSerialize {
-    pub filename: String,
-    pub filepath: Option<PathBuf>,
-    pub urlname: Option<String>,
-    pub md5sum: Option<Md5Sum>,
-    pub sha1sum: Option<Sha1Sum>,
-    pub filestat: Option<FileStat>,
-    pub serviceid: Option<ServiceId>,
-    pub servicetype: FileService,
-    pub servicesession: Option<ServiceSession>,
-}
-
-impl From<FileInfo> for FileInfoSerialize {
-    fn from(item: FileInfo) -> Self {
-        Self {
-            filename: item.filename,
-            filepath: item.filepath,
-            urlname: item.urlname.map(Url::into_string),
-            md5sum: item.md5sum,
-            sha1sum: item.sha1sum,
-            filestat: item.filestat,
-            serviceid: item.serviceid,
-            servicetype: item.servicetype,
-            servicesession: item.servicesession,
-        }
-    }
-}
-
-impl TryFrom<FileInfoSerialize> for FileInfo {
-    type Error = Error;
-
-    fn try_from(item: FileInfoSerialize) -> Result<Self, Self::Error> {
-        let out = Self {
-            filename: item.filename,
-            filepath: item.filepath,
-            urlname: match item.urlname {
-                Some(u) => Some(Url::parse(&u)?),
-                None => None,
-            },
-            md5sum: item.md5sum,
-            sha1sum: item.sha1sum,
-            filestat: item.filestat,
-            serviceid: item.serviceid,
-            servicetype: item.servicetype,
-            servicesession: item.servicesession,
-        };
-        Ok(out)
-    }
 }
 
 #[cfg(test)]

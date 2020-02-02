@@ -30,8 +30,8 @@ impl FileInfoTrait for FileInfoLocal {
                 .map_err(|_| format_err!("Parse failure"))?;
             let finfo = FileInfo {
                 filename,
-                filepath: Some(path),
-                urlname: Some(url.clone()),
+                filepath: Some(path.into()),
+                urlname: Some(url.clone().into()),
                 md5sum: None,
                 sha1sum: None,
                 filestat: None,
@@ -143,8 +143,8 @@ impl FileInfoLocal {
 
         let finfo = FileInfo {
             filename,
-            filepath: Some(filepath),
-            urlname: Some(fileurl),
+            filepath: Some(filepath.into()),
+            urlname: Some(fileurl.into()),
             md5sum,
             sha1sum,
             filestat,

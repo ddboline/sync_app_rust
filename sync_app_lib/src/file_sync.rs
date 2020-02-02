@@ -120,8 +120,8 @@ impl FileSync {
                             if url1.as_str().contains(conf1.baseurl.as_str()) {
                                 let finfo1 = FileInfo {
                                     filename: k.clone(),
-                                    filepath: Some(path1),
-                                    urlname: Some(url1),
+                                    filepath: Some(path1.into()),
+                                    urlname: Some(url1.into()),
                                     servicesession: Some(conf1.servicesession.clone()),
                                     servicetype: conf1.servicetype,
                                     serviceid: Some(conf1.servicesession.clone().into()),
@@ -154,8 +154,8 @@ impl FileSync {
                             if url0.as_str().contains(conf0.baseurl.as_str()) {
                                 let finfo0 = FileInfo {
                                     filename: k.clone(),
-                                    filepath: Some(path0),
-                                    urlname: Some(url0),
+                                    filepath: Some(path0.into()),
+                                    urlname: Some(url0.into()),
                                     servicesession: Some(conf0.servicesession.clone()),
                                     servicetype: conf0.servicetype,
                                     serviceid: Some(conf0.servicesession.clone().into()),
@@ -492,7 +492,8 @@ mod tests {
         let finfo1 = FileInfoS3::from_object("test_bucket", test_object)?;
 
         let flist1conf = FileListS3Conf::new("test_bucket", &config)?;
-        let flist1 = FileListS3::from_conf(flist1conf, pool.clone()).with_list(vec![finfo1.into_finfo()]);
+        let flist1 =
+            FileListS3::from_conf(flist1conf, pool.clone()).with_list(vec![finfo1.into_finfo()]);
 
         FileSync::compare_lists(&flist0, &flist1, &pool)?;
 

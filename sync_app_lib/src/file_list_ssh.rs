@@ -9,7 +9,7 @@ use std::path::Path;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
@@ -238,8 +238,7 @@ impl FileListTrait for FileListSSH {
             .run_command_stream_stdout(&command)?
             .into_iter()
             .map(|l| {
-                let finfo: FileInfoSerialize = serde_json::from_str(&l)?;
-                let mut finfo: FileInfo = finfo.try_into()?;
+                let mut finfo: FileInfo = serde_json::from_str(&l)?;
                 finfo.servicetype = FileService::SSH;
                 finfo.urlname = finfo
                     .urlname

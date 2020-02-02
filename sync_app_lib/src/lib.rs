@@ -29,12 +29,14 @@ pub mod garmin_sync;
 pub mod iso_8601_datetime;
 pub mod models;
 pub mod movie_sync;
+pub mod path_buf_wrapper;
 pub mod pgpool;
 pub mod reqwest_session;
 pub mod s3_instance;
 pub mod schema;
 pub mod ssh_instance;
 pub mod sync_opts;
+pub mod url_wrapper;
 
 use anyhow::Error;
 

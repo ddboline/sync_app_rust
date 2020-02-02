@@ -24,14 +24,14 @@ impl FileInfoTrait for FileInfoS3 {
             .to_os_string()
             .into_string()
             .map_err(|_| format_err!("Parse failure"))?;
-        let fileurl = format!("s3://{}/{}", bucket, key).parse()?;
+        let fileurl: Url = format!("s3://{}/{}", bucket, key).parse()?;
         let serviceid = Some(bucket.to_string().into());
         let servicesession = Some(bucket.parse()?);
 
         let finfo = FileInfo {
             filename,
-            filepath: Some(filepath.to_path_buf()),
-            urlname: Some(fileurl),
+            filepath: Some(filepath.to_path_buf().into()),
+            urlname: Some(fileurl.into()),
             md5sum: None,
             sha1sum: None,
             filestat: None,
@@ -81,15 +81,15 @@ impl FileInfoS3 {
         )?
         .timestamp();
         let size = item.size.ok_or_else(|| format_err!("No file size"))?;
-        let fileurl = format!("s3://{}/{}", bucket, key).parse()?;
+        let fileurl: Url = format!("s3://{}/{}", bucket, key).parse()?;
 
         let serviceid = Some(bucket.to_string().into());
         let servicesession = Some(bucket.parse()?);
 
         let finfo = FileInfo {
             filename,
-            filepath: Some(filepath.to_path_buf()),
-            urlname: Some(fileurl),
+            filepath: Some(filepath.to_path_buf().into()),
+            urlname: Some(fileurl.into()),
             md5sum,
             sha1sum: None,
             filestat: Some(FileStat {

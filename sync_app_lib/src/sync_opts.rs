@@ -8,7 +8,7 @@ use structopt::StructOpt;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoSerialize, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoTrait};
 use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
 use crate::file_service::FileService;
 use crate::file_sync::{FileSync, FileSyncAction};
@@ -213,8 +213,7 @@ impl SyncOpts {
                                 .filemap
                                 .values()
                                 .map(|finfo| {
-                                    let tmp: FileInfoSerialize = finfo.clone().into();
-                                    let js = serde_json::to_string(&tmp)?;
+                                    let js = serde_json::to_string(&finfo)?;
                                     writeln!(stdout().lock(), "{}", js)?;
                                     Ok(())
                                 })

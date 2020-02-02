@@ -32,8 +32,8 @@ impl FileInfoTrait for FileInfoGDrive {
 
         let finfo = FileInfo {
             filename,
-            filepath: Some(filepath.to_path_buf()),
-            urlname: Some(url.clone()),
+            filepath: Some(filepath.to_path_buf().into()),
+            urlname: Some(url.clone().into()),
             md5sum: None,
             sha1sum: None,
             filestat: None,
@@ -73,8 +73,8 @@ impl FileInfoGDrive {
 
         let finfo = FileInfo {
             filename: item.filename,
-            filepath: item.filepath,
-            urlname: item.urlname,
+            filepath: item.filepath.map(Into::into),
+            urlname: item.urlname.map(Into::into),
             md5sum,
             sha1sum: None,
             filestat: item.filestat.map(|i| FileStat {

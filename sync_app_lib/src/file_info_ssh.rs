@@ -21,8 +21,8 @@ impl FileInfoTrait for FileInfoSSH {
                 .map_err(|_| format_err!("Parse failure"))?;
             let finfo = FileInfo {
                 filename,
-                filepath: Some(filepath.to_path_buf()),
-                urlname: Some(url.clone()),
+                filepath: Some(filepath.to_path_buf().into()),
+                urlname: Some(url.clone().into()),
                 md5sum: None,
                 sha1sum: None,
                 filestat: None,
