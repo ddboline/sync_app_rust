@@ -185,7 +185,7 @@ impl TryFrom<&FileInfoCache> for FileInfo {
 
 impl FileInfo {
     pub fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
-        use crate::schema::file_info_cache::dsl::*;
+        use crate::schema::file_info_cache::dsl::{file_info_cache, urlname};
 
         let conn = pool.get()?;
 
