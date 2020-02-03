@@ -274,6 +274,7 @@ mod tests {
     use crate::pgpool::PgPool;
 
     #[test]
+    #[ignore]
     fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
