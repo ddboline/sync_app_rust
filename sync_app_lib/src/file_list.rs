@@ -3,6 +3,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::fs::rename;
 use std::path::{Path, PathBuf};
 use url::Url;
@@ -12,10 +13,10 @@ use gdrive_lib::gdrive_instance::GDriveInstance;
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession};
-use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
-use crate::file_list_local::{FileListLocal, FileListLocalConf};
-use crate::file_list_s3::{FileListS3, FileListS3Conf};
-use crate::file_list_ssh::{FileListSSH, FileListSSHConf};
+use crate::file_list_gdrive::FileListGDrive;
+use crate::file_list_local::FileListLocal;
+use crate::file_list_s3::FileListS3;
+use crate::file_list_ssh::FileListSSH;
 use crate::file_service::FileService;
 use crate::models::{
     DirectoryInfoCache, FileInfoCache, InsertDirectoryInfoCache, InsertFileInfoCache,
@@ -23,114 +24,96 @@ use crate::models::{
 use crate::pgpool::PgPool;
 
 #[derive(Debug, Clone)]
-pub struct FileListConf {
+pub struct FileList {
     pub baseurl: Url,
     pub basepath: PathBuf,
     pub config: Config,
     pub servicetype: FileService,
     pub servicesession: ServiceSession,
-}
-
-pub trait FileListConfTrait
-where
-    Self: Sized + Send + Sync,
-{
-    fn from_url(url: &Url, config: &Config) -> Result<Self, Error>;
-
-    fn get_config(&self) -> &Config;
-}
-
-impl FileListConfTrait for FileListConf {
-    fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
-        match url.scheme() {
-            "gdrive" => FileListGDriveConf::from_url(url, config).map(|f| f.0),
-            "file" => FileListLocalConf::from_url(url, config).map(|f| f.0),
-            "s3" => FileListS3Conf::from_url(url, config).map(|f| f.0),
-            "ssh" => FileListSSHConf::from_url(url, config).map(|f| f.0),
-            _ => Err(format_err!("Bad scheme")),
-        }
-    }
-
-    fn get_config(&self) -> &Config {
-        &self.config
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct FileList {
-    pub conf: FileListConf,
     pub filemap: HashMap<String, FileInfo>,
     pub pool: PgPool,
 }
 
 impl FileList {
-    pub fn from_conf(conf: FileListConf, pool: PgPool) -> Self {
-        Self {
-            conf,
-            filemap: HashMap::new(),
-            pool,
-        }
-    }
-
-    pub fn with_list(&self, filelist: Vec<FileInfo>) -> Self {
-        Self {
-            conf: self.conf.clone(),
-            filemap: filelist
-                .into_par_iter()
-                .map(|mut f| {
-                    let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
-                        remove_basepath(&path, &self.conf.basepath.to_string_lossy())
-                    } else {
-                        f.filename.to_string()
-                    };
-                    f.servicesession = Some(self.conf.servicesession.clone());
-                    (key, f)
-                })
-                .collect(),
-            pool: self.pool.clone(),
+    pub fn from_url(
+        url: &Url,
+        config: &Config,
+        pool: &PgPool,
+    ) -> Result<Box<dyn FileListTrait>, Error> {
+        match url.scheme() {
+            "gdrive" => {
+                let flist = FileListGDrive::from_url(url, config, pool)?;
+                Ok(Box::new(flist))
+            }
+            "file" => {
+                let flist = FileListLocal::from_url(url, config, pool)?;
+                Ok(Box::new(flist))
+            }
+            "s3" => {
+                let flist = FileListS3::from_url(url, config, pool)?;
+                Ok(Box::new(flist))
+            }
+            "ssh" => {
+                let flist = FileListSSH::from_url(url, config, pool)?;
+                Ok(Box::new(flist))
+            }
+            _ => Err(format_err!("Bad scheme")),
         }
     }
 }
 
-pub trait FileListTrait {
+pub trait FileListTrait: Send + Sync + Debug {
+    fn get_baseurl(&self) -> &Url;
+    fn set_baseurl(&mut self, baseurl: Url);
+    fn get_basepath(&self) -> &Path;
+    fn get_servicetype(&self) -> FileService;
+    fn get_servicesession(&self) -> &ServiceSession;
+    fn get_config(&self) -> &Config;
+
     fn get_pool(&self) -> &PgPool;
-
-    fn get_conf(&self) -> &FileListConf;
-
     fn get_filemap(&self) -> &HashMap<String, FileInfo>;
 
+    fn with_list(&mut self, filelist: Vec<FileInfo>);
+
     // Copy operation where the origin (finfo0) has the same servicetype as self
-    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait;
+    fn copy_from(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
+        panic!("not implemented for {:?} {:?}", finfo0, finfo1);
+    }
 
     // Copy operation where the destination (finfo0) has the same servicetype as self
-    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait;
+    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
+        panic!("not implemented for {:?} {:?}", finfo0, finfo1);
+    }
 
-    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait;
+    fn move_file(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
+        panic!("not implemented for {:?} {:?}", finfo0, finfo1);
+    }
 
-    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
-    where
-        T: FileInfoTrait;
+    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
+        panic!("not implemented for {:?}", finfo);
+    }
 
     fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error>;
 
-    fn print_list(&self) -> Result<(), Error>;
+    fn print_list(&self) -> Result<(), Error> {
+        unimplemented!()
+    }
 
     fn cleanup(&self) -> Result<(), Error> {
-        if self.get_conf().servicetype == FileService::GDrive {
-            let config = &self.get_conf().config;
+        if self.get_servicetype() == FileService::GDrive {
+            let config = &self.get_config();
             let fname = format!(
                 "{}/{}_start_page_token",
                 config.gdrive_token_path,
-                self.get_conf().servicesession.0
+                self.get_servicesession().0
             );
             let start_page_path = format!("{}.new", fname);
             debug!("{} {}", start_page_path, fname);
@@ -283,11 +266,12 @@ pub trait FileListTrait {
 
         let pool = self.get_pool();
         let conn = pool.get()?;
-        let conf = &self.get_conf();
+        let session = self.get_servicesession();
+        let stype = self.get_servicetype();
 
         file_info_cache
-            .filter(servicesession.eq(conf.servicesession.0.to_string()))
-            .filter(servicetype.eq(conf.servicetype.to_string()))
+            .filter(servicesession.eq(session.0.to_string()))
+            .filter(servicetype.eq(stype.to_string()))
             .load::<FileInfoCache>(&conn)
             .map_err(Into::into)
     }
@@ -334,11 +318,12 @@ pub trait FileListTrait {
 
         let pool = self.get_pool();
         let conn = pool.get()?;
-        let conf = &self.get_conf();
+        let session = self.get_servicesession();
+        let stype = self.get_servicetype();
 
         directory_info_cache
-            .filter(servicesession.eq(conf.servicesession.0.to_string()))
-            .filter(servicetype.eq(conf.servicetype.to_string()))
+            .filter(servicesession.eq(session.0.to_string()))
+            .filter(servicetype.eq(stype.to_string()))
             .load::<DirectoryInfoCache>(&conn)
             .map_err(Into::into)
     }
@@ -385,8 +370,8 @@ pub trait FileListTrait {
                     directory_name: d.directory_name.to_string(),
                     parent_id: d.parentid.clone(),
                     is_root,
-                    servicetype: self.get_conf().servicetype.to_string(),
-                    servicesession: self.get_conf().servicesession.0.to_string(),
+                    servicetype: self.get_servicetype().to_string(),
+                    servicesession: self.get_servicesession().0.to_string(),
                 }
             })
             .collect();
@@ -410,12 +395,13 @@ pub trait FileListTrait {
         let pool = self.get_pool();
 
         let conn = pool.get()?;
-        let conf = &self.get_conf();
+        let session = self.get_servicesession();
+        let stype = self.get_servicetype();
 
         diesel::delete(
             file_info_cache
-                .filter(servicesession.eq(conf.servicesession.0.to_string()))
-                .filter(servicetype.eq(conf.servicetype.to_string())),
+                .filter(servicesession.eq(session.0.to_string()))
+                .filter(servicetype.eq(stype.to_string())),
         )
         .execute(&conn)
         .map_err(Into::into)
@@ -428,12 +414,13 @@ pub trait FileListTrait {
 
         let pool = self.get_pool();
         let conn = pool.get()?;
-        let conf = &self.get_conf();
+        let session = self.get_servicesession();
+        let stype = self.get_servicetype();
 
         diesel::delete(
             file_info_cache
-                .filter(servicesession.eq(conf.servicesession.0.to_string()))
-                .filter(servicetype.eq(conf.servicetype.to_string()))
+                .filter(servicesession.eq(session.0.to_string()))
+                .filter(servicetype.eq(stype.to_string()))
                 .filter(serviceid.eq(Some(gdriveid))),
         )
         .execute(&conn)
@@ -447,12 +434,13 @@ pub trait FileListTrait {
 
         let pool = self.get_pool();
         let conn = pool.get()?;
-        let conf = &self.get_conf();
+        let session = self.get_servicesession();
+        let stype = self.get_servicetype();
 
         diesel::delete(
             directory_info_cache
-                .filter(servicesession.eq(conf.servicesession.0.to_string()))
-                .filter(servicetype.eq(conf.servicetype.to_string())),
+                .filter(servicesession.eq(session.0.to_string()))
+                .filter(servicetype.eq(stype.to_string())),
         )
         .execute(&conn)
         .map_err(Into::into)
@@ -460,254 +448,56 @@ pub trait FileListTrait {
 }
 
 impl FileListTrait for FileList {
-    fn get_pool(&self) -> &PgPool {
-        &self.pool
+    fn get_baseurl(&self) -> &Url {
+        &self.baseurl
+    }
+    fn set_baseurl(&mut self, baseurl: Url) {
+        self.baseurl = baseurl;
+    }
+    fn get_basepath(&self) -> &Path {
+        &self.basepath
+    }
+    fn get_servicetype(&self) -> FileService {
+        self.servicetype
+    }
+    fn get_servicesession(&self) -> &ServiceSession {
+        &self.servicesession
+    }
+    fn get_config(&self) -> &Config {
+        &self.config
     }
 
-    fn get_conf(&self) -> &FileListConf {
-        &self.conf
+    fn get_pool(&self) -> &PgPool {
+        &self.pool
     }
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
         &self.filemap
     }
 
+    fn with_list(&mut self, filelist: Vec<FileInfo>) {
+        self.filemap = filelist
+            .into_par_iter()
+            .map(|mut f| {
+                let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
+                    remove_basepath(&path, &self.get_basepath().to_string_lossy())
+                } else {
+                    f.filename.to_string()
+                };
+                f.servicesession = Some(self.get_servicesession().clone());
+                (key, f)
+            })
+            .collect();
+    }
+
     fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let pool = self.get_pool();
-        match self.get_conf().servicetype {
-            FileService::Local => {
-                let conf = FileListLocalConf(self.get_conf().clone());
-                let flist = FileListLocal::from_conf(conf, pool.clone());
-                flist.fill_file_list()
+        match self.load_file_list() {
+            Ok(v) => {
+                let result: Result<Vec<_>, Error> =
+                    v.par_iter().map(FileInfo::from_cache_info).collect();
+                result
             }
-            FileService::S3 => {
-                let conf = FileListS3Conf(self.get_conf().clone());
-                let flist = FileListS3::from_conf(conf, pool.clone());
-                flist.fill_file_list()
-            }
-            FileService::GDrive => {
-                let conf = FileListGDriveConf(self.get_conf().clone());
-                let config = &self.get_conf().config;
-                let gdrive = GDriveInstance::new(
-                    &config.gdrive_token_path,
-                    &config.gdrive_secret_file,
-                    &conf.0.servicesession.0,
-                );
-                let flist = FileListGDrive::from_conf(conf, gdrive, pool.clone())?;
-                let flist = flist.set_directory_map(false)?;
-                flist.fill_file_list()
-            }
-            FileService::SSH => {
-                let fconf = FileListSSHConf(self.get_conf().clone());
-                let flist = FileListSSH::from_conf(fconf, pool.clone())?;
-                flist.fill_file_list()
-            }
-            _ => match self.load_file_list() {
-                Ok(v) => {
-                    let result: Result<Vec<_>, Error> =
-                        v.par_iter().map(FileInfo::from_cache_info).collect();
-                    result
-                }
-                Err(e) => Err(e),
-            },
-        }
-    }
-
-    fn print_list(&self) -> Result<(), Error> {
-        let conf = self.get_conf();
-        let pool = self.get_pool();
-        match conf.servicetype {
-            FileService::Local => {
-                let fconf = FileListLocalConf(conf.clone());
-                let flist = FileListLocal::from_conf(fconf, pool.clone());
-                flist.print_list()
-            }
-            FileService::S3 => {
-                let fconf = FileListS3Conf(conf.clone());
-                let flist = FileListS3::from_conf(fconf, pool.clone());
-                flist.print_list()
-            }
-            FileService::GDrive => {
-                let config = &self.get_conf().config;
-                let fconf = FileListGDriveConf(conf.clone());
-                let gdrive = GDriveInstance::new(
-                    &config.gdrive_token_path,
-                    &config.gdrive_secret_file,
-                    &fconf.0.servicesession.0,
-                );
-                let flist = FileListGDrive::from_conf(fconf, gdrive, pool.clone())?;
-                let flist = flist.set_directory_map(false)?;
-                flist.print_list()
-            }
-            FileService::SSH => {
-                let fconf = FileListSSHConf(conf.clone());
-                let flist = FileListSSH::from_conf(fconf, pool.clone())?;
-                flist.print_list()
-            }
-            _ => Err(format_err!("Not implemented")),
-        }
-    }
-
-    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
-        let finfo0 = finfo0.get_finfo();
-        let finfo1 = finfo1.get_finfo();
-        let pool = self.get_pool();
-        match self.get_conf().servicetype {
-            FileService::Local => {
-                let c = FileListLocalConf(self.conf.clone());
-                let f = FileListLocal::from_conf(c, pool.clone());
-                f.copy_from(finfo0, finfo1)
-            }
-            FileService::S3 => {
-                let c = FileListS3Conf(self.conf.clone());
-                let f = FileListS3::from_conf(c, pool.clone());
-                f.copy_from(finfo0, finfo1)
-            }
-            FileService::GDrive => {
-                let c = FileListGDriveConf(self.conf.clone());
-                let pool = self.get_pool();
-                let config = self.conf.get_config();
-                let g = GDriveInstance::new(
-                    &config.gdrive_token_path,
-                    &config.gdrive_secret_file,
-                    &self.conf.servicesession.0,
-                );
-                let f = FileListGDrive::from_conf(c, g, pool.clone())?.set_directory_map(true)?;
-                f.copy_from(finfo0, finfo1)
-            }
-            FileService::SSH => {
-                let fconf = FileListSSHConf(self.conf.clone());
-                let flist = FileListSSH::from_conf(fconf, pool.clone())?;
-                flist.copy_from(finfo0, finfo1)
-            }
-            _ => Ok(()),
-        }
-    }
-
-    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
-        let finfo0 = finfo0.get_finfo();
-        let finfo1 = finfo1.get_finfo();
-        let pool = self.get_pool();
-        match self.get_conf().servicetype {
-            FileService::Local => {
-                let c = FileListLocalConf(self.conf.clone());
-                let f = FileListLocal::from_conf(c, pool.clone());
-                f.copy_to(finfo0, finfo1)
-            }
-            FileService::S3 => {
-                let c = FileListS3Conf(self.conf.clone());
-                let f = FileListS3::from_conf(c, pool.clone());
-                f.copy_to(finfo0, finfo1)
-            }
-            FileService::GDrive => {
-                let c = FileListGDriveConf(self.conf.clone());
-                let pool = self.get_pool();
-                let config = self.conf.get_config();
-                let g = GDriveInstance::new(
-                    &config.gdrive_token_path,
-                    &config.gdrive_secret_file,
-                    &self.conf.servicesession.0,
-                );
-                let f = FileListGDrive::from_conf(c, g, pool.clone())?.set_directory_map(true)?;
-                f.copy_to(finfo0, finfo1)
-            }
-            FileService::SSH => {
-                let fconf = FileListSSHConf(self.conf.clone());
-                let flist = FileListSSH::from_conf(fconf, pool.clone())?;
-                flist.copy_to(finfo0, finfo1)
-            }
-            _ => Ok(()),
-        }
-    }
-
-    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
-        let finfo0 = finfo0.get_finfo();
-        let finfo1 = finfo1.get_finfo();
-        let pool = self.get_pool();
-        if finfo0.servicetype != finfo1.servicetype
-            || self.get_conf().servicetype != finfo0.servicetype
-        {
-            return Ok(());
-        }
-        match self.get_conf().servicetype {
-            FileService::Local => {
-                let c = FileListLocalConf(self.conf.clone());
-                let f = FileListLocal::from_conf(c, pool.clone());
-                f.move_file(finfo0, finfo1)
-            }
-            FileService::S3 => {
-                let c = FileListS3Conf(self.conf.clone());
-                let f = FileListS3::from_conf(c, pool.clone());
-                f.move_file(finfo0, finfo1)
-            }
-            FileService::GDrive => {
-                let c = FileListGDriveConf(self.conf.clone());
-                let pool = self.get_pool();
-                let config = self.conf.get_config();
-                let g = GDriveInstance::new(
-                    &config.gdrive_token_path,
-                    &config.gdrive_secret_file,
-                    &self.conf.servicesession.0,
-                );
-                let f = FileListGDrive::from_conf(c, g, pool.clone())?.set_directory_map(true)?;
-                f.move_file(finfo0, finfo1)
-            }
-            FileService::SSH => {
-                let fconf = FileListSSHConf(self.conf.clone());
-                let flist = FileListSSH::from_conf(fconf, pool.clone())?;
-                flist.move_file(finfo0, finfo1)
-            }
-            _ => Ok(()),
-        }
-    }
-
-    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-    {
-        let pool = self.get_pool();
-        match self.get_conf().servicetype {
-            FileService::Local => {
-                let conf = FileListLocalConf(self.get_conf().clone());
-                let flist = FileListLocal::from_conf(conf, pool.clone());
-                flist.delete(finfo)
-            }
-            FileService::S3 => {
-                let conf = FileListS3Conf(self.get_conf().clone());
-                let flist = FileListS3::from_conf(conf, pool.clone());
-                flist.delete(finfo)
-            }
-            FileService::GDrive => {
-                let c = FileListGDriveConf(self.get_conf().clone());
-                let pool = self.get_pool();
-                let config = self.conf.get_config();
-                let gdrive = GDriveInstance::new(
-                    &config.gdrive_token_path,
-                    &config.gdrive_secret_file,
-                    &c.0.servicesession.0,
-                );
-                let flist =
-                    FileListGDrive::from_conf(c, gdrive, pool.clone())?.set_directory_map(true)?;
-                flist.delete(finfo)
-            }
-            FileService::SSH => {
-                let fconf = FileListSSHConf(self.get_conf().clone());
-                let flist = FileListSSH::from_conf(fconf, pool.clone())?;
-                flist.delete(finfo)
-            }
-            _ => Ok(()),
+            Err(e) => Err(e),
         }
     }
 }

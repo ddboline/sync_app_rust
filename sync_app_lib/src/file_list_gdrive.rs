@@ -12,9 +12,9 @@ use gdrive_lib::directory_info::DirectoryInfo;
 use gdrive_lib::gdrive_instance::{GDriveInfo, GDriveInstance};
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession};
 use crate::file_info_gdrive::FileInfoGDrive;
-use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
+use crate::file_list::{FileList, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
 
@@ -26,22 +26,78 @@ pub struct FileListGDrive {
     pub root_directory: Option<String>,
 }
 
-#[derive(Debug, Clone)]
-pub struct FileListGDriveConf(pub FileListConf);
-
 impl FileListGDrive {
-    pub fn from_conf(
-        conf: FileListGDriveConf,
-        gdrive: GDriveInstance,
-        pool: PgPool,
+    pub fn new(
+        servicesession: &str,
+        basepath: &str,
+        config: &Config,
+        pool: &PgPool,
     ) -> Result<Self, Error> {
-        let f = Self {
-            flist: FileList::from_conf(conf.0, pool),
+        let baseurl: Url = format!("gdrive://{}/{}", servicesession, basepath).parse()?;
+        let basepath = Path::new(basepath);
+
+        let flist = FileList {
+            baseurl,
+            basepath: basepath.to_path_buf(),
+            config: config.clone(),
+            servicetype: FileService::GDrive,
+            servicesession: servicesession.parse()?,
+            pool: pool.clone(),
+            filemap: HashMap::new(),
+        };
+
+        let gdrive = GDriveInstance::new(
+            &config.gdrive_token_path,
+            &config.gdrive_secret_file,
+            &flist.servicesession.0,
+        );
+
+        Ok(Self {
+            flist,
             gdrive,
             directory_map: Arc::new(HashMap::new()),
             root_directory: None,
-        };
-        Ok(f)
+        })
+    }
+
+    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+        if url.scheme() == "gdrive" {
+            let servicesession = url
+                .as_str()
+                .trim_start_matches("gdrive://")
+                .replace(url.path(), "");
+            let tmp = format!("gdrive://{}/", servicesession);
+            let basepath: Url = url.as_str().replace(&tmp, "file:///").parse()?;
+            let basepath = basepath
+                .to_file_path()
+                .map_err(|_| format_err!("Failure"))?;
+            let basepath = basepath.to_string_lossy().to_string();
+            let basepath = Path::new(basepath.trim_start_matches('/'));
+            let flist = FileList {
+                baseurl: url.clone(),
+                basepath: basepath.to_path_buf(),
+                config: config.clone(),
+                servicetype: FileService::GDrive,
+                servicesession: servicesession.parse()?,
+                pool: pool.clone(),
+                filemap: HashMap::new(),
+            };
+
+            let gdrive = GDriveInstance::new(
+                &config.gdrive_token_path,
+                &config.gdrive_secret_file,
+                &flist.servicesession.0,
+            );
+
+            Ok(Self {
+                flist,
+                gdrive,
+                directory_map: Arc::new(HashMap::new()),
+                root_directory: None,
+            })
+        } else {
+            Err(format_err!("Wrong scheme"))
+        }
     }
 
     pub fn set_directory_map(mut self, use_cache: bool) -> Result<Self, Error> {
@@ -59,15 +115,6 @@ impl FileListGDrive {
         self.root_directory = root_dir;
 
         Ok(self)
-    }
-
-    pub fn with_list(self, filelist: Vec<FileInfo>) -> Self {
-        Self {
-            flist: self.flist.with_list(filelist),
-            gdrive: self.gdrive,
-            directory_map: self.directory_map,
-            root_directory: self.root_directory,
-        }
     }
 
     pub fn max_keys(mut self, max_keys: usize) -> Self {
@@ -92,15 +139,14 @@ impl FileListGDrive {
             .into_par_iter()
             .filter(|f| {
                 if let Some(url) = f.urlname.as_ref() {
-                    if url.as_str().contains(self.get_conf().baseurl.as_str()) {
+                    if url.as_str().contains(self.get_baseurl().as_str()) {
                         return true;
                     }
                 }
                 false
             })
             .map(|mut f| {
-                f.servicesession
-                    .replace(self.get_conf().servicesession.clone());
+                f.servicesession.replace(self.get_servicesession().clone());
                 f
             })
             .collect();
@@ -134,66 +180,36 @@ impl FileListGDrive {
     }
 }
 
-impl FileListGDriveConf {
-    pub fn new(servicesession: &str, basepath: &str, config: &Config) -> Result<Self, Error> {
-        let baseurl: Url = format!("gdrive://{}/{}", servicesession, basepath).parse()?;
-        let basepath = Path::new(basepath);
-
-        let conf = FileListConf {
-            baseurl,
-            basepath: basepath.to_path_buf(),
-            config: config.clone(),
-            servicetype: FileService::GDrive,
-            servicesession: servicesession.parse()?,
-        };
-        Ok(Self(conf))
-    }
-}
-
-impl FileListConfTrait for FileListGDriveConf {
-    fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
-        if url.scheme() == "gdrive" {
-            let servicesession = url
-                .as_str()
-                .trim_start_matches("gdrive://")
-                .replace(url.path(), "");
-            let tmp = format!("gdrive://{}/", servicesession);
-            let basepath: Url = url.as_str().replace(&tmp, "file:///").parse()?;
-            let basepath = basepath
-                .to_file_path()
-                .map_err(|_| format_err!("Failure"))?;
-            let basepath = basepath.to_string_lossy().to_string();
-            let basepath = Path::new(basepath.trim_start_matches('/'));
-            let conf = FileListConf {
-                baseurl: url.clone(),
-                basepath: basepath.to_path_buf(),
-                config: config.clone(),
-                servicetype: FileService::GDrive,
-                servicesession: servicesession.parse()?,
-            };
-
-            Ok(Self(conf))
-        } else {
-            Err(format_err!("Wrong scheme"))
-        }
-    }
-
-    fn get_config(&self) -> &Config {
-        &self.0.config
-    }
-}
-
 impl FileListTrait for FileListGDrive {
+    fn get_baseurl(&self) -> &Url {
+        &self.flist.baseurl
+    }
+    fn set_baseurl(&mut self, baseurl: Url) {
+        self.flist.baseurl = baseurl;
+    }
+    fn get_basepath(&self) -> &Path {
+        &self.flist.basepath
+    }
+    fn get_servicetype(&self) -> FileService {
+        self.flist.servicetype
+    }
+    fn get_servicesession(&self) -> &ServiceSession {
+        &self.flist.servicesession
+    }
+    fn get_config(&self) -> &Config {
+        &self.flist.config
+    }
+
     fn get_pool(&self) -> &PgPool {
         &self.flist.pool
     }
 
-    fn get_conf(&self) -> &FileListConf {
-        &self.flist.conf
-    }
-
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
         &self.flist.filemap
+    }
+
+    fn with_list(&mut self, filelist: Vec<FileInfo>) {
+        self.flist.with_list(filelist)
     }
 
     fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
@@ -234,15 +250,14 @@ impl FileListTrait for FileListGDrive {
 
     fn print_list(&self) -> Result<(), Error> {
         let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
-        let parents = if let Ok(Some(p)) =
-            GDriveInstance::get_parent_id(&self.get_conf().baseurl, &dnamemap)
-        {
-            Some(vec![p])
-        } else if let Some(root_dir) = self.root_directory.as_ref() {
-            Some(vec![root_dir.clone()])
-        } else {
-            None
-        };
+        let parents =
+            if let Ok(Some(p)) = GDriveInstance::get_parent_id(&self.get_baseurl(), &dnamemap) {
+                Some(vec![p])
+            } else if let Some(root_dir) = self.root_directory.as_ref() {
+                Some(vec![root_dir.clone()])
+            } else {
+                None
+            };
         self.gdrive.process_list_of_keys(&parents, |i| {
             if let Ok(finfo) = GDriveInfo::from_object(i, &self.gdrive, &self.directory_map)
                 .and_then(FileInfoGDrive::from_gdriveinfo)
@@ -255,11 +270,11 @@ impl FileListTrait for FileListGDrive {
         })
     }
 
-    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn copy_from(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::GDrive && finfo1.servicetype == FileService::Local {
@@ -300,11 +315,7 @@ impl FileListTrait for FileListGDrive {
         }
     }
 
-    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::GDrive {
@@ -333,15 +344,14 @@ impl FileListTrait for FileListGDrive {
         }
     }
 
-    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn move_file(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
-        if finfo0.servicetype != finfo1.servicetype
-            || self.get_conf().servicetype != finfo0.servicetype
+        if finfo0.servicetype != finfo1.servicetype || self.get_servicetype() != finfo0.servicetype
         {
             return Ok(());
         }
@@ -360,10 +370,7 @@ impl FileListTrait for FileListGDrive {
         self.gdrive.move_to(gdriveid, &parentid, &finfo1.filename)
     }
 
-    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-    {
+    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::GDrive {
             Err(format_err!("Wrong service type"))
@@ -402,7 +409,7 @@ mod tests {
         gdrive.start_page_token = None;
 
         let fconf = FileListGDriveConf::new("ddboline@gmail.com", "My Drive", &config)?;
-        let flist = FileListGDrive::from_conf(fconf, gdrive, pool.clone())?
+        let mut flist = FileListGDrive::from_conf(fconf, gdrive, pool.clone())?
             .max_keys(100)
             .set_directory_map(false)?;
 
@@ -412,7 +419,7 @@ mod tests {
 
         flist.clear_file_list()?;
 
-        let flist = flist.with_list(new_flist);
+        flist.with_list(new_flist);
 
         writeln!(stdout(), "wrote {}", flist.cache_file_list()?)?;
 
@@ -443,7 +450,7 @@ mod tests {
         let fname = format!(
             "{}/{}_start_page_token",
             config.gdrive_token_path,
-            flist.get_conf().servicesession.0
+            flist.get_servicesession().0
         );
         remove_file(&fname)?;
         Ok(())

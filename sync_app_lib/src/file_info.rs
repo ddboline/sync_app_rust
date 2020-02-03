@@ -3,6 +3,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use std::convert::Into;
 use std::convert::TryFrom;
+use std::fmt::Debug;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
@@ -108,11 +109,7 @@ pub enum FileInfoKeyType {
     ServiceId,
 }
 
-pub trait FileInfoTrait
-where
-    Self: Sized + Send + Sync,
-{
-    fn from_url(url: &Url) -> Result<Self, Error>;
+pub trait FileInfoTrait: Send + Sync + Debug {
     fn get_finfo(&self) -> &FileInfo;
     fn into_finfo(self) -> FileInfo;
     fn get_md5(&self) -> Option<Md5Sum>;
@@ -120,8 +117,8 @@ where
     fn get_stat(&self) -> Option<FileStat>;
 }
 
-impl FileInfoTrait for FileInfo {
-    fn from_url(url: &Url) -> Result<Self, Error> {
+impl FileInfo {
+    pub fn from_url(url: &Url) -> Result<Self, Error> {
         match url.scheme() {
             "file" => FileInfoLocal::from_url(url).map(FileInfoTrait::into_finfo),
             "s3" => FileInfoS3::from_url(url).map(FileInfoTrait::into_finfo),
@@ -130,7 +127,9 @@ impl FileInfoTrait for FileInfo {
             _ => Err(format_err!("Bad scheme")),
         }
     }
+}
 
+impl FileInfoTrait for FileInfo {
     fn get_finfo(&self) -> &Self {
         &self
     }

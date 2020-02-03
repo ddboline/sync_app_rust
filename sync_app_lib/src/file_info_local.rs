@@ -16,8 +16,8 @@ use crate::file_service::FileService;
 #[derive(Debug, Clone)]
 pub struct FileInfoLocal(pub FileInfo);
 
-impl FileInfoTrait for FileInfoLocal {
-    fn from_url(url: &Url) -> Result<Self, Error> {
+impl FileInfoLocal {
+    pub fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() == "file" {
             let path = url
                 .to_file_path()
@@ -44,7 +44,9 @@ impl FileInfoTrait for FileInfoLocal {
             Err(format_err!("Wrong scheme"))
         }
     }
+}
 
+impl FileInfoTrait for FileInfoLocal {
     fn get_finfo(&self) -> &FileInfo {
         &self.0
     }

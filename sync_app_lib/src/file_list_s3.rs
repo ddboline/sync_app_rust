@@ -8,9 +8,9 @@ use std::path::Path;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoTrait, ServiceSession};
 use crate::file_info_s3::FileInfoS3;
-use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
+use crate::file_list::{FileList, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
 use crate::s3_instance::S3Instance;
@@ -21,23 +21,43 @@ pub struct FileListS3 {
     pub s3: S3Instance,
 }
 
-#[derive(Debug, Clone)]
-pub struct FileListS3Conf(pub FileListConf);
-
 impl FileListS3 {
-    pub fn from_conf(conf: FileListS3Conf, pool: PgPool) -> Self {
-        let s3 = S3Instance::new(&conf.get_config().aws_region_name);
+    pub fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+        let baseurl: Url = format!("s3://{}", bucket).parse()?;
+        let basepath = Path::new("");
 
-        Self {
-            flist: FileList::from_conf(conf.0, pool),
-            s3,
-        }
+        let flist = FileList {
+            baseurl,
+            basepath: basepath.to_path_buf(),
+            config: config.clone(),
+            servicetype: FileService::S3,
+            servicesession: bucket.parse()?,
+            pool: pool.clone(),
+            filemap: HashMap::new(),
+        };
+        let s3 = S3Instance::new(&config.aws_region_name);
+
+        Ok(Self { flist, s3 })
     }
 
-    pub fn with_list(&self, filelist: Vec<FileInfo>) -> Self {
-        Self {
-            flist: self.flist.with_list(filelist),
-            s3: self.s3.clone(),
+    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+        if url.scheme() == "s3" {
+            let basepath = Path::new(url.path());
+            let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
+            let flist = FileList {
+                baseurl: url.clone(),
+                basepath: basepath.to_path_buf(),
+                config: config.clone(),
+                servicetype: FileService::S3,
+                servicesession: bucket.parse()?,
+                pool: pool.clone(),
+                filemap: HashMap::new(),
+            };
+            let s3 = S3Instance::new(&config.aws_region_name);
+
+            Ok(Self { flist, s3 })
+        } else {
+            Err(format_err!("Wrong scheme"))
         }
     }
 
@@ -47,66 +67,44 @@ impl FileListS3 {
     }
 }
 
-impl FileListS3Conf {
-    pub fn new(bucket: &str, config: &Config) -> Result<Self, Error> {
-        let baseurl: Url = format!("s3://{}", bucket).parse()?;
-        let basepath = Path::new("");
-
-        let conf = FileListConf {
-            baseurl,
-            basepath: basepath.to_path_buf(),
-            config: config.clone(),
-            servicetype: FileService::S3,
-            servicesession: bucket.parse()?,
-        };
-        Ok(Self(conf))
-    }
-}
-
-impl FileListConfTrait for FileListS3Conf {
-    fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
-        if url.scheme() == "s3" {
-            let basepath = Path::new(url.path());
-            let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
-            let conf = FileListConf {
-                baseurl: url.clone(),
-                basepath: basepath.to_path_buf(),
-                config: config.clone(),
-                servicetype: FileService::S3,
-                servicesession: bucket.parse()?,
-            };
-
-            Ok(Self(conf))
-        } else {
-            Err(format_err!("Wrong scheme"))
-        }
-    }
-
-    fn get_config(&self) -> &Config {
-        &self.0.config
-    }
-}
-
 impl FileListTrait for FileListS3 {
+    fn get_baseurl(&self) -> &Url {
+        &self.flist.baseurl
+    }
+    fn set_baseurl(&mut self, baseurl: Url) {
+        self.flist.baseurl = baseurl;
+    }
+    fn get_basepath(&self) -> &Path {
+        &self.flist.basepath
+    }
+    fn get_servicetype(&self) -> FileService {
+        self.flist.servicetype
+    }
+    fn get_servicesession(&self) -> &ServiceSession {
+        &self.flist.servicesession
+    }
+    fn get_config(&self) -> &Config {
+        &self.flist.config
+    }
+
     fn get_pool(&self) -> &PgPool {
         &self.flist.pool
-    }
-
-    fn get_conf(&self) -> &FileListConf {
-        &self.flist.conf
     }
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
         &self.flist.filemap
     }
 
+    fn with_list(&mut self, filelist: Vec<FileInfo>) {
+        self.flist.with_list(filelist)
+    }
+
     fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let conf = self.get_conf();
-        let bucket = conf
-            .baseurl
+        let bucket = self
+            .get_baseurl()
             .host_str()
             .ok_or_else(|| format_err!("Parse error"))?;
-        let prefix = conf.baseurl.path().trim_start_matches('/');
+        let prefix = self.get_baseurl().path().trim_start_matches('/');
 
         self.s3
             .get_list_of_keys(bucket, Some(prefix))?
@@ -116,12 +114,11 @@ impl FileListTrait for FileListS3 {
     }
 
     fn print_list(&self) -> Result<(), Error> {
-        let conf = self.get_conf();
-        let bucket = conf
-            .baseurl
+        let bucket = self
+            .get_baseurl()
             .host_str()
             .ok_or_else(|| format_err!("Parse error"))?;
-        let prefix = conf.baseurl.path().trim_start_matches('/');
+        let prefix = self.get_baseurl().path().trim_start_matches('/');
 
         self.s3.process_list_of_keys(bucket, Some(prefix), |i| {
             writeln!(
@@ -134,11 +131,11 @@ impl FileListTrait for FileListS3 {
         })
     }
 
-    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn copy_from(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::S3 && finfo1.servicetype == FileService::Local {
@@ -177,14 +174,8 @@ impl FileListTrait for FileListS3 {
             {
                 debug!(
                     "Multipart upload? {} {}",
-                    finfo1
-                        .urlname
-                        .as_ref()
-                        .map_or_else(|| "", |u| u.as_str()),
-                    finfo0
-                        .urlname
-                        .as_ref()
-                        .map_or_else(|| "", |u| u.as_str()),
+                    finfo1.urlname.as_ref().map_or_else(|| "", |u| u.as_str()),
+                    finfo0.urlname.as_ref().map_or_else(|| "", |u| u.as_str()),
                 );
             }
             Ok(())
@@ -197,11 +188,7 @@ impl FileListTrait for FileListS3 {
         }
     }
 
-    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::S3 {
@@ -230,15 +217,14 @@ impl FileListTrait for FileListS3 {
         }
     }
 
-    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn move_file(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
-        if finfo0.servicetype != finfo1.servicetype
-            || self.get_conf().servicetype != finfo0.servicetype
+        if finfo0.servicetype != finfo1.servicetype || self.get_servicetype() != finfo0.servicetype
         {
             return Ok(());
         }
@@ -261,10 +247,7 @@ impl FileListTrait for FileListS3 {
         Ok(())
     }
 
-    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-    {
+    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         if finfo.servicetype == FileService::S3 {
             let url = finfo
@@ -304,14 +287,14 @@ mod tests {
             .unwrap_or_else(|| "".to_string());
 
         let conf = FileListS3Conf::new(&bucket, &config)?;
-        let flist = FileListS3::from_conf(conf, pool.clone()).max_keys(100);
+        let mut flist = FileListS3::from_conf(conf, pool.clone()).max_keys(100);
 
         let new_flist = flist.fill_file_list()?;
 
         writeln!(stdout(), "{} {:?}", bucket, new_flist.get(0))?;
         assert!(new_flist.len() > 0);
 
-        let flist = flist.with_list(new_flist);
+        flist.with_list(new_flist);
 
         flist.cache_file_list()?;
 

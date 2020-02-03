@@ -10,86 +10,90 @@ use url::Url;
 use walkdir::WalkDir;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
+use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession};
 use crate::file_info_local::FileInfoLocal;
-use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
+use crate::file_list::{FileList, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
 
 #[derive(Debug, Clone)]
 pub struct FileListLocal(pub FileList);
 
-#[derive(Debug, Clone)]
-pub struct FileListLocalConf(pub FileListConf);
-
 impl FileListLocal {
-    pub fn from_conf(conf: FileListLocalConf, pool: PgPool) -> Self {
-        Self(FileList::from_conf(conf.0, pool))
-    }
-
-    pub fn with_list(&self, filelist: Vec<FileInfo>) -> Self {
-        Self(self.0.with_list(filelist))
-    }
-}
-
-impl FileListLocalConf {
-    pub fn new(basedir: &Path, config: &Config) -> Result<Self, Error> {
+    pub fn new(basedir: &Path, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         let basepath = basedir.canonicalize()?;
         let basestr = basepath.to_string_lossy().to_string();
         let baseurl = Url::from_file_path(basepath.clone())
             .map_err(|_| format_err!("Failed to parse url"))?;
-        let conf = FileListConf {
+        let flist = FileList {
             baseurl,
             basepath,
             config: config.clone(),
             servicetype: FileService::Local,
             servicesession: basestr.parse()?,
+            filemap: HashMap::new(),
+            pool: pool.clone(),
         };
-        Ok(Self(conf))
+        Ok(Self(flist))
     }
-}
 
-impl FileListConfTrait for FileListLocalConf {
-    fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
+    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "file" {
             let path = url
                 .to_file_path()
                 .map_err(|_| format_err!("Parse failure"))?;
             let basestr = path.to_string_lossy().to_string();
-            let conf = FileListConf {
+            let flist = FileList {
                 baseurl: url.clone(),
                 basepath: path,
                 config: config.clone(),
                 servicetype: FileService::Local,
                 servicesession: basestr.parse()?,
+                pool: pool.clone(),
+                filemap: HashMap::new(),
             };
-            Ok(Self(conf))
+            Ok(Self(flist))
         } else {
             Err(format_err!("Wrong scheme"))
         }
     }
-
-    fn get_config(&self) -> &Config {
-        &self.0.config
-    }
 }
 
 impl FileListTrait for FileListLocal {
-    fn get_pool(&self) -> &PgPool {
-        &self.0.pool
+    fn get_baseurl(&self) -> &Url {
+        &self.0.baseurl
+    }
+    fn set_baseurl(&mut self, baseurl: Url) {
+        self.0.baseurl = baseurl;
     }
 
-    fn get_conf(&self) -> &FileListConf {
-        &self.0.conf
+    fn get_basepath(&self) -> &Path {
+        &self.0.basepath
+    }
+    fn get_servicetype(&self) -> FileService {
+        self.0.servicetype
+    }
+    fn get_servicesession(&self) -> &ServiceSession {
+        &self.0.servicesession
+    }
+    fn get_config(&self) -> &Config {
+        &self.0.config
+    }
+    fn get_pool(&self) -> &PgPool {
+        &self.0.pool
     }
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
         &self.0.filemap
     }
 
+    fn with_list(&mut self, filelist: Vec<FileInfo>) {
+        self.0.with_list(filelist)
+    }
+
     fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let conf = self.get_conf();
-        let basedir = conf.baseurl.path();
+        let servicesession = self.get_servicesession();
+        let basedir = self.get_baseurl().path();
         let file_list = self.load_file_list()?;
         let flist_dict = self.get_file_list_dict(file_list, FileInfoKeyType::FilePath);
 
@@ -127,8 +131,8 @@ impl FileListTrait for FileListLocal {
                 };
                 FileInfoLocal::from_direntry(
                     &entry,
-                    Some(conf.servicesession.0.to_string().into()),
-                    Some(conf.servicesession.clone()),
+                    Some(servicesession.0.to_string().into()),
+                    Some(servicesession.clone()),
                 )
                 .ok()
                 .map(|x| x.0)
@@ -139,8 +143,7 @@ impl FileListTrait for FileListLocal {
     }
 
     fn print_list(&self) -> Result<(), Error> {
-        let conf = self.get_conf();
-        let basedir = conf.baseurl.path();
+        let basedir = self.get_baseurl().path();
 
         let wdir = WalkDir::new(&basedir).same_file_system(true).max_depth(1);
 
@@ -160,11 +163,11 @@ impl FileListTrait for FileListLocal {
             .collect()
     }
 
-    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn copy_from(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype != FileService::Local || finfo1.servicetype != FileService::Local {
@@ -197,19 +200,15 @@ impl FileListTrait for FileListLocal {
         }
     }
 
-    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
         self.copy_from(finfo0, finfo1)
     }
 
-    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn move_file(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         let path0 = finfo0
@@ -231,10 +230,7 @@ impl FileListTrait for FileListLocal {
         }
     }
 
-    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-    {
+    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::Local {
             Err(format_err!("Wrong service type"))
@@ -284,8 +280,7 @@ mod tests {
         let basepath: PathBuf = "src".parse()?;
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
-        let conf = FileListLocalConf::new(&basepath, &config)?;
-        let flist = FileListLocal(FileList::from_conf(conf.0.clone(), pool.clone()));
+        let flist = FileListLocal::new(&basepath, &config, &pool)?;
 
         let new_flist = flist.fill_file_list()?;
 
@@ -330,13 +325,14 @@ mod tests {
 
         writeln!(stdout(), "1 {}", new_flist.len())?;
 
-        let flist = FileListLocal::from_conf(conf, pool.clone()).with_list(new_flist);
+        let mut flist = FileListLocal::new(&basepath, &config, &pool)?;
+        flist.with_list(new_flist);
 
         writeln!(stdout(), "2 {}", flist.get_filemap().len())?;
 
         writeln!(stdout(), "wrote {}", flist.cache_file_list()?)?;
 
-        writeln!(stdout(), "{:?}", flist.get_conf().servicesession)?;
+        writeln!(stdout(), "{:?}", flist.get_servicesession())?;
 
         let new_flist = flist.load_file_list()?;
 

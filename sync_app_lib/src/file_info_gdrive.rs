@@ -10,8 +10,8 @@ use crate::file_service::FileService;
 #[derive(Debug, Default)]
 pub struct FileInfoGDrive(pub FileInfo);
 
-impl FileInfoTrait for FileInfoGDrive {
-    fn from_url(url: &Url) -> Result<Self, Error> {
+impl FileInfoGDrive {
+    pub fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "gdrive" {
             return Err(format_err!("Invalid URL"));
         }
@@ -43,7 +43,9 @@ impl FileInfoTrait for FileInfoGDrive {
         };
         Ok(Self(finfo))
     }
+}
 
+impl FileInfoTrait for FileInfoGDrive {
     fn get_finfo(&self) -> &FileInfo {
         &self.0
     }

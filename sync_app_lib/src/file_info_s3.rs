@@ -10,8 +10,8 @@ use crate::file_service::FileService;
 #[derive(Debug, Default, Clone)]
 pub struct FileInfoS3(FileInfo);
 
-impl FileInfoTrait for FileInfoS3 {
-    fn from_url(url: &Url) -> Result<Self, Error> {
+impl FileInfoS3 {
+    pub fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "s3" {
             return Err(format_err!("Invalid URL"));
         }
@@ -41,7 +41,9 @@ impl FileInfoTrait for FileInfoS3 {
         };
         Ok(Self(finfo))
     }
+}
 
+impl FileInfoTrait for FileInfoS3 {
     fn get_finfo(&self) -> &FileInfo {
         &self.0
     }

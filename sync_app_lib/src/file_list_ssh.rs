@@ -9,8 +9,8 @@ use std::path::Path;
 use url::Url;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait};
-use crate::file_list::{FileList, FileListConf, FileListConfTrait, FileListTrait};
+use crate::file_info::{FileInfo, FileInfoTrait, ServiceSession};
+use crate::file_list::{FileList, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
 use crate::ssh_instance::SSHInstance;
@@ -22,20 +22,7 @@ pub struct FileListSSH {
 }
 
 impl FileListSSH {
-    pub fn from_conf(conf: FileListSSHConf, pool: PgPool) -> Result<Self, Error> {
-        let ssh = SSHInstance::from_url(&conf.0.baseurl)?;
-        Ok(Self {
-            flist: FileList::from_conf(conf.0, pool),
-            ssh,
-        })
-    }
-}
-
-#[derive(Debug)]
-pub struct FileListSSHConf(pub FileListConf);
-
-impl FileListConfTrait for FileListSSHConf {
-    fn from_url(url: &Url, config: &Config) -> Result<Self, Error> {
+    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "ssh" {
             let basepath = Path::new(url.path());
             let host = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
@@ -48,44 +35,63 @@ impl FileListConfTrait for FileListSSHConf {
                 port,
                 basepath.to_string_lossy()
             );
-            let conf = FileListConf {
+            let flist = FileList {
                 baseurl: url.clone(),
                 basepath: basepath.to_path_buf(),
                 config: config.clone(),
                 servicetype: FileService::SSH,
                 servicesession: session.parse()?,
+                filemap: HashMap::new(),
+                pool: pool.clone(),
             };
 
-            Ok(Self(conf))
+            let ssh = SSHInstance::from_url(&url)?;
+
+            Ok(Self { flist, ssh })
         } else {
             Err(format_err!("Wrong scheme"))
         }
     }
-
-    fn get_config(&self) -> &Config {
-        self.0.get_config()
-    }
 }
 
 impl FileListTrait for FileListSSH {
-    fn get_pool(&self) -> &PgPool {
-        &self.flist.pool
+    fn get_baseurl(&self) -> &Url {
+        &self.flist.baseurl
+    }
+    fn set_baseurl(&mut self, baseurl: Url) {
+        self.flist.baseurl = baseurl;
+    }
+    fn get_basepath(&self) -> &Path {
+        &self.flist.basepath
+    }
+    fn get_servicetype(&self) -> FileService {
+        self.flist.servicetype
+    }
+    fn get_servicesession(&self) -> &ServiceSession {
+        &self.flist.servicesession
+    }
+    fn get_config(&self) -> &Config {
+        &self.flist.config
     }
 
-    fn get_conf(&self) -> &FileListConf {
-        &self.flist.conf
+    fn get_pool(&self) -> &PgPool {
+        &self.flist.pool
     }
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
         &self.flist.filemap
     }
 
+    fn with_list(&mut self, filelist: Vec<FileInfo>) {
+        self.flist.with_list(filelist)
+    }
+
     // Copy operation where the origin (finfo0) has the same servicetype as self
-    fn copy_from<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn copy_from(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::SSH && finfo1.servicetype == FileService::Local {
@@ -127,11 +133,7 @@ impl FileListTrait for FileListSSH {
     }
 
     // Copy operation where the destination (finfo0) has the same servicetype as self
-    fn copy_to<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::SSH {
@@ -173,15 +175,14 @@ impl FileListTrait for FileListSSH {
         }
     }
 
-    fn move_file<T, U>(&self, finfo0: &T, finfo1: &U) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-        U: FileInfoTrait,
-    {
+    fn move_file(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
-        if finfo0.servicetype != finfo1.servicetype
-            || self.get_conf().servicetype != finfo0.servicetype
+        if finfo0.servicetype != finfo1.servicetype || self.get_servicetype() != finfo0.servicetype
         {
             return Ok(());
         }
@@ -207,10 +208,7 @@ impl FileListTrait for FileListSSH {
         self.ssh.run_command_ssh(&command)
     }
 
-    fn delete<T>(&self, finfo: &T) -> Result<(), Error>
-    where
-        T: FileInfoTrait,
-    {
+    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         let url = finfo
             .get_finfo()
@@ -223,9 +221,9 @@ impl FileListTrait for FileListSSH {
     }
 
     fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let conf = self.get_conf();
+        let baseurl = self.get_baseurl();
 
-        let path = conf.basepath.to_string_lossy();
+        let path = self.get_basepath().to_string_lossy();
         let user_host = self.ssh.get_ssh_username_host()?;
         let command = format!("sync-app-rust index -u file://{}", path);
         self.ssh.run_command_ssh(&command)?;
@@ -243,15 +241,15 @@ impl FileListTrait for FileListSSH {
                 finfo.urlname = finfo
                     .urlname
                     .and_then(|u| u.as_str().replace("file://", &url_prefix).parse().ok());
-                finfo.serviceid = Some(conf.baseurl.clone().into_string().into());
-                finfo.servicesession = conf.baseurl.as_str().parse().ok();
+                finfo.serviceid = Some(baseurl.clone().into_string().into());
+                finfo.servicesession = baseurl.as_str().parse().ok();
                 Ok(finfo)
             })
             .collect()
     }
 
     fn print_list(&self) -> Result<(), Error> {
-        let path = self.get_conf().basepath.to_string_lossy();
+        let path = self.get_basepath().to_string_lossy();
         let command = format!("sync-app-rust ls -u file://{}", path);
         writeln!(stdout(), "{}", command)?;
         self.ssh.run_command_print_stdout(&command)

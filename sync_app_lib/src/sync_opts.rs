@@ -9,7 +9,7 @@ use url::Url;
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoTrait};
-use crate::file_list::{group_urls, FileList, FileListConf, FileListConfTrait, FileListTrait};
+use crate::file_list::{group_urls, FileList, FileListTrait};
 use crate::file_service::FileService;
 use crate::file_sync::{FileSync, FileSyncAction};
 use crate::models::{BlackList, FileSyncCache, FileSyncConfig, InsertFileSyncConfig};
@@ -57,8 +57,7 @@ impl SyncOpts {
                     .par_iter()
                     .map(|url| {
                         let pool = pool.clone();
-                        let conf = FileListConf::from_url(&url, &config)?;
-                        let flist = FileList::from_conf(conf, pool);
+                        let mut flist = FileList::from_url(&url, &config, &pool)?;
                         let list = flist.fill_file_list()?;
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                             list.into_par_iter()
@@ -73,7 +72,7 @@ impl SyncOpts {
                         } else {
                             list
                         };
-                        let flist = flist.with_list(list);
+                        flist.with_list(list);
                         flist.cache_file_list()?;
                         Ok(flist)
                     })
@@ -98,8 +97,7 @@ impl SyncOpts {
                     .par_iter()
                     .map(|url| {
                         let pool = pool.clone();
-                        let conf = FileListConf::from_url(&url, &config)?;
-                        let flist = FileList::from_conf(conf, pool);
+                        let mut flist = FileList::from_url(&url, &config, &pool)?;
                         let list = flist.fill_file_list()?;
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                             list.into_par_iter()
@@ -114,7 +112,7 @@ impl SyncOpts {
                         } else {
                             list
                         };
-                        let flist = flist.with_list(list);
+                        flist.with_list(list);
                         flist.cache_file_list()?;
                         Ok(flist)
                     })
@@ -127,7 +125,7 @@ impl SyncOpts {
                     .chunks(2)
                     .map(|f| {
                         if f.len() == 2 {
-                            FileSync::compare_lists(&f[0], &f[1], &pool)?;
+                            FileSync::compare_lists(&(*f[0]), &(*f[1]), &pool)?;
                         }
                         Ok(())
                     })
@@ -147,13 +145,11 @@ impl SyncOpts {
                     let finfo1 = FileInfo::from_url(&self.urls[1])?;
 
                     if finfo1.servicetype == FileService::Local {
-                        let conf = FileListConf::from_url(&self.urls[0], &config)?;
-                        let flist = FileList::from_conf(conf, pool.clone());
-                        FileSync::copy_object(&flist, &finfo0, &finfo1)
+                        let flist = FileList::from_url(&self.urls[0], &config, &pool)?;
+                        FileSync::copy_object(&(*flist), &finfo0, &finfo1)
                     } else {
-                        let conf = FileListConf::from_url(&self.urls[1], &config)?;
-                        let flist = FileList::from_conf(conf, pool.clone());
-                        FileSync::copy_object(&flist, &finfo0, &finfo1)
+                        let flist = FileList::from_url(&self.urls[1], &config, &pool)?;
+                        FileSync::copy_object(&(*flist), &finfo0, &finfo1)
                     }
                 }
             }
@@ -162,10 +158,9 @@ impl SyncOpts {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
                     for urls in group_urls(&self.urls).values() {
-                        let conf = FileListConf::from_url(&urls[0], &config)?;
-                        let mut flist = FileList::from_conf(conf, pool.clone());
+                        let mut flist = FileList::from_url(&urls[0], &config, &pool)?;
                         for url in urls {
-                            flist.conf.baseurl = url.clone();
+                            flist.set_baseurl(url.clone());
                             flist.print_list()?;
                         }
                     }
@@ -186,9 +181,9 @@ impl SyncOpts {
             }
             FileSyncAction::Move => {
                 if self.urls.len() == 2 {
-                    let conf0 = FileListConf::from_url(&self.urls[0], &config)?;
-                    let conf1 = FileListConf::from_url(&self.urls[1], &config)?;
-                    if conf0.servicetype == conf1.servicetype {
+                    let flist0 = FileList::from_url(&self.urls[0], &config, &pool)?;
+                    let flist1 = FileList::from_url(&self.urls[1], &config, &pool)?;
+                    if flist0.get_servicetype() == flist1.get_servicetype() {
                         Ok(())
                     } else {
                         Err(format_err!("Can only move within servicetype"))
@@ -206,11 +201,10 @@ impl SyncOpts {
                         .par_iter()
                         .map(|url| {
                             let pool = pool.clone();
-                            let conf = FileListConf::from_url(&url, &config)?;
-                            let flist = FileList::from_conf(conf, pool);
-                            let flist = flist.with_list(flist.fill_file_list()?);
+                            let mut flist = FileList::from_url(&url, &config, &pool)?;
+                            flist.with_list(flist.fill_file_list()?);
                             let results: Result<Vec<_>, Error> = flist
-                                .filemap
+                                .get_filemap()
                                 .values()
                                 .map(|finfo| {
                                     let js = serde_json::to_string(&finfo)?;
