@@ -259,6 +259,7 @@ mod tests {
     use crate::pgpool::PgPool;
 
     #[test]
+    #[ignore]
     fn create_conf() -> Result<(), Error> {
         let basepath: PathBuf = "src".parse()?;
         let baseurl: Url =
