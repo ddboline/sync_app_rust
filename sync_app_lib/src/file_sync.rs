@@ -332,7 +332,7 @@ impl FileSync {
             .map(|urls| {
                 let flist = FileList::from_url(&urls[0], &self.config, &pool)?;
                 let fdict =
-                    flist.get_file_list_dict(flist.load_file_list()?, FileInfoKeyType::UrlName);
+                    flist.get_file_list_dict(&flist.load_file_list()?, FileInfoKeyType::UrlName);
                 urls.into_par_iter()
                     .map(|url| {
                         let finfo = if let Some(f) = fdict.get(&url.as_str().to_string()) {

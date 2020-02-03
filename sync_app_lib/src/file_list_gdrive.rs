@@ -215,7 +215,7 @@ impl FileListTrait for FileListGDrive {
     fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let start_page_token = self.gdrive.get_start_page_token()?;
         let file_list = self.load_file_list()?;
-        let mut flist_dict = { self.get_file_list_dict(file_list, FileInfoKeyType::ServiceId) };
+        let mut flist_dict = { self.get_file_list_dict(&file_list, FileInfoKeyType::ServiceId) };
 
         let (dlist, flist) = if self.gdrive.start_page_token.is_some() {
             self.get_all_changes()?

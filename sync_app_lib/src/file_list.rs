@@ -3,6 +3,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::fmt::Debug;
 use std::fs::rename;
 use std::path::{Path, PathBuf};
@@ -278,34 +279,35 @@ pub trait FileListTrait: Send + Sync + Debug {
 
     fn get_file_list_dict(
         &self,
-        file_list: Vec<FileInfoCache>,
+        file_list: &[FileInfoCache],
         key_type: FileInfoKeyType,
     ) -> HashMap<String, FileInfo> {
         file_list
-            .into_par_iter()
+            .par_iter()
             .filter_map(|entry| match key_type {
-                FileInfoKeyType::FileName => FileInfo::from_cache_info(&entry)
+                FileInfoKeyType::FileName => entry
+                    .try_into()
                     .ok()
                     .map(|val| (entry.filename.to_string(), val)),
                 FileInfoKeyType::FilePath => entry.filepath.as_ref().and_then(|fp| {
                     let key = fp.to_string();
-                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                    entry.try_into().ok().map(|val| (key, val))
                 }),
                 FileInfoKeyType::UrlName => entry.urlname.as_ref().and_then(|url| {
                     let key = url.to_string();
-                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                    entry.try_into().ok().map(|val| (key, val))
                 }),
                 FileInfoKeyType::Md5Sum => entry.md5sum.as_ref().and_then(|fp| {
                     let key = fp.to_string();
-                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                    entry.try_into().ok().map(|val| (key, val))
                 }),
                 FileInfoKeyType::Sha1Sum => entry.sha1sum.as_ref().and_then(|fp| {
                     let key = fp.to_string();
-                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                    entry.try_into().ok().map(|val| (key, val))
                 }),
                 FileInfoKeyType::ServiceId => entry.serviceid.as_ref().and_then(|fp| {
                     let key = fp.to_string();
-                    FileInfo::from_cache_info(&entry).ok().map(|val| (key, val))
+                    entry.try_into().ok().map(|val| (key, val))
                 }),
             })
             .collect()
@@ -493,8 +495,7 @@ impl FileListTrait for FileList {
     fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         match self.load_file_list() {
             Ok(v) => {
-                let result: Result<Vec<_>, Error> =
-                    v.par_iter().map(FileInfo::from_cache_info).collect();
+                let result: Result<Vec<_>, Error> = v.par_iter().map(TryInto::try_into).collect();
                 result
             }
             Err(e) => Err(e),

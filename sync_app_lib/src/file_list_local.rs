@@ -95,7 +95,7 @@ impl FileListTrait for FileListLocal {
         let servicesession = self.get_servicesession();
         let basedir = self.get_baseurl().path();
         let file_list = self.load_file_list()?;
-        let flist_dict = self.get_file_list_dict(file_list, FileInfoKeyType::FilePath);
+        let flist_dict = self.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
 
         let wdir = WalkDir::new(&basedir).same_file_system(true);
 
@@ -319,7 +319,7 @@ mod tests {
         );
 
         let cache_info = FileInfoCache::from_insert(cache_info, 5);
-        let test_result = FileInfo::from_cache_info(&cache_info)?;
+        let test_result: FileInfo = cache_info.try_into()?;
         assert_eq!(*result, test_result);
 
         let config = Config::init_config()?;

@@ -2,7 +2,7 @@ use anyhow::{format_err, Error};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use std::convert::Into;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -151,8 +151,9 @@ impl FileInfoTrait for FileInfo {
     }
 }
 
-impl FileInfo {
-    pub fn from_cache_info(item: &FileInfoCache) -> Result<Self, Error> {
+impl TryFrom<&FileInfoCache> for FileInfo {
+    type Error = Error;
+    fn try_from(item: &FileInfoCache) -> Result<Self, Self::Error> {
         Ok(Self {
             filename: item.filename.to_string(),
             filepath: item.filepath.clone().map(Into::into),
@@ -180,7 +181,9 @@ impl FileInfo {
             servicesession: map_parse(&item.servicesession)?,
         })
     }
+}
 
+impl FileInfo {
     pub fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
         use crate::schema::file_info_cache::dsl::*;
 
@@ -191,7 +194,7 @@ impl FileInfo {
             .load::<FileInfoCache>(&conn)?
             .get(0)
         {
-            Some(f) => Some(Self::from_cache_info(&f)?),
+            Some(f) => Some(f.try_into()?),
             None => None,
         };
 
