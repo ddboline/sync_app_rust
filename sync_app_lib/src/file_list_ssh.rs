@@ -268,19 +268,20 @@ mod tests {
     use crate::file_info::FileInfoTrait;
     use crate::file_info_local::FileInfoLocal;
     use crate::file_info_ssh::FileInfoSSH;
-    use crate::file_list::{FileListConfTrait, FileListTrait};
-    use crate::file_list_ssh::{FileListSSH, FileListSSHConf};
+    use crate::file_list::FileListTrait;
+    use crate::file_list_ssh::FileListSSH;
     use crate::file_service::FileService;
     use crate::pgpool::PgPool;
 
     #[test]
     fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
         let config = Config::init_config()?;
+        let pool = PgPool::new(&config.database_url);
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
-        let conf = FileListSSHConf::from_url(&url, &config)?;
+        let conf = FileListSSH::from_url(&url, &config, &pool)?;
         writeln!(stdout(), "{:?}", conf)?;
-        assert_eq!(conf.0.baseurl, url);
-        assert_eq!(conf.0.servicetype, FileService::SSH);
+        assert_eq!(conf.get_baseurl(), &url);
+        assert_eq!(conf.get_servicetype(), FileService::SSH);
         Ok(())
     }
 
@@ -295,8 +296,7 @@ mod tests {
         let finfo1 = FileInfoLocal::from_url(&url)?;
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
-        let conf = FileListSSHConf::from_url(&url, &config)?;
-        let flist = FileListSSH::from_conf(conf, pool)?;
+        let flist = FileListSSH::from_url(&url, &config, &pool)?;
         flist.copy_from(&finfo0, &finfo1)?;
         let p = Path::new("/tmp/temp0.txt");
         if p.exists() {
@@ -318,8 +318,7 @@ mod tests {
         let finfo1 = FileInfoSSH::from_url(&url)?;
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/".parse()?;
-        let conf = FileListSSHConf::from_url(&url, &config)?;
-        let flist = FileListSSH::from_conf(conf, pool)?;
+        let flist = FileListSSH::from_url(&url, &config, &pool)?;
 
         flist.copy_to(&finfo0, &finfo1)?;
         flist.delete(&finfo1)?;

@@ -382,8 +382,9 @@ mod tests {
     use crate::file_info::{FileInfoTrait, ServiceId, ServiceSession};
     use crate::file_info_local::FileInfoLocal;
     use crate::file_info_s3::FileInfoS3;
-    use crate::file_list_local::{FileListLocal, FileListLocalConf};
-    use crate::file_list_s3::{FileListS3, FileListS3Conf};
+    use crate::file_list_local::FileListLocal;
+    use crate::file_list_s3::FileListS3;
+    use crate::file_list::FileListTrait;
     use crate::file_sync::FileSync;
     use crate::models::FileSyncCache;
     use crate::pgpool::PgPool;
@@ -437,8 +438,7 @@ mod tests {
         let mut flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
         flist0.with_list(vec![finfo0.0]);
 
-        let flist1conf = FileListS3Conf::new("test_bucket", &config)?;
-        let flist1 = FileListS3::from_conf(flist1conf, pool.clone());
+        let flist1 = FileListS3::new("test_bucket", &config, &pool)?;
 
         FileSync::compare_lists(&flist0, &flist1, &pool)?;
 
@@ -476,8 +476,7 @@ mod tests {
         let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession))?;
         writeln!(stdout(), "{:?}", finfo0)?;
 
-        let flist0conf = FileListLocalConf::new(&current_dir()?, &config)?;
-        let flist0 = FileListLocal::from_conf(flist0conf, pool.clone());
+        let flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
 
         let test_owner = Owner {
             display_name: Some("me".to_string()),

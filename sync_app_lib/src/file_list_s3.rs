@@ -270,7 +270,7 @@ mod tests {
 
     use crate::config::Config;
     use crate::file_list::FileListTrait;
-    use crate::file_list_s3::{FileListS3, FileListS3Conf};
+    use crate::file_list_s3::FileListS3;
     use crate::pgpool::PgPool;
     use crate::s3_instance::S3Instance;
 
@@ -286,8 +286,7 @@ mod tests {
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
 
-        let conf = FileListS3Conf::new(&bucket, &config)?;
-        let mut flist = FileListS3::from_conf(conf, pool.clone()).max_keys(100);
+        let mut flist = FileListS3::new(&bucket, &config, &pool)?.max_keys(100);
 
         let new_flist = flist.fill_file_list()?;
 

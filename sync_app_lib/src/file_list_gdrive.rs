@@ -393,7 +393,7 @@ mod tests {
 
     use crate::config::Config;
     use crate::file_list::FileListTrait;
-    use crate::file_list_gdrive::{FileListGDrive, FileListGDriveConf};
+    use crate::file_list_gdrive::FileListGDrive;
     use crate::pgpool::PgPool;
 
     #[test]
@@ -408,8 +408,7 @@ mod tests {
         );
         gdrive.start_page_token = None;
 
-        let fconf = FileListGDriveConf::new("ddboline@gmail.com", "My Drive", &config)?;
-        let mut flist = FileListGDrive::from_conf(fconf, gdrive, pool.clone())?
+        let mut flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool)?
             .max_keys(100)
             .set_directory_map(false)?;
 

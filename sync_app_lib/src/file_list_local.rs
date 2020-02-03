@@ -253,7 +253,7 @@ mod tests {
     use crate::config::Config;
     use crate::file_info::FileInfo;
     use crate::file_list::FileList;
-    use crate::file_list_local::{FileListLocal, FileListLocalConf, FileListTrait};
+    use crate::file_list_local::{FileListLocal, FileListTrait};
     use crate::file_service::FileService;
     use crate::models::{FileInfoCache, InsertFileInfoCache};
     use crate::pgpool::PgPool;
@@ -264,13 +264,14 @@ mod tests {
         let baseurl: Url =
             format!("file://{}", basepath.canonicalize()?.to_string_lossy()).parse()?;
         let config = Config::init_config()?;
-        let conf = FileListLocalConf::new(&basepath, &config);
+        let pool = PgPool::new(&config.database_url);
+        let conf = FileListLocal::new(&basepath, &config, &pool);
         writeln!(stdout(), "{:?}", conf)?;
         assert_eq!(conf.is_ok(), true);
         let conf = conf?;
-        assert_eq!(conf.0.servicetype, FileService::Local);
-        writeln!(stdout(), "{:?}", conf.0.baseurl)?;
-        assert_eq!(conf.0.baseurl, baseurl);
+        assert_eq!(conf.get_servicetype(), FileService::Local);
+        writeln!(stdout(), "{:?}", conf.get_baseurl())?;
+        assert_eq!(conf.get_baseurl(), &baseurl);
         Ok(())
     }
 
