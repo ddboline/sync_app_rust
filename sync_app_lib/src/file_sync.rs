@@ -382,9 +382,9 @@ mod tests {
     use crate::file_info::{FileInfoTrait, ServiceId, ServiceSession};
     use crate::file_info_local::FileInfoLocal;
     use crate::file_info_s3::FileInfoS3;
+    use crate::file_list::FileListTrait;
     use crate::file_list_local::FileListLocal;
     use crate::file_list_s3::FileListS3;
-    use crate::file_list::FileListTrait;
     use crate::file_sync::FileSync;
     use crate::models::FileSyncCache;
     use crate::pgpool::PgPool;
