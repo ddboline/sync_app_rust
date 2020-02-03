@@ -249,6 +249,7 @@ mod tests {
     use std::io::{stdout, Write};
     use std::path::PathBuf;
     use url::Url;
+    use std::convert::TryInto;
 
     use crate::config::Config;
     use crate::file_info::FileInfo;
@@ -318,7 +319,7 @@ mod tests {
             cache_info.md5sum.as_ref().unwrap()
         );
 
-        let cache_info = &FileInfoCache::from_insert(cache_info, 5);
+        let cache_info = FileInfoCache::from_insert(cache_info, 5);
         let test_result: FileInfo = cache_info.try_into()?;
         assert_eq!(*result, test_result);
 
