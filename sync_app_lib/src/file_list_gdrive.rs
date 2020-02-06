@@ -388,6 +388,7 @@ mod tests {
     use std::collections::HashMap;
     use std::fs::remove_file;
     use std::io::{stdout, Write};
+    use std::path::Path;
 
     use gdrive_lib::gdrive_instance::GDriveInstance;
 
