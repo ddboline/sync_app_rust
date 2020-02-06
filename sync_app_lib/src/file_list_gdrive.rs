@@ -7,6 +7,7 @@ use std::io::{stdout, Write};
 use std::path::Path;
 use std::sync::Arc;
 use url::Url;
+use parking_lot::RwLock;
 
 use gdrive_lib::directory_info::DirectoryInfo;
 use gdrive_lib::gdrive_instance::{GDriveInfo, GDriveInstance};
@@ -22,8 +23,8 @@ use crate::pgpool::PgPool;
 pub struct FileListGDrive {
     pub flist: FileList,
     pub gdrive: GDriveInstance,
-    pub directory_map: Arc<HashMap<String, DirectoryInfo>>,
-    pub root_directory: Option<String>,
+    pub directory_map: Arc<RwLock<HashMap<String, DirectoryInfo>>>,
+    pub root_directory: Arc<RwLock<Option<String>>>,
 }
 
 impl FileListGDrive {
@@ -55,8 +56,8 @@ impl FileListGDrive {
         Ok(Self {
             flist,
             gdrive,
-            directory_map: Arc::new(HashMap::new()),
-            root_directory: None,
+            directory_map: Arc::new(RwLock::new(HashMap::new())),
+            root_directory: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -92,15 +93,15 @@ impl FileListGDrive {
             Ok(Self {
                 flist,
                 gdrive,
-                directory_map: Arc::new(HashMap::new()),
-                root_directory: None,
+                directory_map: Arc::new(RwLock::new(HashMap::new())),
+                root_directory: Arc::new(RwLock::new(None)),
             })
         } else {
             Err(format_err!("Wrong scheme"))
         }
     }
 
-    pub fn set_directory_map(mut self, use_cache: bool) -> Result<Self, Error> {
+    pub fn set_directory_map(&self, use_cache: bool) -> Result<(), Error> {
         let (dmap, root_dir) = if use_cache {
             let dlist = self.load_directory_info_cache()?;
             self.get_directory_map_cache(dlist)
@@ -111,10 +112,10 @@ impl FileListGDrive {
             self.clear_directory_list()?;
             self.cache_directory_map(&dmap, &root_dir)?;
         }
-        self.directory_map = Arc::new(dmap);
-        self.root_directory = root_dir;
+        *self.directory_map.write() = dmap;
+        *self.root_directory.write() = root_dir;
 
-        Ok(self)
+        Ok(())
     }
 
     pub fn max_keys(mut self, max_keys: usize) -> Self {
@@ -122,9 +123,8 @@ impl FileListGDrive {
         self
     }
 
-    pub fn set_root_directory(mut self, root_directory: &str) -> Self {
-        self.root_directory = Some(root_directory.to_string());
-        self
+    pub fn set_root_directory(&self, root_directory: &str) {
+        self.root_directory.write().replace(root_directory.to_string());
     }
 
     fn convert_gdriveinfo_to_file_info(
@@ -154,7 +154,7 @@ impl FileListGDrive {
     }
 
     fn get_all_files(&self) -> Result<Vec<FileInfo>, Error> {
-        let flist: Vec<_> = self.gdrive.get_all_file_info(false, &self.directory_map)?;
+        let flist: Vec<_> = self.gdrive.get_all_file_info(false, &self.directory_map.read())?;
 
         let flist = self.convert_gdriveinfo_to_file_info(&flist)?;
 
@@ -174,7 +174,7 @@ impl FileListGDrive {
 
         let flist = self
             .gdrive
-            .convert_file_list_to_gdrive_info(&flist, &self.directory_map)?;
+            .convert_file_list_to_gdrive_info(&flist, &self.directory_map.read())?;
         let flist = self.convert_gdriveinfo_to_file_info(&flist)?;
         Ok((delete_list, flist))
     }
@@ -213,6 +213,7 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+        self.set_directory_map(false)?;
         let start_page_token = self.gdrive.get_start_page_token()?;
         let file_list = self.load_file_list()?;
         let mut flist_dict = { self.get_file_list_dict(&file_list, FileInfoKeyType::ServiceId) };
@@ -249,17 +250,18 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn print_list(&self) -> Result<(), Error> {
-        let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
+        self.set_directory_map(false)?;
+        let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map.read());
         let parents =
             if let Ok(Some(p)) = GDriveInstance::get_parent_id(&self.get_baseurl(), &dnamemap) {
                 Some(vec![p])
-            } else if let Some(root_dir) = self.root_directory.as_ref() {
+            } else if let Some(root_dir) = self.root_directory.read().as_ref() {
                 Some(vec![root_dir.clone()])
             } else {
                 None
             };
         self.gdrive.process_list_of_keys(&parents, |i| {
-            if let Ok(finfo) = GDriveInfo::from_object(i, &self.gdrive, &self.directory_map)
+            if let Ok(finfo) = GDriveInfo::from_object(i, &self.gdrive, &self.directory_map.read())
                 .and_then(FileInfoGDrive::from_gdriveinfo)
             {
                 if let Some(url) = finfo.get_finfo().urlname.as_ref() {
@@ -275,6 +277,7 @@ impl FileListTrait for FileListGDrive {
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
     ) -> Result<(), Error> {
+        self.set_directory_map(true)?;
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::GDrive && finfo1.servicetype == FileService::Local {
@@ -316,6 +319,7 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
+        self.set_directory_map(true)?;
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::GDrive {
@@ -330,7 +334,7 @@ impl FileListTrait for FileListGDrive {
                 .urlname
                 .clone()
                 .ok_or_else(|| format_err!("No remote url"))?;
-            let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
+            let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map.read());
             let parent_id = GDriveInstance::get_parent_id(&remote_url, &dnamemap)?
                 .ok_or_else(|| format_err!("No parent id!"))?;
             self.gdrive.upload(&local_url, &parent_id)?;
@@ -349,6 +353,7 @@ impl FileListTrait for FileListGDrive {
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
     ) -> Result<(), Error> {
+        self.set_directory_map(true)?;
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype != finfo1.servicetype || self.get_servicetype() != finfo0.servicetype
@@ -364,13 +369,14 @@ impl FileListTrait for FileListGDrive {
             .urlname
             .as_ref()
             .ok_or_else(|| format_err!("No url"))?;
-        let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map);
+        let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map.read());
         let parentid = GDriveInstance::get_parent_id(&url, &dnamemap)?
             .ok_or_else(|| format_err!("No parentid"))?;
         self.gdrive.move_to(gdriveid, &parentid, &finfo1.filename)
     }
 
     fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
+        self.set_directory_map(true)?;
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::GDrive {
             Err(format_err!("Wrong service type"))
@@ -410,8 +416,8 @@ mod tests {
         gdrive.start_page_token = None;
 
         let mut flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool)?
-            .max_keys(100)
-            .set_directory_map(false)?;
+            .max_keys(100);
+        flist.set_directory_map(false)?;
 
         let new_flist = flist.fill_file_list()?;
 
@@ -429,9 +435,9 @@ mod tests {
 
         flist.clear_file_list()?;
 
-        writeln!(stdout(), "dmap {}", flist.directory_map.len())?;
+        writeln!(stdout(), "dmap {}", flist.directory_map.read().len())?;
 
-        let dnamemap = GDriveInstance::get_directory_name_map(&flist.directory_map);
+        let dnamemap = GDriveInstance::get_directory_name_map(&flist.directory_map.read());
         for f in flist.get_filemap().values() {
             let u = f.urlname.as_ref().unwrap();
             let parent_id = GDriveInstance::get_parent_id(u, &dnamemap)?;
