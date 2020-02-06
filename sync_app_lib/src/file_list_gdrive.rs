@@ -451,7 +451,9 @@ mod tests {
             config.gdrive_token_path,
             flist.get_servicesession().0
         );
-        remove_file(&fname)?;
+        if Path::new(fname).exists() {
+            remove_file(&fname)?;
+        }
         Ok(())
     }
 }
