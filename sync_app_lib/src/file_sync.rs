@@ -490,7 +490,7 @@ mod tests {
         Ok(())
     }
 
-    #[tokio:test]
+    #[tokio::test]
     #[ignore]
     async fn test_compare_lists_1() -> Result<(), Error> {
         let config = Config::init_config()?;

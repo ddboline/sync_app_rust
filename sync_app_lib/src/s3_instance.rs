@@ -288,12 +288,12 @@ mod tests {
     #[ignore]
     async fn test_list_buckets() {
         let s3_instance = S3Instance::new("us-east-1").max_keys(100);
-        let blist = s3_instance.get_list_of_buckets().unwrap();
+        let blist = s3_instance.get_list_of_buckets().await.unwrap();
         let bucket = blist
             .get(0)
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
-        let klist = s3_instance.get_list_of_keys(&bucket, None).unwrap();
+        let klist = s3_instance.get_list_of_keys(&bucket, None).await.unwrap();
         writeln!(stdout(), "{} {}", bucket, klist.len()).unwrap();
         assert!(klist.len() > 0);
     }
