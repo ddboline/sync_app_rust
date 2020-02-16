@@ -286,13 +286,13 @@ mod tests {
     use crate::config::Config;
     use crate::movie_sync::MovieSync;
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_movie_sync() {
+    async fn test_movie_sync() {
         let config = Config::init_config().unwrap();
         let s = MovieSync::new(config);
-        s.init().unwrap();
-        let result = s.run_sync().unwrap();
+        s.init().await.unwrap();
+        let result = s.run_sync().await.unwrap();
         writeln!(stdout(), "{:?}", result).unwrap();
         assert!(result.len() > 0);
     }

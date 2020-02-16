@@ -450,9 +450,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_compare_lists_0() -> Result<(), Error> {
+    async fn test_compare_lists_0() -> Result<(), Error> {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let filepath = Path::new("src/file_sync.rs").canonicalize()?;
@@ -466,9 +466,9 @@ mod tests {
 
         let flist1 = FileListS3::new("test_bucket", &config, &pool)?;
 
-        FileSync::compare_lists(&flist0, &flist1, &pool)?;
+        FileSync::compare_lists(&flist0, &flist1, &pool).await?;
 
-        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)?
+        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool).await?
             .into_iter()
             .filter(|v| v.src_url.starts_with("file://"))
             .map(|v| (v.src_url.clone(), v))
@@ -485,7 +485,7 @@ mod tests {
         assert!(cache_list.contains_key(&test_key));
 
         for val in cache_list.values() {
-            val.delete_cache_entry(&pool)?;
+            val.delete_cache_entry(&pool).await?;
         }
         Ok(())
     }

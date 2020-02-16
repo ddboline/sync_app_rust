@@ -292,9 +292,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_file_list_ssh_copy_from() -> Result<(), Error> {
+    async fn test_file_list_ssh_copy_from() -> Result<(), Error> {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/temp0.txt".parse()?;
@@ -304,7 +304,7 @@ mod tests {
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
         let flist = FileListSSH::from_url(&url, &config, &pool)?;
-        flist.copy_from(&finfo0, &finfo1)?;
+        flist.copy_from(&finfo0, &finfo1).await?;
         let p = Path::new("/tmp/temp0.txt");
         if p.exists() {
             remove_file(p)?;
@@ -312,9 +312,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_file_list_ssh_copy_to() -> Result<(), Error> {
+    async fn test_file_list_ssh_copy_to() -> Result<(), Error> {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
@@ -327,8 +327,8 @@ mod tests {
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/".parse()?;
         let flist = FileListSSH::from_url(&url, &config, &pool)?;
 
-        flist.copy_to(&finfo0, &finfo1)?;
-        flist.delete(&finfo1)?;
+        flist.copy_to(&finfo0, &finfo1).await?;
+        flist.delete(&finfo1).await?;
         Ok(())
     }
 }
