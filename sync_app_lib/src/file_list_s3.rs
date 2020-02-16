@@ -289,7 +289,7 @@ mod tests {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let s3 = S3Instance::new(&config.aws_region_name);
-        let blist = s3.get_list_of_buckets()?;
+        let blist = s3.get_list_of_buckets().await?;
         let bucket = blist
             .get(0)
             .and_then(|b| b.name.clone())

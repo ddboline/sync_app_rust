@@ -345,14 +345,14 @@ mod tests {
 
         let new_flist = flist.load_file_list()?;
 
-        assert_eq!(new_flist.len(), flist.0.filemap.len());
+        assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
         writeln!(stdout(), "{}", new_flist.len())?;
         assert!(new_flist.len() != 0);
 
         let new_flist = flist.fill_file_list().await?;
 
-        assert_eq!(new_flist.len(), flist.0.filemap.len());
+        assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
         writeln!(stdout(), "{}", new_flist.len())?;
         assert!(new_flist.len() != 0);

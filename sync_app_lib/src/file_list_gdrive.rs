@@ -441,7 +441,7 @@ mod tests {
 
         let new_flist = flist.load_file_list()?;
 
-        assert_eq!(flist.flist.filemap.len(), new_flist.len());
+        assert_eq!(flist.flist.get_filemap().len(), new_flist.len());
 
         flist.clear_file_list()?;
 
