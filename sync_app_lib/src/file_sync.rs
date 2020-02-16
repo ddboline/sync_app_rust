@@ -93,7 +93,7 @@ impl FileSync {
         Self { config }
     }
 
-    pub fn compare_lists(
+    pub async fn compare_lists(
         flist0: &dyn FileListTrait,
         flist1: &dyn FileListTrait,
         pool: &PgPool,
@@ -188,18 +188,25 @@ impl FileSync {
         if list_a_not_b.is_empty() && list_b_not_a.is_empty() {
             flist0.cleanup().and_then(|_| flist1.cleanup())
         } else {
-            list_a_not_b
-                .par_iter()
-                .chain(list_b_not_a.par_iter())
+            let futures: Vec<_> = list_a_not_b
+                .into_iter()
+                .chain(list_b_not_a.into_iter())
                 .map(|(f0, f1)| {
-                    if let Some(u0) = f0.urlname.as_ref() {
-                        if let Some(u1) = f1.urlname.as_ref() {
-                            InsertFileSyncCache::cache_sync(pool, u0.as_str(), u1.as_str())?;
+                    let pool = pool.clone();
+                    async move {
+                        if let Some(u0) = f0.urlname.as_ref() {
+                            if let Some(u1) = f1.urlname.as_ref() {
+                                InsertFileSyncCache::cache_sync(&pool, u0.as_str(), u1.as_str())
+                                    .await?;
+                            }
                         }
+                        Ok(())
                     }
-                    Ok(())
                 })
-                .collect()
+                .collect();
+            let results: Result<Vec<_>, Error> = try_join_all(futures).await;
+            results?;
+            Ok(())
         }
     }
 
@@ -256,15 +263,19 @@ impl FileSync {
     }
 
     pub async fn process_sync_cache(&self, pool: &PgPool) -> Result<(), Error> {
-        let proc_list: Result<Vec<_>, Error> = FileSyncCache::get_cache_list(pool)?
-            .into_par_iter()
+        let futures: Vec<_> = FileSyncCache::get_cache_list(pool)
+            .await?
+            .into_iter()
             .map(|v| {
-                let u0: Url = v.src_url.parse()?;
-                let u1: Url = v.dst_url.parse()?;
-                v.delete_cache_entry(pool)?;
-                Ok((u0, u1))
+                async move {
+                    let u0: Url = v.src_url.parse()?;
+                    let u1: Url = v.dst_url.parse()?;
+                    v.delete_cache_entry(pool).await?;
+                    Ok((u0, u1))
+                }
             })
             .collect();
+        let proc_list: Result<Vec<_>, Error> = try_join_all(futures).await;
 
         let proc_map: Arc<HashMap<_, _>> = Arc::new(proc_list?.into_iter().fold(
             HashMap::new(),
@@ -322,7 +333,8 @@ impl FileSync {
 
     pub async fn delete_files(&self, urls: &[Url], pool: &PgPool) -> Result<(), Error> {
         let all_urls: Vec<_> = if urls.is_empty() {
-            let proc_list: Result<Vec<_>, Error> = FileSyncCache::get_cache_list(pool)?
+            let proc_list: Result<Vec<_>, Error> = FileSyncCache::get_cache_list(pool)
+                .await?
                 .into_par_iter()
                 .map(|v| {
                     let u0: Url = v.src_url.parse()?;
@@ -512,7 +524,8 @@ mod tests {
 
         FileSync::compare_lists(&flist0, &flist1, &pool)?;
 
-        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)?
+        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)
+            .await?
             .into_iter()
             .filter(|v| v.src_url.starts_with("s3://"))
             .map(|v| (v.src_url.clone(), v))

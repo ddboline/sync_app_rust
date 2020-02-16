@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use futures::future::try_join_all;
+use itertools::Itertools;
 use log::debug;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
@@ -45,12 +46,12 @@ impl SyncOpts {
     }
 
     pub async fn process_sync_opts(&self, config: &Config, pool: &PgPool) -> Result<(), Error> {
-        let blacklist = Arc::new(BlackList::new(pool)?);
+        let blacklist = Arc::new(BlackList::new(pool).await?);
 
         match self.action {
             FileSyncAction::Index => {
                 let urls = if self.urls.is_empty() {
-                    FileSyncConfig::get_url_list(&pool)?
+                    FileSyncConfig::get_url_list(&pool).await?
                 } else {
                     self.urls.to_vec()
                 };
@@ -88,13 +89,15 @@ impl SyncOpts {
             }
             FileSyncAction::Sync => {
                 let urls = if self.urls.is_empty() {
-                    let result: Result<(), Error> = FileSyncCache::get_cache_list(&pool)?
-                        .into_par_iter()
-                        .map(|v| v.delete_cache_entry(&pool))
+                    let futures: Vec<_> = FileSyncCache::get_cache_list(&pool)
+                        .await?
+                        .into_iter()
+                        .map(|v| async move { v.delete_cache_entry(&pool).await })
                         .collect();
+                    let result: Result<Vec<_>, Error> = try_join_all(futures).await;
                     result?;
 
-                    FileSyncConfig::get_url_list(&pool)?
+                    FileSyncConfig::get_url_list(&pool).await?
                 } else {
                     self.urls.to_vec()
                 };
@@ -129,19 +132,21 @@ impl SyncOpts {
 
                 let flists = results?;
 
-                let results: Result<Vec<_>, Error> = flists
-                    .into_par_iter()
+                let futures: Vec<_> = flists
                     .chunks(2)
                     .map(|f| {
-                        if f.len() == 2 {
-                            FileSync::compare_lists(&(*f[0]), &(*f[1]), &pool)?;
+                        async move {
+                            if f.len() == 2 {
+                                FileSync::compare_lists(&(*f[0]), &(*f[1]), &pool).await?;
+                            }
+                            Ok(())
                         }
-                        Ok(())
                     })
                     .collect();
+                let results: Result<Vec<_>, Error> = try_join_all(futures).await;
                 results?;
 
-                for entry in FileSyncCache::get_cache_list(&pool)? {
+                for entry in FileSyncCache::get_cache_list(&pool).await? {
                     writeln!(stdout().lock(), "{} {}", entry.src_url, entry.dst_url)?;
                 }
                 Ok(())
@@ -208,20 +213,22 @@ impl SyncOpts {
                     let futures: Vec<_> = self
                         .urls
                         .iter()
-                        .map(|url| async move {
-                            let pool = pool.clone();
-                            let mut flist = FileList::from_url(&url, &config, &pool)?;
-                            flist.with_list(flist.fill_file_list().await?);
-                            let results: Result<Vec<_>, Error> = flist
-                                .get_filemap()
-                                .values()
-                                .map(|finfo| {
-                                    let js = serde_json::to_string(&finfo)?;
-                                    writeln!(stdout().lock(), "{}", js)?;
-                                    Ok(())
-                                })
-                                .collect();
-                            results.map(|_| ())
+                        .map(|url| {
+                            async move {
+                                let pool = pool.clone();
+                                let mut flist = FileList::from_url(&url, &config, &pool)?;
+                                flist.with_list(flist.fill_file_list().await?);
+                                let results: Result<Vec<_>, Error> = flist
+                                    .get_filemap()
+                                    .values()
+                                    .map(|finfo| {
+                                        let js = serde_json::to_string(&finfo)?;
+                                        writeln!(stdout().lock(), "{}", js)?;
+                                        Ok(())
+                                    })
+                                    .collect();
+                                results.map(|_| ())
+                            }
                         })
                         .collect();
                     let results: Result<Vec<_>, Error> = try_join_all(futures).await;
@@ -236,13 +243,15 @@ impl SyncOpts {
                         self.urls[0].as_str(),
                         self.urls[1].as_str(),
                     )
+                    .await
                     .map(|_| ())
                 } else {
                     Err(format_err!("Need exactly 2 Urls"))
                 }
             }
             FileSyncAction::ShowCache => {
-                let clist: Vec<_> = FileSyncCache::get_cache_list(&pool)?
+                let clist: Vec<_> = FileSyncCache::get_cache_list(&pool)
+                    .await?
                     .into_iter()
                     .map(|v| format!("{} {}", v.src_url, v.dst_url))
                     .collect();

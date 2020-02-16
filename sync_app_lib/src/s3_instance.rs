@@ -48,12 +48,14 @@ impl S3Instance {
     }
 
     pub async fn get_list_of_buckets(&self) -> Result<Vec<Bucket>, Error> {
-        exponential_retry(|| async move {
-            self.s3_client
-                .list_buckets()
-                .await
-                .map(|l| l.buckets.unwrap_or_default())
-                .map_err(Into::into)
+        exponential_retry(|| {
+            async move {
+                self.s3_client
+                    .list_buckets()
+                    .await
+                    .map(|l| l.buckets.unwrap_or_default())
+                    .map_err(Into::into)
+            }
         })
         .await
     }
