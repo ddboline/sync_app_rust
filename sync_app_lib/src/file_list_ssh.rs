@@ -1,4 +1,5 @@
 use anyhow::{format_err, Error};
+use async_trait::async_trait;
 use log::debug;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -35,15 +36,15 @@ impl FileListSSH {
                 port,
                 basepath.to_string_lossy()
             );
-            let flist = FileList {
-                baseurl: url.clone(),
-                basepath: basepath.to_path_buf(),
-                config: config.clone(),
-                servicetype: FileService::SSH,
-                servicesession: session.parse()?,
-                filemap: HashMap::new(),
-                pool: pool.clone(),
-            };
+            let flist = FileList::new(
+                url.clone(),
+                basepath.to_path_buf(),
+                config.clone(),
+                FileService::SSH,
+                session.parse()?,
+                HashMap::new(),
+                pool.clone(),
+            );
 
             let ssh = SSHInstance::from_url(&url)?;
 
@@ -54,12 +55,13 @@ impl FileListSSH {
     }
 }
 
+#[async_trait]
 impl FileListTrait for FileListSSH {
     fn get_baseurl(&self) -> &Url {
-        &self.flist.baseurl
+        self.flist.get_baseurl()
     }
     fn set_baseurl(&mut self, baseurl: Url) {
-        self.flist.baseurl = baseurl;
+        self.flist.set_baseurl(baseurl);
     }
     fn get_basepath(&self) -> &Path {
         &self.flist.basepath
@@ -79,7 +81,7 @@ impl FileListTrait for FileListSSH {
     }
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
-        &self.flist.filemap
+        self.flist.get_filemap()
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
@@ -87,7 +89,7 @@ impl FileListTrait for FileListSSH {
     }
 
     // Copy operation where the origin (finfo0) has the same servicetype as self
-    fn copy_from(
+    async fn copy_from(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -133,7 +135,11 @@ impl FileListTrait for FileListSSH {
     }
 
     // Copy operation where the destination (finfo0) has the same servicetype as self
-    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
+    async fn copy_to(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::SSH {
@@ -175,7 +181,7 @@ impl FileListTrait for FileListSSH {
         }
     }
 
-    fn move_file(
+    async fn move_file(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -208,7 +214,7 @@ impl FileListTrait for FileListSSH {
         self.ssh.run_command_ssh(&command)
     }
 
-    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
+    async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         let url = finfo
             .get_finfo()
@@ -220,7 +226,7 @@ impl FileListTrait for FileListSSH {
         self.ssh.run_command_ssh(&command)
     }
 
-    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let baseurl = self.get_baseurl();
 
         let path = self.get_basepath().to_string_lossy();
@@ -248,7 +254,7 @@ impl FileListTrait for FileListSSH {
             .collect()
     }
 
-    fn print_list(&self) -> Result<(), Error> {
+    async fn print_list(&self) -> Result<(), Error> {
         let path = self.get_basepath().to_string_lossy();
         let command = format!("sync-app-rust ls -u file://{}", path);
         writeln!(stdout(), "{}", command)?;

@@ -1,9 +1,11 @@
 use anyhow::{format_err, Error};
+use futures::future::try_join_all;
 use log::debug;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
 use std::io::{stdout, Write};
+use std::sync::Arc;
 use structopt::StructOpt;
 use url::Url;
 
@@ -34,16 +36,16 @@ impl SyncOpts {
         }
     }
 
-    pub fn process_args() -> Result<(), Error> {
+    pub async fn process_args() -> Result<(), Error> {
         let opts = Self::from_args();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
-        opts.process_sync_opts(&config, &pool)
+        opts.process_sync_opts(&config, &pool).await
     }
 
-    pub fn process_sync_opts(&self, config: &Config, pool: &PgPool) -> Result<(), Error> {
-        let blacklist = BlackList::new(pool)?;
+    pub async fn process_sync_opts(&self, config: &Config, pool: &PgPool) -> Result<(), Error> {
+        let blacklist = Arc::new(BlackList::new(pool)?);
 
         match self.action {
             FileSyncAction::Index => {
@@ -53,32 +55,36 @@ impl SyncOpts {
                     self.urls.to_vec()
                 };
                 debug!("urls: {:?}", urls);
-                let results: Result<Vec<_>, Error> = urls
-                    .par_iter()
+                let futures: Vec<_> = urls
+                    .into_iter()
                     .map(|url| {
-                        let pool = pool.clone();
-                        let mut flist = FileList::from_url(&url, &config, &pool)?;
-                        let list = flist.fill_file_list()?;
-                        let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
-                            list.into_par_iter()
-                                .filter(|entry| {
-                                    if let Some(url) = entry.urlname.as_ref() {
-                                        !blacklist.is_in_blacklist(url)
-                                    } else {
-                                        true
-                                    }
-                                })
-                                .collect()
-                        } else {
-                            list
-                        };
-                        flist.with_list(list);
-                        flist.cache_file_list()?;
-                        Ok(flist)
+                        let blacklist = blacklist.clone();
+                        async move {
+                            let pool = pool.clone();
+                            let mut flist = FileList::from_url(&url, &config, &pool)?;
+                            let list = flist.fill_file_list().await?;
+                            let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
+                                list.into_par_iter()
+                                    .filter(|entry| {
+                                        if let Some(url) = entry.urlname.as_ref() {
+                                            !blacklist.is_in_blacklist(url)
+                                        } else {
+                                            true
+                                        }
+                                    })
+                                    .collect()
+                            } else {
+                                list
+                            };
+                            flist.with_list(list);
+                            flist.cache_file_list()?;
+                            Ok(flist)
+                        }
                     })
                     .collect();
-
-                results.map(|_| ())
+                let result: Result<Vec<_>, Error> = try_join_all(futures).await;
+                result?;
+                Ok(())
             }
             FileSyncAction::Sync => {
                 let urls = if self.urls.is_empty() {
@@ -92,31 +98,34 @@ impl SyncOpts {
                 } else {
                     self.urls.to_vec()
                 };
-
-                let results: Result<Vec<_>, Error> = urls
-                    .par_iter()
+                let futures: Vec<_> = urls
+                    .into_iter()
                     .map(|url| {
-                        let pool = pool.clone();
-                        let mut flist = FileList::from_url(&url, &config, &pool)?;
-                        let list = flist.fill_file_list()?;
-                        let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
-                            list.into_par_iter()
-                                .filter(|entry| {
-                                    if let Some(url) = entry.urlname.as_ref() {
-                                        !blacklist.is_in_blacklist(url)
-                                    } else {
-                                        true
-                                    }
-                                })
-                                .collect()
-                        } else {
-                            list
-                        };
-                        flist.with_list(list);
-                        flist.cache_file_list()?;
-                        Ok(flist)
+                        let blacklist = blacklist.clone();
+                        async move {
+                            let pool = pool.clone();
+                            let mut flist = FileList::from_url(&url, &config, &pool)?;
+                            let list = flist.fill_file_list().await?;
+                            let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
+                                list.into_par_iter()
+                                    .filter(|entry| {
+                                        if let Some(url) = entry.urlname.as_ref() {
+                                            !blacklist.is_in_blacklist(url)
+                                        } else {
+                                            true
+                                        }
+                                    })
+                                    .collect()
+                            } else {
+                                list
+                            };
+                            flist.with_list(list);
+                            flist.cache_file_list()?;
+                            Ok(flist)
+                        }
                     })
                     .collect();
+                let results: Result<Vec<_>, Error> = try_join_all(futures).await;
 
                 let flists = results?;
 
@@ -146,10 +155,10 @@ impl SyncOpts {
 
                     if finfo1.servicetype == FileService::Local {
                         let flist = FileList::from_url(&self.urls[0], &config, &pool)?;
-                        FileSync::copy_object(&(*flist), &finfo0, &finfo1)
+                        FileSync::copy_object(&(*flist), &finfo0, &finfo1).await
                     } else {
                         let flist = FileList::from_url(&self.urls[1], &config, &pool)?;
-                        FileSync::copy_object(&(*flist), &finfo0, &finfo1)
+                        FileSync::copy_object(&(*flist), &finfo0, &finfo1).await
                     }
                 }
             }
@@ -161,7 +170,7 @@ impl SyncOpts {
                         let mut flist = FileList::from_url(&urls[0], &config, &pool)?;
                         for url in urls {
                             flist.set_baseurl(url.clone());
-                            flist.print_list()?;
+                            flist.print_list().await?;
                         }
                     }
                     Ok(())
@@ -169,14 +178,14 @@ impl SyncOpts {
             }
             FileSyncAction::Process => {
                 let fsync = FileSync::new(config.clone());
-                fsync.process_sync_cache(&pool)
+                fsync.process_sync_cache(&pool).await
             }
             FileSyncAction::Delete => {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
                     let fsync = FileSync::new(config.clone());
-                    fsync.delete_files(&self.urls, &pool)
+                    fsync.delete_files(&self.urls, &pool).await
                 }
             }
             FileSyncAction::Move => {
@@ -196,13 +205,13 @@ impl SyncOpts {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
-                    let results: Result<Vec<_>, Error> = self
+                    let futures: Vec<_> = self
                         .urls
-                        .par_iter()
-                        .map(|url| {
+                        .iter()
+                        .map(|url| async move {
                             let pool = pool.clone();
                             let mut flist = FileList::from_url(&url, &config, &pool)?;
-                            flist.with_list(flist.fill_file_list()?);
+                            flist.with_list(flist.fill_file_list().await?);
                             let results: Result<Vec<_>, Error> = flist
                                 .get_filemap()
                                 .values()
@@ -215,7 +224,9 @@ impl SyncOpts {
                             results.map(|_| ())
                         })
                         .collect();
-                    results.map(|_| ())
+                    let results: Result<Vec<_>, Error> = try_join_all(futures).await;
+                    results?;
+                    Ok(())
                 }
             }
             FileSyncAction::AddConfig => {

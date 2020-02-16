@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use fmt::Debug;
+use futures::future::try_join_all;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
@@ -7,6 +8,7 @@ use std::convert::From;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::Arc;
 use url::Url;
 
 use crate::config::Config;
@@ -253,7 +255,7 @@ impl FileSync {
         do_update
     }
 
-    pub fn process_sync_cache(&self, pool: &PgPool) -> Result<(), Error> {
+    pub async fn process_sync_cache(&self, pool: &PgPool) -> Result<(), Error> {
         let proc_list: Result<Vec<_>, Error> = FileSyncCache::get_cache_list(pool)?
             .into_par_iter()
             .map(|v| {
@@ -264,55 +266,61 @@ impl FileSync {
             })
             .collect();
 
-        let proc_map: HashMap<_, _> =
-            proc_list?
-                .into_iter()
-                .fold(HashMap::new(), |mut h, (u0, u1)| {
-                    let key = u0;
-                    let val = u1;
-                    h.entry(key).or_insert_with(Vec::new).push(val);
-                    h
-                });
+        let proc_map: Arc<HashMap<_, _>> = Arc::new(proc_list?.into_iter().fold(
+            HashMap::new(),
+            |mut h, (u0, u1)| {
+                let key = u0;
+                let val = u1;
+                h.entry(key).or_insert_with(Vec::new).push(val);
+                h
+            },
+        ));
 
         let key_list: Vec<_> = proc_map.keys().cloned().collect();
 
         for urls in group_urls(&key_list).values() {
             if let Some(u0) = urls.get(0) {
-                let flist0 = FileList::from_url(u0, &self.config, &pool)?;
-                let results: Result<Vec<_>, Error> = urls
-                    .par_iter()
+                let futures: Vec<_> = urls
+                    .iter()
                     .map(|key| {
-                        if let Some(vals) = proc_map.get(&key) {
-                            for val in vals {
-                                let finfo0 = match FileInfo::from_database(&pool, &key)? {
-                                    Some(f) => f,
-                                    None => FileInfo::from_url(&key)?,
-                                };
-                                let finfo1 = match FileInfo::from_database(&pool, &val)? {
-                                    Some(f) => f,
-                                    None => FileInfo::from_url(&val)?,
-                                };
-                                debug!("copy {} {}", key, val);
-                                if finfo1.servicetype == FileService::Local {
-                                    Self::copy_object(&(*flist0), &finfo0, &finfo1)?;
-                                    flist0.cleanup()?;
-                                } else {
-                                    let flist1 = FileList::from_url(&val, &self.config, &pool)?;
-                                    Self::copy_object(&(*flist1), &finfo0, &finfo1)?;
-                                    flist1.cleanup()?;
+                        let key = key.clone();
+                        let proc_map = proc_map.clone();
+                        let u0 = u0.clone();
+                        async move {
+                            if let Some(vals) = proc_map.get(&key) {
+                                let flist0 = FileList::from_url(&u0, &self.config, &pool)?;
+                                for val in vals {
+                                    let finfo0 = match FileInfo::from_database(&pool, &key)? {
+                                        Some(f) => f,
+                                        None => FileInfo::from_url(&key)?,
+                                    };
+                                    let finfo1 = match FileInfo::from_database(&pool, &val)? {
+                                        Some(f) => f,
+                                        None => FileInfo::from_url(&val)?,
+                                    };
+                                    debug!("copy {} {}", key, val);
+                                    if finfo1.servicetype == FileService::Local {
+                                        Self::copy_object(&(*flist0), &finfo0, &finfo1).await?;
+                                        flist0.cleanup()?;
+                                    } else {
+                                        let flist1 = FileList::from_url(&val, &self.config, &pool)?;
+                                        Self::copy_object(&(*flist1), &finfo0, &finfo1).await?;
+                                        flist1.cleanup()?;
+                                    }
                                 }
                             }
+                            Ok(())
                         }
-                        Ok(())
                     })
                     .collect();
-                results?;
+                let result: Result<Vec<_>, Error> = try_join_all(futures).await;
+                result?;
             }
         }
         Ok(())
     }
 
-    pub fn delete_files(&self, urls: &[Url], pool: &PgPool) -> Result<(), Error> {
+    pub async fn delete_files(&self, urls: &[Url], pool: &PgPool) -> Result<(), Error> {
         let all_urls: Vec<_> = if urls.is_empty() {
             let proc_list: Result<Vec<_>, Error> = FileSyncCache::get_cache_list(pool)?
                 .into_par_iter()
@@ -327,14 +335,18 @@ impl FileSync {
             urls.to_vec()
         };
 
-        group_urls(&all_urls)
-            .values()
-            .map(|urls| {
-                let flist = FileList::from_url(&urls[0], &self.config, &pool)?;
-                let fdict =
-                    flist.get_file_list_dict(&flist.load_file_list()?, FileInfoKeyType::UrlName);
-                urls.into_par_iter()
-                    .map(|url| {
+        for urls in group_urls(&all_urls).values() {
+            let flist = Arc::new(FileList::from_url(&urls[0], &self.config, &pool)?);
+            let fdict = Arc::new(
+                flist.get_file_list_dict(&flist.load_file_list()?, FileInfoKeyType::UrlName),
+            );
+
+            let futures: Vec<_> = urls
+                .into_iter()
+                .map(|url| {
+                    let flist = flist.clone();
+                    let fdict = fdict.clone();
+                    async move {
                         let finfo = if let Some(f) = fdict.get(&url.as_str().to_string()) {
                             f.clone()
                         } else {
@@ -342,14 +354,16 @@ impl FileSync {
                         };
 
                         debug!("delete {:?}", finfo);
-                        flist.delete(&finfo)
-                    })
-                    .collect()
-            })
-            .collect()
+                        flist.delete(&finfo).await
+                    }
+                })
+                .collect();
+            try_join_all(futures).await?;
+        }
+        Ok(())
     }
 
-    pub fn copy_object(
+    pub async fn copy_object(
         flist: &dyn FileListTrait,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -360,9 +374,9 @@ impl FileSync {
         debug!("copy from {:?} to {:?} using {:?}", t0, t1, flist);
 
         if t1 == FileService::Local {
-            flist.copy_from(finfo0, finfo1)
+            flist.copy_from(finfo0, finfo1).await
         } else if t0 == FileService::Local {
-            flist.copy_to(finfo0, finfo1)
+            flist.copy_to(finfo0, finfo1).await
         } else {
             Err(format_err!("Invalid request"))
         }

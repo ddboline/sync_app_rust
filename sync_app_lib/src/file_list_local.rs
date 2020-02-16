@@ -1,4 +1,5 @@
 use anyhow::{format_err, Error};
+use async_trait::async_trait;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::{copy, create_dir_all, remove_file, rename};
@@ -25,15 +26,15 @@ impl FileListLocal {
         let basestr = basepath.to_string_lossy().to_string();
         let baseurl = Url::from_file_path(basepath.clone())
             .map_err(|_| format_err!("Failed to parse url"))?;
-        let flist = FileList {
+        let flist = FileList::new(
             baseurl,
             basepath,
-            config: config.clone(),
-            servicetype: FileService::Local,
-            servicesession: basestr.parse()?,
-            filemap: HashMap::new(),
-            pool: pool.clone(),
-        };
+            config.clone(),
+            FileService::Local,
+            basestr.parse()?,
+            HashMap::new(),
+            pool.clone(),
+        );
         Ok(Self(flist))
     }
 
@@ -43,15 +44,15 @@ impl FileListLocal {
                 .to_file_path()
                 .map_err(|_| format_err!("Parse failure"))?;
             let basestr = path.to_string_lossy().to_string();
-            let flist = FileList {
-                baseurl: url.clone(),
-                basepath: path,
-                config: config.clone(),
-                servicetype: FileService::Local,
-                servicesession: basestr.parse()?,
-                pool: pool.clone(),
-                filemap: HashMap::new(),
-            };
+            let flist = FileList::new(
+                url.clone(),
+                path,
+                config.clone(),
+                FileService::Local,
+                basestr.parse()?,
+                HashMap::new(),
+                pool.clone(),
+            );
             Ok(Self(flist))
         } else {
             Err(format_err!("Wrong scheme"))
@@ -59,12 +60,13 @@ impl FileListLocal {
     }
 }
 
+#[async_trait]
 impl FileListTrait for FileListLocal {
     fn get_baseurl(&self) -> &Url {
-        &self.0.baseurl
+        self.0.get_baseurl()
     }
     fn set_baseurl(&mut self, baseurl: Url) {
-        self.0.baseurl = baseurl;
+        self.0.set_baseurl(baseurl);
     }
 
     fn get_basepath(&self) -> &Path {
@@ -84,14 +86,14 @@ impl FileListTrait for FileListLocal {
     }
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
-        &self.0.filemap
+        self.0.get_filemap()
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
         self.0.with_list(filelist)
     }
 
-    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let servicesession = self.get_servicesession();
         let basedir = self.get_baseurl().path();
         let file_list = self.load_file_list()?;
@@ -142,7 +144,7 @@ impl FileListTrait for FileListLocal {
         Ok(flist)
     }
 
-    fn print_list(&self) -> Result<(), Error> {
+    async fn print_list(&self) -> Result<(), Error> {
         let basedir = self.get_baseurl().path();
 
         let wdir = WalkDir::new(&basedir).same_file_system(true).max_depth(1);
@@ -163,7 +165,7 @@ impl FileListTrait for FileListLocal {
             .collect()
     }
 
-    fn copy_from(
+    async fn copy_from(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -200,11 +202,15 @@ impl FileListTrait for FileListLocal {
         }
     }
 
-    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
-        self.copy_from(finfo0, finfo1)
+    async fn copy_to(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
+        self.copy_from(finfo0, finfo1).await
     }
 
-    fn move_file(
+    async fn move_file(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -230,7 +236,7 @@ impl FileListTrait for FileListLocal {
         }
     }
 
-    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
+    async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::Local {
             Err(format_err!("Wrong service type"))
@@ -246,10 +252,10 @@ impl FileListTrait for FileListLocal {
 mod tests {
     use anyhow::Error;
     use std::collections::HashMap;
+    use std::convert::TryInto;
     use std::io::{stdout, Write};
     use std::path::PathBuf;
     use url::Url;
-    use std::convert::TryInto;
 
     use crate::config::Config;
     use crate::file_info::FileInfo;
@@ -277,15 +283,15 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_fill_file_list() -> Result<(), Error> {
+    async fn test_fill_file_list() -> Result<(), Error> {
         let basepath: PathBuf = "src".parse()?;
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let flist = FileListLocal::new(&basepath, &config, &pool)?;
 
-        let new_flist = flist.fill_file_list()?;
+        let new_flist = flist.fill_file_list().await?;
 
         writeln!(stdout(), "0 {}", new_flist.len())?;
 
@@ -344,7 +350,7 @@ mod tests {
         writeln!(stdout(), "{}", new_flist.len())?;
         assert!(new_flist.len() != 0);
 
-        let new_flist = flist.fill_file_list()?;
+        let new_flist = flist.fill_file_list().await?;
 
         assert_eq!(new_flist.len(), flist.0.filemap.len());
 

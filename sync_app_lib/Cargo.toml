@@ -8,9 +8,10 @@ edition = "2018"
 
 [dependencies]
 gdrive_lib = {path="../gdrive_lib"}
-rusoto_core = {version = "0.42", default_features = false, features=["rustls"]}
-rusoto_s3 = {version = "0.42", default_features = false, features=["rustls"]}
-s4 = { git = "https://github.com/ddboline/s4.git", branch = "upgrade_rusoto_0.42" }
+rusoto_core = {version = "0.43.0-beta.1", default_features = false, features=["rustls"]}
+rusoto_s3 = {version = "0.43.0-beta.1", default_features = false, features=["rustls"]}
+s4 = { git = "https://github.com/ddboline/s4.git", branch = "test_0.43" }
+sts_profile_auth = {git="https://github.com/ddboline/sts_profile_auth", branch="test_0.43.0"}
 url = "2.1"
 dotenv = "0.15"
 r2d2 = "0.8"
@@ -33,10 +34,12 @@ parking_lot = "0.10"
 log = "0.4"
 env_logger = "0.7"
 retry = "0.5"
-reqwest = {version="0.10", features=["cookies", "blocking", "json"]}
+reqwest = {version="0.10", features=["cookies", "json"]}
 crossbeam-utils = "0.7"
-sts_profile_auth = "0.3"
 anyhow = "1.0"
 thiserror = "1.0"
 dirs = "2.0"
 derive_more = "0.99"
+tokio = {version="0.2", features=["full"]}
+async-trait = "0.1"
+futures = "0.3"
