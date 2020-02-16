@@ -354,7 +354,7 @@ impl FileSync {
             );
 
             let futures: Vec<_> = urls
-                .into_iter()
+                .iter()
                 .map(|url| {
                     let flist = flist.clone();
                     let fdict = fdict.clone();

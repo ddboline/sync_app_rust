@@ -85,7 +85,7 @@ impl ReqwestSession {
 
     async fn exponential_retry<T, U, V>(f: T) -> Result<U, Error>
     where
-        T: Fn() -> Pin<Box<V>>,
+        T: Fn() -> V,
         V: Future<Output = Result<U, Error>>,
     {
         let mut timeout: f64 = 1.0;
@@ -107,16 +107,13 @@ impl ReqwestSession {
 
     pub async fn get(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
         Self::exponential_retry(|| {
-            let url = url.clone();
-            let headers = headers.clone();
-            Box::new(async move {
+            async move {
                 self.client
                     .lock()
                     .await
                     .get(url.clone(), headers.clone())
                     .await
-            })
-            .into()
+            }
         })
         .await
     }
@@ -131,17 +128,13 @@ impl ReqwestSession {
         T: Serialize,
     {
         Self::exponential_retry(|| {
-            let url = url.clone();
-            let headers = headers.clone();
-            let form = form.clone();
-            Box::new(async move {
+            async move {
                 self.client
                     .lock()
                     .await
                     .post(url.clone(), headers.clone(), form)
                     .await
-            })
-            .into()
+            }
         })
         .await
     }
