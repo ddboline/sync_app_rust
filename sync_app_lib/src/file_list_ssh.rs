@@ -7,6 +7,7 @@ use std::convert::TryInto;
 use std::fs::create_dir_all;
 use std::io::{stdout, Write};
 use std::path::Path;
+use tokio::task::spawn_blocking;
 use url::Url;
 
 use crate::config::Config;
@@ -23,9 +24,9 @@ pub struct FileListSSH {
 }
 
 impl FileListSSH {
-    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+    pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "ssh" {
-            let basepath = Path::new(url.path());
+            let basepath = Path::new(url.path()).to_path_buf();
             let host = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
             let port = url.port().unwrap_or(22);
             let username = url.username().to_string();
@@ -38,15 +39,15 @@ impl FileListSSH {
             );
             let flist = FileList::new(
                 url.clone(),
-                basepath.to_path_buf(),
+                basepath,
                 config.clone(),
                 FileService::SSH,
                 session.parse()?,
                 HashMap::new(),
                 pool.clone(),
             );
-
-            let ssh = SSHInstance::from_url(&url)?;
+            let url = url.clone();
+            let ssh = spawn_blocking(move || SSHInstance::from_url(&url)).await??;
 
             Ok(Self { flist, ssh })
         } else {

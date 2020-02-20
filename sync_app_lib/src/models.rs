@@ -1,6 +1,7 @@
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use anyhow::Error;
 use chrono::{DateTime, Utc};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use tokio::task::spawn_blocking;
 use url::Url;
 
@@ -389,20 +390,14 @@ impl BlackList {
     }
 
     pub fn is_in_blacklist(&self, url: &Url) -> bool {
-        for item in &self.blacklist {
-            if url.as_str().contains(&item.blacklist_url) {
-                return true;
-            }
-        }
-        false
+        self.blacklist
+            .par_iter()
+            .any(|item| url.as_str().contains(&item.blacklist_url))
     }
 
     pub fn could_be_in_blacklist(&self, url: &Url) -> bool {
-        for item in &self.blacklist {
-            if item.blacklist_url.contains(url.as_str()) {
-                return true;
-            }
-        }
-        false
+        self.blacklist
+            .par_iter()
+            .any(|item| item.blacklist_url.contains(url.as_str()))
     }
 }

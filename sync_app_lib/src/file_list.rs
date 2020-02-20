@@ -65,14 +65,14 @@ impl FileList {
         }
     }
 
-    pub fn from_url(
+    pub async fn from_url(
         url: &Url,
         config: &Config,
         pool: &PgPool,
     ) -> Result<Box<dyn FileListTrait>, Error> {
         match url.scheme() {
             "gdrive" => {
-                let flist = FileListGDrive::from_url(url, config, pool)?;
+                let flist = FileListGDrive::from_url(url, config, pool).await?;
                 Ok(Box::new(flist))
             }
             "file" => {
@@ -80,11 +80,11 @@ impl FileList {
                 Ok(Box::new(flist))
             }
             "s3" => {
-                let flist = FileListS3::from_url(url, config, pool)?;
+                let flist = FileListS3::from_url(url, config, pool).await?;
                 Ok(Box::new(flist))
             }
             "ssh" => {
-                let flist = FileListSSH::from_url(url, config, pool)?;
+                let flist = FileListSSH::from_url(url, config, pool).await?;
                 Ok(Box::new(flist))
             }
             _ => Err(format_err!("Bad scheme")),

@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::fs::{create_dir_all, remove_file};
 use std::io::{stdout, Write};
 use std::path::Path;
+use tokio::task::spawn_blocking;
 use url::Url;
 
 use crate::config::Config;
@@ -41,7 +42,7 @@ impl FileListS3 {
         Ok(Self { flist, s3 })
     }
 
-    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+    pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "s3" {
             let basepath = Path::new(url.path());
             let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
@@ -54,7 +55,8 @@ impl FileListS3 {
                 HashMap::new(),
                 pool.clone(),
             );
-            let s3 = S3Instance::new(&config.aws_region_name);
+            let config = config.clone();
+            let s3 = spawn_blocking(move || S3Instance::new(&config.aws_region_name)).await?;
 
             Ok(Self { flist, s3 })
         } else {

@@ -106,14 +106,12 @@ impl ReqwestSession {
     }
 
     pub async fn get(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
-        Self::exponential_retry(|| {
-            async move {
-                self.client
-                    .lock()
-                    .await
-                    .get(url.clone(), headers.clone())
-                    .await
-            }
+        Self::exponential_retry(|| async move {
+            self.client
+                .lock()
+                .await
+                .get(url.clone(), headers.clone())
+                .await
         })
         .await
     }
@@ -127,14 +125,12 @@ impl ReqwestSession {
     where
         T: Serialize,
     {
-        Self::exponential_retry(|| {
-            async move {
-                self.client
-                    .lock()
-                    .await
-                    .post(url.clone(), headers.clone(), form)
-                    .await
-            }
+        Self::exponential_retry(|| async move {
+            self.client
+                .lock()
+                .await
+                .post(url.clone(), headers.clone(), form)
+                .await
         })
         .await
     }

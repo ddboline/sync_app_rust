@@ -266,13 +266,11 @@ impl FileSync {
         let futures: Vec<_> = FileSyncCache::get_cache_list(pool)
             .await?
             .into_iter()
-            .map(|v| {
-                async move {
-                    let u0: Url = v.src_url.parse()?;
-                    let u1: Url = v.dst_url.parse()?;
-                    v.delete_cache_entry(pool).await?;
-                    Ok((u0, u1))
-                }
+            .map(|v| async move {
+                let u0: Url = v.src_url.parse()?;
+                let u1: Url = v.dst_url.parse()?;
+                v.delete_cache_entry(pool).await?;
+                Ok((u0, u1))
             })
             .collect();
         let proc_list: Result<Vec<_>, Error> = try_join_all(futures).await;
@@ -299,7 +297,7 @@ impl FileSync {
                         let u0 = u0.clone();
                         async move {
                             if let Some(vals) = proc_map.get(&key) {
-                                let flist0 = FileList::from_url(&u0, &self.config, &pool)?;
+                                let flist0 = FileList::from_url(&u0, &self.config, &pool).await?;
                                 for val in vals {
                                     let finfo0 = match FileInfo::from_database(&pool, &key)? {
                                         Some(f) => f,
@@ -314,7 +312,7 @@ impl FileSync {
                                         Self::copy_object(&(*flist0), &finfo0, &finfo1).await?;
                                         flist0.cleanup()?;
                                     } else {
-                                        let flist1 = FileList::from_url(&val, &self.config, &pool)?;
+                                        let flist1 = FileList::from_url(&val, &self.config, &pool).await?;
                                         Self::copy_object(&(*flist1), &finfo0, &finfo1).await?;
                                         flist1.cleanup()?;
                                     }
@@ -348,7 +346,7 @@ impl FileSync {
         };
 
         for urls in group_urls(&all_urls).values() {
-            let flist = Arc::new(FileList::from_url(&urls[0], &self.config, &pool)?);
+            let flist = Arc::new(FileList::from_url(&urls[0], &self.config, &pool).await?);
             let fdict = Arc::new(
                 flist.get_file_list_dict(&flist.load_file_list()?, FileInfoKeyType::UrlName),
             );
@@ -468,7 +466,8 @@ mod tests {
 
         FileSync::compare_lists(&flist0, &flist1, &pool).await?;
 
-        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool).await?
+        let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)
+            .await?
             .into_iter()
             .filter(|v| v.src_url.starts_with("file://"))
             .map(|v| (v.src_url.clone(), v))

@@ -8,6 +8,7 @@ use std::fs::create_dir_all;
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::sync::Arc;
+use tokio::task::spawn_blocking;
 use url::Url;
 
 use gdrive_lib::directory_info::DirectoryInfo;
@@ -62,7 +63,7 @@ impl FileListGDrive {
         })
     }
 
-    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+    pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "gdrive" {
             let servicesession = url
                 .as_str()
@@ -85,11 +86,16 @@ impl FileListGDrive {
                 pool.clone(),
             );
 
-            let gdrive = GDriveInstance::new(
-                &config.gdrive_token_path,
-                &config.gdrive_secret_file,
-                &flist.servicesession.0,
-            );
+            let config = config.clone();
+            let servicesession = flist.servicesession.0.clone();
+            let gdrive = spawn_blocking(move || {
+                GDriveInstance::new(
+                    &config.gdrive_token_path,
+                    &config.gdrive_secret_file,
+                    &servicesession,
+                )
+            })
+            .await?;
 
             Ok(Self {
                 flist,

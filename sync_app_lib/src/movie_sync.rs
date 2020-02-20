@@ -162,12 +162,16 @@ impl MovieSync {
                 let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
                 let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
                 let results = self
-                    .run_single_sync(table, *last_mod0, *last_mod1, js_prefix, |resp| {
-                        async move {
+                    .run_single_sync(
+                        table,
+                        *last_mod0,
+                        *last_mod1,
+                        js_prefix,
+                        |resp| async move {
                             let result: Vec<$T> = resp.json().await?;
                             Ok(result)
-                        }
-                    })
+                        },
+                    )
                     .await?;
                 output.extend_from_slice(&results);
             }};

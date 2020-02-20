@@ -59,10 +59,10 @@ impl SyncOpts {
                 let futures: Vec<_> = urls
                     .into_iter()
                     .map(|url| {
-                        let blacklist = blacklist.clone();
+                        let blacklist = Arc::clone(&blacklist);
+                        let pool = pool.clone();
                         async move {
-                            let pool = pool.clone();
-                            let mut flist = FileList::from_url(&url, &config, &pool)?;
+                            let mut flist = FileList::from_url(&url, &config, &pool).await?;
                             let list = flist.fill_file_list().await?;
                             let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                                 list.into_par_iter()
@@ -105,9 +105,9 @@ impl SyncOpts {
                     .into_iter()
                     .map(|url| {
                         let blacklist = blacklist.clone();
+                        let pool = pool.clone();
                         async move {
-                            let pool = pool.clone();
-                            let mut flist = FileList::from_url(&url, &config, &pool)?;
+                            let mut flist = FileList::from_url(&url, &config, &pool).await?;
                             let list = flist.fill_file_list().await?;
                             let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                                 list.into_par_iter()
@@ -128,19 +128,16 @@ impl SyncOpts {
                         }
                     })
                     .collect();
-                let results: Result<Vec<_>, Error> = try_join_all(futures).await;
-
-                let flists = results?;
+                let flists: Result<Vec<_>, Error> = try_join_all(futures).await;
+                let flists = flists?;
 
                 let futures: Vec<_> = flists
                     .chunks(2)
-                    .map(|f| {
-                        async move {
-                            if f.len() == 2 {
-                                FileSync::compare_lists(&(*f[0]), &(*f[1]), &pool).await?;
-                            }
-                            Ok(())
+                    .map(|f| async move {
+                        if f.len() == 2 {
+                            FileSync::compare_lists(&(*f[0]), &(*f[1]), &pool).await?;
                         }
+                        Ok(())
                     })
                     .collect();
                 let results: Result<Vec<_>, Error> = try_join_all(futures).await;
@@ -159,10 +156,10 @@ impl SyncOpts {
                     let finfo1 = FileInfo::from_url(&self.urls[1])?;
 
                     if finfo1.servicetype == FileService::Local {
-                        let flist = FileList::from_url(&self.urls[0], &config, &pool)?;
+                        let flist = FileList::from_url(&self.urls[0], &config, &pool).await?;
                         FileSync::copy_object(&(*flist), &finfo0, &finfo1).await
                     } else {
-                        let flist = FileList::from_url(&self.urls[1], &config, &pool)?;
+                        let flist = FileList::from_url(&self.urls[1], &config, &pool).await?;
                         FileSync::copy_object(&(*flist), &finfo0, &finfo1).await
                     }
                 }
@@ -172,7 +169,7 @@ impl SyncOpts {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
                     for urls in group_urls(&self.urls).values() {
-                        let mut flist = FileList::from_url(&urls[0], &config, &pool)?;
+                        let mut flist = FileList::from_url(&urls[0], &config, &pool).await?;
                         for url in urls {
                             flist.set_baseurl(url.clone());
                             flist.print_list().await?;
@@ -195,10 +192,12 @@ impl SyncOpts {
             }
             FileSyncAction::Move => {
                 if self.urls.len() == 2 {
-                    let flist0 = FileList::from_url(&self.urls[0], &config, &pool)?;
-                    let flist1 = FileList::from_url(&self.urls[1], &config, &pool)?;
-                    if flist0.get_servicetype() == flist1.get_servicetype() {
-                        Ok(())
+                    let finfo0 = FileInfo::from_url(&self.urls[0])?;
+                    let finfo1 = FileInfo::from_url(&self.urls[1])?;
+
+                    if finfo0.servicetype == finfo1.servicetype {
+                        let flist = FileList::from_url(&self.urls[0], &config, &pool).await?;
+                        flist.move_file(&finfo0, &finfo1).await
                     } else {
                         Err(format_err!("Can only move within servicetype"))
                     }
@@ -213,22 +212,20 @@ impl SyncOpts {
                     let futures: Vec<_> = self
                         .urls
                         .iter()
-                        .map(|url| {
-                            async move {
-                                let pool = pool.clone();
-                                let mut flist = FileList::from_url(&url, &config, &pool)?;
-                                flist.with_list(flist.fill_file_list().await?);
-                                let results: Result<Vec<_>, Error> = flist
-                                    .get_filemap()
-                                    .values()
-                                    .map(|finfo| {
-                                        let js = serde_json::to_string(&finfo)?;
-                                        writeln!(stdout().lock(), "{}", js)?;
-                                        Ok(())
-                                    })
-                                    .collect();
-                                results.map(|_| ())
-                            }
+                        .map(|url| async move {
+                            let pool = pool.clone();
+                            let mut flist = FileList::from_url(&url, &config, &pool).await?;
+                            flist.with_list(flist.fill_file_list().await?);
+                            let results: Result<Vec<_>, Error> = flist
+                                .get_filemap()
+                                .values()
+                                .map(|finfo| {
+                                    let js = serde_json::to_string(&finfo)?;
+                                    writeln!(stdout().lock(), "{}", js)?;
+                                    Ok(())
+                                })
+                                .collect();
+                            results.map(|_| ())
                         })
                         .collect();
                     let results: Result<Vec<_>, Error> = try_join_all(futures).await;
