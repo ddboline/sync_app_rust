@@ -280,13 +280,13 @@ mod tests {
     use crate::file_service::FileService;
     use crate::pgpool::PgPool;
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
+    async fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
-        let conf = FileListSSH::from_url(&url, &config, &pool)?;
+        let conf = FileListSSH::from_url(&url, &config, &pool).await?;
         writeln!(stdout(), "{:?}", conf)?;
         assert_eq!(conf.get_baseurl(), &url);
         assert_eq!(conf.get_servicetype(), FileService::SSH);
@@ -304,7 +304,7 @@ mod tests {
         let finfo1 = FileInfoLocal::from_url(&url)?;
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
-        let flist = FileListSSH::from_url(&url, &config, &pool)?;
+        let flist = FileListSSH::from_url(&url, &config, &pool).await?;
         flist.copy_from(&finfo0, &finfo1).await?;
         let p = Path::new("/tmp/temp0.txt");
         if p.exists() {
@@ -326,7 +326,7 @@ mod tests {
         let finfo1 = FileInfoSSH::from_url(&url)?;
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/".parse()?;
-        let flist = FileListSSH::from_url(&url, &config, &pool)?;
+        let flist = FileListSSH::from_url(&url, &config, &pool).await?;
 
         flist.copy_to(&finfo0, &finfo1).await?;
         flist.delete(&finfo1).await?;
