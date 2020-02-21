@@ -312,7 +312,8 @@ impl FileSync {
                                         Self::copy_object(&(*flist0), &finfo0, &finfo1).await?;
                                         flist0.cleanup()?;
                                     } else {
-                                        let flist1 = FileList::from_url(&val, &self.config, &pool).await?;
+                                        let flist1 =
+                                            FileList::from_url(&val, &self.config, &pool).await?;
                                         Self::copy_object(&(*flist1), &finfo0, &finfo1).await?;
                                         flist1.cleanup()?;
                                     }
