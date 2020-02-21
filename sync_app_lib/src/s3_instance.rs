@@ -1,4 +1,5 @@
 use anyhow::{format_err, Error};
+use futures::stream::{StreamExt, TryStreamExt};
 use rusoto_core::Region;
 use rusoto_s3::{
     Bucket, CopyObjectRequest, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest,
@@ -182,50 +183,16 @@ impl S3Instance {
         bucket: &str,
         prefix: Option<&str>,
     ) -> Result<Vec<Object>, Error> {
-        let mut continuation_token = None;
-
-        let mut list_of_keys = Vec::new();
-
-        loop {
-            let current_list = exponential_retry(|| {
-                let req = ListObjectsV2Request {
-                    bucket: bucket.to_string(),
-                    continuation_token: continuation_token.clone(),
-                    prefix: prefix.map(ToString::to_string),
-                    ..ListObjectsV2Request::default()
-                };
-
-                async move {
-                    self.s3_client
-                        .list_objects_v2(req)
-                        .await
-                        .map_err(Into::into)
-                }
-            })
-            .await?;
-
-            continuation_token = current_list.next_continuation_token.clone();
-
-            match current_list.key_count {
-                Some(0) | None => (),
-                Some(_) => {
-                    list_of_keys.extend_from_slice(&current_list.contents.unwrap_or_else(Vec::new));
-                }
-            };
-
-            match &continuation_token {
-                Some(_) => (),
-                None => break,
-            };
-            if let Some(max_keys) = self.max_keys {
-                if list_of_keys.len() > max_keys {
-                    list_of_keys.resize(max_keys, Object::default());
-                    break;
-                }
-            }
+        let stream = match prefix {
+            Some(p) => self.s3_client.iter_objects_with_prefix(bucket, p),
+            None => self.s3_client.iter_objects(bucket),
         }
-
-        Ok(list_of_keys)
+        .into_stream();
+        match self.max_keys {
+            Some(nkeys) => stream.take(nkeys).try_collect().await,
+            None => stream.try_collect().await,
+        }
+        .map_err(Into::into)
     }
 
     pub async fn process_list_of_keys<T>(
@@ -237,42 +204,20 @@ impl S3Instance {
     where
         T: Fn(&Object) -> Result<(), Error> + Send + Sync,
     {
-        let mut continuation_token = None;
-
-        loop {
-            let current_list = exponential_retry(|| {
-                let req = ListObjectsV2Request {
-                    bucket: bucket.to_string(),
-                    continuation_token: continuation_token.clone(),
-                    prefix: prefix.map(ToString::to_string),
-                    ..ListObjectsV2Request::default()
-                };
-                async move {
-                    self.s3_client
-                        .list_objects_v2(req)
-                        .await
-                        .map_err(Into::into)
+        let mut stream = match prefix {
+            Some(p) => self.s3_client.stream_objects_with_prefix(bucket, p),
+            None => self.s3_client.stream_objects(bucket),
+        };
+        let mut nkeys = 0;
+        while let Some(item) = stream.try_next().await? {
+            callback(&item)?;
+            nkeys += 1;
+            if let Some(keys) = self.max_keys {
+                if nkeys > keys {
+                    return Ok(());
                 }
-            })
-            .await?;
-
-            continuation_token = current_list.next_continuation_token.clone();
-
-            match current_list.key_count {
-                Some(0) | None => (),
-                Some(_) => {
-                    for item in current_list.contents.unwrap_or_else(Vec::new) {
-                        callback(&item)?;
-                    }
-                }
-            };
-
-            match &continuation_token {
-                Some(_) => (),
-                None => break,
-            };
+            }
         }
-
         Ok(())
     }
 }
