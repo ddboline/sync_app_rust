@@ -183,16 +183,19 @@ impl S3Instance {
         bucket: &str,
         prefix: Option<&str>,
     ) -> Result<Vec<Object>, Error> {
-        let stream = match prefix {
-            Some(p) => self.s3_client.iter_objects_with_prefix(bucket, p),
-            None => self.s3_client.iter_objects(bucket),
-        }
-        .into_stream();
-        match self.max_keys {
-            Some(nkeys) => stream.take(nkeys).try_collect().await,
-            None => stream.try_collect().await,
-        }
-        .map_err(Into::into)
+        exponential_retry(|| async move {
+            let stream = match prefix {
+                Some(p) => self.s3_client.iter_objects_with_prefix(bucket, p),
+                None => self.s3_client.iter_objects(bucket),
+            }
+            .into_stream();
+            let results: Result<Vec<_>, _> = match self.max_keys {
+                Some(nkeys) => stream.take(nkeys).try_collect().await,
+                None => stream.try_collect().await,
+            };
+            results.map_err(Into::into)
+        })
+        .await
     }
 
     pub async fn process_list_of_keys<T>(
