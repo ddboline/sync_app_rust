@@ -7,7 +7,7 @@ use rusoto_s3::{
     Bucket, CopyObjectRequest, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest,
     GetObjectRequest, ListObjectsV2Request, Object, PutObjectRequest, S3Client, S3,
 };
-use s4::S4;
+use s3_ext::S3Ext;
 use std::fmt;
 use std::path::Path;
 use sts_profile_auth::get_client_sts;
@@ -218,11 +218,11 @@ impl S3Instance {
         T: Fn(&Object) -> Result<(), Error> + Send + Sync,
     {
         let mut stream = match prefix {
-            Some(p) => self.s3_client.stream_objects_with_prefix(bucket, p),
-            None => self.s3_client.stream_objects(bucket),
+            Some(p) => self.s3_client.iter_objects_with_prefix(bucket, p),
+            None => self.s3_client.iter_objects(bucket),
         };
         let mut nkeys = 0;
-        while let Some(item) = stream.try_next().await? {
+        while let Some(item) = stream.next().await? {
             callback(&item)?;
             nkeys += 1;
             if let Some(keys) = self.max_keys {
