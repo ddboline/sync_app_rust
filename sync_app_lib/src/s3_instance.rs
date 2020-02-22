@@ -1,5 +1,7 @@
 use anyhow::{format_err, Error};
 use futures::stream::{StreamExt, TryStreamExt};
+use lazy_static::lazy_static;
+use parking_lot::{Mutex, MutexGuard};
 use rusoto_core::Region;
 use rusoto_s3::{
     Bucket, CopyObjectRequest, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest,
@@ -10,6 +12,10 @@ use std::fmt;
 use std::path::Path;
 use sts_profile_auth::get_client_sts;
 use url::Url;
+
+lazy_static! {
+    static ref S3INSTANCE_TEST_MUTEX: Mutex<()> = Mutex::new(());
+}
 
 use crate::exponential_retry;
 
@@ -41,6 +47,10 @@ impl S3Instance {
             s3_client: get_client_sts!(S3Client, region).expect("Failed to obtain client"),
             max_keys: None,
         }
+    }
+
+    pub fn get_instance_lock() -> MutexGuard<'static, ()> {
+        S3INSTANCE_TEST_MUTEX.lock()
     }
 
     pub fn max_keys(mut self, max_keys: usize) -> Self {
@@ -235,6 +245,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_list_buckets() -> Result<(), Error> {
+        let _ = S3Instance::get_instance_lock();
         let s3_instance = S3Instance::new("us-east-1").max_keys(100);
         let blist = s3_instance.get_list_of_buckets().await?;
         let bucket = blist

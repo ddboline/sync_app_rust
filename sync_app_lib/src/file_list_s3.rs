@@ -288,6 +288,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_fill_file_list() -> Result<(), Error> {
+        let _ = S3Instance::get_instance_lock();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let s3 = S3Instance::new(&config.aws_region_name);
