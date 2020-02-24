@@ -56,7 +56,7 @@ impl SyncOpts {
                     self.urls.to_vec()
                 };
                 debug!("urls: {:?}", urls);
-                let futures: Vec<_> = urls
+                let futures = urls
                     .into_iter()
                     .map(|url| {
                         let blacklist = Arc::clone(&blacklist);
@@ -81,19 +81,17 @@ impl SyncOpts {
                             flist.cache_file_list()?;
                             Ok(flist)
                         }
-                    })
-                    .collect();
+                    });
                 let result: Result<Vec<_>, Error> = try_join_all(futures).await;
                 result?;
                 Ok(())
             }
             FileSyncAction::Sync => {
                 let urls = if self.urls.is_empty() {
-                    let futures: Vec<_> = FileSyncCache::get_cache_list(&pool)
+                    let futures = FileSyncCache::get_cache_list(&pool)
                         .await?
                         .into_iter()
-                        .map(|v| async move { v.delete_cache_entry(&pool).await })
-                        .collect();
+                        .map(|v| async move { v.delete_cache_entry(&pool).await });
                     let result: Result<Vec<_>, Error> = try_join_all(futures).await;
                     result?;
 
@@ -101,7 +99,7 @@ impl SyncOpts {
                 } else {
                     self.urls.to_vec()
                 };
-                let futures: Vec<_> = urls
+                let futures = urls
                     .into_iter()
                     .map(|url| {
                         let blacklist = blacklist.clone();
@@ -126,20 +124,18 @@ impl SyncOpts {
                             flist.cache_file_list()?;
                             Ok(flist)
                         }
-                    })
-                    .collect();
+                    });
                 let flists: Result<Vec<_>, Error> = try_join_all(futures).await;
                 let flists = flists?;
 
-                let futures: Vec<_> = flists
+                let futures = flists
                     .chunks(2)
                     .map(|f| async move {
                         if f.len() == 2 {
                             FileSync::compare_lists(&(*f[0]), &(*f[1]), &pool).await?;
                         }
                         Ok(())
-                    })
-                    .collect();
+                    });
                 let results: Result<Vec<_>, Error> = try_join_all(futures).await;
                 results?;
 
@@ -209,7 +205,7 @@ impl SyncOpts {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
-                    let futures: Vec<_> = self
+                    let futures = self
                         .urls
                         .iter()
                         .map(|url| async move {
@@ -226,8 +222,7 @@ impl SyncOpts {
                                 })
                                 .collect();
                             results.map(|_| ())
-                        })
-                        .collect();
+                        });
                     let results: Result<Vec<_>, Error> = try_join_all(futures).await;
                     results?;
                     Ok(())

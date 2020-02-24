@@ -192,7 +192,7 @@ impl FileSync {
         if list_a_not_b.is_empty() && list_b_not_a.is_empty() {
             flist0.cleanup().and_then(|_| flist1.cleanup())
         } else {
-            let futures: Vec<_> = list_a_not_b
+            let futures = list_a_not_b
                 .into_iter()
                 .chain(list_b_not_a.into_iter())
                 .map(|(f0, f1)| {
@@ -206,8 +206,7 @@ impl FileSync {
                         }
                         Ok(())
                     }
-                })
-                .collect();
+                });
             let results: Result<Vec<_>, Error> = try_join_all(futures).await;
             results?;
             Ok(())
@@ -267,7 +266,7 @@ impl FileSync {
     }
 
     pub async fn process_sync_cache(&self, pool: &PgPool) -> Result<(), Error> {
-        let futures: Vec<_> = FileSyncCache::get_cache_list(pool)
+        let futures = FileSyncCache::get_cache_list(pool)
             .await?
             .into_iter()
             .map(|v| async move {
@@ -275,11 +274,10 @@ impl FileSync {
                 let u1: Url = v.dst_url.parse()?;
                 v.delete_cache_entry(pool).await?;
                 Ok((u0, u1))
-            })
-            .collect();
+            });
         let proc_list: Result<Vec<_>, Error> = try_join_all(futures).await;
 
-        let proc_map: Arc<HashMap<_, _>> = Arc::new(proc_list?.into_iter().fold(
+        let proc_map: HashMap<_, _> = proc_list?.into_iter().fold(
             HashMap::new(),
             |mut h, (u0, u1)| {
                 let key = u0;
@@ -287,13 +285,14 @@ impl FileSync {
                 h.entry(key).or_insert_with(Vec::new).push(val);
                 h
             },
-        ));
+        );
+        let proc_map = Arc::new(proc_map);
 
         let key_list: Vec<_> = proc_map.keys().cloned().collect();
 
         for urls in group_urls(&key_list).values() {
             if let Some(u0) = urls.get(0) {
-                let futures: Vec<_> = urls
+                let futures = urls
                     .iter()
                     .map(|key| {
                         let key = key.clone();
@@ -325,8 +324,7 @@ impl FileSync {
                             }
                             Ok(())
                         }
-                    })
-                    .collect();
+                    });
                 let result: Result<Vec<_>, Error> = try_join_all(futures).await;
                 result?;
             }
@@ -356,7 +354,7 @@ impl FileSync {
                 flist.get_file_list_dict(&flist.load_file_list()?, FileInfoKeyType::UrlName),
             );
 
-            let futures: Vec<_> = urls
+            let futures = urls
                 .iter()
                 .map(|url| {
                     let flist = flist.clone();
@@ -371,8 +369,7 @@ impl FileSync {
                         debug!("delete {:?}", finfo);
                         flist.delete(&finfo).await
                     }
-                })
-                .collect();
+                });
             try_join_all(futures).await?;
         }
         Ok(())
