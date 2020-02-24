@@ -408,7 +408,7 @@ mod tests {
     use std::path::Path;
 
     use crate::config::Config;
-    use crate::file_info::{FileInfoTrait, ServiceId, ServiceSession, FileInfo};
+    use crate::file_info::{FileInfo, FileInfoTrait, ServiceId, ServiceSession};
     use crate::file_info_local::FileInfoLocal;
     use crate::file_info_s3::FileInfoS3;
     use crate::file_list::FileListTrait;

@@ -2,11 +2,12 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
-use std::fs::{copy, create_dir_all, remove_file, rename};
+use tokio::fs::{copy, create_dir_all, remove_file, rename};
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::string::ToString;
 use std::time::SystemTime;
+use tokio::task::spawn_blocking;
 use url::Url;
 use walkdir::WalkDir;
 
@@ -94,75 +95,83 @@ impl FileListTrait for FileListLocal {
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let servicesession = self.get_servicesession();
-        let basedir = self.get_baseurl().path();
-        let file_list = self.load_file_list()?;
-        let flist_dict = self.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
+        let local_list = self.clone();
+        spawn_blocking(move || {
+            let servicesession = local_list.get_servicesession();
+            let basedir = local_list.get_baseurl().path();
+            let file_list = local_list.load_file_list()?;
+            let flist_dict = local_list.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
 
-        let wdir = WalkDir::new(&basedir).same_file_system(true);
+            let wdir = WalkDir::new(&basedir).same_file_system(true);
 
-        let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
+            let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
-        let flist = entries
-            .into_par_iter()
-            .filter_map(|entry| {
-                let filepath = entry
-                    .path()
-                    .canonicalize()
-                    .ok()
-                    .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
-                let (modified, size) = entry.metadata().ok().map_or_else(
-                    || (0, 0),
-                    |metadata| {
-                        let modified = metadata
-                            .modified()
-                            .unwrap()
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs() as u32;
-                        let size = metadata.len() as u32;
-                        (modified, size)
-                    },
-                );
-                if let Some(finfo) = flist_dict.get(&filepath) {
-                    if let Some(fstat) = finfo.filestat {
-                        if fstat.st_mtime >= modified && fstat.st_size == size {
-                            return Some(finfo.clone());
+            let flist = entries
+                .into_par_iter()
+                .filter_map(|entry| {
+                    let filepath = entry
+                        .path()
+                        .canonicalize()
+                        .ok()
+                        .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
+                    let (modified, size) = entry.metadata().ok().map_or_else(
+                        || (0, 0),
+                        |metadata| {
+                            let modified = metadata
+                                .modified()
+                                .unwrap()
+                                .duration_since(SystemTime::UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs() as u32;
+                            let size = metadata.len() as u32;
+                            (modified, size)
+                        },
+                    );
+                    if let Some(finfo) = flist_dict.get(&filepath) {
+                        if let Some(fstat) = finfo.filestat {
+                            if fstat.st_mtime >= modified && fstat.st_size == size {
+                                return Some(finfo.clone());
+                            }
                         }
-                    }
-                };
-                FileInfoLocal::from_direntry(
-                    &entry,
-                    Some(servicesession.0.to_string().into()),
-                    Some(servicesession.clone()),
-                )
-                .ok()
-                .map(|x| x.0)
-            })
-            .collect();
+                    };
+                    FileInfoLocal::from_direntry(
+                        &entry,
+                        Some(servicesession.0.to_string().into()),
+                        Some(servicesession.clone()),
+                    )
+                    .ok()
+                    .map(|x| x.0)
+                })
+                .collect();
 
-        Ok(flist)
+            Ok(flist)
+        })
+        .await?
     }
 
     async fn print_list(&self) -> Result<(), Error> {
-        let basedir = self.get_baseurl().path();
+        let local_list = self.clone();
+        spawn_blocking(move || {
+            let basedir = local_list.get_baseurl().path();
 
-        let wdir = WalkDir::new(&basedir).same_file_system(true).max_depth(1);
+            let wdir = WalkDir::new(&basedir).same_file_system(true).max_depth(1);
 
-        let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
+            let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
-        entries
-            .into_par_iter()
-            .map(|entry| {
-                let filepath = entry
-                    .path()
-                    .canonicalize()
-                    .ok()
-                    .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
-                writeln!(stdout().lock(), "{}", filepath)?;
-                Ok(())
-            })
-            .collect()
+            entries
+                .into_par_iter()
+                .map(|entry| {
+                    let filepath = entry
+                        .path()
+                        .canonicalize()
+                        .ok()
+                        .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
+                    writeln!(stdout().lock(), "{}", filepath)?;
+                    Ok(())
+                })
+                .collect()
+        })
+        .await?
     }
 
     async fn copy_from(
@@ -194,10 +203,10 @@ impl FileListTrait for FileListLocal {
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
-                create_dir_all(&parent_dir)?;
+                create_dir_all(&parent_dir).await?;
             }
 
-            copy(&remote_file, &local_file)?;
+            copy(&remote_file, &local_file).await?;
             Ok(())
         }
     }
@@ -228,11 +237,11 @@ impl FileListTrait for FileListLocal {
         if finfo0.servicetype != FileService::Local || finfo1.servicetype != FileService::Local {
             Ok(())
         } else {
-            rename(&path0, path1).or_else(|_| {
-                copy(&path0, &path1)?;
-                remove_file(&path0)?;
-                Ok(())
-            })
+            if rename(&path0, path1).await.is_err() {
+                    copy(&path0, &path1).await?;
+                    remove_file(&path0).await?;
+            }
+            Ok(())
         }
     }
 
@@ -241,7 +250,7 @@ impl FileListTrait for FileListLocal {
         if finfo.servicetype != FileService::Local {
             Err(format_err!("Wrong service type"))
         } else if let Some(filepath) = finfo.filepath.as_ref() {
-            remove_file(filepath).map_err(Into::into)
+            remove_file(filepath).await.map_err(Into::into)
         } else {
             Ok(())
         }
