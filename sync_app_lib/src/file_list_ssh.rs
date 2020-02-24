@@ -25,7 +25,7 @@ pub struct FileListSSH {
 }
 
 impl FileListSSH {
-    pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "ssh" {
             let basepath = Path::new(url.path()).to_path_buf();
             let host = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
@@ -48,7 +48,7 @@ impl FileListSSH {
                 pool.clone(),
             );
             let url = url.clone();
-            let ssh = spawn_blocking(move || SSHInstance::from_url(&url)).await??;
+            let ssh = SSHInstance::from_url(&url)?;
 
             Ok(Self { flist, ssh })
         } else {
@@ -281,13 +281,13 @@ mod tests {
     use crate::file_service::FileService;
     use crate::pgpool::PgPool;
 
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
+    fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
-        let conf = FileListSSH::from_url(&url, &config, &pool).await?;
+        let conf = FileListSSH::from_url(&url, &config, &pool)?;
         writeln!(stdout(), "{:?}", conf)?;
         assert_eq!(conf.get_baseurl(), &url);
         assert_eq!(conf.get_servicetype(), FileService::SSH);
@@ -305,7 +305,7 @@ mod tests {
         let finfo1 = FileInfoLocal::from_url(&url)?;
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
-        let flist = FileListSSH::from_url(&url, &config, &pool).await?;
+        let flist = FileListSSH::from_url(&url, &config, &pool)?;
         flist.copy_from(&finfo0, &finfo1).await?;
         let p = Path::new("/tmp/temp0.txt");
         if p.exists() {
@@ -327,7 +327,7 @@ mod tests {
         let finfo1 = FileInfoSSH::from_url(&url)?;
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/".parse()?;
-        let flist = FileListSSH::from_url(&url, &config, &pool).await?;
+        let flist = FileListSSH::from_url(&url, &config, &pool)?;
 
         flist.copy_to(&finfo0, &finfo1).await?;
         flist.delete(&finfo1).await?;

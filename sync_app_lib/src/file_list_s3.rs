@@ -42,7 +42,7 @@ impl FileListS3 {
         Ok(Self { flist, s3 })
     }
 
-    pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "s3" {
             let basepath = Path::new(url.path());
             let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
@@ -56,7 +56,7 @@ impl FileListS3 {
                 pool.clone(),
             );
             let config = config.clone();
-            let s3 = spawn_blocking(move || S3Instance::new(&config.aws_region_name)).await?;
+            let s3 = S3Instance::new(&config.aws_region_name);
 
             Ok(Self { flist, s3 })
         } else {

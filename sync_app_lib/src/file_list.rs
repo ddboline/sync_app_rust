@@ -80,11 +80,11 @@ impl FileList {
                 Ok(Box::new(flist))
             }
             "s3" => {
-                let flist = FileListS3::from_url(url, config, pool).await?;
+                let flist = FileListS3::from_url(url, config, pool)?;
                 Ok(Box::new(flist))
             }
             "ssh" => {
-                let flist = FileListSSH::from_url(url, config, pool).await?;
+                let flist = FileListSSH::from_url(url, config, pool)?;
                 Ok(Box::new(flist))
             }
             _ => Err(format_err!("Bad scheme")),
