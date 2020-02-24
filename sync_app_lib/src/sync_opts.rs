@@ -45,6 +45,7 @@ impl SyncOpts {
         opts.process_sync_opts(&config, &pool).await
     }
 
+    #[allow(clippy::cognitive_complexity)]
     pub async fn process_sync_opts(&self, config: &Config, pool: &PgPool) -> Result<(), Error> {
         let blacklist = Arc::new(BlackList::new(pool).await?);
 

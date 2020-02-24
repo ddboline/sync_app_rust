@@ -130,6 +130,7 @@ pub trait FileInfoTrait: Send + Sync + Debug {
 }
 
 impl FileInfo {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         filename: String,
         filepath: Option<PathBufWrapper>,
