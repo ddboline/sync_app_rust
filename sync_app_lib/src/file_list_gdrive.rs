@@ -225,40 +225,48 @@ impl FileListTrait for FileListGDrive {
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        self.set_directory_map(false)?;
-        let start_page_token = self.gdrive.get_start_page_token()?;
-        let file_list = self.load_file_list()?;
-        let mut flist_dict = { self.get_file_list_dict(&file_list, FileInfoKeyType::ServiceId) };
+        let glist = self.clone();
+        spawn_blocking(move || {
+            glist.set_directory_map(false)?;
+            let start_page_token = glist.gdrive.get_start_page_token()?;
+            let file_list = glist.load_file_list()?;
+            let mut flist_dict =
+                { glist.get_file_list_dict(&file_list, FileInfoKeyType::ServiceId) };
 
-        let (dlist, flist) = if self.gdrive.start_page_token.is_some() {
-            self.get_all_changes()?
-        } else {
-            {
-                self.clear_file_list()?;
-                (Vec::new(), self.get_all_files()?)
+            let (dlist, flist) = if glist.gdrive.start_page_token.is_some() {
+                glist.get_all_changes()?
+            } else {
+                {
+                    glist.clear_file_list()?;
+                    (Vec::new(), glist.get_all_files()?)
+                }
+            };
+
+            debug!("delete {} insert {}", dlist.len(), flist.len());
+
+            for dfid in &dlist {
+                flist_dict.remove(dfid);
             }
-        };
 
-        debug!("delete {} insert {}", dlist.len(), flist.len());
-
-        for dfid in &dlist {
-            flist_dict.remove(dfid);
-        }
-
-        for f in flist {
-            if let Some(fid) = f.serviceid.as_ref() {
-                flist_dict.insert(fid.0.to_string(), f);
+            for f in flist {
+                if let Some(fid) = f.serviceid.as_ref() {
+                    flist_dict.insert(fid.0.to_string(), f);
+                }
             }
-        }
 
-        let flist = flist_dict.into_iter().map(|(_, v)| v).collect();
+            let flist = flist_dict.into_iter().map(|(_, v)| v).collect();
 
-        let gdrive = self.gdrive.clone().with_start_page_token(&start_page_token);
-        let start_page_path = format!("{}.new", self.gdrive.start_page_token_filename);
-        let start_page_path = Path::new(&start_page_path);
-        gdrive.store_start_page_token(&start_page_path)?;
+            let gdrive = glist
+                .gdrive
+                .clone()
+                .with_start_page_token(&start_page_token);
+            let start_page_path = format!("{}.new", glist.gdrive.start_page_token_filename);
+            let start_page_path = Path::new(&start_page_path);
+            gdrive.store_start_page_token(&start_page_path)?;
 
-        Ok(flist)
+            Ok(flist)
+        })
+        .await?
     }
 
     async fn print_list(&self) -> Result<(), Error> {
@@ -296,7 +304,8 @@ impl FileListTrait for FileListGDrive {
             let local_path = finfo1
                 .filepath
                 .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?;
+                .ok_or_else(|| format_err!("No local path"))?
+                .clone();
             let parent_dir = finfo1
                 .filepath
                 .as_ref()
@@ -311,16 +320,21 @@ impl FileListTrait for FileListGDrive {
                 .clone()
                 .ok_or_else(|| format_err!("No gdrive url"))?
                 .0;
-            let gfile = self.gdrive.get_file_metadata(&gdriveid)?;
-            debug!("{:?}", gfile.mime_type);
-            if GDriveInstance::is_unexportable(&gfile.mime_type) {
-                debug!("unexportable");
-                self.remove_by_id(&gdriveid)?;
-                debug!("removed from database");
-                return Ok(());
-            }
-            self.gdrive
-                .download(&gdriveid, &local_path, &gfile.mime_type)
+            let glist = self.clone();
+            spawn_blocking(move || {
+                let gfile = glist.gdrive.get_file_metadata(&gdriveid)?;
+                debug!("{:?}", gfile.mime_type);
+                if GDriveInstance::is_unexportable(&gfile.mime_type) {
+                    debug!("unexportable");
+                    glist.remove_by_id(&gdriveid)?;
+                    debug!("removed from database");
+                    return Ok(());
+                }
+                glist
+                    .gdrive
+                    .download(&gdriveid, &local_path, &gfile.mime_type)
+            })
+            .await?
         } else {
             Err(format_err!(
                 "Invalid types {} {}",
