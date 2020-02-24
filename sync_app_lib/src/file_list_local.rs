@@ -2,11 +2,11 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
-use tokio::fs::{copy, create_dir_all, remove_file, rename};
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::string::ToString;
 use std::time::SystemTime;
+use tokio::fs::{copy, create_dir_all, remove_file, rename};
 use tokio::task::spawn_blocking;
 use url::Url;
 use walkdir::WalkDir;
@@ -238,8 +238,8 @@ impl FileListTrait for FileListLocal {
             Ok(())
         } else {
             if rename(&path0, path1).await.is_err() {
-                    copy(&path0, &path1).await?;
-                    remove_file(&path0).await?;
+                copy(&path0, &path1).await?;
+                remove_file(&path0).await?;
             }
             Ok(())
         }
