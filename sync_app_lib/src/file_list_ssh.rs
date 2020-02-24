@@ -126,7 +126,8 @@ impl FileListTrait for FileListSSH {
                     .to_string_lossy()
             );
             debug!("command {}", command);
-            self.ssh.run_command(&command)
+            let ssh = self.ssh.clone();
+            spawn_blocking(move || ssh.run_command(&command)).await?
         } else {
             Err(format_err!(
                 "Invalid types {} {}",
@@ -161,7 +162,8 @@ impl FileListTrait for FileListSSH {
                 .to_string_lossy();
 
             let command = format!("mkdir -p {}", parent_dir);
-            self.ssh.run_command_ssh(&command)?;
+            let ssh = self.ssh.clone();
+            spawn_blocking(move || ssh.run_command_ssh(&command)).await??;
 
             let command = format!(
                 "scp {} {}",
@@ -173,7 +175,8 @@ impl FileListTrait for FileListSSH {
                 self.ssh.get_ssh_str(&path1)?,
             );
             debug!("command {}", command);
-            self.ssh.run_command(&command)
+            let ssh = self.ssh.clone();
+            spawn_blocking(move || ssh.run_command(&command)).await?
         } else {
             Err(format_err!(
                 "Invalid types {} {}",
@@ -213,7 +216,8 @@ impl FileListTrait for FileListSSH {
         let path1 = Path::new(url1.path()).to_string_lossy();
         let command = format!("mv {} {}", path0, path1);
         debug!("command {}", command);
-        self.ssh.run_command_ssh(&command)
+        let ssh = self.ssh.clone();
+        spawn_blocking(move || ssh.run_command_ssh(&command)).await?
     }
 
     async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
@@ -225,42 +229,48 @@ impl FileListTrait for FileListSSH {
             .ok_or_else(|| format_err!("No url"))?;
         let path = Path::new(url.path()).to_string_lossy();
         let command = format!("rm {}", path);
-        self.ssh.run_command_ssh(&command)
+        let ssh = self.ssh.clone();
+        spawn_blocking(move || ssh.run_command_ssh(&command)).await?
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let baseurl = self.get_baseurl();
-
         let path = self.get_basepath().to_string_lossy();
         let user_host = self.ssh.get_ssh_username_host()?;
         let command = format!("sync-app-rust index -u file://{}", path);
-        self.ssh.run_command_ssh(&command)?;
+        let ssh = self.ssh.clone();
+        spawn_blocking(move || ssh.run_command_ssh(&command)).await??;
 
         let command = format!("sync-app-rust ser -u file://{}", path);
 
         let url_prefix = format!("ssh://{}", user_host);
 
-        self.ssh
-            .run_command_stream_stdout(&command)?
-            .into_iter()
-            .map(|l| {
-                let mut finfo: FileInfoInner = serde_json::from_str(&l)?;
-                finfo.servicetype = FileService::SSH;
-                finfo.urlname = finfo
-                    .urlname
-                    .and_then(|u| u.as_str().replace("file://", &url_prefix).parse().ok());
-                finfo.serviceid = Some(baseurl.clone().into_string().into());
-                finfo.servicesession = baseurl.as_str().parse().ok();
-                Ok(FileInfo::from_inner(finfo))
-            })
-            .collect()
+        let ssh = self.ssh.clone();
+        let baseurl = self.get_baseurl().clone();
+        spawn_blocking(move || {
+            ssh.run_command_stream_stdout(&command)?
+                .into_iter()
+                .map(|line| {
+                    let baseurl = baseurl.as_str();
+                    let mut finfo: FileInfoInner = serde_json::from_str(&line)?;
+                    finfo.servicetype = FileService::SSH;
+                    finfo.urlname = finfo
+                        .urlname
+                        .and_then(|u| u.as_str().replace("file://", &url_prefix).parse().ok());
+                    finfo.serviceid = Some(baseurl.to_string().into());
+                    finfo.servicesession = baseurl.parse().ok();
+                    Ok(FileInfo::from_inner(finfo))
+                })
+                .collect()
+        })
+        .await?
     }
 
     async fn print_list(&self) -> Result<(), Error> {
         let path = self.get_basepath().to_string_lossy();
         let command = format!("sync-app-rust ls -u file://{}", path);
         writeln!(stdout(), "{}", command)?;
-        self.ssh.run_command_print_stdout(&command)
+        let ssh = self.ssh.clone();
+        spawn_blocking(move || ssh.run_command_print_stdout(&command)).await?
     }
 }
 
