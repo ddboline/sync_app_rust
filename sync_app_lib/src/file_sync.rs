@@ -121,15 +121,17 @@ impl FileSync {
                                 &flist1.get_basepath(),
                             );
                             if url1.as_str().contains(flist1.get_baseurl().as_str()) {
-                                let finfo1 = FileInfo {
-                                    filename: k.clone(),
-                                    filepath: Some(path1.into()),
-                                    urlname: Some(url1.into()),
-                                    servicesession: Some(flist1.get_servicesession().clone()),
-                                    servicetype: flist1.get_servicetype(),
-                                    serviceid: Some(flist1.get_servicesession().clone().into()),
-                                    ..FileInfo::default()
-                                };
+                                let finfo1 = FileInfo::new(
+                                    k.clone(),
+                                    Some(path1.into()),
+                                    Some(url1.into()),
+                                    None,
+                                    None,
+                                    None,
+                                    Some(flist1.get_servicesession().clone().into()),
+                                    flist1.get_servicetype(),
+                                    Some(flist1.get_servicesession().clone()),
+                                );
                                 debug!("ab {:?} {:?}", finfo0, finfo1);
                                 Some((finfo0.clone(), finfo1))
                             } else {
@@ -161,15 +163,17 @@ impl FileSync {
                                 &flist0.get_basepath(),
                             );
                             if url0.as_str().contains(flist0.get_baseurl().as_str()) {
-                                let finfo0 = FileInfo {
-                                    filename: k.clone(),
-                                    filepath: Some(path0.into()),
-                                    urlname: Some(url0.into()),
-                                    servicesession: Some(flist0.get_servicesession().clone()),
-                                    servicetype: flist0.get_servicetype(),
-                                    serviceid: Some(flist0.get_servicesession().clone().into()),
-                                    ..FileInfo::default()
-                                };
+                                let finfo0 = FileInfo::new(
+                                    k.clone(),
+                                    Some(path0.into()),
+                                    Some(url0.into()),
+                                    None,
+                                    None,
+                                    None,
+                                    Some(flist0.get_servicesession().clone().into()),
+                                    flist0.get_servicetype(),
+                                    Some(flist0.get_servicesession().clone()),
+                                );
                                 debug!("ba {:?} {:?}", finfo0, finfo1);
                                 Some((finfo1.clone(), finfo0))
                             } else {

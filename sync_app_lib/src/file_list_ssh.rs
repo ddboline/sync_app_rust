@@ -9,9 +9,10 @@ use std::io::{stdout, Write};
 use std::path::Path;
 use tokio::task::spawn_blocking;
 use url::Url;
+use std::sync::Arc;
 
 use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait, ServiceSession};
+use crate::file_info::{FileInfo, FileInfoInner, FileInfoTrait, ServiceSession};
 use crate::file_list::{FileList, FileListTrait};
 use crate::file_service::FileService;
 use crate::pgpool::PgPool;
@@ -243,14 +244,14 @@ impl FileListTrait for FileListSSH {
             .run_command_stream_stdout(&command)?
             .into_iter()
             .map(|l| {
-                let mut finfo: FileInfo = serde_json::from_str(&l)?;
+                let mut finfo: FileInfoInner = serde_json::from_str(&l)?;
                 finfo.servicetype = FileService::SSH;
                 finfo.urlname = finfo
                     .urlname
                     .and_then(|u| u.as_str().replace("file://", &url_prefix).parse().ok());
                 finfo.serviceid = Some(baseurl.clone().into_string().into());
                 finfo.servicesession = baseurl.as_str().parse().ok();
-                Ok(finfo)
+                Ok(FileInfo::from_inner(finfo))
             })
             .collect()
     }

@@ -524,13 +524,15 @@ impl FileListTrait for FileList {
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
         let filemap = filelist
             .into_par_iter()
-            .map(|mut f| {
+            .map(|f| {
                 let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
                     remove_basepath(&path, &self.get_basepath().to_string_lossy())
                 } else {
                     f.filename.to_string()
                 };
-                f.servicesession = Some(self.get_servicesession().clone());
+                let mut inner = f.inner().clone();
+                inner.servicesession = Some(self.get_servicesession().clone());
+                let f = FileInfo::from_inner(inner);
                 (key, f)
             })
             .collect();

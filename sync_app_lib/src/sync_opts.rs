@@ -220,7 +220,7 @@ impl SyncOpts {
                                 .get_filemap()
                                 .values()
                                 .map(|finfo| {
-                                    let js = serde_json::to_string(&finfo)?;
+                                    let js = serde_json::to_string(finfo.inner())?;
                                     writeln!(stdout().lock(), "{}", js)?;
                                     Ok(())
                                 })
