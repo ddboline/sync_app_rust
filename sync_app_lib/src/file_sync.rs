@@ -425,12 +425,13 @@ mod tests {
         let servicesession: ServiceSession = filepath.to_string_lossy().parse()?;
         let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession))?;
         writeln!(stdout(), "{:?}", finfo0)?;
-        let mut finfo1 = finfo0.clone();
-        finfo1.0.md5sum = Some("51e3cc2c6f64d24ff55fae262325edee".parse()?);
-        let mut fstat = finfo1.0.filestat.unwrap();
+        let mut finfo1 = finfo0.0.inner().clone();
+        finfo1.md5sum = Some("51e3cc2c6f64d24ff55fae262325edee".parse()?);
+        let mut fstat = finfo1.filestat.unwrap();
         fstat.st_mtime += 100;
         fstat.st_size += 100;
-        finfo1.0.filestat = Some(fstat);
+        finfo1.filestat = Some(fstat);
+        let finfo1 = FileInfoLocal(FileInfo::from_inner(finfo1));
         writeln!(stdout(), "{:?}", finfo1)?;
         assert!(FileSync::compare_objects(&finfo0, &finfo1));
 
