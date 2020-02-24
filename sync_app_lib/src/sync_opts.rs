@@ -56,32 +56,30 @@ impl SyncOpts {
                     self.urls.to_vec()
                 };
                 debug!("urls: {:?}", urls);
-                let futures = urls
-                    .into_iter()
-                    .map(|url| {
-                        let blacklist = Arc::clone(&blacklist);
-                        let pool = pool.clone();
-                        async move {
-                            let mut flist = FileList::from_url(&url, &config, &pool).await?;
-                            let list = flist.fill_file_list().await?;
-                            let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
-                                list.into_par_iter()
-                                    .filter(|entry| {
-                                        if let Some(url) = entry.urlname.as_ref() {
-                                            !blacklist.is_in_blacklist(url)
-                                        } else {
-                                            true
-                                        }
-                                    })
-                                    .collect()
-                            } else {
-                                list
-                            };
-                            flist.with_list(list);
-                            flist.cache_file_list()?;
-                            Ok(flist)
-                        }
-                    });
+                let futures = urls.into_iter().map(|url| {
+                    let blacklist = Arc::clone(&blacklist);
+                    let pool = pool.clone();
+                    async move {
+                        let mut flist = FileList::from_url(&url, &config, &pool).await?;
+                        let list = flist.fill_file_list().await?;
+                        let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
+                            list.into_par_iter()
+                                .filter(|entry| {
+                                    if let Some(url) = entry.urlname.as_ref() {
+                                        !blacklist.is_in_blacklist(url)
+                                    } else {
+                                        true
+                                    }
+                                })
+                                .collect()
+                        } else {
+                            list
+                        };
+                        flist.with_list(list);
+                        flist.cache_file_list()?;
+                        Ok(flist)
+                    }
+                });
                 let result: Result<Vec<_>, Error> = try_join_all(futures).await;
                 result?;
                 Ok(())
@@ -99,43 +97,39 @@ impl SyncOpts {
                 } else {
                     self.urls.to_vec()
                 };
-                let futures = urls
-                    .into_iter()
-                    .map(|url| {
-                        let blacklist = blacklist.clone();
-                        let pool = pool.clone();
-                        async move {
-                            let mut flist = FileList::from_url(&url, &config, &pool).await?;
-                            let list = flist.fill_file_list().await?;
-                            let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
-                                list.into_par_iter()
-                                    .filter(|entry| {
-                                        if let Some(url) = entry.urlname.as_ref() {
-                                            !blacklist.is_in_blacklist(url)
-                                        } else {
-                                            true
-                                        }
-                                    })
-                                    .collect()
-                            } else {
-                                list
-                            };
-                            flist.with_list(list);
-                            flist.cache_file_list()?;
-                            Ok(flist)
-                        }
-                    });
+                let futures = urls.into_iter().map(|url| {
+                    let blacklist = blacklist.clone();
+                    let pool = pool.clone();
+                    async move {
+                        let mut flist = FileList::from_url(&url, &config, &pool).await?;
+                        let list = flist.fill_file_list().await?;
+                        let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
+                            list.into_par_iter()
+                                .filter(|entry| {
+                                    if let Some(url) = entry.urlname.as_ref() {
+                                        !blacklist.is_in_blacklist(url)
+                                    } else {
+                                        true
+                                    }
+                                })
+                                .collect()
+                        } else {
+                            list
+                        };
+                        flist.with_list(list);
+                        flist.cache_file_list()?;
+                        Ok(flist)
+                    }
+                });
                 let flists: Result<Vec<_>, Error> = try_join_all(futures).await;
                 let flists = flists?;
 
-                let futures = flists
-                    .chunks(2)
-                    .map(|f| async move {
-                        if f.len() == 2 {
-                            FileSync::compare_lists(&(*f[0]), &(*f[1]), &pool).await?;
-                        }
-                        Ok(())
-                    });
+                let futures = flists.chunks(2).map(|f| async move {
+                    if f.len() == 2 {
+                        FileSync::compare_lists(&(*f[0]), &(*f[1]), &pool).await?;
+                    }
+                    Ok(())
+                });
                 let results: Result<Vec<_>, Error> = try_join_all(futures).await;
                 results?;
 
@@ -205,24 +199,21 @@ impl SyncOpts {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
-                    let futures = self
-                        .urls
-                        .iter()
-                        .map(|url| async move {
-                            let pool = pool.clone();
-                            let mut flist = FileList::from_url(&url, &config, &pool).await?;
-                            flist.with_list(flist.fill_file_list().await?);
-                            let results: Result<Vec<_>, Error> = flist
-                                .get_filemap()
-                                .values()
-                                .map(|finfo| {
-                                    let js = serde_json::to_string(finfo.inner())?;
-                                    writeln!(stdout().lock(), "{}", js)?;
-                                    Ok(())
-                                })
-                                .collect();
-                            results.map(|_| ())
-                        });
+                    let futures = self.urls.iter().map(|url| async move {
+                        let pool = pool.clone();
+                        let mut flist = FileList::from_url(&url, &config, &pool).await?;
+                        flist.with_list(flist.fill_file_list().await?);
+                        let results: Result<Vec<_>, Error> = flist
+                            .get_filemap()
+                            .values()
+                            .map(|finfo| {
+                                let js = serde_json::to_string(finfo.inner())?;
+                                writeln!(stdout().lock(), "{}", js)?;
+                                Ok(())
+                            })
+                            .collect();
+                        results.map(|_| ())
+                    });
                     let results: Result<Vec<_>, Error> = try_join_all(futures).await;
                     results?;
                     Ok(())
