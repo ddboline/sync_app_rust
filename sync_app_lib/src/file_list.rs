@@ -522,20 +522,19 @@ impl FileListTrait for FileList {
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.filemap = Arc::new(
-            filelist
-                .into_par_iter()
-                .map(|mut f| {
-                    let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
-                        remove_basepath(&path, &self.get_basepath().to_string_lossy())
-                    } else {
-                        f.filename.to_string()
-                    };
-                    f.servicesession = Some(self.get_servicesession().clone());
-                    (key, f)
-                })
-                .collect(),
-        );
+        let filemap = filelist
+            .into_par_iter()
+            .map(|mut f| {
+                let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
+                    remove_basepath(&path, &self.get_basepath().to_string_lossy())
+                } else {
+                    f.filename.to_string()
+                };
+                f.servicesession = Some(self.get_servicesession().clone());
+                (key, f)
+            })
+            .collect();
+        self.filemap = Arc::new(filemap);
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
