@@ -90,16 +90,16 @@ impl FileInfoS3 {
 
         let finfo = FileInfo::new(
             filename,
-             Some(filepath.to_path_buf().into()),
-             Some(fileurl.into()),
+            Some(filepath.to_path_buf().into()),
+            Some(fileurl.into()),
             md5sum,
-             None,
-             Some(FileStat {
+            None,
+            Some(FileStat {
                 st_mtime: st_mtime as u32,
                 st_size: size as u32,
             }),
             serviceid,
-             FileService::S3,
+            FileService::S3,
             servicesession,
         );
 

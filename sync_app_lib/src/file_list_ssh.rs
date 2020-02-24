@@ -7,9 +7,9 @@ use std::convert::TryInto;
 use std::fs::create_dir_all;
 use std::io::{stdout, Write};
 use std::path::Path;
+use std::sync::Arc;
 use tokio::task::spawn_blocking;
 use url::Url;
-use std::sync::Arc;
 
 use crate::config::Config;
 use crate::file_info::{FileInfo, FileInfoInner, FileInfoTrait, ServiceSession};

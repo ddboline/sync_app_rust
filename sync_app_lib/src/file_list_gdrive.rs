@@ -156,7 +156,9 @@ impl FileListGDrive {
             })
             .map(|f| {
                 let mut inner = f.inner().clone();
-                inner.servicesession.replace(self.get_servicesession().clone());
+                inner
+                    .servicesession
+                    .replace(self.get_servicesession().clone());
                 FileInfo::from_inner(inner)
             })
             .collect();
@@ -304,31 +306,32 @@ impl FileListTrait for FileListGDrive {
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
     ) -> Result<(), Error> {
-        self.set_directory_map(true)?;
-        let finfo0 = finfo0.get_finfo();
-        let finfo1 = finfo1.get_finfo();
-        if finfo0.servicetype == FileService::GDrive && finfo1.servicetype == FileService::Local {
-            let local_path = finfo1
-                .filepath
-                .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?
-                .clone();
-            let parent_dir = finfo1
-                .filepath
-                .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?
-                .parent()
-                .ok_or_else(|| format_err!("No parent directory"))?;
-            if !parent_dir.exists() {
-                create_dir_all(&parent_dir)?;
-            }
-            let gdriveid = finfo0
-                .serviceid
-                .clone()
-                .ok_or_else(|| format_err!("No gdrive url"))?
-                .0;
-            let glist = self.clone();
-            spawn_blocking(move || {
+        let finfo0 = finfo0.get_finfo().clone();
+        let finfo1 = finfo1.get_finfo().clone();
+        let glist = self.clone();
+        spawn_blocking(move || {
+            glist.set_directory_map(true)?;
+            if finfo0.servicetype == FileService::GDrive && finfo1.servicetype == FileService::Local
+            {
+                let local_path = finfo1
+                    .filepath
+                    .as_ref()
+                    .ok_or_else(|| format_err!("No local path"))?
+                    .clone();
+                let parent_dir = finfo1
+                    .filepath
+                    .as_ref()
+                    .ok_or_else(|| format_err!("No local path"))?
+                    .parent()
+                    .ok_or_else(|| format_err!("No parent directory"))?;
+                if !parent_dir.exists() {
+                    create_dir_all(&parent_dir)?;
+                }
+                let gdriveid = finfo0
+                    .serviceid
+                    .clone()
+                    .ok_or_else(|| format_err!("No gdrive url"))?
+                    .0;
                 let gfile = glist.gdrive.get_file_metadata(&gdriveid)?;
                 debug!("{:?}", gfile.mime_type);
                 if GDriveInstance::is_unexportable(&gfile.mime_type) {
@@ -340,15 +343,15 @@ impl FileListTrait for FileListGDrive {
                 glist
                     .gdrive
                     .download(&gdriveid, &local_path, &gfile.mime_type)
-            })
-            .await?
-        } else {
-            Err(format_err!(
-                "Invalid types {} {}",
-                finfo0.servicetype,
-                finfo1.servicetype
-            ))
-        }
+            } else {
+                Err(format_err!(
+                    "Invalid types {} {}",
+                    finfo0.servicetype,
+                    finfo1.servicetype
+                ))
+            }
+        })
+        .await?
     }
 
     async fn copy_to(
@@ -356,33 +359,39 @@ impl FileListTrait for FileListGDrive {
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
     ) -> Result<(), Error> {
-        self.set_directory_map(true)?;
-        let finfo0 = finfo0.get_finfo();
-        let finfo1 = finfo1.get_finfo();
-        if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::GDrive {
-            let local_file = finfo0
-                .filepath
-                .clone()
-                .ok_or_else(|| format_err!("No local path"))?
-                .canonicalize()?;
-            let local_url = Url::from_file_path(local_file).map_err(|_| format_err!("failure"))?;
+        let finfo0 = finfo0.get_finfo().clone();
+        let finfo1 = finfo1.get_finfo().clone();
+        let glist = self.clone();
+        spawn_blocking(move || {
+            glist.set_directory_map(true)?;
+            if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::GDrive
+            {
+                let local_file = finfo0
+                    .filepath
+                    .clone()
+                    .ok_or_else(|| format_err!("No local path"))?
+                    .canonicalize()?;
+                let local_url =
+                    Url::from_file_path(local_file).map_err(|_| format_err!("failure"))?;
 
-            let remote_url = finfo1
-                .urlname
-                .clone()
-                .ok_or_else(|| format_err!("No remote url"))?;
-            let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map.read());
-            let parent_id = GDriveInstance::get_parent_id(&remote_url, &dnamemap)?
-                .ok_or_else(|| format_err!("No parent id!"))?;
-            self.gdrive.upload(&local_url, &parent_id)?;
-            Ok(())
-        } else {
-            Err(format_err!(
-                "Invalid types {} {}",
-                finfo0.servicetype,
-                finfo1.servicetype
-            ))
-        }
+                let remote_url = finfo1
+                    .urlname
+                    .clone()
+                    .ok_or_else(|| format_err!("No remote url"))?;
+                let dnamemap = GDriveInstance::get_directory_name_map(&glist.directory_map.read());
+                let parent_id = GDriveInstance::get_parent_id(&remote_url, &dnamemap)?
+                    .ok_or_else(|| format_err!("No parent id!"))?;
+                glist.gdrive.upload(&local_url, &parent_id)?;
+                Ok(())
+            } else {
+                Err(format_err!(
+                    "Invalid types {} {}",
+                    finfo0.servicetype,
+                    finfo1.servicetype
+                ))
+            }
+        })
+        .await?
     }
 
     async fn move_file(
@@ -390,38 +399,47 @@ impl FileListTrait for FileListGDrive {
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
     ) -> Result<(), Error> {
-        self.set_directory_map(true)?;
-        let finfo0 = finfo0.get_finfo();
-        let finfo1 = finfo1.get_finfo();
-        if finfo0.servicetype != finfo1.servicetype || self.get_servicetype() != finfo0.servicetype
-        {
-            return Ok(());
-        }
-        let gdriveid = &finfo0
-            .serviceid
-            .as_ref()
-            .ok_or_else(|| format_err!("No serviceid"))?
-            .0;
-        let url = finfo1
-            .urlname
-            .as_ref()
-            .ok_or_else(|| format_err!("No url"))?;
-        let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map.read());
-        let parentid = GDriveInstance::get_parent_id(&url, &dnamemap)?
-            .ok_or_else(|| format_err!("No parentid"))?;
-        self.gdrive.move_to(gdriveid, &parentid, &finfo1.filename)
+        let finfo0 = finfo0.get_finfo().clone();
+        let finfo1 = finfo1.get_finfo().clone();
+        let glist = self.clone();
+        spawn_blocking(move || {
+            glist.set_directory_map(true)?;
+            if finfo0.servicetype != finfo1.servicetype
+                || glist.get_servicetype() != finfo0.servicetype
+            {
+                return Ok(());
+            }
+            let gdriveid = &finfo0
+                .serviceid
+                .as_ref()
+                .ok_or_else(|| format_err!("No serviceid"))?
+                .0;
+            let url = finfo1
+                .urlname
+                .as_ref()
+                .ok_or_else(|| format_err!("No url"))?;
+            let dnamemap = GDriveInstance::get_directory_name_map(&glist.directory_map.read());
+            let parentid = GDriveInstance::get_parent_id(&url, &dnamemap)?
+                .ok_or_else(|| format_err!("No parentid"))?;
+            glist.gdrive.move_to(gdriveid, &parentid, &finfo1.filename)
+        })
+        .await?
     }
 
     async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
-        self.set_directory_map(true)?;
-        let finfo = finfo.get_finfo();
-        if finfo.servicetype != FileService::GDrive {
-            Err(format_err!("Wrong service type"))
-        } else if let Some(gdriveid) = finfo.serviceid.as_ref() {
-            self.gdrive.delete_permanently(&gdriveid.0).map(|_| ())
-        } else {
-            Ok(())
-        }
+        let finfo = finfo.get_finfo().clone();
+        let glist = self.clone();
+        spawn_blocking(move || {
+            glist.set_directory_map(true)?;
+            if finfo.servicetype != FileService::GDrive {
+                Err(format_err!("Wrong service type"))
+            } else if let Some(gdriveid) = finfo.serviceid.as_ref() {
+                glist.gdrive.delete_permanently(&gdriveid.0).map(|_| ())
+            } else {
+                Ok(())
+            }
+        })
+        .await?
     }
 }
 
