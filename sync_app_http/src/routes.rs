@@ -26,8 +26,8 @@ pub async fn sync_frontpage(_: LoggedUser, data: Data<AppState>) -> Result<HttpR
             format!(
                 r#"
         <input type="button" name="Rm" value="Rm" onclick="removeCacheEntry({id})">
-        <input type="button" name="Del" value="Del" onclick="deleteEntry('{src}')">
-        {src} {dst}"#,
+        {src} {dst}
+        <input type="button" name="Del" value="Del" onclick="deleteEntry('{src}', {id})">"#,
                 id = v.id,
                 src = v.src_url,
                 dst = v.dst_url
