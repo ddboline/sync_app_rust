@@ -154,9 +154,10 @@ impl FileListGDrive {
                 }
                 false
             })
-            .map(|mut f| {
-                f.servicesession.replace(self.get_servicesession().clone());
-                f
+            .map(|f| {
+                let mut inner = f.inner().clone();
+                inner.servicesession.replace(self.get_servicesession().clone());
+                FileInfo::from_inner(inner)
             })
             .collect();
         Ok(flist)
@@ -270,26 +271,32 @@ impl FileListTrait for FileListGDrive {
     }
 
     async fn print_list(&self) -> Result<(), Error> {
-        self.set_directory_map(false)?;
-        let dnamemap = GDriveInstance::get_directory_name_map(&self.directory_map.read());
-        let parents =
-            if let Ok(Some(p)) = GDriveInstance::get_parent_id(&self.get_baseurl(), &dnamemap) {
+        let glist = self.clone();
+        spawn_blocking(move || {
+            glist.set_directory_map(false)?;
+            let dnamemap = GDriveInstance::get_directory_name_map(&glist.directory_map.read());
+            let parents = if let Ok(Some(p)) =
+                GDriveInstance::get_parent_id(&glist.get_baseurl(), &dnamemap)
+            {
                 Some(vec![p])
-            } else if let Some(root_dir) = self.root_directory.read().as_ref() {
+            } else if let Some(root_dir) = glist.root_directory.read().as_ref() {
                 Some(vec![root_dir.clone()])
             } else {
                 None
             };
-        self.gdrive.process_list_of_keys(&parents, |i| {
-            if let Ok(finfo) = GDriveInfo::from_object(i, &self.gdrive, &self.directory_map.read())
-                .and_then(FileInfoGDrive::from_gdriveinfo)
-            {
-                if let Some(url) = finfo.get_finfo().urlname.as_ref() {
-                    writeln!(stdout().lock(), "{}", url.as_str())?;
+            glist.gdrive.process_list_of_keys(&parents, |i| {
+                if let Ok(finfo) =
+                    GDriveInfo::from_object(i, &glist.gdrive, &glist.directory_map.read())
+                        .and_then(FileInfoGDrive::from_gdriveinfo)
+                {
+                    if let Some(url) = finfo.get_finfo().urlname.as_ref() {
+                        writeln!(stdout().lock(), "{}", url.as_str())?;
+                    }
                 }
-            }
-            Ok(())
+                Ok(())
+            })
         })
+        .await?
     }
 
     async fn copy_from(
