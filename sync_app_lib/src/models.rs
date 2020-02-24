@@ -1,6 +1,8 @@
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use anyhow::Error;
 use chrono::{DateTime, Utc};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use tokio::task::spawn_blocking;
 use url::Url;
 
 use gdrive_lib::directory_info::DirectoryInfo;
@@ -195,7 +197,7 @@ impl From<FileSyncCache> for InsertFileSyncCache {
 }
 
 impl FileSyncCache {
-    pub fn get_cache_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
+    pub fn get_cache_list_sync(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::file_sync_cache::dsl::{file_sync_cache, src_url};
         let conn = pool.get()?;
         file_sync_cache
@@ -204,11 +206,16 @@ impl FileSyncCache {
             .map_err(Into::into)
     }
 
-    pub fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
-        Self::delete_by_id(pool, self.id)
+    pub async fn get_cache_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
+        let pool = pool.clone();
+        spawn_blocking(move || Self::get_cache_list_sync(&pool)).await?
     }
 
-    pub fn delete_by_id(pool: &PgPool, id_: i32) -> Result<(), Error> {
+    pub fn delete_cache_entry_sync(&self, pool: &PgPool) -> Result<(), Error> {
+        Self::delete_by_id_sync(pool, self.id)
+    }
+
+    pub fn delete_by_id_sync(pool: &PgPool, id_: i32) -> Result<(), Error> {
         use crate::schema::file_sync_cache::dsl::{file_sync_cache, id};
         let conn = pool.get()?;
         diesel::delete(file_sync_cache.filter(id.eq(id_)))
@@ -216,22 +223,40 @@ impl FileSyncCache {
             .map(|_| ())
             .map_err(Into::into)
     }
+
+    pub async fn delete_by_id(pool: &PgPool, id_: i32) -> Result<(), Error> {
+        let pool = pool.clone();
+        spawn_blocking(move || Self::delete_by_id_sync(&pool, id_)).await?
+    }
+
+    pub async fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
+        Self::delete_by_id(pool, self.id).await
+    }
 }
 
 impl InsertFileSyncCache {
-    pub fn cache_sync(pool: &PgPool, src_url: &str, dst_url: &str) -> Result<FileSyncCache, Error> {
+    pub fn cache_sync_sync(&self, pool: &PgPool) -> Result<FileSyncCache, Error> {
         let conn = pool.get()?;
-        let _: Url = src_url.parse()?;
-        let _: Url = dst_url.parse()?;
-        let value = Self {
-            src_url: src_url.into(),
-            dst_url: dst_url.into(),
-            created_at: Utc::now(),
-        };
         diesel::insert_into(file_sync_cache::table)
-            .values(&value)
+            .values(self)
             .get_result(&conn)
             .map_err(Into::into)
+    }
+
+    pub async fn cache_sync(
+        pool: &PgPool,
+        src_url: &str,
+        dst_url: &str,
+    ) -> Result<FileSyncCache, Error> {
+        let pool = pool.clone();
+        let src_url: Url = src_url.parse()?;
+        let dst_url: Url = dst_url.parse()?;
+        let value = Self {
+            src_url: src_url.into_string(),
+            dst_url: dst_url.into_string(),
+            created_at: Utc::now(),
+        };
+        spawn_blocking(move || value.cache_sync_sync(&pool)).await?
     }
 }
 
@@ -262,14 +287,19 @@ impl From<FileSyncConfig> for InsertFileSyncConfig {
 }
 
 impl FileSyncConfig {
-    pub fn get_config_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
+    pub fn get_config_list_sync(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::file_sync_config::dsl::file_sync_config;
         let conn = pool.get()?;
         file_sync_config.load(&conn).map_err(Into::into)
     }
 
-    pub fn get_url_list(pool: &PgPool) -> Result<Vec<Url>, Error> {
-        let proc_list: Result<Vec<_>, Error> = Self::get_config_list(pool)?
+    pub async fn get_config_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
+        let pool = pool.clone();
+        spawn_blocking(move || Self::get_config_list_sync(&pool)).await?
+    }
+
+    pub fn get_url_list_sync(pool: &PgPool) -> Result<Vec<Url>, Error> {
+        let proc_list: Result<Vec<_>, Error> = Self::get_config_list_sync(pool)?
             .into_iter()
             .map(|v| {
                 let u0: Url = v.src_url.parse()?;
@@ -279,26 +309,36 @@ impl FileSyncConfig {
             .collect();
         Ok(proc_list?.into_iter().flatten().collect())
     }
+
+    pub async fn get_url_list(pool: &PgPool) -> Result<Vec<Url>, Error> {
+        let pool = pool.clone();
+        spawn_blocking(move || Self::get_url_list_sync(&pool)).await?
+    }
 }
 
 impl InsertFileSyncConfig {
-    pub fn insert_config(
+    pub fn insert_config_sync(&self, pool: &PgPool) -> Result<FileSyncConfig, Error> {
+        let conn = pool.get()?;
+        diesel::insert_into(file_sync_config::table)
+            .values(self)
+            .get_result(&conn)
+            .map_err(Into::into)
+    }
+
+    pub async fn insert_config(
         pool: &PgPool,
         src_url: &str,
         dst_url: &str,
     ) -> Result<FileSyncConfig, Error> {
-        let conn = pool.get()?;
-        let _: Url = src_url.parse()?;
-        let _: Url = dst_url.parse()?;
+        let src_url: Url = src_url.parse()?;
+        let dst_url: Url = dst_url.parse()?;
         let value = Self {
-            src_url: src_url.into(),
-            dst_url: dst_url.into(),
+            src_url: src_url.into_string(),
+            dst_url: dst_url.into_string(),
             last_run: Utc::now(),
         };
-        diesel::insert_into(file_sync_config::table)
-            .values(&value)
-            .get_result(&conn)
-            .map_err(Into::into)
+        let pool = pool.clone();
+        spawn_blocking(move || value.insert_config_sync(&pool)).await?
     }
 }
 
@@ -309,10 +349,15 @@ pub struct AuthorizedUsers {
 }
 
 impl AuthorizedUsers {
-    pub fn get_authorized_users(pool: &PgPool) -> Result<Vec<Self>, Error> {
+    pub fn get_authorized_users_sync(pool: &PgPool) -> Result<Vec<Self>, Error> {
         use crate::schema::authorized_users::dsl::authorized_users;
         let conn = pool.get()?;
         authorized_users.load(&conn).map_err(Into::into)
+    }
+
+    pub async fn get_authorized_users(pool: &PgPool) -> Result<Vec<Self>, Error> {
+        let pool = pool.clone();
+        spawn_blocking(move || Self::get_authorized_users_sync(&pool)).await?
     }
 }
 
@@ -336,25 +381,23 @@ pub struct BlackList {
 }
 
 impl BlackList {
-    pub fn new(pool: &PgPool) -> Result<Self, Error> {
-        FileSyncBlacklist::get_blacklist(pool).map(|blacklist| Self { blacklist })
+    pub async fn new(pool: &PgPool) -> Result<Self, Error> {
+        let pool = pool.clone();
+        spawn_blocking(move || {
+            FileSyncBlacklist::get_blacklist(&pool).map(|blacklist| Self { blacklist })
+        })
+        .await?
     }
 
     pub fn is_in_blacklist(&self, url: &Url) -> bool {
-        for item in &self.blacklist {
-            if url.as_str().contains(&item.blacklist_url) {
-                return true;
-            }
-        }
-        false
+        self.blacklist
+            .par_iter()
+            .any(|item| url.as_str().contains(&item.blacklist_url))
     }
 
     pub fn could_be_in_blacklist(&self, url: &Url) -> bool {
-        for item in &self.blacklist {
-            if item.blacklist_url.contains(url.as_str()) {
-                return true;
-            }
-        }
-        false
+        self.blacklist
+            .par_iter()
+            .any(|item| item.blacklist_url.contains(url.as_str()))
     }
 }

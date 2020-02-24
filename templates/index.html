@@ -86,12 +86,12 @@ DISPLAY_TEXT
         }
         xmlhttp.send(null);
     }
-    function deleteEntry( url_ ) {
+    function deleteEntry( url_, id ) {
         let url = '/sync/remove?url=' + url_;
         let xmlhttp = new XMLHttpRequest();
         xmlhttp.open('GET', url, true);
         xmlhttp.onload = function see_result() {
-            location.reload();
+            removeCacheEntry( id );
         }
         xmlhttp.send(null);
     }

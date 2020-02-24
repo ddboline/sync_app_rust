@@ -4,12 +4,13 @@ use anyhow::{format_err, Error};
 use chrono::{DateTime, NaiveDate, Utc};
 use log::debug;
 use maplit::hashmap;
-use reqwest::blocking::Response;
 use reqwest::header::HeaderMap;
+use reqwest::Response;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::future::Future;
 use std::io::{stdout, Write};
 
 use super::config::Config;
@@ -102,7 +103,7 @@ impl MovieSync {
         Ok((from_url, to_url))
     }
 
-    pub fn init(&self) -> Result<(), Error> {
+    pub async fn init(&self) -> Result<(), Error> {
         let user = self
             .config
             .garmin_username
@@ -124,29 +125,31 @@ impl MovieSync {
         let url = from_url.join("api/auth")?;
         let resp = self
             .session0
-            .post(&url, &HeaderMap::new(), &data)?
+            .post(&url, &HeaderMap::new(), &data)
+            .await?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
         let url = to_url.join("api/auth")?;
         let resp = self
             .session1
-            .post(&url, &HeaderMap::new(), &data)?
+            .post(&url, &HeaderMap::new(), &data)
+            .await?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
         Ok(())
     }
 
-    pub fn run_sync(&self) -> Result<Vec<String>, Error> {
-        self.init()?;
+    pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
+        self.init().await?;
         let mut output = Vec::new();
 
         let (from_url, to_url) = self.get_urls()?;
         let url = from_url.join("list/last_modified")?;
         debug!("{}", url);
-        let last_modified0 = Self::get_last_modified(&url, &self.session0)?;
+        let last_modified0 = Self::get_last_modified(&url, &self.session0).await?;
         let url = to_url.join("list/last_modified")?;
         debug!("{}", url);
-        let last_modified1 = Self::get_last_modified(&url, &self.session1)?;
+        let last_modified1 = Self::get_last_modified(&url, &self.session1).await?;
 
         debug!("{:?} {:?}", last_modified0, last_modified1);
 
@@ -158,11 +161,18 @@ impl MovieSync {
                 let now = Utc::now();
                 let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
                 let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
-                let results =
-                    self.run_single_sync(table, *last_mod0, *last_mod1, js_prefix, |resp| {
-                        let result: Vec<$T> = resp.json()?;
-                        Ok(result)
-                    })?;
+                let results = self
+                    .run_single_sync(
+                        table,
+                        *last_mod0,
+                        *last_mod1,
+                        js_prefix,
+                        |resp| async move {
+                            let result: Vec<$T> = resp.json().await?;
+                            Ok(result)
+                        },
+                    )
+                    .await?;
                 output.extend_from_slice(&results);
             }};
         }
@@ -175,11 +185,12 @@ impl MovieSync {
         Ok(output)
     }
 
-    fn get_last_modified(
+    async fn get_last_modified(
         url: &Url,
         session: &ReqwestSession,
     ) -> Result<HashMap<String, DateTime<Utc>>, Error> {
-        let last_modified: Vec<LastModifiedStruct> = session.get(url, &HeaderMap::new())?.json()?;
+        let last_modified: Vec<LastModifiedStruct> =
+            session.get(url, &HeaderMap::new()).await?.json().await?;
         let results = last_modified
             .into_iter()
             .map(|entry| (entry.table, entry.last_modified))
@@ -187,17 +198,18 @@ impl MovieSync {
         Ok(results)
     }
 
-    fn run_single_sync<T, F>(
+    async fn run_single_sync<T, U, F>(
         &self,
         table: &str,
         last_modified0: DateTime<Utc>,
         last_modified1: DateTime<Utc>,
         js_prefix: &str,
-        transform: F,
+        transform: U,
     ) -> Result<Vec<String>, Error>
     where
         T: Debug + Serialize,
-        F: FnMut(Response) -> Result<Vec<T>, Error>,
+        U: FnMut(Response) -> F,
+        F: Future<Output = Result<Vec<T>, Error>>,
     {
         let (from_url, to_url) = self.get_urls()?;
         if last_modified0 > last_modified1 {
@@ -211,6 +223,7 @@ impl MovieSync {
                 js_prefix,
                 transform,
             )
+            .await
         } else {
             _run_single_sync(
                 &to_url,
@@ -222,11 +235,12 @@ impl MovieSync {
                 js_prefix,
                 transform,
             )
+            .await
         }
     }
 }
 
-fn _run_single_sync<T, F>(
+async fn _run_single_sync<T, U, F>(
     endpoint0: &Url,
     session0: &ReqwestSession,
     endpoint1: &Url,
@@ -234,11 +248,12 @@ fn _run_single_sync<T, F>(
     table: &str,
     last_modified: DateTime<Utc>,
     js_prefix: &str,
-    mut transform: F,
+    mut transform: U,
 ) -> Result<Vec<String>, Error>
 where
     T: Debug + Serialize,
-    F: FnMut(Response) -> Result<Vec<T>, Error>,
+    U: FnMut(Response) -> F,
+    F: Future<Output = Result<Vec<T>, Error>>,
 {
     let mut output = Vec::new();
 
@@ -250,7 +265,7 @@ where
     let url = endpoint0.join(&path)?;
     writeln!(stdout(), "{}", url)?;
     output.push(format!("{}", url));
-    let data = transform(session0.get(&url, &HeaderMap::new())?)?;
+    let data = transform(session0.get(&url, &HeaderMap::new()).await?).await?;
 
     let path = format!("list/{}", table);
     let url = endpoint1.join(&path)?;
@@ -261,7 +276,8 @@ where
             js_prefix=> chunk,
         };
         session1
-            .post(&url, &HeaderMap::new(), &js)?
+            .post(&url, &HeaderMap::new(), &js)
+            .await?
             .error_for_status()?;
     }
     Ok(output)
@@ -274,13 +290,13 @@ mod tests {
     use crate::config::Config;
     use crate::movie_sync::MovieSync;
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_movie_sync() {
+    async fn test_movie_sync() {
         let config = Config::init_config().unwrap();
         let s = MovieSync::new(config);
-        s.init().unwrap();
-        let result = s.run_sync().unwrap();
+        s.init().await.unwrap();
+        let result = s.run_sync().await.unwrap();
         writeln!(stdout(), "{:?}", result).unwrap();
         assert!(result.len() > 0);
     }

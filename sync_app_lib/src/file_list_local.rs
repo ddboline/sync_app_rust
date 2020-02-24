@@ -1,11 +1,13 @@
 use anyhow::{format_err, Error};
+use async_trait::async_trait;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
-use std::fs::{copy, create_dir_all, remove_file, rename};
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::string::ToString;
 use std::time::SystemTime;
+use tokio::fs::{copy, create_dir_all, remove_file, rename};
+use tokio::task::spawn_blocking;
 use url::Url;
 use walkdir::WalkDir;
 
@@ -25,15 +27,15 @@ impl FileListLocal {
         let basestr = basepath.to_string_lossy().to_string();
         let baseurl = Url::from_file_path(basepath.clone())
             .map_err(|_| format_err!("Failed to parse url"))?;
-        let flist = FileList {
+        let flist = FileList::new(
             baseurl,
             basepath,
-            config: config.clone(),
-            servicetype: FileService::Local,
-            servicesession: basestr.parse()?,
-            filemap: HashMap::new(),
-            pool: pool.clone(),
-        };
+            config.clone(),
+            FileService::Local,
+            basestr.parse()?,
+            HashMap::new(),
+            pool.clone(),
+        );
         Ok(Self(flist))
     }
 
@@ -43,15 +45,15 @@ impl FileListLocal {
                 .to_file_path()
                 .map_err(|_| format_err!("Parse failure"))?;
             let basestr = path.to_string_lossy().to_string();
-            let flist = FileList {
-                baseurl: url.clone(),
-                basepath: path,
-                config: config.clone(),
-                servicetype: FileService::Local,
-                servicesession: basestr.parse()?,
-                pool: pool.clone(),
-                filemap: HashMap::new(),
-            };
+            let flist = FileList::new(
+                url.clone(),
+                path,
+                config.clone(),
+                FileService::Local,
+                basestr.parse()?,
+                HashMap::new(),
+                pool.clone(),
+            );
             Ok(Self(flist))
         } else {
             Err(format_err!("Wrong scheme"))
@@ -59,12 +61,13 @@ impl FileListLocal {
     }
 }
 
+#[async_trait]
 impl FileListTrait for FileListLocal {
     fn get_baseurl(&self) -> &Url {
-        &self.0.baseurl
+        self.0.get_baseurl()
     }
     fn set_baseurl(&mut self, baseurl: Url) {
-        self.0.baseurl = baseurl;
+        self.0.set_baseurl(baseurl);
     }
 
     fn get_basepath(&self) -> &Path {
@@ -84,86 +87,94 @@ impl FileListTrait for FileListLocal {
     }
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
-        &self.0.filemap
+        self.0.get_filemap()
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
         self.0.with_list(filelist)
     }
 
-    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let servicesession = self.get_servicesession();
-        let basedir = self.get_baseurl().path();
-        let file_list = self.load_file_list()?;
-        let flist_dict = self.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
+    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+        let local_list = self.clone();
+        spawn_blocking(move || {
+            let servicesession = local_list.get_servicesession();
+            let basedir = local_list.get_baseurl().path();
+            let file_list = local_list.load_file_list()?;
+            let flist_dict = local_list.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
 
-        let wdir = WalkDir::new(&basedir).same_file_system(true);
+            let wdir = WalkDir::new(&basedir).same_file_system(true);
 
-        let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
+            let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
-        let flist = entries
-            .into_par_iter()
-            .filter_map(|entry| {
-                let filepath = entry
-                    .path()
-                    .canonicalize()
-                    .ok()
-                    .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
-                let (modified, size) = entry.metadata().ok().map_or_else(
-                    || (0, 0),
-                    |metadata| {
-                        let modified = metadata
-                            .modified()
-                            .unwrap()
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs() as u32;
-                        let size = metadata.len() as u32;
-                        (modified, size)
-                    },
-                );
-                if let Some(finfo) = flist_dict.get(&filepath) {
-                    if let Some(fstat) = finfo.filestat {
-                        if fstat.st_mtime >= modified && fstat.st_size == size {
-                            return Some(finfo.clone());
+            let flist = entries
+                .into_par_iter()
+                .filter_map(|entry| {
+                    let filepath = entry
+                        .path()
+                        .canonicalize()
+                        .ok()
+                        .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
+                    let (modified, size) = entry.metadata().ok().map_or_else(
+                        || (0, 0),
+                        |metadata| {
+                            let modified = metadata
+                                .modified()
+                                .unwrap()
+                                .duration_since(SystemTime::UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs() as u32;
+                            let size = metadata.len() as u32;
+                            (modified, size)
+                        },
+                    );
+                    if let Some(finfo) = flist_dict.get(&filepath) {
+                        if let Some(fstat) = finfo.filestat {
+                            if fstat.st_mtime >= modified && fstat.st_size == size {
+                                return Some(finfo.clone());
+                            }
                         }
-                    }
-                };
-                FileInfoLocal::from_direntry(
-                    &entry,
-                    Some(servicesession.0.to_string().into()),
-                    Some(servicesession.clone()),
-                )
-                .ok()
-                .map(|x| x.0)
-            })
-            .collect();
-
-        Ok(flist)
-    }
-
-    fn print_list(&self) -> Result<(), Error> {
-        let basedir = self.get_baseurl().path();
-
-        let wdir = WalkDir::new(&basedir).same_file_system(true).max_depth(1);
-
-        let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
-
-        entries
-            .into_par_iter()
-            .map(|entry| {
-                let filepath = entry
-                    .path()
-                    .canonicalize()
+                    };
+                    FileInfoLocal::from_direntry(
+                        &entry,
+                        Some(servicesession.0.to_string().into()),
+                        Some(servicesession.clone()),
+                    )
                     .ok()
-                    .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
-                writeln!(stdout().lock(), "{}", filepath)?;
-                Ok(())
-            })
-            .collect()
+                    .map(|x| x.0)
+                })
+                .collect();
+
+            Ok(flist)
+        })
+        .await?
     }
 
-    fn copy_from(
+    async fn print_list(&self) -> Result<(), Error> {
+        let local_list = self.clone();
+        spawn_blocking(move || {
+            let basedir = local_list.get_baseurl().path();
+
+            let wdir = WalkDir::new(&basedir).same_file_system(true).max_depth(1);
+
+            let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
+
+            entries
+                .into_par_iter()
+                .map(|entry| {
+                    let filepath = entry
+                        .path()
+                        .canonicalize()
+                        .ok()
+                        .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
+                    writeln!(stdout().lock(), "{}", filepath)?;
+                    Ok(())
+                })
+                .collect()
+        })
+        .await?
+    }
+
+    async fn copy_from(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -192,19 +203,23 @@ impl FileListTrait for FileListLocal {
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
-                create_dir_all(&parent_dir)?;
+                create_dir_all(&parent_dir).await?;
             }
 
-            copy(&remote_file, &local_file)?;
+            copy(&remote_file, &local_file).await?;
             Ok(())
         }
     }
 
-    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
-        self.copy_from(finfo0, finfo1)
+    async fn copy_to(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
+        self.copy_from(finfo0, finfo1).await
     }
 
-    fn move_file(
+    async fn move_file(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -222,20 +237,20 @@ impl FileListTrait for FileListLocal {
         if finfo0.servicetype != FileService::Local || finfo1.servicetype != FileService::Local {
             Ok(())
         } else {
-            rename(&path0, path1).or_else(|_| {
-                copy(&path0, &path1)?;
-                remove_file(&path0)?;
-                Ok(())
-            })
+            if rename(&path0, path1).await.is_err() {
+                copy(&path0, &path1).await?;
+                remove_file(&path0).await?;
+            }
+            Ok(())
         }
     }
 
-    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
+    async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::Local {
             Err(format_err!("Wrong service type"))
         } else if let Some(filepath) = finfo.filepath.as_ref() {
-            remove_file(filepath).map_err(Into::into)
+            remove_file(filepath).await.map_err(Into::into)
         } else {
             Ok(())
         }
@@ -246,10 +261,10 @@ impl FileListTrait for FileListLocal {
 mod tests {
     use anyhow::Error;
     use std::collections::HashMap;
+    use std::convert::TryInto;
     use std::io::{stdout, Write};
     use std::path::PathBuf;
     use url::Url;
-    use std::convert::TryInto;
 
     use crate::config::Config;
     use crate::file_info::FileInfo;
@@ -277,15 +292,15 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_fill_file_list() -> Result<(), Error> {
+    async fn test_fill_file_list() -> Result<(), Error> {
         let basepath: PathBuf = "src".parse()?;
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let flist = FileListLocal::new(&basepath, &config, &pool)?;
 
-        let new_flist = flist.fill_file_list()?;
+        let new_flist = flist.fill_file_list().await?;
 
         writeln!(stdout(), "0 {}", new_flist.len())?;
 
@@ -339,14 +354,14 @@ mod tests {
 
         let new_flist = flist.load_file_list()?;
 
-        assert_eq!(new_flist.len(), flist.0.filemap.len());
+        assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
         writeln!(stdout(), "{}", new_flist.len())?;
         assert!(new_flist.len() != 0);
 
-        let new_flist = flist.fill_file_list()?;
+        let new_flist = flist.fill_file_list().await?;
 
-        assert_eq!(new_flist.len(), flist.0.filemap.len());
+        assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
         writeln!(stdout(), "{}", new_flist.len())?;
         assert!(new_flist.len() != 0);

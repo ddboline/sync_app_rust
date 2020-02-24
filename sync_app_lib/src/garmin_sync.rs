@@ -1,12 +1,14 @@
 use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
+use log::debug;
 use maplit::hashmap;
-use reqwest::blocking::Response;
 use reqwest::header::HeaderMap;
+use reqwest::Response;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::future::Future;
 
 use super::config::Config;
 use super::iso_8601_datetime;
@@ -66,7 +68,7 @@ impl GarminSync {
         Ok((from_url, to_url))
     }
 
-    pub fn init(&self) -> Result<(), Error> {
+    pub async fn init(&self) -> Result<(), Error> {
         let (from_url, to_url) = self.get_urls()?;
         let user = self
             .config
@@ -87,156 +89,193 @@ impl GarminSync {
         let url = from_url.join("api/auth")?;
         let resp = self
             .session0
-            .post(&url, &HeaderMap::new(), &data)?
+            .post(&url, &HeaderMap::new(), &data)
+            .await?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
         let url = to_url.join("api/auth")?;
         let resp = self
             .session1
-            .post(&url, &HeaderMap::new(), &data)?
+            .post(&url, &HeaderMap::new(), &data)
+            .await?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
         Ok(())
     }
 
-    pub fn run_sync(&self) -> Result<Vec<String>, Error> {
-        self.init()?;
+    pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
+        self.init().await?;
         let mut output = Vec::new();
-        let results = self.run_single_sync_scale_measurement(
-            "garmin/scale_measurements",
-            "measurements",
-            |resp| {
-                let url = resp.url().clone();
-                let results: Vec<ScaleMeasurement> = resp.json()?;
-                output.push(format!("measurements {} {}", url, results.len()));
-                let results: HashMap<_, _> =
-                    results.into_iter().map(|val| (val.datetime, val)).collect();
-                Ok(results)
-            },
-        )?;
+        let results = self
+            .run_single_sync_scale_measurement(
+                "garmin/scale_measurements",
+                "measurements",
+                |resp| {
+                    let url = resp.url().clone();
+                    async move {
+                        let results: Vec<ScaleMeasurement> = resp.json().await?;
+                        debug!("measurements {} {}", url, results.len());
+                        let results: HashMap<_, _> =
+                            results.into_iter().map(|val| (val.datetime, val)).collect();
+                        Ok(results)
+                    }
+                },
+            )
+            .await?;
         output.extend_from_slice(&results);
 
-        let results =
-            self.run_single_sync_activities("garmin/strava/activities_db", "updates", |resp| {
+        let results = self
+            .run_single_sync_activities("garmin/strava/activities_db", "updates", |resp| {
                 let url = resp.url().clone();
-                let results: HashMap<String, StravaItem> = resp.json()?;
-                output.push(format!("activities {} {}", url, results.len()));
-                Ok(results)
-            })?;
+                async move {
+                    let results: HashMap<String, StravaItem> = resp.json().await?;
+                    debug!("activities {} {}", url, results.len());
+                    Ok(results)
+                }
+            })
+            .await?;
         output.extend_from_slice(&results);
 
         Ok(output)
     }
 
-    fn run_single_sync_scale_measurement<F>(
+    async fn run_single_sync_scale_measurement<F, T>(
         &self,
         path: &str,
         js_prefix: &str,
-        mut transform: F,
+        mut transform: T,
     ) -> Result<Vec<String>, Error>
     where
-        F: FnMut(Response) -> Result<HashMap<DateTime<Utc>, ScaleMeasurement>, Error>,
+        T: FnMut(Response) -> F,
+        F: Future<Output = Result<HashMap<DateTime<Utc>, ScaleMeasurement>, Error>>,
     {
         let mut output = Vec::new();
         let (from_url, to_url) = self.get_urls()?;
 
         let url = from_url.join(path)?;
-        let measurements0 = transform(self.session0.get(&url, &HeaderMap::new())?)?;
+        let measurements0 = transform(self.session0.get(&url, &HeaderMap::new()).await?).await?;
         let url = to_url.join(path)?;
-        let measurements1 = transform(self.session1.get(&url, &HeaderMap::new())?)?;
+        let measurements1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
 
-        let mut combine = |measurements0: &HashMap<DateTime<Utc>, ScaleMeasurement>,
-                           measurements1: &HashMap<DateTime<Utc>, ScaleMeasurement>|
-         -> Result<(), Error> {
-            let measurements: Vec<_> = measurements0
-                .iter()
-                .filter_map(|(k, v)| {
-                    if measurements1.contains_key(&k) {
-                        None
-                    } else {
-                        Some(v)
-                    }
-                })
-                .collect();
-            if !measurements.is_empty() {
-                if measurements.len() < 20 {
-                    output.push(format!("{:?}", measurements));
-                } else {
-                    output.push(format!("session1 {}", measurements.len()));
-                }
-                let url = to_url.join(path)?;
-                for meas in measurements.chunks(100) {
-                    let data = hashmap! {
-                        js_prefix => meas,
-                    };
-                    self.session1
-                        .post(&url, &HeaderMap::new(), &data)?
-                        .error_for_status()?;
-                }
-            }
-            Ok(())
-        };
-        combine(&measurements0, &measurements1)?;
-        combine(&measurements1, &measurements0)?;
+        output.extend_from_slice(&[self
+            .combine_measurements(&measurements0, &measurements1, path, js_prefix, &to_url)
+            .await?]);
+        output.extend_from_slice(&[self
+            .combine_measurements(&measurements1, &measurements0, path, js_prefix, &to_url)
+            .await?]);
 
         Ok(output)
     }
 
-    fn run_single_sync_activities<F>(
+    async fn combine_measurements(
+        &self,
+        measurements0: &HashMap<DateTime<Utc>, ScaleMeasurement>,
+        measurements1: &HashMap<DateTime<Utc>, ScaleMeasurement>,
+        path: &str,
+        js_prefix: &str,
+        to_url: &Url,
+    ) -> Result<String, Error> {
+        let mut output = String::new();
+        let measurements: Vec<_> = measurements0
+            .iter()
+            .filter_map(|(k, v)| {
+                if measurements1.contains_key(&k) {
+                    None
+                } else {
+                    Some(v)
+                }
+            })
+            .collect();
+        if !measurements.is_empty() {
+            if measurements.len() < 20 {
+                output = format!("{:?}", measurements);
+            } else {
+                output = format!("session1 {}", measurements.len());
+            }
+            let url = to_url.join(path)?;
+            for meas in measurements.chunks(100) {
+                let data = hashmap! {
+                    js_prefix => meas,
+                };
+                self.session1
+                    .post(&url, &HeaderMap::new(), &data)
+                    .await?
+                    .error_for_status()?;
+            }
+        }
+        Ok(output)
+    }
+
+    async fn run_single_sync_activities<T, F>(
         &self,
         path: &str,
         js_prefix: &str,
-        mut transform: F,
+        mut transform: T,
     ) -> Result<Vec<String>, Error>
     where
-        F: FnMut(Response) -> Result<HashMap<String, StravaItem>, Error>,
+        T: FnMut(Response) -> F,
+        F: Future<Output = Result<HashMap<String, StravaItem>, Error>>,
     {
         let mut output = Vec::new();
         let (from_url, to_url) = self.get_urls()?;
 
         let url = from_url.join(path)?;
-        let activities0 = transform(self.session0.get(&url, &HeaderMap::new())?)?;
+        let activities0 = transform(self.session0.get(&url, &HeaderMap::new()).await?).await?;
         let url = to_url.join(path)?;
-        let activities1 = transform(self.session1.get(&url, &HeaderMap::new())?)?;
+        let activities1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
 
-        let mut combine = |activities0: &HashMap<String, StravaItem>,
-                           activities1: &HashMap<String, StravaItem>|
-         -> Result<(), Error> {
-            let activities: Vec<_> = activities0
-                .iter()
-                .filter_map(|(k, v)| {
-                    if activities1.contains_key(k.as_str()) {
-                        None
-                    } else {
-                        Some((k, v.clone()))
-                    }
-                })
-                .collect();
-            if !activities.is_empty() {
-                if activities.len() < 20 {
-                    output.push(format!("{:?}", activities));
+        output.push(
+            self.combine_activities(&activities0, &activities1, &to_url, path, js_prefix)
+                .await?,
+        );
+        output.push(
+            self.combine_activities(&activities1, &activities0, &to_url, path, js_prefix)
+                .await?,
+        );
+
+        Ok(output)
+    }
+
+    async fn combine_activities(
+        &self,
+        activities0: &HashMap<String, StravaItem>,
+        activities1: &HashMap<String, StravaItem>,
+        to_url: &Url,
+        path: &str,
+        js_prefix: &str,
+    ) -> Result<String, Error> {
+        let mut output = String::new();
+        let activities: Vec<_> = activities0
+            .iter()
+            .filter_map(|(k, v)| {
+                if activities1.contains_key(k.as_str()) {
+                    None
                 } else {
-                    output.push(format!("session1 {}", activities.len()));
+                    Some((k, v.clone()))
                 }
-                let url = to_url.join(path)?;
-                for activity in activities.chunks(100) {
-                    let act: HashMap<String, StravaItem> = activity
-                        .iter()
-                        .map(|(k, v)| ((*k).to_string(), v.clone()))
-                        .collect();
-                    let data = hashmap! {
-                        js_prefix => act,
-                    };
-                    self.session1
-                        .post(&url, &HeaderMap::new(), &data)?
-                        .error_for_status()?;
-                }
+            })
+            .collect();
+        if !activities.is_empty() {
+            if activities.len() < 20 {
+                output = format!("{:?}", activities);
+            } else {
+                output = format!("session1 {}", activities.len());
             }
-            Ok(())
-        };
-        combine(&activities0, &activities1)?;
-        combine(&activities1, &activities0)?;
-
+            let url = to_url.join(path)?;
+            for activity in activities.chunks(100) {
+                let act: HashMap<String, StravaItem> = activity
+                    .iter()
+                    .map(|(k, v)| ((*k).to_string(), v.clone()))
+                    .collect();
+                let data = hashmap! {
+                    js_prefix => act,
+                };
+                self.session1
+                    .post(&url, &HeaderMap::new(), &data)
+                    .await?
+                    .error_for_status()?;
+            }
+        }
         Ok(output)
     }
 }

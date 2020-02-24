@@ -28,17 +28,17 @@ impl FileInfoS3 {
         let serviceid = Some(bucket.to_string().into());
         let servicesession = Some(bucket.parse()?);
 
-        let finfo = FileInfo {
+        let finfo = FileInfo::new(
             filename,
-            filepath: Some(filepath.to_path_buf().into()),
-            urlname: Some(fileurl.into()),
-            md5sum: None,
-            sha1sum: None,
-            filestat: None,
+            Some(filepath.to_path_buf().into()),
+            Some(fileurl.into()),
+            None,
+            None,
+            None,
             serviceid,
-            servicetype: FileService::S3,
+            FileService::S3,
             servicesession,
-        };
+        );
         Ok(Self(finfo))
     }
 }
@@ -88,20 +88,20 @@ impl FileInfoS3 {
         let serviceid = Some(bucket.to_string().into());
         let servicesession = Some(bucket.parse()?);
 
-        let finfo = FileInfo {
+        let finfo = FileInfo::new(
             filename,
-            filepath: Some(filepath.to_path_buf().into()),
-            urlname: Some(fileurl.into()),
+            Some(filepath.to_path_buf().into()),
+            Some(fileurl.into()),
             md5sum,
-            sha1sum: None,
-            filestat: Some(FileStat {
+            None,
+            Some(FileStat {
                 st_mtime: st_mtime as u32,
                 st_size: size as u32,
             }),
             serviceid,
-            servicetype: FileService::S3,
+            FileService::S3,
             servicesession,
-        };
+        );
 
         Ok(Self(finfo))
     }

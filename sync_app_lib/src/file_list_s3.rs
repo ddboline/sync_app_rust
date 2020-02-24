@@ -1,10 +1,12 @@
 use anyhow::{format_err, Error};
+use async_trait::async_trait;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::fs::{create_dir_all, remove_file};
 use std::io::{stdout, Write};
 use std::path::Path;
+use tokio::task::spawn_blocking;
 use url::Url;
 
 use crate::config::Config;
@@ -26,15 +28,15 @@ impl FileListS3 {
         let baseurl: Url = format!("s3://{}", bucket).parse()?;
         let basepath = Path::new("");
 
-        let flist = FileList {
+        let flist = FileList::new(
             baseurl,
-            basepath: basepath.to_path_buf(),
-            config: config.clone(),
-            servicetype: FileService::S3,
-            servicesession: bucket.parse()?,
-            pool: pool.clone(),
-            filemap: HashMap::new(),
-        };
+            basepath.to_path_buf(),
+            config.clone(),
+            FileService::S3,
+            bucket.parse()?,
+            HashMap::new(),
+            pool.clone(),
+        );
         let s3 = S3Instance::new(&config.aws_region_name);
 
         Ok(Self { flist, s3 })
@@ -44,15 +46,16 @@ impl FileListS3 {
         if url.scheme() == "s3" {
             let basepath = Path::new(url.path());
             let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
-            let flist = FileList {
-                baseurl: url.clone(),
-                basepath: basepath.to_path_buf(),
-                config: config.clone(),
-                servicetype: FileService::S3,
-                servicesession: bucket.parse()?,
-                pool: pool.clone(),
-                filemap: HashMap::new(),
-            };
+            let flist = FileList::new(
+                url.clone(),
+                basepath.to_path_buf(),
+                config.clone(),
+                FileService::S3,
+                bucket.parse()?,
+                HashMap::new(),
+                pool.clone(),
+            );
+            let config = config.clone();
             let s3 = S3Instance::new(&config.aws_region_name);
 
             Ok(Self { flist, s3 })
@@ -67,12 +70,13 @@ impl FileListS3 {
     }
 }
 
+#[async_trait]
 impl FileListTrait for FileListS3 {
     fn get_baseurl(&self) -> &Url {
-        &self.flist.baseurl
+        self.flist.get_baseurl()
     }
     fn set_baseurl(&mut self, baseurl: Url) {
-        self.flist.baseurl = baseurl;
+        self.flist.set_baseurl(baseurl);
     }
     fn get_basepath(&self) -> &Path {
         &self.flist.basepath
@@ -92,14 +96,14 @@ impl FileListTrait for FileListS3 {
     }
 
     fn get_filemap(&self) -> &HashMap<String, FileInfo> {
-        &self.flist.filemap
+        self.flist.get_filemap()
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
         self.flist.with_list(filelist)
     }
 
-    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let bucket = self
             .get_baseurl()
             .host_str()
@@ -107,31 +111,34 @@ impl FileListTrait for FileListS3 {
         let prefix = self.get_baseurl().path().trim_start_matches('/');
 
         self.s3
-            .get_list_of_keys(bucket, Some(prefix))?
+            .get_list_of_keys(bucket, Some(prefix))
+            .await?
             .into_par_iter()
             .map(|f| FileInfoS3::from_object(bucket, f).map(FileInfoTrait::into_finfo))
             .collect()
     }
 
-    fn print_list(&self) -> Result<(), Error> {
+    async fn print_list(&self) -> Result<(), Error> {
         let bucket = self
             .get_baseurl()
             .host_str()
             .ok_or_else(|| format_err!("Parse error"))?;
         let prefix = self.get_baseurl().path().trim_start_matches('/');
 
-        self.s3.process_list_of_keys(bucket, Some(prefix), |i| {
-            writeln!(
-                stdout().lock(),
-                "s3://{}/{}",
-                bucket,
-                i.key.as_ref().map_or_else(|| "", String::as_str)
-            )?;
-            Ok(())
-        })
+        self.s3
+            .process_list_of_keys(bucket, Some(prefix), |i| {
+                writeln!(
+                    stdout().lock(),
+                    "s3://{}/{}",
+                    bucket,
+                    i.key.as_ref().map_or_else(|| "", String::as_str)
+                )?;
+                Ok(())
+            })
+            .await
     }
 
-    fn copy_from(
+    async fn copy_from(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -165,7 +172,7 @@ impl FileListTrait for FileListS3 {
             if Path::new(&local_file).exists() {
                 remove_file(&local_file)?;
             }
-            let md5sum = self.s3.download(&bucket, &key, &local_file)?;
+            let md5sum = self.s3.download(&bucket, &key, &local_file).await?;
             if md5sum
                 != finfo1
                     .md5sum
@@ -188,7 +195,11 @@ impl FileListTrait for FileListS3 {
         }
     }
 
-    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
+    async fn copy_to(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::S3 {
@@ -207,7 +218,7 @@ impl FileListTrait for FileListS3 {
                 .host_str()
                 .ok_or_else(|| format_err!("No bucket"))?;
             let key = remote_url.path().trim_start_matches('/');
-            self.s3.upload(&local_file, &bucket, &key)
+            self.s3.upload(&local_file, &bucket, &key).await
         } else {
             Err(format_err!(
                 "Invalid types {} {}",
@@ -217,7 +228,7 @@ impl FileListTrait for FileListS3 {
         }
     }
 
-    fn move_file(
+    async fn move_file(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -240,14 +251,14 @@ impl FileListTrait for FileListS3 {
             .ok_or_else(|| format_err!("No url"))?;
         let bucket1 = url1.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let key1 = url1.path();
-        let new_tag = self.s3.copy_key(url0, &bucket1, &key1)?;
+        let new_tag = self.s3.copy_key(url0, &bucket1, &key1).await?;
         if new_tag.is_some() {
-            self.s3.delete_key(bucket0, key0)?;
+            self.s3.delete_key(bucket0, key0).await?;
         }
         Ok(())
     }
 
-    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
+    async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         if finfo.servicetype == FileService::S3 {
             let url = finfo
@@ -256,7 +267,7 @@ impl FileListTrait for FileListS3 {
                 .ok_or_else(|| format_err!("No s3 url"))?;
             let bucket = url.host_str().ok_or_else(|| format_err!("No bucket"))?;
             let key = url.path();
-            self.s3.delete_key(&bucket, &key)
+            self.s3.delete_key(&bucket, &key).await
         } else {
             Err(format_err!("Wrong service type"))
         }
@@ -274,13 +285,14 @@ mod tests {
     use crate::pgpool::PgPool;
     use crate::s3_instance::S3Instance;
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_fill_file_list() -> Result<(), Error> {
+    async fn test_fill_file_list() -> Result<(), Error> {
+        let _ = S3Instance::get_instance_lock();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let s3 = S3Instance::new(&config.aws_region_name);
-        let blist = s3.get_list_of_buckets()?;
+        let blist = s3.get_list_of_buckets().await?;
         let bucket = blist
             .get(0)
             .and_then(|b| b.name.clone())
@@ -288,7 +300,7 @@ mod tests {
 
         let mut flist = FileListS3::new(&bucket, &config, &pool)?.max_keys(100);
 
-        let new_flist = flist.fill_file_list()?;
+        let new_flist = flist.fill_file_list().await?;
 
         writeln!(stdout(), "{} {:?}", bucket, new_flist.get(0))?;
         assert!(new_flist.len() > 0);
@@ -299,9 +311,25 @@ mod tests {
 
         let new_flist = flist.load_file_list()?;
 
-        assert_eq!(flist.flist.filemap.len(), new_flist.len());
+        assert_eq!(flist.flist.get_filemap().len(), new_flist.len());
 
         flist.clear_file_list()?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_list_buckets() -> Result<(), Error> {
+        let _ = S3Instance::get_instance_lock();
+        let s3_instance = S3Instance::new("us-east-1").max_keys(100);
+        let blist = s3_instance.get_list_of_buckets().await?;
+        let bucket = blist
+            .get(0)
+            .and_then(|b| b.name.clone())
+            .unwrap_or_else(|| "".to_string());
+        let klist = s3_instance.get_list_of_keys(&bucket, None).await?;
+        writeln!(stdout(), "{} {}", bucket, klist.len())?;
+        assert!(klist.len() > 0);
         Ok(())
     }
 }

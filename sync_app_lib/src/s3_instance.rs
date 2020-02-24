@@ -1,16 +1,23 @@
 use anyhow::{format_err, Error};
+use futures::stream::{StreamExt, TryStreamExt};
+use lazy_static::lazy_static;
+use parking_lot::{Mutex, MutexGuard};
 use rusoto_core::Region;
 use rusoto_s3::{
     Bucket, CopyObjectRequest, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest,
     GetObjectRequest, ListObjectsV2Request, Object, PutObjectRequest, S3Client, S3,
 };
-use s4::S4;
+use s3_ext::S3Ext;
 use std::fmt;
 use std::path::Path;
 use sts_profile_auth::get_client_sts;
 use url::Url;
 
-use gdrive_lib::exponential_retry;
+lazy_static! {
+    static ref S3INSTANCE_TEST_MUTEX: Mutex<()> = Mutex::new(());
+}
+
+use crate::exponential_retry;
 
 #[derive(Clone)]
 pub struct S3Instance {
@@ -42,60 +49,72 @@ impl S3Instance {
         }
     }
 
+    pub fn get_instance_lock() -> MutexGuard<'static, ()> {
+        S3INSTANCE_TEST_MUTEX.lock()
+    }
+
     pub fn max_keys(mut self, max_keys: usize) -> Self {
         self.max_keys = Some(max_keys);
         self
     }
 
-    pub fn get_list_of_buckets(&self) -> Result<Vec<Bucket>, Error> {
-        exponential_retry(|| {
+    pub async fn get_list_of_buckets(&self) -> Result<Vec<Bucket>, Error> {
+        exponential_retry(|| async move {
             self.s3_client
                 .list_buckets()
-                .sync()
+                .await
                 .map(|l| l.buckets.unwrap_or_default())
                 .map_err(Into::into)
         })
+        .await
     }
 
-    pub fn create_bucket(&self, bucket_name: &str) -> Result<String, Error> {
+    pub async fn create_bucket(&self, bucket_name: &str) -> Result<String, Error> {
         exponential_retry(|| {
-            self.s3_client
-                .create_bucket(CreateBucketRequest {
-                    bucket: bucket_name.to_string(),
-                    ..CreateBucketRequest::default()
-                })
-                .sync()?
-                .location
-                .ok_or_else(|| format_err!("Failed to create bucket"))
+            let req = CreateBucketRequest {
+                bucket: bucket_name.to_string(),
+                ..CreateBucketRequest::default()
+            };
+            async move {
+                self.s3_client
+                    .create_bucket(req)
+                    .await?
+                    .location
+                    .ok_or_else(|| format_err!("Failed to create bucket"))
+            }
         })
+        .await
     }
 
-    pub fn delete_bucket(&self, bucket_name: &str) -> Result<(), Error> {
+    pub async fn delete_bucket(&self, bucket_name: &str) -> Result<(), Error> {
         exponential_retry(|| {
-            self.s3_client
-                .delete_bucket(DeleteBucketRequest {
-                    bucket: bucket_name.to_string(),
-                })
-                .sync()
-                .map_err(Into::into)
+            let req = DeleteBucketRequest {
+                bucket: bucket_name.to_string(),
+            };
+            async move { self.s3_client.delete_bucket(req).await.map_err(Into::into) }
         })
+        .await
     }
 
-    pub fn delete_key(&self, bucket_name: &str, key_name: &str) -> Result<(), Error> {
+    pub async fn delete_key(&self, bucket_name: &str, key_name: &str) -> Result<(), Error> {
         exponential_retry(|| {
-            self.s3_client
-                .delete_object(DeleteObjectRequest {
-                    bucket: bucket_name.to_string(),
-                    key: key_name.to_string(),
-                    ..DeleteObjectRequest::default()
-                })
-                .sync()
-                .map(|_| ())
-                .map_err(Into::into)
+            let req = DeleteObjectRequest {
+                bucket: bucket_name.to_string(),
+                key: key_name.to_string(),
+                ..DeleteObjectRequest::default()
+            };
+            async move {
+                self.s3_client
+                    .delete_object(req)
+                    .await
+                    .map(|_| ())
+                    .map_err(Into::into)
+            }
         })
+        .await
     }
 
-    pub fn copy_key(
+    pub async fn copy_key(
         &self,
         source: &Url,
         bucket_to: &str,
@@ -103,113 +122,93 @@ impl S3Instance {
     ) -> Result<Option<String>, Error> {
         exponential_retry(|| {
             let copy_source = source.to_string();
-            self.s3_client
-                .copy_object(CopyObjectRequest {
-                    copy_source,
-                    bucket: bucket_to.to_string(),
-                    key: key_to.to_string(),
-                    ..CopyObjectRequest::default()
-                })
-                .sync()
-                .map_err(Into::into)
+            let req = CopyObjectRequest {
+                copy_source,
+                bucket: bucket_to.to_string(),
+                key: key_to.to_string(),
+                ..CopyObjectRequest::default()
+            };
+            async move { self.s3_client.copy_object(req).await.map_err(Into::into) }
         })
+        .await
         .map(|x| x.copy_object_result.and_then(|s| s.e_tag))
     }
 
-    pub fn upload(&self, fname: &str, bucket_name: &str, key_name: &str) -> Result<(), Error> {
+    pub async fn upload(
+        &self,
+        fname: &str,
+        bucket_name: &str,
+        key_name: &str,
+    ) -> Result<(), Error> {
+        if !Path::new(fname).exists() {
+            return Err(format_err!("File doesn't exist {}", fname));
+        }
         exponential_retry(|| {
-            if !Path::new(fname).exists() {
-                return Err(format_err!("File doesn't exist {}", fname));
-            }
-            exponential_retry(|| {
+            let req = PutObjectRequest {
+                bucket: bucket_name.to_string(),
+                key: key_name.to_string(),
+                ..PutObjectRequest::default()
+            };
+            async move {
                 self.s3_client
-                    .upload_from_file(
-                        fname,
-                        PutObjectRequest {
-                            bucket: bucket_name.to_string(),
-                            key: key_name.to_string(),
-                            ..PutObjectRequest::default()
-                        },
-                    )
+                    .upload_from_file(fname, req)
+                    .await
                     .map(|_| ())
                     .map_err(Into::into)
-            })
+            }
         })
+        .await
     }
 
-    pub fn download(
+    pub async fn download(
         &self,
         bucket_name: &str,
         key_name: &str,
         fname: &str,
     ) -> Result<String, Error> {
         exponential_retry(|| {
-            self.s3_client
-                .download_to_file(
-                    GetObjectRequest {
-                        bucket: bucket_name.to_string(),
-                        key: key_name.to_string(),
-                        ..GetObjectRequest::default()
-                    },
-                    fname,
-                )
-                .map(|x| {
-                    x.e_tag
-                        .as_ref()
-                        .map_or("", |y| y.trim_matches('"'))
-                        .to_string()
-                })
-                .map_err(Into::into)
+            let req = GetObjectRequest {
+                bucket: bucket_name.to_string(),
+                key: key_name.to_string(),
+                ..GetObjectRequest::default()
+            };
+            async move {
+                self.s3_client
+                    .download_to_file(req, fname)
+                    .await
+                    .map(|x| {
+                        x.e_tag
+                            .as_ref()
+                            .map_or("", |y| y.trim_matches('"'))
+                            .to_string()
+                    })
+                    .map_err(Into::into)
+            }
         })
+        .await
     }
 
-    pub fn get_list_of_keys(
+    pub async fn get_list_of_keys(
         &self,
         bucket: &str,
         prefix: Option<&str>,
     ) -> Result<Vec<Object>, Error> {
-        let mut continuation_token = None;
-
-        let mut list_of_keys = Vec::new();
-
-        loop {
-            let current_list = exponential_retry(|| {
-                self.s3_client
-                    .list_objects_v2(ListObjectsV2Request {
-                        bucket: bucket.to_string(),
-                        continuation_token: continuation_token.clone(),
-                        prefix: prefix.map(ToString::to_string),
-                        ..ListObjectsV2Request::default()
-                    })
-                    .sync()
-                    .map_err(Into::into)
-            })?;
-
-            continuation_token = current_list.next_continuation_token.clone();
-
-            match current_list.key_count {
-                Some(0) | None => (),
-                Some(_) => {
-                    list_of_keys.extend_from_slice(&current_list.contents.unwrap_or_else(Vec::new));
-                }
-            };
-
-            match &continuation_token {
-                Some(_) => (),
-                None => break,
-            };
-            if let Some(max_keys) = self.max_keys {
-                if list_of_keys.len() > max_keys {
-                    list_of_keys.resize(max_keys, Object::default());
-                    break;
-                }
+        exponential_retry(|| async move {
+            let stream = match prefix {
+                Some(p) => self.s3_client.iter_objects_with_prefix(bucket, p),
+                None => self.s3_client.iter_objects(bucket),
             }
-        }
-
-        Ok(list_of_keys)
+            .into_stream();
+            let results: Result<Vec<_>, _> = match self.max_keys {
+                Some(nkeys) => stream.take(nkeys).try_collect().await,
+                None => stream.try_collect().await,
+            };
+            results.map_err(Into::into)
+        })
+        .await
     }
 
-    pub fn process_list_of_keys<T>(
+    pub async fn process_list_of_keys<T>(
         &self,
         bucket: &str,
         prefix: Option<&str>,
@@ -218,58 +217,20 @@ impl S3Instance {
     where
         T: Fn(&Object) -> Result<(), Error> + Send + Sync,
     {
-        let mut continuation_token = None;
-
-        loop {
-            let current_list = exponential_retry(|| {
-                self.s3_client
-                    .list_objects_v2(ListObjectsV2Request {
-                        bucket: bucket.to_string(),
-                        continuation_token: continuation_token.clone(),
-                        prefix: prefix.map(ToString::to_string),
-                        ..ListObjectsV2Request::default()
-                    })
-                    .sync()
-                    .map_err(Into::into)
-            })?;
-
-            continuation_token = current_list.next_continuation_token.clone();
-
-            match current_list.key_count {
-                Some(0) | None => (),
-                Some(_) => {
-                    for item in current_list.contents.unwrap_or_else(Vec::new) {
-                        callback(&item)?;
-                    }
+        let mut stream = match prefix {
+            Some(p) => self.s3_client.iter_objects_with_prefix(bucket, p),
+            None => self.s3_client.iter_objects(bucket),
+        };
+        let mut nkeys = 0;
+        while let Some(item) = stream.next().await? {
+            callback(&item)?;
+            nkeys += 1;
+            if let Some(keys) = self.max_keys {
+                if nkeys > keys {
+                    return Ok(());
                 }
-            };
-
-            match &continuation_token {
-                Some(_) => (),
-                None => break,
-            };
+            }
         }
-
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::s3_instance::S3Instance;
-    use std::io::{stdout, Write};
-
-    #[test]
-    #[ignore]
-    fn test_list_buckets() {
-        let s3_instance = S3Instance::new("us-east-1").max_keys(100);
-        let blist = s3_instance.get_list_of_buckets().unwrap();
-        let bucket = blist
-            .get(0)
-            .and_then(|b| b.name.clone())
-            .unwrap_or_else(|| "".to_string());
-        let klist = s3_instance.get_list_of_keys(&bucket, None).unwrap();
-        writeln!(stdout(), "{} {}", bucket, klist.len()).unwrap();
-        assert!(klist.len() > 0);
     }
 }

@@ -4,9 +4,11 @@ use serde::{Deserialize, Serialize};
 use std::convert::Into;
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
+use std::sync::Arc;
 use url::Url;
 
 use crate::file_info_gdrive::FileInfoGDrive;
@@ -88,7 +90,7 @@ impl FromStr for ServiceSession {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub struct FileInfo {
+pub struct FileInfoInner {
     pub filename: String,
     pub filepath: Option<PathBufWrapper>,
     pub urlname: Option<UrlWrapper>,
@@ -98,6 +100,16 @@ pub struct FileInfo {
     pub serviceid: Option<ServiceId>,
     pub servicetype: FileService,
     pub servicesession: Option<ServiceSession>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct FileInfo(Arc<FileInfoInner>);
+
+impl Deref for FileInfo {
+    type Target = FileInfoInner;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 pub enum FileInfoKeyType {
@@ -118,6 +130,40 @@ pub trait FileInfoTrait: Send + Sync + Debug {
 }
 
 impl FileInfo {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        filename: String,
+        filepath: Option<PathBufWrapper>,
+        urlname: Option<UrlWrapper>,
+        md5sum: Option<Md5Sum>,
+        sha1sum: Option<Sha1Sum>,
+        filestat: Option<FileStat>,
+        serviceid: Option<ServiceId>,
+        servicetype: FileService,
+        servicesession: Option<ServiceSession>,
+    ) -> Self {
+        let inner = FileInfoInner {
+            filename,
+            filepath,
+            urlname,
+            md5sum,
+            sha1sum,
+            filestat,
+            serviceid,
+            servicetype,
+            servicesession,
+        };
+        Self(Arc::new(inner))
+    }
+
+    pub fn from_inner(inner: FileInfoInner) -> Self {
+        Self(Arc::new(inner))
+    }
+
+    pub fn inner(&self) -> &FileInfoInner {
+        &self.0
+    }
+
     pub fn from_url(url: &Url) -> Result<Self, Error> {
         match url.scheme() {
             "file" => FileInfoLocal::from_url(url).map(FileInfoTrait::into_finfo),
@@ -154,7 +200,7 @@ impl FileInfoTrait for FileInfo {
 impl TryFrom<&FileInfoCache> for FileInfo {
     type Error = Error;
     fn try_from(item: &FileInfoCache) -> Result<Self, Self::Error> {
-        Ok(Self {
+        let inner = FileInfoInner {
             filename: item.filename.to_string(),
             filepath: item.filepath.clone().map(Into::into),
             urlname: match item.urlname.as_ref() {
@@ -179,7 +225,8 @@ impl TryFrom<&FileInfoCache> for FileInfo {
             serviceid: item.serviceid.clone().map(Into::into),
             servicetype: item.servicetype.parse()?,
             servicesession: map_parse(&item.servicesession)?,
-        })
+        };
+        Ok(Self(Arc::new(inner)))
     }
 }
 

@@ -1,4 +1,5 @@
 use anyhow::{format_err, Error};
+use async_trait::async_trait;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
@@ -6,7 +7,10 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::fs::rename;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use tokio::task::spawn_blocking;
 use url::Url;
 
 use gdrive_lib::directory_info::DirectoryInfo;
@@ -24,26 +28,51 @@ use crate::models::{
 };
 use crate::pgpool::PgPool;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct FileList {
-    pub baseurl: Url,
-    pub basepath: PathBuf,
-    pub config: Config,
-    pub servicetype: FileService,
-    pub servicesession: ServiceSession,
-    pub filemap: HashMap<String, FileInfo>,
-    pub pool: PgPool,
+    baseurl: Url,
+    filemap: Arc<HashMap<String, FileInfo>>,
+    inner: Arc<FileListInner>,
+}
+
+impl Deref for FileList {
+    type Target = FileListInner;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
 }
 
 impl FileList {
-    pub fn from_url(
+    pub fn new(
+        baseurl: Url,
+        basepath: PathBuf,
+        config: Config,
+        servicetype: FileService,
+        servicesession: ServiceSession,
+        filemap: HashMap<String, FileInfo>,
+        pool: PgPool,
+    ) -> Self {
+        Self {
+            baseurl,
+            filemap: Arc::new(filemap),
+            inner: Arc::new(FileListInner {
+                basepath,
+                config,
+                servicetype,
+                servicesession,
+                pool,
+            }),
+        }
+    }
+
+    pub async fn from_url(
         url: &Url,
         config: &Config,
         pool: &PgPool,
     ) -> Result<Box<dyn FileListTrait>, Error> {
         match url.scheme() {
             "gdrive" => {
-                let flist = FileListGDrive::from_url(url, config, pool)?;
+                let flist = FileListGDrive::from_url(url, config, pool).await?;
                 Ok(Box::new(flist))
             }
             "file" => {
@@ -63,6 +92,16 @@ impl FileList {
     }
 }
 
+#[derive(Debug)]
+pub struct FileListInner {
+    pub basepath: PathBuf,
+    pub config: Config,
+    pub servicetype: FileService,
+    pub servicesession: ServiceSession,
+    pub pool: PgPool,
+}
+
+#[async_trait]
 pub trait FileListTrait: Send + Sync + Debug {
     fn get_baseurl(&self) -> &Url;
     fn set_baseurl(&mut self, baseurl: Url);
@@ -77,7 +116,7 @@ pub trait FileListTrait: Send + Sync + Debug {
     fn with_list(&mut self, filelist: Vec<FileInfo>);
 
     // Copy operation where the origin (finfo0) has the same servicetype as self
-    fn copy_from(
+    async fn copy_from(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -86,11 +125,7 @@ pub trait FileListTrait: Send + Sync + Debug {
     }
 
     // Copy operation where the destination (finfo0) has the same servicetype as self
-    fn copy_to(&self, finfo0: &dyn FileInfoTrait, finfo1: &dyn FileInfoTrait) -> Result<(), Error> {
-        panic!("not implemented for {:?} {:?}", finfo0, finfo1);
-    }
-
-    fn move_file(
+    async fn copy_to(
         &self,
         finfo0: &dyn FileInfoTrait,
         finfo1: &dyn FileInfoTrait,
@@ -98,13 +133,21 @@ pub trait FileListTrait: Send + Sync + Debug {
         panic!("not implemented for {:?} {:?}", finfo0, finfo1);
     }
 
-    fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
+    async fn move_file(
+        &self,
+        finfo0: &dyn FileInfoTrait,
+        finfo1: &dyn FileInfoTrait,
+    ) -> Result<(), Error> {
+        panic!("not implemented for {:?} {:?}", finfo0, finfo1);
+    }
+
+    async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         panic!("not implemented for {:?}", finfo);
     }
 
-    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error>;
+    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error>;
 
-    fn print_list(&self) -> Result<(), Error> {
+    async fn print_list(&self) -> Result<(), Error> {
         unimplemented!()
     }
 
@@ -449,6 +492,7 @@ pub trait FileListTrait: Send + Sync + Debug {
     }
 }
 
+#[async_trait]
 impl FileListTrait for FileList {
     fn get_baseurl(&self) -> &Url {
         &self.baseurl
@@ -478,28 +522,33 @@ impl FileListTrait for FileList {
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.filemap = filelist
+        let filemap = filelist
             .into_par_iter()
-            .map(|mut f| {
+            .map(|f| {
                 let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
                     remove_basepath(&path, &self.get_basepath().to_string_lossy())
                 } else {
                     f.filename.to_string()
                 };
-                f.servicesession = Some(self.get_servicesession().clone());
+                let mut inner = f.inner().clone();
+                inner.servicesession = Some(self.get_servicesession().clone());
+                let f = FileInfo::from_inner(inner);
                 (key, f)
             })
             .collect();
+        self.filemap = Arc::new(filemap);
     }
 
-    fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        match self.load_file_list() {
+    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+        let self_ = self.clone();
+        spawn_blocking(move || match self_.load_file_list() {
             Ok(v) => {
                 let result: Result<Vec<_>, Error> = v.par_iter().map(TryInto::try_into).collect();
                 result
             }
             Err(e) => Err(e),
-        }
+        })
+        .await?
     }
 }
 
