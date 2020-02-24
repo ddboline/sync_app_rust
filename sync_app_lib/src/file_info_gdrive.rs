@@ -30,17 +30,17 @@ impl FileInfoGDrive {
             .replace(url.path(), "")
             .parse()?;
 
-        let finfo = FileInfo {
+        let finfo = FileInfo::new(
             filename,
-            filepath: Some(filepath.to_path_buf().into()),
-            urlname: Some(url.clone().into()),
-            md5sum: None,
-            sha1sum: None,
-            filestat: None,
+            Some(filepath.to_path_buf().into()),
+            Some(url.clone().into()),
+            None,
+            None,
+            None,
             serviceid,
-            servicetype: FileService::GDrive,
-            servicesession: Some(servicesession),
-        };
+            FileService::GDrive,
+            Some(servicesession),
+        );
         Ok(Self(finfo))
     }
 }
@@ -73,20 +73,20 @@ impl FileInfoGDrive {
         let serviceid = item.serviceid.map(|x| x.into());
         let servicesession = item.servicesession.and_then(|s| s.parse().ok());
 
-        let finfo = FileInfo {
-            filename: item.filename,
-            filepath: item.filepath.map(Into::into),
-            urlname: item.urlname.map(Into::into),
+        let finfo = FileInfo::new(
+            item.filename,
+            item.filepath.map(Into::into),
+            item.urlname.map(Into::into),
             md5sum,
-            sha1sum: None,
-            filestat: item.filestat.map(|i| FileStat {
+            None,
+            item.filestat.map(|i| FileStat {
                 st_mtime: i.0,
                 st_size: i.1,
             }),
             serviceid,
-            servicetype: FileService::GDrive,
+            FileService::GDrive,
             servicesession,
-        };
+        );
 
         Ok(Self(finfo))
     }

@@ -28,17 +28,17 @@ impl FileInfoLocal {
                 .to_os_string()
                 .into_string()
                 .map_err(|_| format_err!("Parse failure"))?;
-            let finfo = FileInfo {
+            let finfo = FileInfo::new(
                 filename,
-                filepath: Some(path.into()),
-                urlname: Some(url.clone().into()),
-                md5sum: None,
-                sha1sum: None,
-                filestat: None,
-                serviceid: None,
-                servicetype: FileService::Local,
-                servicesession: None,
-            };
+                Some(path.into()),
+                Some(url.clone().into()),
+                None,
+                None,
+                None,
+                None,
+                FileService::Local,
+                None,
+            );
             Ok(Self(finfo))
         } else {
             Err(format_err!("Wrong scheme"))
@@ -143,17 +143,17 @@ impl FileInfoLocal {
         let md5sum = _get_md5sum(&filepath).ok().map(Md5Sum);
         let sha1sum = _get_sha1sum(&filepath).ok().map(Sha1Sum);
 
-        let finfo = FileInfo {
+        let finfo = FileInfo::new(
             filename,
-            filepath: Some(filepath.into()),
-            urlname: Some(fileurl.into()),
+            Some(filepath.into()),
+            Some(fileurl.into()),
             md5sum,
             sha1sum,
             filestat,
             serviceid,
-            servicetype: FileService::Local,
+            FileService::Local,
             servicesession,
-        };
+        );
         Ok(Self(finfo))
     }
 

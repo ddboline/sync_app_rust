@@ -19,17 +19,17 @@ impl FileInfoSSH {
                 .to_os_string()
                 .into_string()
                 .map_err(|_| format_err!("Parse failure"))?;
-            let finfo = FileInfo {
+            let finfo = FileInfo::new(
                 filename,
-                filepath: Some(filepath.to_path_buf().into()),
-                urlname: Some(url.clone().into()),
-                md5sum: None,
-                sha1sum: None,
-                filestat: None,
-                serviceid: None,
-                servicetype: FileService::SSH,
-                servicesession: None,
-            };
+                Some(filepath.to_path_buf().into()),
+                Some(url.clone().into()),
+                None,
+                None,
+                None,
+                None,
+                FileService::SSH,
+                None,
+            );
             Ok(Self(finfo))
         } else {
             Err(format_err!("Wrong scheme"))
