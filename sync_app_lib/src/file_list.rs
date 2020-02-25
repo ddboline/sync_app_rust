@@ -2,7 +2,9 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use log::debug;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{
+    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
+};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::Debug;
@@ -175,6 +177,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         use crate::schema::file_info_cache;
         let pool = self.get_pool();
 
+        // Load existing file_list, create hashmap
         let current_cache: HashMap<_, _> = self
             .load_file_list()?
             .into_par_iter()
@@ -184,6 +187,7 @@ pub trait FileListTrait: Send + Sync + Debug {
             })
             .collect();
 
+        // Load and convert current filemap
         let flist_cache_map: HashMap<_, _> = self
             .get_filemap()
             .par_iter()
@@ -195,103 +199,92 @@ pub trait FileListTrait: Send + Sync + Debug {
             })
             .collect();
 
-        let flist_cache_remove: Vec<_> = current_cache
+        // Delete entries from current_cache not in filemap
+        let results: Result<(), Error> = current_cache
             .par_iter()
-            .filter_map(|(k, _)| match flist_cache_map.get(&k) {
-                Some(_) => None,
-                None => Some(k.clone()),
+            .map(|(k, _)| match flist_cache_map.get(&k) {
+                Some(_) => Ok(()),
+                None => {
+                    use crate::schema::file_info_cache::dsl::{
+                        file_info_cache, filename, filepath, serviceid, servicesession, urlname,
+                    };
+
+                    let conn = pool.get()?;
+
+                    debug!("remove {:?}", k);
+
+                    diesel::delete(
+                        file_info_cache
+                            .filter(filename.eq(&k.filename))
+                            .filter(filepath.eq(&k.filepath))
+                            .filter(serviceid.eq(&k.serviceid))
+                            .filter(servicesession.eq(&k.servicesession))
+                            .filter(urlname.eq(&k.urlname)),
+                    )
+                    .execute(&conn)?;
+                    Ok(())
+                }
             })
             .collect();
-
-        let results: Result<Vec<_>, Error> = flist_cache_remove
-            .into_par_iter()
-            .map(|k| {
-                use crate::schema::file_info_cache::dsl::{
-                    file_info_cache, filename, filepath, serviceid, servicesession, urlname,
-                };
-
-                let conn = pool.get()?;
-
-                debug!("remove {:?}", k);
-
-                diesel::delete(
-                    file_info_cache
-                        .filter(filename.eq(k.filename))
-                        .filter(filepath.eq(k.filepath))
-                        .filter(serviceid.eq(k.serviceid))
-                        .filter(servicesession.eq(k.servicesession))
-                        .filter(urlname.eq(k.urlname)),
-                )
-                .execute(&conn)
-                .map_err(Into::into)
-            })
-            .collect();
-
         results?;
 
-        let flist_cache_update: Vec<_> = flist_cache_map
+        let results: Result<(), Error> = flist_cache_map
             .par_iter()
-            .filter_map(|(k, v)| match current_cache.get(&k) {
-                Some(item) => {
+            .map(|(k, v)| {
+                if let Some(item) = current_cache.get(&k) {
                     if v.md5sum != item.md5sum
                         || v.sha1sum != item.sha1sum
                         || v.filestat_st_mtime != item.filestat_st_mtime
                         || v.filestat_st_size != item.filestat_st_size
                     {
-                        Some(v.clone())
-                    } else {
-                        None
+                        use crate::schema::file_info_cache::dsl::{
+                            file_info_cache, filename, filepath, filestat_st_mtime,
+                            filestat_st_size, id, md5sum, serviceid, servicesession, sha1sum,
+                            urlname,
+                        };
+
+                        let conn = pool.get()?;
+
+                        let cache = file_info_cache
+                            .filter(filename.eq(&v.filename))
+                            .filter(filepath.eq(&v.filepath))
+                            .filter(urlname.eq(&v.urlname))
+                            .filter(serviceid.eq(&v.serviceid))
+                            .filter(servicesession.eq(&v.servicesession))
+                            .load::<FileInfoCache>(&conn)?;
+                        if cache.len() != 1 {
+                            return Err(format_err!("There should only be one entry"));
+                        }
+                        let id_ = cache[0].id;
+
+                        diesel::update(file_info_cache.filter(id.eq(id_)))
+                            .set((
+                                md5sum.eq(&v.md5sum),
+                                sha1sum.eq(&v.sha1sum),
+                                filestat_st_mtime.eq(v.filestat_st_mtime),
+                                filestat_st_size.eq(v.filestat_st_size),
+                            ))
+                            .execute(&conn)?;
                     }
                 }
-                None => None,
+                Ok(())
             })
             .collect();
-
-        let results: Result<Vec<_>, Error> = flist_cache_update
-            .into_par_iter()
-            .map(|v| {
-                use crate::schema::file_info_cache::dsl::{
-                    file_info_cache, filename, filepath, filestat_st_mtime, filestat_st_size, id,
-                    md5sum, serviceid, servicesession, sha1sum, urlname,
-                };
-
-                let conn = pool.get()?;
-
-                let cache = file_info_cache
-                    .filter(filename.eq(v.filename))
-                    .filter(filepath.eq(v.filepath))
-                    .filter(urlname.eq(v.urlname))
-                    .filter(serviceid.eq(v.serviceid))
-                    .filter(servicesession.eq(v.servicesession))
-                    .load::<FileInfoCache>(&conn)?;
-                if cache.len() != 1 {
-                    return Err(format_err!("There should only be one entry"));
-                }
-                let id_ = cache[0].id;
-
-                diesel::update(file_info_cache.filter(id.eq(id_)))
-                    .set((
-                        md5sum.eq(&v.md5sum),
-                        sha1sum.eq(&v.sha1sum),
-                        filestat_st_mtime.eq(v.filestat_st_mtime),
-                        filestat_st_size.eq(v.filestat_st_size),
-                    ))
-                    .execute(&conn)
-                    .map_err(Into::into)
-            })
-            .collect();
-
         results?;
 
         let flist_cache_insert: Vec<_> = flist_cache_map
             .into_par_iter()
-            .filter_map(|(k, v)| match current_cache.get(&k) {
-                Some(_) => None,
-                None => Some(v),
+            .filter_map(|(k, v)| {
+                if current_cache.get(&k).is_none() {
+                    Some(v)
+                } else {
+                    None
+                }
             })
             .collect();
 
         let results: Result<Vec<_>, Error> = flist_cache_insert
+            .into_par_iter()
             .chunks(1000)
             .map(|v| {
                 diesel::insert_into(file_info_cache::table)
