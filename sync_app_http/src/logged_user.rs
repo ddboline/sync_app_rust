@@ -21,7 +21,7 @@ pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
             AUTHORIZED_USERS.merge_users(&[user])?;
         }
 
-        AUTHORIZED_USERS.merge_users(&users)
+        AUTHORIZED_USERS.merge_users(&users)?;
     }
     debug!("{:?}", *AUTHORIZED_USERS);
     Ok(())
