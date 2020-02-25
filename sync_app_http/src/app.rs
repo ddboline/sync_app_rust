@@ -7,7 +7,7 @@ use tokio::time::interval;
 use sync_app_lib::config::Config;
 use sync_app_lib::pgpool::PgPool;
 
-use super::logged_user::fill_from_db;
+use super::logged_user::{fill_from_db, TRIGGER_DB_UPDATE};
 use super::routes::{
     delete_cache_entry, list_sync_cache, proc_all, remove, sync_all, sync_frontpage, sync_garmin,
     sync_movie,
@@ -25,6 +25,7 @@ pub async fn start_app() {
             fill_from_db(&pool).await.unwrap_or(());
         }
     }
+    TRIGGER_DB_UPDATE.check();
 
     let config = Config::init_config().expect("Failed to load config");
     let pool = PgPool::new(&config.database_url);

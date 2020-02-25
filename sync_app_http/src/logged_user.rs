@@ -6,6 +6,7 @@ use sync_app_lib::models::AuthorizedUsers;
 use sync_app_lib::pgpool::PgPool;
 
 pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
+    debug!("{:?}", *TRIGGER_DB_UPDATE);
     if TRIGGER_DB_UPDATE.check() {
         let users: Vec<_> = AuthorizedUsers::get_authorized_users(&pool)
             .await?
@@ -21,7 +22,7 @@ pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
         }
 
         AUTHORIZED_USERS.merge_users(&users)
-    } else {
-        Ok(())
     }
+    debug!("{:?}", *AUTHORIZED_USERS);
+    Ok(())
 }
