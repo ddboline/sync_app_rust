@@ -25,7 +25,7 @@ pub async fn start_app() {
             fill_from_db(&pool).await.unwrap_or(());
         }
     }
-    TRIGGER_DB_UPDATE.check();
+    TRIGGER_DB_UPDATE.set();
 
     let config = Config::init_config().expect("Failed to load config");
     let pool = PgPool::new(&config.database_url);
