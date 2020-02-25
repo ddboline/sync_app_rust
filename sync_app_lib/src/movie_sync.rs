@@ -263,13 +263,13 @@ where
         last_modified.format("%Y-%m-%dT%H:%M:%S%.fZ")
     );
     let url = endpoint0.join(&path)?;
-    writeln!(stdout(), "{}", url)?;
+    debug!("{}", url);
     output.push(format!("{}", url));
     let data = transform(session0.get(&url, &HeaderMap::new()).await?).await?;
 
     let path = format!("list/{}", table);
     let url = endpoint1.join(&path)?;
-    writeln!(stdout(), "{} {:#?}", url, data)?;
+    debug!("{} {:#?}", url, data);
     output.push(format!("{}", url));
     for chunk in data.chunks(100) {
         let js = hashmap! {
