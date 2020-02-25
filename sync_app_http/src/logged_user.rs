@@ -1,6 +1,7 @@
 use anyhow::Error;
 pub use rust_auth_server::logged_user::{LoggedUser, AUTHORIZED_USERS, TRIGGER_DB_UPDATE};
 use std::env::var;
+use log::debug;
 
 use sync_app_lib::models::AuthorizedUsers;
 use sync_app_lib::pgpool::PgPool;
