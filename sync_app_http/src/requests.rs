@@ -15,6 +15,8 @@ use sync_app_lib::sync_opts::SyncOpts;
 lazy_static! {
     static ref CONFIG: Config = Config::init_config().expect("Failed to load config");
     static ref SYNCLOCK: Mutex<()> = Mutex::new(());
+    static ref GARMINLOCK: Mutex<()> = Mutex::new(());
+    static ref MOVIELOCK: Mutex<()> = Mutex::new(());
 }
 
 #[async_trait]
@@ -66,7 +68,7 @@ pub struct GarminSyncRequest {}
 impl HandleRequest<GarminSyncRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
     async fn handle(&self, _: GarminSyncRequest) -> Self::Result {
-        let _ = SYNCLOCK.lock().await;
+        let _ = GARMINLOCK.lock().await;
         let config = CONFIG.clone();
         let sync = GarminSync::new(config);
         sync.run_sync().await
@@ -79,7 +81,7 @@ pub struct MovieSyncRequest {}
 impl HandleRequest<MovieSyncRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
     async fn handle(&self, _: MovieSyncRequest) -> Self::Result {
-        let _ = SYNCLOCK.lock().await;
+        let _ = MOVIELOCK.lock().await;
         let config = CONFIG.clone();
         let sync = MovieSync::new(config);
         sync.run_sync().await
