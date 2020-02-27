@@ -158,10 +158,10 @@ impl GarminSync {
         let measurements1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
 
         output.extend_from_slice(&[self
-            .combine_measurements(&measurements0, &measurements1, path, js_prefix, &to_url)
+            .combine_measurements(&measurements0, &measurements1, path, js_prefix, &to_url, &self.session1)
             .await?]);
         output.extend_from_slice(&[self
-            .combine_measurements(&measurements1, &measurements0, path, js_prefix, &to_url)
+            .combine_measurements(&measurements1, &measurements0, path, js_prefix, &from_url, &self.session0)
             .await?]);
 
         Ok(output)
@@ -174,6 +174,7 @@ impl GarminSync {
         path: &str,
         js_prefix: &str,
         to_url: &Url,
+        session: &ReqwestSession,
     ) -> Result<String, Error> {
         let mut output = String::new();
         let measurements: Vec<_> = measurements0
@@ -197,7 +198,7 @@ impl GarminSync {
                 let data = hashmap! {
                     js_prefix => meas,
                 };
-                self.session1
+                session
                     .post(&url, &HeaderMap::new(), &data)
                     .await?
                     .error_for_status()?;
@@ -225,11 +226,11 @@ impl GarminSync {
         let activities1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
 
         output.push(
-            self.combine_activities(&activities0, &activities1, &to_url, path, js_prefix)
+            self.combine_activities(&activities0, &activities1, &to_url, path, js_prefix, &self.session1)
                 .await?,
         );
         output.push(
-            self.combine_activities(&activities1, &activities0, &to_url, path, js_prefix)
+            self.combine_activities(&activities1, &activities0, &from_url, path, js_prefix, &self.session0)
                 .await?,
         );
 
@@ -243,6 +244,7 @@ impl GarminSync {
         to_url: &Url,
         path: &str,
         js_prefix: &str,
+        session: &ReqwestSession,
     ) -> Result<String, Error> {
         let mut output = String::new();
         let activities: Vec<_> = activities0
@@ -270,8 +272,7 @@ impl GarminSync {
                 let data = hashmap! {
                     js_prefix => act,
                 };
-                debug!("post data: {:?}", data);
-                self.session1
+                session
                     .post(&url, &HeaderMap::new(), &data)
                     .await?
                     .error_for_status()?;
