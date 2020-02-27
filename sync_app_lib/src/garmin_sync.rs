@@ -270,6 +270,7 @@ impl GarminSync {
                 let data = hashmap! {
                     js_prefix => act,
                 };
+                debug!("post data: {:?}", data);
                 self.session1
                     .post(&url, &HeaderMap::new(), &data)
                     .await?
