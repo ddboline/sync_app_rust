@@ -221,8 +221,8 @@ impl S3Instance {
             None => self.s3_client.stream_objects(bucket),
         };
         let mut nkeys = 0;
-        while let Some(item) = stream.next().await? {
-            callback(&item)?;
+        while let Some(item) = stream.next().await {
+            callback(&item?)?;
             nkeys += 1;
             if let Some(keys) = self.max_keys {
                 if nkeys > keys {
