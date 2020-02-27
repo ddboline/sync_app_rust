@@ -195,8 +195,8 @@ impl S3Instance {
     ) -> Result<Vec<Object>, Error> {
         exponential_retry(|| async move {
             let stream = match prefix {
-                Some(p) => self.s3_client.sream_objects_with_prefix(bucket, p),
-                None => self.s3_client.sream_objects(bucket),
+                Some(p) => self.s3_client.stream_objects_with_prefix(bucket, p),
+                None => self.s3_client.stream_objects(bucket),
             };
             let results: Result<Vec<_>, _> = match self.max_keys {
                 Some(nkeys) => stream.take(nkeys).try_collect().await,
@@ -217,8 +217,8 @@ impl S3Instance {
         T: Fn(&Object) -> Result<(), Error> + Send + Sync,
     {
         let mut stream = match prefix {
-            Some(p) => self.s3_client.sream_objects_with_prefix(bucket, p),
-            None => self.s3_client.sream_objects(bucket),
+            Some(p) => self.s3_client.stream_objects_with_prefix(bucket, p),
+            None => self.s3_client.stream_objects(bucket),
         };
         let mut nkeys = 0;
         while let Some(item) = stream.next().await? {
