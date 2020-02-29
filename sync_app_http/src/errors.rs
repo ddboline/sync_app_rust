@@ -3,7 +3,7 @@ use actix_web::{error::ResponseError, HttpResponse};
 use anyhow::Error as AnyhowError;
 use std::fmt::Debug;
 use thiserror::Error;
-use rust_auth_server::static_file::login_html;
+use rust_auth_server::static_files::login_html;
 
 use crate::logged_user::TRIGGER_DB_UPDATE;
 
