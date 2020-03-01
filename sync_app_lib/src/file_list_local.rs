@@ -1,22 +1,28 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::collections::HashMap;
-use std::io::{stdout, Write};
-use std::path::Path;
-use std::string::ToString;
-use std::time::SystemTime;
-use tokio::fs::{copy, create_dir_all, remove_file, rename};
-use tokio::task::spawn_blocking;
+use std::{
+    collections::HashMap,
+    io::{stdout, Write},
+    path::Path,
+    string::ToString,
+    time::SystemTime,
+};
+use tokio::{
+    fs::{copy, create_dir_all, remove_file, rename},
+    task::spawn_blocking,
+};
 use url::Url;
 use walkdir::WalkDir;
 
-use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession};
-use crate::file_info_local::FileInfoLocal;
-use crate::file_list::{FileList, FileListTrait};
-use crate::file_service::FileService;
-use crate::pgpool::PgPool;
+use crate::{
+    config::Config,
+    file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession},
+    file_info_local::FileInfoLocal,
+    file_list::{FileList, FileListTrait},
+    file_service::FileService,
+    pgpool::PgPool,
+};
 
 #[derive(Debug, Clone)]
 pub struct FileListLocal(pub FileList);
@@ -260,19 +266,23 @@ impl FileListTrait for FileListLocal {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
-    use std::collections::HashMap;
-    use std::convert::TryInto;
-    use std::io::{stdout, Write};
-    use std::path::PathBuf;
+    use std::{
+        collections::HashMap,
+        convert::TryInto,
+        io::{stdout, Write},
+        path::PathBuf,
+    };
     use url::Url;
 
-    use crate::config::Config;
-    use crate::file_info::FileInfo;
-    use crate::file_list::FileList;
-    use crate::file_list_local::{FileListLocal, FileListTrait};
-    use crate::file_service::FileService;
-    use crate::models::{FileInfoCache, InsertFileInfoCache};
-    use crate::pgpool::PgPool;
+    use crate::{
+        config::Config,
+        file_info::FileInfo,
+        file_list::FileList,
+        file_list_local::{FileListLocal, FileListTrait},
+        file_service::FileService,
+        models::{FileInfoCache, InsertFileInfoCache},
+        pgpool::PgPool,
+    };
 
     #[test]
     #[ignore]

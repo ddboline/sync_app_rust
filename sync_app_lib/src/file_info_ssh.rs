@@ -2,8 +2,10 @@ use anyhow::{format_err, Error};
 use std::path::Path;
 use url::Url;
 
-use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
-use crate::file_service::FileService;
+use crate::{
+    file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum},
+    file_service::FileService,
+};
 
 #[derive(Debug, Clone)]
 pub struct FileInfoSSH(pub FileInfo);
@@ -60,8 +62,7 @@ impl FileInfoTrait for FileInfoSSH {
 
 #[cfg(test)]
 mod tests {
-    use crate::file_info::FileInfoTrait;
-    use crate::file_info_ssh::FileInfoSSH;
+    use crate::{file_info::FileInfoTrait, file_info_ssh::FileInfoSSH};
     use url::Url;
 
     #[test]

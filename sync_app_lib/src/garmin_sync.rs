@@ -2,17 +2,11 @@ use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
 use log::debug;
 use maplit::hashmap;
-use reqwest::header::HeaderMap;
-use reqwest::Response;
-use reqwest::Url;
+use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::future::Future;
+use std::{collections::HashMap, fmt::Debug, future::Future};
 
-use super::config::Config;
-use super::iso_8601_datetime;
-use super::reqwest_session::ReqwestSession;
+use super::{config::Config, iso_8601_datetime, reqwest_session::ReqwestSession};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 struct ScaleMeasurement {
@@ -158,10 +152,24 @@ impl GarminSync {
         let measurements1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
 
         output.extend_from_slice(&[self
-            .combine_measurements(&measurements0, &measurements1, path, js_prefix, &to_url, &self.session1)
+            .combine_measurements(
+                &measurements0,
+                &measurements1,
+                path,
+                js_prefix,
+                &to_url,
+                &self.session1,
+            )
             .await?]);
         output.extend_from_slice(&[self
-            .combine_measurements(&measurements1, &measurements0, path, js_prefix, &from_url, &self.session0)
+            .combine_measurements(
+                &measurements1,
+                &measurements0,
+                path,
+                js_prefix,
+                &from_url,
+                &self.session0,
+            )
             .await?]);
 
         Ok(output)
@@ -226,12 +234,26 @@ impl GarminSync {
         let activities1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
 
         output.push(
-            self.combine_activities(&activities0, &activities1, &to_url, path, js_prefix, &self.session1)
-                .await?,
+            self.combine_activities(
+                &activities0,
+                &activities1,
+                &to_url,
+                path,
+                js_prefix,
+                &self.session1,
+            )
+            .await?,
         );
         output.push(
-            self.combine_activities(&activities1, &activities0, &from_url, path, js_prefix, &self.session0)
-                .await?,
+            self.combine_activities(
+                &activities1,
+                &activities0,
+                &from_url,
+                path,
+                js_prefix,
+                &self.session0,
+            )
+            .await?,
         );
 
         Ok(output)

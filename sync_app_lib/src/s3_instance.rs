@@ -8,8 +8,7 @@ use rusoto_s3::{
     GetObjectRequest, ListObjectsV2Request, Object, PutObjectRequest, S3Client, S3,
 };
 use s3_ext::S3Ext;
-use std::fmt;
-use std::path::Path;
+use std::{fmt, path::Path};
 use sts_profile_auth::get_client_sts;
 use url::Url;
 

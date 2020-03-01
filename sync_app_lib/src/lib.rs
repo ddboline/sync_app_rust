@@ -40,10 +40,11 @@ pub mod sync_opts;
 pub mod url_wrapper;
 
 use anyhow::Error;
-use rand::distributions::{Alphanumeric, Distribution, Uniform};
-use rand::thread_rng;
-use std::future::Future;
-use std::str::FromStr;
+use rand::{
+    distributions::{Alphanumeric, Distribution, Uniform},
+    thread_rng,
+};
+use std::{future::Future, str::FromStr};
 use tokio::time::{delay_for, Duration};
 
 pub fn map_parse<T>(x: &Option<String>) -> Result<Option<T>, Error>

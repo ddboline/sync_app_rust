@@ -4,13 +4,10 @@ use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
-use sync_app_lib::config::Config;
-use sync_app_lib::file_sync::FileSyncAction;
-use sync_app_lib::garmin_sync::GarminSync;
-use sync_app_lib::models::FileSyncCache;
-use sync_app_lib::movie_sync::MovieSync;
-use sync_app_lib::pgpool::PgPool;
-use sync_app_lib::sync_opts::SyncOpts;
+use sync_app_lib::{
+    config::Config, file_sync::FileSyncAction, garmin_sync::GarminSync, models::FileSyncCache,
+    movie_sync::MovieSync, pgpool::PgPool, sync_opts::SyncOpts,
+};
 
 lazy_static! {
     static ref CONFIG: Config = Config::init_config().expect("Failed to load config");

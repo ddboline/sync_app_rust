@@ -2,21 +2,25 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use log::debug;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::convert::TryInto;
-use std::fs::create_dir_all;
-use std::io::{stdout, Write};
-use std::path::Path;
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    convert::TryInto,
+    fs::create_dir_all,
+    io::{stdout, Write},
+    path::Path,
+    sync::Arc,
+};
 use tokio::task::spawn_blocking;
 use url::Url;
 
-use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoInner, FileInfoTrait, ServiceSession};
-use crate::file_list::{FileList, FileListTrait};
-use crate::file_service::FileService;
-use crate::pgpool::PgPool;
-use crate::ssh_instance::SSHInstance;
+use crate::{
+    config::Config,
+    file_info::{FileInfo, FileInfoInner, FileInfoTrait, ServiceSession},
+    file_list::{FileList, FileListTrait},
+    file_service::FileService,
+    pgpool::PgPool,
+    ssh_instance::SSHInstance,
+};
 
 #[derive(Clone, Debug)]
 pub struct FileListSSH {
@@ -277,19 +281,18 @@ impl FileListTrait for FileListSSH {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
-    use std::fs::remove_file;
-    use std::io::{stdout, Write};
-    use std::path::{Path, PathBuf};
+    use std::{
+        fs::remove_file,
+        io::{stdout, Write},
+        path::{Path, PathBuf},
+    };
     use url::Url;
 
-    use crate::config::Config;
-    use crate::file_info::FileInfoTrait;
-    use crate::file_info_local::FileInfoLocal;
-    use crate::file_info_ssh::FileInfoSSH;
-    use crate::file_list::FileListTrait;
-    use crate::file_list_ssh::FileListSSH;
-    use crate::file_service::FileService;
-    use crate::pgpool::PgPool;
+    use crate::{
+        config::Config, file_info::FileInfoTrait, file_info_local::FileInfoLocal,
+        file_info_ssh::FileInfoSSH, file_list::FileListTrait, file_list_ssh::FileListSSH,
+        file_service::FileService, pgpool::PgPool,
+    };
 
     #[test]
     #[ignore]

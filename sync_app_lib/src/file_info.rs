@@ -1,27 +1,30 @@
 use anyhow::{format_err, Error};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
-use std::convert::Into;
-use std::convert::{TryFrom, TryInto};
-use std::fmt::Debug;
-use std::ops::Deref;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::string::ToString;
-use std::sync::Arc;
+use std::{
+    convert::{Into, TryFrom, TryInto},
+    fmt::Debug,
+    ops::Deref,
+    path::PathBuf,
+    str::FromStr,
+    string::ToString,
+    sync::Arc,
+};
 use url::Url;
 
-use crate::file_info_gdrive::FileInfoGDrive;
-use crate::file_info_local::FileInfoLocal;
-use crate::file_info_s3::FileInfoS3;
-use crate::file_info_ssh::FileInfoSSH;
-use crate::file_service::FileService;
-use crate::map_parse;
-use crate::models::{FileInfoCache, InsertFileInfoCache};
-use crate::path_buf_wrapper::PathBufWrapper;
-use crate::pgpool::PgPool;
-use crate::schema::file_info_cache;
-use crate::url_wrapper::UrlWrapper;
+use crate::{
+    file_info_gdrive::FileInfoGDrive,
+    file_info_local::FileInfoLocal,
+    file_info_s3::FileInfoS3,
+    file_info_ssh::FileInfoSSH,
+    file_service::FileService,
+    map_parse,
+    models::{FileInfoCache, InsertFileInfoCache},
+    path_buf_wrapper::PathBufWrapper,
+    pgpool::PgPool,
+    schema::file_info_cache,
+    url_wrapper::UrlWrapper,
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileStat {

@@ -5,30 +5,31 @@ use log::debug;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
-use std::collections::HashMap;
-use std::convert::TryInto;
-use std::fmt::Debug;
-use std::fs::rename;
-use std::ops::Deref;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    convert::TryInto,
+    fmt::Debug,
+    fs::rename,
+    ops::Deref,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 use tokio::task::spawn_blocking;
 use url::Url;
 
-use gdrive_lib::directory_info::DirectoryInfo;
-use gdrive_lib::gdrive_instance::GDriveInstance;
+use gdrive_lib::{directory_info::DirectoryInfo, gdrive_instance::GDriveInstance};
 
-use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession};
-use crate::file_list_gdrive::FileListGDrive;
-use crate::file_list_local::FileListLocal;
-use crate::file_list_s3::FileListS3;
-use crate::file_list_ssh::FileListSSH;
-use crate::file_service::FileService;
-use crate::models::{
-    DirectoryInfoCache, FileInfoCache, InsertDirectoryInfoCache, InsertFileInfoCache,
+use crate::{
+    config::Config,
+    file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession},
+    file_list_gdrive::FileListGDrive,
+    file_list_local::FileListLocal,
+    file_list_s3::FileListS3,
+    file_list_ssh::FileListSSH,
+    file_service::FileService,
+    models::{DirectoryInfoCache, FileInfoCache, InsertDirectoryInfoCache, InsertFileInfoCache},
+    pgpool::PgPool,
 };
-use crate::pgpool::PgPool;
 
 #[derive(Clone, Debug)]
 pub struct FileList {

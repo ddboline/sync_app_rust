@@ -2,8 +2,7 @@ use anyhow::{format_err, Error};
 use chrono::DateTime;
 use drive3::Drive;
 use google_drive3_fork as drive3;
-use hyper::net::HttpsConnector;
-use hyper::Client;
+use hyper::{net::HttpsConnector, Client};
 use hyper_native_tls::NativeTlsClient;
 use lazy_static::lazy_static;
 use log::debug;
@@ -16,22 +15,22 @@ use oauth2::{
 use parking_lot::Mutex;
 use percent_encoding::percent_decode;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use std::cmp;
-use std::collections::{HashMap, HashSet};
-use std::ffi::OsStr;
-use std::fmt;
-use std::fs::{create_dir_all, File};
-use std::io;
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::path::Path;
-use std::path::PathBuf;
-use std::string::ToString;
-use std::sync::Arc;
+use std::{
+    cmp,
+    collections::{HashMap, HashSet},
+    ffi::OsStr,
+    fmt,
+    fs::{create_dir_all, File},
+    io,
+    io::{Read, Seek, SeekFrom, Write},
+    path::{Path, PathBuf},
+    string::ToString,
+    sync::Arc,
+};
 use url::Url;
 use yup_oauth2 as oauth2;
 
-use crate::directory_info::DirectoryInfo;
-use crate::exponential_retry;
+use crate::{directory_info::DirectoryInfo, exponential_retry};
 
 type GCClient = Client;
 type GCAuthenticator = Authenticator<DefaultAuthenticatorDelegate, DiskTokenStorage, Client>;

@@ -2,20 +2,24 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::collections::HashMap;
-use std::fs::{create_dir_all, remove_file};
-use std::io::{stdout, Write};
-use std::path::Path;
+use std::{
+    collections::HashMap,
+    fs::{create_dir_all, remove_file},
+    io::{stdout, Write},
+    path::Path,
+};
 use tokio::task::spawn_blocking;
 use url::Url;
 
-use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait, ServiceSession};
-use crate::file_info_s3::FileInfoS3;
-use crate::file_list::{FileList, FileListTrait};
-use crate::file_service::FileService;
-use crate::pgpool::PgPool;
-use crate::s3_instance::S3Instance;
+use crate::{
+    config::Config,
+    file_info::{FileInfo, FileInfoTrait, ServiceSession},
+    file_info_s3::FileInfoS3,
+    file_list::{FileList, FileListTrait},
+    file_service::FileService,
+    pgpool::PgPool,
+    s3_instance::S3Instance,
+};
 
 #[derive(Debug, Clone)]
 pub struct FileListS3 {
@@ -279,11 +283,10 @@ mod tests {
     use anyhow::Error;
     use std::io::{stdout, Write};
 
-    use crate::config::Config;
-    use crate::file_list::FileListTrait;
-    use crate::file_list_s3::FileListS3;
-    use crate::pgpool::PgPool;
-    use crate::s3_instance::S3Instance;
+    use crate::{
+        config::Config, file_list::FileListTrait, file_list_s3::FileListS3, pgpool::PgPool,
+        s3_instance::S3Instance,
+    };
 
     #[tokio::test]
     #[ignore]

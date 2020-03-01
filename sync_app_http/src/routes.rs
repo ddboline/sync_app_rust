@@ -1,15 +1,19 @@
-use actix_web::http::StatusCode;
-use actix_web::web::{block, Data, Query};
-use actix_web::HttpResponse;
+use actix_web::{
+    http::StatusCode,
+    web::{block, Data, Query},
+    HttpResponse,
+};
 
 use sync_app_lib::file_sync::FileSyncAction;
 
-use super::app::AppState;
-use super::errors::ServiceError as Error;
-use super::logged_user::LoggedUser;
-use super::requests::{
-    GarminSyncRequest, HandleRequest, ListSyncCacheRequest, MovieSyncRequest,
-    SyncEntryDeleteRequest, SyncRemoveRequest, SyncRequest,
+use super::{
+    app::AppState,
+    errors::ServiceError as Error,
+    logged_user::LoggedUser,
+    requests::{
+        GarminSyncRequest, HandleRequest, ListSyncCacheRequest, MovieSyncRequest,
+        SyncEntryDeleteRequest, SyncRemoveRequest, SyncRequest,
+    },
 };
 
 fn form_http_response(body: String) -> Result<HttpResponse, Error> {

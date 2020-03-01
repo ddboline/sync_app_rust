@@ -3,20 +3,24 @@ use fmt::Debug;
 use futures::future::try_join_all;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use std::collections::HashMap;
-use std::convert::From;
-use std::fmt;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    convert::From,
+    fmt,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
 use url::Url;
 
-use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait};
-use crate::file_list::{group_urls, replace_basepath, replace_baseurl, FileList, FileListTrait};
-use crate::file_service::FileService;
-use crate::models::{FileSyncCache, InsertFileSyncCache};
-use crate::pgpool::PgPool;
+use crate::{
+    config::Config,
+    file_info::{FileInfo, FileInfoKeyType, FileInfoTrait},
+    file_list::{group_urls, replace_basepath, replace_baseurl, FileList, FileListTrait},
+    file_service::FileService,
+    models::{FileSyncCache, InsertFileSyncCache},
+    pgpool::PgPool,
+};
 
 #[derive(Debug)]
 pub enum FileSyncAction {
@@ -395,21 +399,25 @@ impl FileSync {
 mod tests {
     use anyhow::Error;
     use rusoto_s3::{Object, Owner};
-    use std::collections::HashMap;
-    use std::env::current_dir;
-    use std::io::{stdout, Write};
-    use std::path::Path;
+    use std::{
+        collections::HashMap,
+        env::current_dir,
+        io::{stdout, Write},
+        path::Path,
+    };
 
-    use crate::config::Config;
-    use crate::file_info::{FileInfo, FileInfoTrait, ServiceId, ServiceSession};
-    use crate::file_info_local::FileInfoLocal;
-    use crate::file_info_s3::FileInfoS3;
-    use crate::file_list::FileListTrait;
-    use crate::file_list_local::FileListLocal;
-    use crate::file_list_s3::FileListS3;
-    use crate::file_sync::FileSync;
-    use crate::models::FileSyncCache;
-    use crate::pgpool::PgPool;
+    use crate::{
+        config::Config,
+        file_info::{FileInfo, FileInfoTrait, ServiceId, ServiceSession},
+        file_info_local::FileInfoLocal,
+        file_info_s3::FileInfoS3,
+        file_list::FileListTrait,
+        file_list_local::FileListLocal,
+        file_list_s3::FileListS3,
+        file_sync::FileSync,
+        models::FileSyncCache,
+        pgpool::PgPool,
+    };
 
     #[test]
     fn test_compare_objects() -> Result<(), Error> {

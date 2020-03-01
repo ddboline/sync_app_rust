@@ -1,16 +1,17 @@
 use anyhow::{format_err, Error};
-use rand::distributions::{Distribution, Uniform};
-use rand::thread_rng;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-use reqwest::redirect::Policy;
-use reqwest::{Client, Response, Url};
+use rand::{
+    distributions::{Distribution, Uniform},
+    thread_rng,
+};
+use reqwest::{
+    header::{HeaderMap, HeaderName, HeaderValue},
+    redirect::Policy,
+    Client, Response, Url,
+};
 use serde::Serialize;
-use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Arc;
-use std::thread::sleep;
-use std::time::Duration;
+use std::{
+    collections::HashMap, future::Future, pin::Pin, sync::Arc, thread::sleep, time::Duration,
+};
 use tokio::sync::Mutex;
 
 #[derive(Debug)]

@@ -1,17 +1,18 @@
 use anyhow::{format_err, Error};
 use checksums::{hash_file, Algorithm};
-use std::fs;
-use std::fs::File;
-use std::fs::Metadata;
-use std::path::Path;
-use std::time::SystemTime;
+use std::{
+    fs,
+    fs::{File, Metadata},
+    path::Path,
+    time::SystemTime,
+};
 use url::Url;
 use walkdir::DirEntry;
 
-use crate::file_info::{
-    FileInfo, FileInfoTrait, FileStat, Md5Sum, ServiceId, ServiceSession, Sha1Sum,
+use crate::{
+    file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, ServiceId, ServiceSession, Sha1Sum},
+    file_service::FileService,
 };
-use crate::file_service::FileService;
 
 #[derive(Debug, Clone)]
 pub struct FileInfoLocal(pub FileInfo);

@@ -7,9 +7,11 @@ use url::Url;
 
 use gdrive_lib::directory_info::DirectoryInfo;
 
-use crate::pgpool::PgPool;
-use crate::schema::{
-    authorized_users, directory_info_cache, file_info_cache, file_sync_cache, file_sync_config,
+use crate::{
+    pgpool::PgPool,
+    schema::{
+        authorized_users, directory_info_cache, file_info_cache, file_sync_cache, file_sync_config,
+    },
 };
 
 #[derive(Queryable, Clone)]

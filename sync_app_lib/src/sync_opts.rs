@@ -5,18 +5,22 @@ use log::debug;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
-use std::io::{stdout, Write};
-use std::sync::Arc;
+use std::{
+    io::{stdout, Write},
+    sync::Arc,
+};
 use structopt::StructOpt;
 use url::Url;
 
-use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoTrait};
-use crate::file_list::{group_urls, FileList, FileListTrait};
-use crate::file_service::FileService;
-use crate::file_sync::{FileSync, FileSyncAction};
-use crate::models::{BlackList, FileSyncCache, FileSyncConfig, InsertFileSyncConfig};
-use crate::pgpool::PgPool;
+use crate::{
+    config::Config,
+    file_info::{FileInfo, FileInfoTrait},
+    file_list::{group_urls, FileList, FileListTrait},
+    file_service::FileService,
+    file_sync::{FileSync, FileSyncAction},
+    models::{BlackList, FileSyncCache, FileSyncConfig, InsertFileSyncConfig},
+    pgpool::PgPool,
+};
 
 #[derive(StructOpt, Debug)]
 pub struct SyncOpts {

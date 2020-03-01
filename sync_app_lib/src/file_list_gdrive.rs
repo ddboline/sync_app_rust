@@ -3,23 +3,29 @@ use async_trait::async_trait;
 use log::debug;
 use parking_lot::RwLock;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use std::collections::HashMap;
-use std::fs::create_dir_all;
-use std::io::{stdout, Write};
-use std::path::Path;
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    fs::create_dir_all,
+    io::{stdout, Write},
+    path::Path,
+    sync::Arc,
+};
 use tokio::task::spawn_blocking;
 use url::Url;
 
-use gdrive_lib::directory_info::DirectoryInfo;
-use gdrive_lib::gdrive_instance::{GDriveInfo, GDriveInstance};
+use gdrive_lib::{
+    directory_info::DirectoryInfo,
+    gdrive_instance::{GDriveInfo, GDriveInstance},
+};
 
-use crate::config::Config;
-use crate::file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession};
-use crate::file_info_gdrive::FileInfoGDrive;
-use crate::file_list::{FileList, FileListTrait};
-use crate::file_service::FileService;
-use crate::pgpool::PgPool;
+use crate::{
+    config::Config,
+    file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession},
+    file_info_gdrive::FileInfoGDrive,
+    file_list::{FileList, FileListTrait},
+    file_service::FileService,
+    pgpool::PgPool,
+};
 
 #[derive(Debug, Clone)]
 pub struct FileListGDrive {
@@ -446,17 +452,18 @@ impl FileListTrait for FileListGDrive {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
-    use std::collections::HashMap;
-    use std::fs::remove_file;
-    use std::io::{stdout, Write};
-    use std::path::Path;
+    use std::{
+        collections::HashMap,
+        fs::remove_file,
+        io::{stdout, Write},
+        path::Path,
+    };
 
     use gdrive_lib::gdrive_instance::GDriveInstance;
 
-    use crate::config::Config;
-    use crate::file_list::FileListTrait;
-    use crate::file_list_gdrive::FileListGDrive;
-    use crate::pgpool::PgPool;
+    use crate::{
+        config::Config, file_list::FileListTrait, file_list_gdrive::FileListGDrive, pgpool::PgPool,
+    };
 
     #[tokio::test]
     #[ignore]

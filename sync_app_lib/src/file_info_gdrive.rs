@@ -4,8 +4,10 @@ use url::Url;
 
 use gdrive_lib::gdrive_instance::GDriveInfo;
 
-use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
-use crate::file_service::FileService;
+use crate::{
+    file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum},
+    file_service::FileService,
+};
 
 #[derive(Debug, Default)]
 pub struct FileInfoGDrive(pub FileInfo);
@@ -94,17 +96,19 @@ impl FileInfoGDrive {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::io::{stdout, Write};
-    use std::path::Path;
+    use std::{
+        collections::HashMap,
+        io::{stdout, Write},
+        path::Path,
+    };
     use url::Url;
 
     use gdrive_lib::gdrive_instance::{GDriveInfo, GDriveInstance};
 
-    use crate::config::Config;
-    use crate::file_info::FileInfoTrait;
-    use crate::file_info_gdrive::FileInfoGDrive;
-    use crate::file_service::FileService;
+    use crate::{
+        config::Config, file_info::FileInfoTrait, file_info_gdrive::FileInfoGDrive,
+        file_service::FileService,
+    };
 
     #[test]
     fn test_file_info_gdrive() {

@@ -4,13 +4,14 @@ use chrono::Duration;
 use std::time;
 use tokio::time::interval;
 
-use sync_app_lib::config::Config;
-use sync_app_lib::pgpool::PgPool;
+use sync_app_lib::{config::Config, pgpool::PgPool};
 
-use super::logged_user::{fill_from_db, TRIGGER_DB_UPDATE};
-use super::routes::{
-    delete_cache_entry, list_sync_cache, proc_all, remove, sync_all, sync_frontpage, sync_garmin,
-    sync_movie,
+use super::{
+    logged_user::{fill_from_db, TRIGGER_DB_UPDATE},
+    routes::{
+        delete_cache_entry, list_sync_cache, proc_all, remove, sync_all, sync_frontpage,
+        sync_garmin, sync_movie,
+    },
 };
 
 pub struct AppState {

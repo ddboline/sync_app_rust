@@ -4,17 +4,16 @@ use anyhow::{format_err, Error};
 use chrono::{DateTime, NaiveDate, Utc};
 use log::debug;
 use maplit::hashmap;
-use reqwest::header::HeaderMap;
-use reqwest::Response;
-use reqwest::Url;
+use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::future::Future;
-use std::io::{stdout, Write};
+use std::{
+    collections::HashMap,
+    fmt::Debug,
+    future::Future,
+    io::{stdout, Write},
+};
 
-use super::config::Config;
-use super::reqwest_session::ReqwestSession;
+use super::{config::Config, reqwest_session::ReqwestSession};
 
 #[derive(Deserialize)]
 struct LastModifiedStruct {
@@ -287,8 +286,7 @@ where
 mod tests {
     use std::io::{stdout, Write};
 
-    use crate::config::Config;
-    use crate::movie_sync::MovieSync;
+    use crate::{config::Config, movie_sync::MovieSync};
 
     #[tokio::test]
     #[ignore]

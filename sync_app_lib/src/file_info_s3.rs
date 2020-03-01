@@ -4,8 +4,10 @@ use rusoto_s3::Object;
 use std::path::Path;
 use url::Url;
 
-use crate::file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum};
-use crate::file_service::FileService;
+use crate::{
+    file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum},
+    file_service::FileService,
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct FileInfoS3(FileInfo);
@@ -111,8 +113,7 @@ impl FileInfoS3 {
 mod tests {
     use rusoto_s3::{Object, Owner};
 
-    use crate::file_info::FileInfoTrait;
-    use crate::file_info_s3::FileInfoS3;
+    use crate::{file_info::FileInfoTrait, file_info_s3::FileInfoS3};
 
     #[test]
     fn test_file_info_s3() {
