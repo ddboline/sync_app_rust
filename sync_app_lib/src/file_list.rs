@@ -203,9 +203,10 @@ pub trait FileListTrait: Send + Sync + Debug {
         // Delete entries from current_cache not in filemap
         let results: Result<(), Error> = current_cache
             .par_iter()
-            .map(|(k, _)| match flist_cache_map.get(&k) {
-                Some(_) => Ok(()),
-                None => {
+            .map(|(k, _)| {
+                if flist_cache_map.contains_key(&k) {
+                    Ok(())
+                } else {
                     use crate::schema::file_info_cache::dsl::{
                         file_info_cache, filename, filepath, serviceid, servicesession, urlname,
                     };
