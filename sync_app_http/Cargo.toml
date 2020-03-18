@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.4.7"
+version = "0.4.8"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -28,3 +28,4 @@ rust_auth_server = { git = "https://github.com/ddboline/rust-auth-server.git", t
 maplit = "1.0"
 async-trait = "0.1"
 log = "0.4"
+subprocess = "0.2"

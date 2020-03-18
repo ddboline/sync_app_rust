@@ -2,7 +2,11 @@ use anyhow::Error;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::io::{BufRead, BufReader};
+use std::path::Path;
+use subprocess::Exec;
 use tokio::sync::Mutex;
+use tokio::task::spawn_blocking;
 
 use sync_app_lib::{
     config::Config, file_sync::FileSyncAction, garmin_sync::GarminSync, models::FileSyncCache,
@@ -14,6 +18,7 @@ lazy_static! {
     static ref SYNCLOCK: Mutex<()> = Mutex::new(());
     static ref GARMINLOCK: Mutex<()> = Mutex::new(());
     static ref MOVIELOCK: Mutex<()> = Mutex::new(());
+    static ref PODCASTLOCK: Mutex<()> = Mutex::new(());
 }
 
 #[async_trait]
@@ -97,5 +102,25 @@ impl HandleRequest<SyncRemoveRequest> for PgPool {
         let url = req.url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
         sync.process_sync_opts(&CONFIG, self).await
+    }
+}
+
+pub struct SyncPodcastsRequest {}
+
+#[async_trait]
+impl HandleRequest<SyncPodcastsRequest> for PgPool {
+    type Result = Result<Vec<String>, Error>;
+    async fn handle(&self, _: SyncPodcastsRequest) -> Self::Result {
+        let _ = PODCASTLOCK.lock().await;
+        if !Path::new("/usr/bin/podcatch-rust").exists() {
+            return Ok(Vec::new());
+        }
+        let command = format!("/usr/bin/podcatch-rust -g");
+        spawn_blocking(move || {
+            let stream = Exec::shell(command).stream_stdout()?;
+            let reader = BufReader::new(stream);
+            reader.lines().map(|line| Ok(line?)).collect()
+        })
+        .await?
     }
 }

@@ -12,7 +12,7 @@ use super::{
     logged_user::LoggedUser,
     requests::{
         GarminSyncRequest, HandleRequest, ListSyncCacheRequest, MovieSyncRequest,
-        SyncEntryDeleteRequest, SyncRemoveRequest, SyncRequest,
+        SyncEntryDeleteRequest, SyncPodcastsRequest, SyncRemoveRequest, SyncRequest,
     },
 };
 
@@ -96,4 +96,9 @@ pub async fn remove(
     let query = query.into_inner();
     data.db.handle(query).await?;
     form_http_response("finished".to_string())
+}
+
+pub async fn sync_podcasts(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+    let results = data.db.handle(SyncPodcastsRequest {}).await?;
+    form_http_response(results.join("\n"))
 }

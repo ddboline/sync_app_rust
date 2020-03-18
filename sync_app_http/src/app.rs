@@ -10,7 +10,7 @@ use super::{
     logged_user::{fill_from_db, TRIGGER_DB_UPDATE},
     routes::{
         delete_cache_entry, list_sync_cache, proc_all, remove, sync_all, sync_frontpage,
-        sync_garmin, sync_movie,
+        sync_garmin, sync_movie, sync_podcasts,
     },
 };
 
@@ -56,6 +56,7 @@ pub async fn start_app() {
             )
             .service(web::resource("/sync/sync_garmin").route(web::get().to(sync_garmin)))
             .service(web::resource("/sync/sync_movie").route(web::get().to(sync_movie)))
+            .service(web::resource("/sync/sync_podcasts").route(web::get().to(sync_podcasts)))
     })
     .bind(&format!("127.0.0.1:{}", port))
     .unwrap_or_else(|_| panic!("Failed to bind to port {}", port))
