@@ -162,7 +162,7 @@ mod tests {
 
         let list = gdrive.get_all_files(false).unwrap();
         assert_eq!(list.len(), 10);
-        let test_info = list.iter().filter(|f| !f.parents.is_none()).nth(0).unwrap();
+        let test_info = list.iter().filter(|f| !f.parents.is_none()).next().unwrap();
         writeln!(stdout(), "test_info {:?}", test_info).unwrap();
 
         let gdriveid = test_info.id.as_ref().unwrap();

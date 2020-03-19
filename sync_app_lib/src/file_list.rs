@@ -375,7 +375,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let root_id: Option<String> = directory_list
             .iter()
             .filter(|d| d.is_root)
-            .nth(0)
+            .next()
             .map(|d| d.directory_id.to_string());
         let dmap: HashMap<_, _> = directory_list
             .into_par_iter()
