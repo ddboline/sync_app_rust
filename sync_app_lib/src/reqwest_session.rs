@@ -219,7 +219,7 @@ impl SyncClient {
             email: String,
         }
 
-        let url = from_url.join(base_url).join("user")?;
+        let url = from_url.join(base_url)?.join("user")?;
         let resp = self
             .session0
             .get(&url, &HeaderMap::new())
@@ -230,7 +230,7 @@ impl SyncClient {
             .await
             .map_err(|e| format_err!("Login problem {:?}", e))?;
 
-        let url = to_url.join(base_url).join("user")?;
+        let url = to_url.join(base_url)?.join("user")?;
         let resp = self
             .session1
             .get(&url, &HeaderMap::new())
