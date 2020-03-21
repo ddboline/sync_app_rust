@@ -6,7 +6,11 @@ use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
 
-use super::{config::Config, iso_8601_datetime, reqwest_session::ReqwestSession};
+use super::{
+    config::Config,
+    iso_8601_datetime,
+    reqwest_session::{ReqwestSession, SyncClient},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 struct ScaleMeasurement {
@@ -32,28 +36,24 @@ pub struct StravaItem {
 }
 
 pub struct GarminSync {
-    session0: ReqwestSession,
-    session1: ReqwestSession,
-    config: Config,
+    client: SyncClient,
 }
 
 impl GarminSync {
     pub fn new(config: Config) -> Self {
         Self {
-            session0: ReqwestSession::new(true),
-            session1: ReqwestSession::new(true),
-            config,
+            client: SyncClient::new(config),
         }
     }
 
-    pub fn get_urls(&self) -> Result<(Url, Url), Error> {
-        let from_url: Url = self
+    fn get_urls(&self) -> Result<(Url, Url), Error> {
+        let from_url: Url = self.client
             .config
             .garmin_from_url
             .as_ref()
             .ok_or_else(|| format_err!("No From URL"))?
             .parse()?;
-        let to_url: Url = self
+        let to_url: Url = self.client
             .config
             .garmin_to_url
             .as_ref()
@@ -62,14 +62,16 @@ impl GarminSync {
         Ok((from_url, to_url))
     }
 
-    pub async fn init(&self) -> Result<(), Error> {
+    async fn init(&self) -> Result<(), Error> {
         let (from_url, to_url) = self.get_urls()?;
         let user = self
+            .client
             .config
             .garmin_username
             .as_ref()
             .ok_or_else(|| format_err!("No Username"))?;
         let password = self
+            .client
             .config
             .garmin_password
             .as_ref()
@@ -82,6 +84,7 @@ impl GarminSync {
 
         let url = from_url.join("api/auth")?;
         let resp = self
+            .client
             .session0
             .post(&url, &HeaderMap::new(), &data)
             .await?
@@ -89,11 +92,42 @@ impl GarminSync {
         let _: Vec<_> = resp.cookies().collect();
         let url = to_url.join("api/auth")?;
         let resp = self
+            .client
             .session1
             .post(&url, &HeaderMap::new(), &data)
             .await?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
+
+        #[derive(Serialize, Deserialize)]
+        struct LoggedUser {
+            email: String,
+        }
+
+        let url = from_url.join("calendar/user")?;
+        let resp = self
+            .client
+            .session0
+            .get(&url, &HeaderMap::new())
+            .await?
+            .error_for_status()?;
+        let _: LoggedUser = resp
+            .json()
+            .await
+            .map_err(|e| format_err!("Login problem {:?}", e))?;
+
+        let url = to_url.join("calendar/user")?;
+        let resp = self
+            .client
+            .session1
+            .get(&url, &HeaderMap::new())
+            .await?
+            .error_for_status()?;
+        let _: LoggedUser = resp
+            .json()
+            .await
+            .map_err(|e| format_err!("Login problem {:?}", e))?;
+
         Ok(())
     }
 
@@ -147,9 +181,11 @@ impl GarminSync {
         let (from_url, to_url) = self.get_urls()?;
 
         let url = from_url.join(path)?;
-        let measurements0 = transform(self.session0.get(&url, &HeaderMap::new()).await?).await?;
+        let measurements0 =
+            transform(self.client.session0.get(&url, &HeaderMap::new()).await?).await?;
         let url = to_url.join(path)?;
-        let measurements1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
+        let measurements1 =
+            transform(self.client.session1.get(&url, &HeaderMap::new()).await?).await?;
 
         output.extend_from_slice(&[self
             .combine_measurements(
@@ -158,7 +194,7 @@ impl GarminSync {
                 path,
                 js_prefix,
                 &to_url,
-                &self.session1,
+                &self.client.session1,
             )
             .await?]);
         output.extend_from_slice(&[self
@@ -168,7 +204,7 @@ impl GarminSync {
                 path,
                 js_prefix,
                 &from_url,
-                &self.session0,
+                &self.client.session0,
             )
             .await?]);
 
@@ -229,9 +265,11 @@ impl GarminSync {
         let (from_url, to_url) = self.get_urls()?;
 
         let url = from_url.join(path)?;
-        let activities0 = transform(self.session0.get(&url, &HeaderMap::new()).await?).await?;
+        let activities0 =
+            transform(self.client.session0.get(&url, &HeaderMap::new()).await?).await?;
         let url = to_url.join(path)?;
-        let activities1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
+        let activities1 =
+            transform(self.client.session1.get(&url, &HeaderMap::new()).await?).await?;
 
         output.push(
             self.combine_activities(
@@ -240,7 +278,7 @@ impl GarminSync {
                 &to_url,
                 path,
                 js_prefix,
-                &self.session1,
+                &self.client.session1,
             )
             .await?,
         );
@@ -251,7 +289,7 @@ impl GarminSync {
                 &from_url,
                 path,
                 js_prefix,
-                &self.session0,
+                &self.client.session0,
             )
             .await?,
         );

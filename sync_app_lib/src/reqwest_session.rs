@@ -1,4 +1,5 @@
 use anyhow::{format_err, Error};
+use maplit::hashmap;
 use rand::{
     distributions::{Distribution, Uniform},
     thread_rng,
@@ -8,11 +9,13 @@ use reqwest::{
     redirect::Policy,
     Client, Response, Url,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap, future::Future, pin::Pin, sync::Arc, thread::sleep, time::Duration,
 };
 use tokio::sync::Mutex;
+
+use crate::config::Config;
 
 #[derive(Debug)]
 struct ReqwestSessionInner {
@@ -142,6 +145,102 @@ impl ReqwestSession {
             let val: HeaderValue = v.parse()?;
             self.client.lock().await.headers.insert(name, val);
         }
+        Ok(())
+    }
+}
+
+pub struct SyncClient {
+    pub session0: ReqwestSession,
+    pub session1: ReqwestSession,
+    pub config: Config,
+}
+
+impl SyncClient {
+    pub fn new(config: Config) -> Self {
+        Self {
+            session0: ReqwestSession::new(true),
+            session1: ReqwestSession::new(true),
+            config,
+        }
+    }
+
+    pub fn get_urls(&self) -> Result<(Url, Url), Error> {
+        let from_url: Url = self
+            .config
+            .garmin_from_url
+            .as_ref()
+            .ok_or_else(|| format_err!("No From URL"))?
+            .parse()?;
+        let to_url: Url = self
+            .config
+            .garmin_to_url
+            .as_ref()
+            .ok_or_else(|| format_err!("No To URL"))?
+            .parse()?;
+        Ok((from_url, to_url))
+    }
+
+    pub async fn init(&self) -> Result<(), Error> {
+        let (from_url, to_url) = self.get_urls()?;
+        let user = self
+            .config
+            .garmin_username
+            .as_ref()
+            .ok_or_else(|| format_err!("No Username"))?;
+        let password = self
+            .config
+            .garmin_password
+            .as_ref()
+            .ok_or_else(|| format_err!("No Password"))?;
+
+        let data = hashmap! {
+            "email" => user.as_str(),
+            "password" => password.as_str(),
+        };
+
+        let url = from_url.join("api/auth")?;
+        let resp = self
+            .session0
+            .post(&url, &HeaderMap::new(), &data)
+            .await?
+            .error_for_status()?;
+        let _: Vec<_> = resp.cookies().collect();
+
+        let url = to_url.join("api/auth")?;
+        let resp = self
+            .session1
+            .post(&url, &HeaderMap::new(), &data)
+            .await?
+            .error_for_status()?;
+        let _: Vec<_> = resp.cookies().collect();
+
+        #[derive(Serialize, Deserialize)]
+        struct LoggedUser {
+            email: String,
+        }
+
+        let url = from_url.join("calendar/user")?;
+        let resp = self
+            .session0
+            .get(&url, &HeaderMap::new())
+            .await?
+            .error_for_status()?;
+        let _: LoggedUser = resp
+            .json()
+            .await
+            .map_err(|e| format_err!("Login problem {:?}", e))?;
+
+        let url = to_url.join("calendar/user")?;
+        let resp = self
+            .session1
+            .get(&url, &HeaderMap::new())
+            .await?
+            .error_for_status()?;
+        let _: LoggedUser = resp
+            .json()
+            .await
+            .map_err(|e| format_err!("Login problem {:?}", e))?;
+
         Ok(())
     }
 }

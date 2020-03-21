@@ -6,7 +6,11 @@ use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
 
-use super::{config::Config, iso_8601_datetime, reqwest_session::ReqwestSession};
+use super::{
+    config::Config,
+    iso_8601_datetime,
+    reqwest_session::{ReqwestSession, SyncClient},
+};
 
 #[derive(Queryable, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarList {
@@ -38,73 +42,18 @@ pub struct CalendarCache {
 }
 
 pub struct CalendarSync {
-    session0: ReqwestSession,
-    session1: ReqwestSession,
-    config: Config,
+    client: SyncClient,
 }
 
 impl CalendarSync {
     pub fn new(config: Config) -> Self {
         Self {
-            session0: ReqwestSession::new(true),
-            session1: ReqwestSession::new(true),
-            config,
+            client: SyncClient::new(config),
         }
     }
 
-    pub fn get_urls(&self) -> Result<(Url, Url), Error> {
-        let from_url: Url = self
-            .config
-            .garmin_from_url
-            .as_ref()
-            .ok_or_else(|| format_err!("No From URL"))?
-            .parse()?;
-        let to_url: Url = self
-            .config
-            .garmin_to_url
-            .as_ref()
-            .ok_or_else(|| format_err!("No To URL"))?
-            .parse()?;
-        Ok((from_url, to_url))
-    }
-
-    pub async fn init(&self) -> Result<(), Error> {
-        let (from_url, to_url) = self.get_urls()?;
-        let user = self
-            .config
-            .garmin_username
-            .as_ref()
-            .ok_or_else(|| format_err!("No Username"))?;
-        let password = self
-            .config
-            .garmin_password
-            .as_ref()
-            .ok_or_else(|| format_err!("No Password"))?;
-
-        let data = hashmap! {
-            "email" => user.as_str(),
-            "password" => password.as_str(),
-        };
-
-        let url = from_url.join("api/auth")?;
-        let resp = self
-            .session0
-            .post(&url, &HeaderMap::new(), &data)
-            .await?
-            .error_for_status()?;
-        let _: Vec<_> = resp.cookies().collect();
-        let url = to_url.join("api/auth")?;
-        let resp = self
-            .session1
-            .post(&url, &HeaderMap::new(), &data)
-            .await?
-            .error_for_status()?;
-        let _: Vec<_> = resp.cookies().collect();
-        Ok(())
-    }
-
     pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
-        self.init().await?;
+        self.client.init().await?;
         let mut output = Vec::new();
         let results = self
             .run_single_sync_calendar_list("calendar/calendar_list", "updates", |resp| {
@@ -152,12 +101,14 @@ impl CalendarSync {
         F: Future<Output = Result<HashMap<String, CalendarList>, Error>>,
     {
         let mut output = Vec::new();
-        let (from_url, to_url) = self.get_urls()?;
+        let (from_url, to_url) = self.client.get_urls()?;
 
         let url = from_url.join(path)?;
-        let measurements0 = transform(self.session0.get(&url, &HeaderMap::new()).await?).await?;
+        let measurements0 =
+            transform(self.client.session0.get(&url, &HeaderMap::new()).await?).await?;
         let url = to_url.join(path)?;
-        let measurements1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
+        let measurements1 =
+            transform(self.client.session1.get(&url, &HeaderMap::new()).await?).await?;
 
         output.extend_from_slice(&[self
             .combine_measurements(
@@ -166,7 +117,7 @@ impl CalendarSync {
                 path,
                 js_prefix,
                 &to_url,
-                &self.session1,
+                &self.client.session1,
             )
             .await?]);
         output.extend_from_slice(&[self
@@ -176,7 +127,7 @@ impl CalendarSync {
                 path,
                 js_prefix,
                 &from_url,
-                &self.session0,
+                &self.client.session0,
             )
             .await?]);
 
@@ -234,16 +185,23 @@ impl CalendarSync {
         F: Future<Output = Result<HashMap<String, CalendarCache>, Error>>,
     {
         let mut output = Vec::new();
-        let (from_url, to_url) = self.get_urls()?;
+        let (from_url, to_url) = self.client.get_urls()?;
 
         let url = from_url.join(path)?;
-        let events0 = transform(self.session0.get(&url, &HeaderMap::new()).await?).await?;
+        let events0 = transform(self.client.session0.get(&url, &HeaderMap::new()).await?).await?;
         let url = to_url.join(path)?;
-        let events1 = transform(self.session1.get(&url, &HeaderMap::new()).await?).await?;
+        let events1 = transform(self.client.session1.get(&url, &HeaderMap::new()).await?).await?;
 
         output.push(
-            self.combine_events(&events0, &events1, &to_url, path, js_prefix, &self.session1)
-                .await?,
+            self.combine_events(
+                &events0,
+                &events1,
+                &to_url,
+                path,
+                js_prefix,
+                &self.client.session1,
+            )
+            .await?,
         );
         output.push(
             self.combine_events(
@@ -252,7 +210,7 @@ impl CalendarSync {
                 &from_url,
                 path,
                 js_prefix,
-                &self.session0,
+                &self.client.session0,
             )
             .await?,
         );

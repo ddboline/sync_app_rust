@@ -372,10 +372,13 @@ pub trait FileListTrait: Send + Sync + Debug {
         &self,
         directory_list: Vec<DirectoryInfoCache>,
     ) -> (HashMap<String, DirectoryInfo>, Option<String>) {
-        let root_id: Option<String> = directory_list
-            .iter()
-            .find(|d| d.is_root)
-            .map(|d| d.directory_id.to_string());
+        let root_id: Option<String> = directory_list.iter().find_map(|d| {
+            if d.is_root {
+                Some(d.directory_id.to_string())
+            } else {
+                None
+            }
+        });
         let dmap: HashMap<_, _> = directory_list
             .into_par_iter()
             .map(|d| {

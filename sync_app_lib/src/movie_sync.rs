@@ -13,7 +13,7 @@ use std::{
     io::{stdout, Write},
 };
 
-use super::{config::Config, reqwest_session::ReqwestSession};
+use crate::{config::Config, reqwest_session::{SyncClient, ReqwestSession}};
 
 #[derive(Deserialize)]
 struct LastModifiedStruct {
@@ -72,83 +72,27 @@ pub struct MovieQueueRow {
 }
 
 pub struct MovieSync {
-    session0: ReqwestSession,
-    session1: ReqwestSession,
-    config: Config,
+    client: SyncClient,
 }
 
 impl MovieSync {
     pub fn new(config: Config) -> Self {
         Self {
-            session0: ReqwestSession::new(true),
-            session1: ReqwestSession::new(true),
-            config,
+            client: SyncClient::new(config),
         }
     }
 
-    pub fn get_urls(&self) -> Result<(Url, Url), Error> {
-        let from_url: Url = self
-            .config
-            .garmin_from_url
-            .as_ref()
-            .ok_or_else(|| format_err!("No From URL"))?
-            .parse()?;
-        let to_url: Url = self
-            .config
-            .garmin_to_url
-            .as_ref()
-            .ok_or_else(|| format_err!("No To URL"))?
-            .parse()?;
-        Ok((from_url, to_url))
-    }
-
-    pub async fn init(&self) -> Result<(), Error> {
-        let user = self
-            .config
-            .garmin_username
-            .as_ref()
-            .ok_or_else(|| format_err!("No Username"))?;
-        let password = self
-            .config
-            .garmin_password
-            .as_ref()
-            .ok_or_else(|| format_err!("No Password"))?;
-
-        let data = hashmap! {
-            "email" => user.as_str(),
-            "password" => password.as_str(),
-        };
-
-        let (from_url, to_url) = self.get_urls()?;
-
-        let url = from_url.join("api/auth")?;
-        let resp = self
-            .session0
-            .post(&url, &HeaderMap::new(), &data)
-            .await?
-            .error_for_status()?;
-        let _: Vec<_> = resp.cookies().collect();
-        let url = to_url.join("api/auth")?;
-        let resp = self
-            .session1
-            .post(&url, &HeaderMap::new(), &data)
-            .await?
-            .error_for_status()?;
-        let _: Vec<_> = resp.cookies().collect();
-        Ok(())
-    }
-
     pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
-        self.init().await?;
+        self.client.init().await?;
         let mut output = Vec::new();
 
-        let (from_url, to_url) = self.get_urls()?;
+        let (from_url, to_url) = self.client.get_urls()?;
         let url = from_url.join("list/last_modified")?;
         debug!("{}", url);
-        let last_modified0 = Self::get_last_modified(&url, &self.session0).await?;
+        let last_modified0 = Self::get_last_modified(&url, &self.client.session0).await?;
         let url = to_url.join("list/last_modified")?;
         debug!("{}", url);
-        let last_modified1 = Self::get_last_modified(&url, &self.session1).await?;
+        let last_modified1 = Self::get_last_modified(&url, &self.client.session1).await?;
 
         debug!("{:?} {:?}", last_modified0, last_modified1);
 
@@ -210,13 +154,13 @@ impl MovieSync {
         U: FnMut(Response) -> F,
         F: Future<Output = Result<Vec<T>, Error>>,
     {
-        let (from_url, to_url) = self.get_urls()?;
+        let (from_url, to_url) = self.client.get_urls()?;
         if last_modified0 > last_modified1 {
             _run_single_sync(
                 &from_url,
-                &self.session0,
+                &self.client.session0,
                 &to_url,
-                &self.session1,
+                &self.client.session1,
                 table,
                 last_modified1,
                 js_prefix,
@@ -226,9 +170,9 @@ impl MovieSync {
         } else {
             _run_single_sync(
                 &to_url,
-                &self.session1,
+                &self.client.session1,
                 &from_url,
-                &self.session0,
+                &self.client.session0,
                 table,
                 last_modified0,
                 js_prefix,
