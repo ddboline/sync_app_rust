@@ -60,6 +60,7 @@ footer {
     <input type="button" name="proc_button" value="Process" onclick="processAll();"/>
     <input type="button" name="sync_garmin" value="Scale Sync" onclick="heartrateSync();"/>
     <input type="button" name="sync_movie" value="Movie Sync" onclick="movieSync();"/>
+    <input type="button" name="sync_calendar" value="Scale Calendar" onclick="calendarSync();"/>
     <input type="button" name="sync_podcasts" value="Podcast Sync" onclick="podcastSync();"/>
     <button name="garminconnectoutput" id="garminconnectoutput"> &nbsp; </button>
 </form>
@@ -122,6 +123,17 @@ DISPLAY_TEXT
     }
     function movieSync() {
         let ostr = '/sync/sync_movie';
+        let xmlhttp = new XMLHttpRequest();
+        xmlhttp.open("GET", ostr, true);
+        xmlhttp.onload = function nothing() {
+            document.getElementById("garminconnectoutput").innerHTML = "done";
+            document.getElementById("main_article").innerHTML = xmlhttp.responseText;
+        }
+        xmlhttp.send(null);
+        document.getElementById("garminconnectoutput").innerHTML = "syncing";
+    }
+    function calendarSync() {
+        let ostr = '/sync/sync_calendar';
         let xmlhttp = new XMLHttpRequest();
         xmlhttp.open("GET", ostr, true);
         xmlhttp.onload = function nothing() {
