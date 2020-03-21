@@ -47,13 +47,15 @@ impl GarminSync {
     }
 
     fn get_urls(&self) -> Result<(Url, Url), Error> {
-        let from_url: Url = self.client
+        let from_url: Url = self
+            .client
             .config
             .garmin_from_url
             .as_ref()
             .ok_or_else(|| format_err!("No From URL"))?
             .parse()?;
-        let to_url: Url = self.client
+        let to_url: Url = self
+            .client
             .config
             .garmin_to_url
             .as_ref()

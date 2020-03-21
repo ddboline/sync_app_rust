@@ -41,7 +41,7 @@ impl SyncOpts {
         }
     }
 
-    pub async fn process_args() -> Result<(), Error> {
+    pub async fn process_args() -> Result<Vec<String>, Error> {
         let opts = Self::from_args();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
@@ -50,7 +50,12 @@ impl SyncOpts {
     }
 
     #[allow(clippy::cognitive_complexity)]
-    pub async fn process_sync_opts(&self, config: &Config, pool: &PgPool) -> Result<(), Error> {
+    pub async fn process_sync_opts(
+        &self,
+        config: &Config,
+        pool: &PgPool,
+    ) -> Result<Vec<String>, Error> {
+        let mut output = Vec::new();
         let blacklist = Arc::new(BlackList::new(pool).await?);
 
         match self.action {
@@ -87,7 +92,7 @@ impl SyncOpts {
                 });
                 let result: Result<Vec<_>, Error> = try_join_all(futures).await;
                 result?;
-                Ok(())
+                Ok(output)
             }
             FileSyncAction::Sync => {
                 let urls = if self.urls.is_empty() {
@@ -138,10 +143,13 @@ impl SyncOpts {
                 let results: Result<Vec<_>, Error> = try_join_all(futures).await;
                 results?;
 
-                for entry in FileSyncCache::get_cache_list(&pool).await? {
-                    writeln!(stdout().lock(), "{} {}", entry.src_url, entry.dst_url)?;
-                }
-                Ok(())
+                let results: Vec<_> = FileSyncCache::get_cache_list(&pool)
+                    .await?
+                    .into_iter()
+                    .map(|entry| format!("{} {}", entry.src_url, entry.dst_url))
+                    .collect();
+                output.extend_from_slice(&results);
+                Ok(output)
             }
             FileSyncAction::Copy => {
                 if self.urls.len() < 2 {
@@ -152,10 +160,12 @@ impl SyncOpts {
 
                     if finfo1.servicetype == FileService::Local {
                         let flist = FileList::from_url(&self.urls[0], &config, &pool).await?;
-                        FileSync::copy_object(&(*flist), &finfo0, &finfo1).await
+                        FileSync::copy_object(&(*flist), &finfo0, &finfo1).await?;
+                        Ok(output)
                     } else {
                         let flist = FileList::from_url(&self.urls[1], &config, &pool).await?;
-                        FileSync::copy_object(&(*flist), &finfo0, &finfo1).await
+                        FileSync::copy_object(&(*flist), &finfo0, &finfo1).await?;
+                        Ok(output)
                     }
                 }
             }
@@ -170,19 +180,21 @@ impl SyncOpts {
                             flist.print_list().await?;
                         }
                     }
-                    Ok(())
+                    Ok(output)
                 }
             }
             FileSyncAction::Process => {
                 let fsync = FileSync::new(config.clone());
-                fsync.process_sync_cache(&pool).await
+                fsync.process_sync_cache(&pool).await?;
+                Ok(output)
             }
             FileSyncAction::Delete => {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
                     let fsync = FileSync::new(config.clone());
-                    fsync.delete_files(&self.urls, &pool).await
+                    fsync.delete_files(&self.urls, &pool).await?;
+                    Ok(output)
                 }
             }
             FileSyncAction::Move => {
@@ -192,7 +204,8 @@ impl SyncOpts {
 
                     if finfo0.servicetype == finfo1.servicetype {
                         let flist = FileList::from_url(&self.urls[0], &config, &pool).await?;
-                        flist.move_file(&finfo0, &finfo1).await
+                        flist.move_file(&finfo0, &finfo1).await?;
+                        Ok(output)
                     } else {
                         Err(format_err!("Can only move within servicetype"))
                     }
@@ -213,15 +226,15 @@ impl SyncOpts {
                             .values()
                             .map(|finfo| {
                                 let js = serde_json::to_string(finfo.inner())?;
-                                writeln!(stdout().lock(), "{}", js)?;
-                                Ok(())
+                                Ok(format!("{}", js))
                             })
                             .collect();
-                        results.map(|_| ())
+                        results
                     });
                     let results: Result<Vec<_>, Error> = try_join_all(futures).await;
-                    results?;
-                    Ok(())
+                    let results: Vec<_> = results?.into_iter().flatten().collect();
+                    output.extend_from_slice(&results);
+                    Ok(output)
                 }
             }
             FileSyncAction::AddConfig => {
@@ -232,7 +245,8 @@ impl SyncOpts {
                         self.urls[1].as_str(),
                     )
                     .await
-                    .map(|_| ())
+                    .map(|_| ())?;
+                    Ok(output)
                 } else {
                     Err(format_err!("Need exactly 2 Urls"))
                 }
@@ -244,8 +258,8 @@ impl SyncOpts {
                     .map(|v| format!("{} {}", v.src_url, v.dst_url))
                     .collect();
                 let body = clist.join("\n");
-                writeln!(stdout().lock(), "{}", body)?;
-                Ok(())
+                output.push(format!("{}", body));
+                Ok(output)
             }
         }
     }

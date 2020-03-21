@@ -13,7 +13,10 @@ use std::{
     io::{stdout, Write},
 };
 
-use crate::{config::Config, reqwest_session::{SyncClient, ReqwestSession}};
+use crate::{
+    config::Config,
+    reqwest_session::{ReqwestSession, SyncClient},
+};
 
 #[derive(Deserialize)]
 struct LastModifiedStruct {

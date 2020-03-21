@@ -55,16 +55,16 @@ pub async fn sync_all(_: LoggedUser, data: Data<AppState>) -> Result<HttpRespons
     let req = SyncRequest {
         action: FileSyncAction::Sync,
     };
-    data.db.handle(req).await?;
-    form_http_response("finished".to_string())
+    let lines = data.db.handle(req).await?;
+    form_http_response(lines.join("\n"))
 }
 
 pub async fn proc_all(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
     let req = SyncRequest {
         action: FileSyncAction::Process,
     };
-    data.db.handle(req).await?;
-    form_http_response("finished".to_string())
+    let lines = data.db.handle(req).await?;
+    form_http_response(lines.join("\n"))
 }
 
 pub async fn list_sync_cache(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
@@ -108,8 +108,8 @@ pub async fn remove(
     data: Data<AppState>,
 ) -> Result<HttpResponse, Error> {
     let query = query.into_inner();
-    data.db.handle(query).await?;
-    form_http_response("finished".to_string())
+    let lines = data.db.handle(query).await?;
+    form_http_response(lines.join("\n"))
 }
 
 pub async fn sync_podcasts(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {

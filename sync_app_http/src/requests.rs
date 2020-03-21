@@ -35,7 +35,7 @@ pub struct SyncRequest {
 
 #[async_trait]
 impl HandleRequest<SyncRequest> for PgPool {
-    type Result = Result<(), Error>;
+    type Result = Result<Vec<String>, Error>;
     async fn handle(&self, req: SyncRequest) -> Self::Result {
         let _ = SYNCLOCK.lock().await;
         let opts = SyncOpts::new(req.action, &[]);
@@ -111,7 +111,7 @@ pub struct SyncRemoveRequest {
 
 #[async_trait]
 impl HandleRequest<SyncRemoveRequest> for PgPool {
-    type Result = Result<(), Error>;
+    type Result = Result<Vec<String>, Error>;
     async fn handle(&self, req: SyncRemoveRequest) -> Self::Result {
         let url = req.url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
