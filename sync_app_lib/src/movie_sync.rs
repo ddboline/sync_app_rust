@@ -240,7 +240,7 @@ mod tests {
     async fn test_movie_sync() {
         let config = Config::init_config().unwrap();
         let s = MovieSync::new(config);
-        s.init().await.unwrap();
+        s.client.init().await.unwrap();
         let result = s.run_sync().await.unwrap();
         writeln!(stdout(), "{:?}", result).unwrap();
         assert!(result.len() > 0);
