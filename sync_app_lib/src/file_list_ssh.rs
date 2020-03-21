@@ -141,7 +141,8 @@ impl FileListTrait for FileListSSH {
         }
     }
 
-    // Copy operation where the destination (finfo0) has the same servicetype as self
+    // Copy operation where the destination (finfo0) has the same servicetype as
+    // self
     async fn copy_to(
         &self,
         finfo0: &dyn FileInfoTrait,

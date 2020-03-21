@@ -25,9 +25,9 @@ use crate::{
 #[derive(StructOpt, Debug)]
 pub struct SyncOpts {
     #[structopt(parse(try_from_str))]
-    /// Available commands are: "index", "sync", "proc(ess)", "copy" or "cp", "list" or "ls",
-    /// "delete" or "rm", "move" or "mv", "ser" or "serialize", "add" or "add_config",
-    /// "show" or "show_cache"
+    /// Available commands are: "index", "sync", "proc(ess)", "copy" or "cp",
+    /// "list" or "ls", "delete" or "rm", "move" or "mv", "ser" or
+    /// "serialize", "add" or "add_config", "show" or "show_cache"
     pub action: FileSyncAction,
     #[structopt(short = "u", long = "urls", parse(try_from_str))]
     pub urls: Vec<Url>,

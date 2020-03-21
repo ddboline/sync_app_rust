@@ -127,7 +127,8 @@ pub trait FileListTrait: Send + Sync + Debug {
         panic!("not implemented for {:?} {:?}", finfo0, finfo1);
     }
 
-    // Copy operation where the destination (finfo0) has the same servicetype as self
+    // Copy operation where the destination (finfo0) has the same servicetype as
+    // self
     async fn copy_to(
         &self,
         finfo0: &dyn FileInfoTrait,

@@ -2,11 +2,12 @@ use anyhow::Error;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::{
+    io::{BufRead, BufReader},
+    path::Path,
+};
 use subprocess::Exec;
-use tokio::sync::Mutex;
-use tokio::task::spawn_blocking;
+use tokio::{sync::Mutex, task::spawn_blocking};
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,

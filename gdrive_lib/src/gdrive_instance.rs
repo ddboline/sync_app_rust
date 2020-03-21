@@ -407,9 +407,8 @@ impl GDriveInstance {
         if let Some(mime) = mime_type.clone() {
             if UNEXPORTABLE_MIME_TYPES.contains::<str>(&mime) {
                 return Err(format_err!(
-                    "UNEXPORTABLE_FILE: The MIME type of this \
-                     file is {:?}, which can not be exported from Drive. Web \
-                     content link provided by Drive: {:?}\n",
+                    "UNEXPORTABLE_FILE: The MIME type of this file is {:?}, which can not be \
+                     exported from Drive. Web content link provided by Drive: {:?}\n",
                     mime,
                     self.get_file_metadata(gdriveid)
                         .ok()
@@ -916,52 +915,3 @@ impl Read for DummyFile {
         Ok(copied)
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-
-//     #[test]
-//     #[ignore]
-//     fn test_file_info_from_object() {
-//         let config = Config::init_config().unwrap();
-//         let gdrive = GDriveInstance::new(&config, "ddboline@gmail.com");
-//         let (dmap, _) = gdrive.get_directory_map().unwrap();
-//         let f = GDriveInfo {
-//             filename: "armstrong_thesis_2003.pdf".to_string(),
-//             filepath: Some("armstrong_thesis_2003.pdf".parse().unwrap()),
-//             urlname:  Some("gdrive://ddboline@gmail.com/My%20Drive/armstrong_thesis_2003.pdf".parse().unwrap()),
-//             md5sum: Some("afde42b3861d522796faeb33a9eaec8a".to_string()),
-//             sha1sum: None,
-//             filestat: Some((123, 123)),
-//             serviceid: Some("1REd76oJ6YheyjF2R9Il0E8xbjalgpNgG".to_string()),
-//             servicesession: Some("ddboline@gmail.com".to_string()),
-
-//             mime_type: Some("application/pdf".to_string()),
-//             viewed_by_me_time: Some("2019-04-20T21:18:40.865Z".to_string()),
-//             id: Some("1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb".to_string()),
-//             size: Some("859249".to_string()),
-//             parents: Some(vec!["0ABGM0lfCdptnUk9PVA".to_string()]),
-//             md5_checksum: Some("2196a214fd7eccc6292adb96602f5827".to_string()),
-//             modified_time: Some("2019-04-20T21:18:40.865Z".to_string()),
-//             created_time: Some("2019-04-20T21:18:40.865Z".to_string()),
-//             owners: Some(vec![drive3::User { me: Some(true),
-//             kind: Some("drive#user".to_string()),
-//             display_name: Some("Daniel Boline".to_string()),
-//             photo_link: Some("https://lh5.googleusercontent.com/-dHefkGDbPx4/AAAAAAAAAAI/AAAAAAAAUik/4rvsDcSqY0U/s64/photo.jpg".to_string()),
-//             email_address: Some("ddboline@gmail.com".to_string()),
-//             permission_id: Some("15472502093706922513".to_string()) }]),
-//             name: Some(),
-//             web_content_link: Some("https://drive.google.com/uc?id=1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb&export=download".to_string()),
-//             trashed: Some(false),
-//             file_extension: Some("pdf".to_string()),
-//             ..Default::default()
-//         };
-
-//         let finfo = FileInfoGDrive::from_object(f, &gdrive, &dmap).unwrap();
-//         assert_eq!(finfo.get_finfo().filename, "armstrong_thesis_2003.pdf");
-//         assert_eq!(
-//             finfo.get_finfo().serviceid.as_ref().unwrap().0.as_str(),
-//             "1M6EzRPGaJBaZgN_2bUQPcgKY2o7JXJvb"
-//         );
-//     }
-// }
