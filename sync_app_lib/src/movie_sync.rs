@@ -86,7 +86,7 @@ impl MovieSync {
     }
 
     pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
-        self.client.init().await?;
+        self.client.init("list").await?;
         let mut output = Vec::new();
 
         let (from_url, to_url) = self.client.get_urls()?;
@@ -240,7 +240,7 @@ mod tests {
     async fn test_movie_sync() {
         let config = Config::init_config().unwrap();
         let s = MovieSync::new(config);
-        s.client.init().await.unwrap();
+        s.client.init("list").await.unwrap();
         let result = s.run_sync().await.unwrap();
         writeln!(stdout(), "{:?}", result).unwrap();
         assert!(result.len() > 0);

@@ -53,7 +53,7 @@ impl CalendarSync {
     }
 
     pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
-        self.client.init().await?;
+        self.client.init("calendar").await?;
         let mut output = Vec::new();
         let results = self
             .run_single_sync_calendar_list("calendar/calendar_list", "updates", |resp| {

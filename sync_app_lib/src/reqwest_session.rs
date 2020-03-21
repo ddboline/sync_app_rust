@@ -180,7 +180,7 @@ impl SyncClient {
         Ok((from_url, to_url))
     }
 
-    pub async fn init(&self) -> Result<(), Error> {
+    pub async fn init(&self, base_url: &str) -> Result<(), Error> {
         let (from_url, to_url) = self.get_urls()?;
         let user = self
             .config
@@ -219,7 +219,7 @@ impl SyncClient {
             email: String,
         }
 
-        let url = from_url.join("calendar/user")?;
+        let url = from_url.join(base_url).join("user")?;
         let resp = self
             .session0
             .get(&url, &HeaderMap::new())
@@ -230,7 +230,7 @@ impl SyncClient {
             .await
             .map_err(|e| format_err!("Login problem {:?}", e))?;
 
-        let url = to_url.join("calendar/user")?;
+        let url = to_url.join(base_url).join("user")?;
         let resp = self
             .session1
             .get(&url, &HeaderMap::new())
