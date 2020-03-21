@@ -47,7 +47,7 @@ impl GarminSync {
     }
 
     pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
-        self.init("garmin").await?;
+        self.client.init("garmin").await?;
         let mut output = Vec::new();
         let results = self
             .run_single_sync_scale_measurement(
@@ -93,7 +93,7 @@ impl GarminSync {
         F: Future<Output = Result<HashMap<DateTime<Utc>, ScaleMeasurement>, Error>>,
     {
         let mut output = Vec::new();
-        let (from_url, to_url) = self.get_urls()?;
+        let (from_url, to_url) = self.client.get_urls()?;
 
         let url = from_url.join(path)?;
         let measurements0 =
@@ -177,7 +177,7 @@ impl GarminSync {
         F: Future<Output = Result<HashMap<String, StravaItem>, Error>>,
     {
         let mut output = Vec::new();
-        let (from_url, to_url) = self.get_urls()?;
+        let (from_url, to_url) = self.client.get_urls()?;
 
         let url = from_url.join(path)?;
         let activities0 =
