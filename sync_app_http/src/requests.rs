@@ -9,8 +9,9 @@ use tokio::sync::Mutex;
 use tokio::task::spawn_blocking;
 
 use sync_app_lib::{
-    config::Config, file_sync::FileSyncAction, garmin_sync::GarminSync, models::FileSyncCache,
-    movie_sync::MovieSync, pgpool::PgPool, sync_opts::SyncOpts,
+    calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
+    garmin_sync::GarminSync, models::FileSyncCache, movie_sync::MovieSync, pgpool::PgPool,
+    sync_opts::SyncOpts,
 };
 
 lazy_static! {
@@ -18,6 +19,7 @@ lazy_static! {
     static ref SYNCLOCK: Mutex<()> = Mutex::new(());
     static ref GARMINLOCK: Mutex<()> = Mutex::new(());
     static ref MOVIELOCK: Mutex<()> = Mutex::new(());
+    static ref CALENDARLOCK: Mutex<()> = Mutex::new(());
     static ref PODCASTLOCK: Mutex<()> = Mutex::new(());
 }
 
@@ -76,7 +78,6 @@ impl HandleRequest<GarminSyncRequest> for PgPool {
         sync.run_sync().await
     }
 }
-
 pub struct MovieSyncRequest {}
 
 #[async_trait]
@@ -86,6 +87,19 @@ impl HandleRequest<MovieSyncRequest> for PgPool {
         let _ = MOVIELOCK.lock().await;
         let config = CONFIG.clone();
         let sync = MovieSync::new(config);
+        sync.run_sync().await
+    }
+}
+
+pub struct CalendarSyncRequest {}
+
+#[async_trait]
+impl HandleRequest<CalendarSyncRequest> for PgPool {
+    type Result = Result<Vec<String>, Error>;
+    async fn handle(&self, _: CalendarSyncRequest) -> Self::Result {
+        let _ = CALENDARLOCK.lock().await;
+        let config = CONFIG.clone();
+        let sync = CalendarSync::new(config);
         sync.run_sync().await
     }
 }

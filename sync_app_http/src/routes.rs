@@ -11,8 +11,9 @@ use super::{
     errors::ServiceError as Error,
     logged_user::LoggedUser,
     requests::{
-        GarminSyncRequest, HandleRequest, ListSyncCacheRequest, MovieSyncRequest,
-        SyncEntryDeleteRequest, SyncPodcastsRequest, SyncRemoveRequest, SyncRequest,
+        CalendarSyncRequest, GarminSyncRequest, HandleRequest, ListSyncCacheRequest,
+        MovieSyncRequest, SyncEntryDeleteRequest, SyncPodcastsRequest, SyncRemoveRequest,
+        SyncRequest,
     },
 };
 
@@ -85,6 +86,11 @@ pub async fn sync_garmin(_: LoggedUser, data: Data<AppState>) -> Result<HttpResp
 
 pub async fn sync_movie(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
     let body = data.db.handle(MovieSyncRequest {}).await?;
+    form_http_response(body.join("<br>"))
+}
+
+pub async fn sync_calendar(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+    let body = data.db.handle(CalendarSyncRequest {}).await?;
     form_http_response(body.join("<br>"))
 }
 
