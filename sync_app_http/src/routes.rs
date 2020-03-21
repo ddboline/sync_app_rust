@@ -3,6 +3,7 @@ use actix_web::{
     web::{block, Data, Query},
     HttpResponse,
 };
+use serde::Serialize;
 
 use sync_app_lib::file_sync::FileSyncAction;
 
@@ -21,6 +22,13 @@ fn form_http_response(body: String) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type("text/html; charset=utf-8")
         .body(body))
+}
+
+fn to_json<T>(js: T) -> Result<HttpResponse, Error>
+where
+    T: Serialize,
+{
+    Ok(HttpResponse::Ok().json(js))
 }
 
 pub async fn sync_frontpage(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
@@ -107,4 +115,8 @@ pub async fn remove(
 pub async fn sync_podcasts(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
     let results = data.db.handle(SyncPodcastsRequest {}).await?;
     form_http_response(results.join("\n"))
+}
+
+pub async fn user(user: LoggedUser) -> Result<HttpResponse, Error> {
+    to_json(user)
 }

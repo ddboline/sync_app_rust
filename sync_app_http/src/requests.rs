@@ -131,7 +131,10 @@ impl HandleRequest<SyncPodcastsRequest> for PgPool {
         }
         let command = "/usr/bin/podcatch-rust -g".to_string();
         spawn_blocking(move || {
-            let stream = Exec::shell(command).stream_stdout()?;
+            let stream = Exec::shell(command)
+                .env_remove("DATABASE_URL")
+                .env_remove("GOOGLE_MUSIC_DIRECTORY")
+                .stream_stdout()?;
             let reader = BufReader::new(stream);
             reader.lines().map(|line| Ok(line?)).collect()
         })
