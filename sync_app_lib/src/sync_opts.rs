@@ -224,10 +224,7 @@ impl SyncOpts {
                         let results: Result<Vec<_>, Error> = flist
                             .get_filemap()
                             .values()
-                            .map(|finfo| {
-                                let js = serde_json::to_string(finfo.inner())?;
-                                Ok(format!("{}", js))
-                            })
+                            .map(|finfo| serde_json::to_string(finfo.inner()).map_err(Into::into))
                             .collect();
                         results
                     });

@@ -181,6 +181,11 @@ impl SyncClient {
     }
 
     pub async fn init(&self, base_url: &str) -> Result<(), Error> {
+        #[derive(Serialize, Deserialize)]
+        struct LoggedUser {
+            email: String,
+        }
+
         let (from_url, to_url) = self.get_urls()?;
         let user = self
             .config
@@ -213,11 +218,6 @@ impl SyncClient {
             .await?
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
-
-        #[derive(Serialize, Deserialize)]
-        struct LoggedUser {
-            email: String,
-        }
 
         let url = from_url.join(&format!("{}/user", base_url))?;
         let resp = self
