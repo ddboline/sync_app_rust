@@ -2,6 +2,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::time::Instant;
 use std::{
     io::{BufRead, BufReader},
     path::Path,
@@ -22,6 +23,7 @@ lazy_static! {
     static ref MOVIELOCK: Mutex<()> = Mutex::new(());
     static ref CALENDARLOCK: Mutex<()> = Mutex::new(());
     static ref PODCASTLOCK: Mutex<()> = Mutex::new(());
+    static ref SECURITYLOCK: Mutex<()> = Mutex::new(());
 }
 
 #[async_trait]
@@ -140,5 +142,37 @@ impl HandleRequest<SyncPodcastsRequest> for PgPool {
             reader.lines().map(|line| Ok(line?)).collect()
         })
         .await?
+    }
+}
+
+pub struct SyncSecurityRequest {}
+
+#[async_trait]
+impl HandleRequest<SyncSecurityRequest> for PgPool {
+    type Result = Result<Vec<String>, Error>;
+    async fn handle(&self, _: SyncSecurityRequest) -> Self::Result {
+        let home_dir = match dirs::home_dir() {
+            Some(home_dir) => home_dir,
+            _ => return Ok(Vec::new()),
+        };
+        let script = home_dir.join("bin").join("run_security_log_parse.sh");
+        if !script.exists() {
+            return Ok(Vec::new());
+        }
+        let _ = SECURITYLOCK.lock().await;
+        let start_time = Instant::now();
+        let lines: Result<Vec<String>, Error> = spawn_blocking(move || {
+            let stream = Exec::cmd(script)
+                .env_remove("DATABASE_URL")
+                .env_remove("EXPORT_DIR")
+                .stream_stdout()?;
+            let reader = BufReader::new(stream);
+            reader.lines().map(|line| Ok(line?)).collect()
+        })
+        .await?;
+        let run_time = Instant::now() - start_time;
+        let mut lines = lines?;
+        lines.push(format!("Run time {:0.2} s", run_time.as_secs_f64()));
+        Ok(lines)
     }
 }

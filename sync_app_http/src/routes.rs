@@ -14,7 +14,7 @@ use super::{
     requests::{
         CalendarSyncRequest, GarminSyncRequest, HandleRequest, ListSyncCacheRequest,
         MovieSyncRequest, SyncEntryDeleteRequest, SyncPodcastsRequest, SyncRemoveRequest,
-        SyncRequest,
+        SyncRequest, SyncSecurityRequest,
     },
 };
 
@@ -114,9 +114,22 @@ pub async fn remove(
 
 pub async fn sync_podcasts(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
     let results = data.db.handle(SyncPodcastsRequest {}).await?;
-    form_http_response(results.join("\n"))
+    let body = format!(
+        r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
+        results.join("\n")
+    );
+    form_http_response(body)
 }
 
 pub async fn user(user: LoggedUser) -> Result<HttpResponse, Error> {
     to_json(user)
+}
+
+pub async fn sync_security(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+    let results = data.db.handle(SyncSecurityRequest {}).await?;
+    let body = format!(
+        r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
+        results.join("\n")
+    );
+    form_http_response(body)
 }
