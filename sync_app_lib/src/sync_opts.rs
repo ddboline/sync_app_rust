@@ -254,8 +254,7 @@ impl SyncOpts {
                     .into_iter()
                     .map(|v| format!("{} {}", v.src_url, v.dst_url))
                     .collect();
-                let body = clist.join("\n");
-                output.push(format!("{}", body));
+                output.push(clist.join("\n"));
                 Ok(output)
             }
         }
