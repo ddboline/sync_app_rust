@@ -10,7 +10,6 @@ use std::{
     collections::HashMap,
     fmt::Debug,
     future::Future,
-    io::{stdout, Write},
 };
 
 use crate::{
@@ -231,7 +230,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::io::{stdout, Write};
+    use log::debug;
 
     use crate::{config::Config, movie_sync::MovieSync};
 
@@ -242,7 +241,7 @@ mod tests {
         let s = MovieSync::new(config);
         s.client.init("list").await.unwrap();
         let result = s.run_sync().await.unwrap();
-        writeln!(stdout(), "{:?}", result).unwrap();
+        debug!("{:?}", result).unwrap();
         assert!(result.len() > 0);
     }
 }

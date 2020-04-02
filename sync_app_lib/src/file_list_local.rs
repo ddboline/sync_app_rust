@@ -266,10 +266,10 @@ impl FileListTrait for FileListLocal {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
+    use log::debug;
     use std::{
         collections::HashMap,
         convert::TryInto,
-        io::{stdout, Write},
         path::PathBuf,
     };
     use url::Url;
@@ -293,11 +293,11 @@ mod tests {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let conf = FileListLocal::new(&basepath, &config, &pool);
-        writeln!(stdout(), "{:?}", conf)?;
+        debug!("{:?}", conf);
         assert_eq!(conf.is_ok(), true);
         let conf = conf?;
         assert_eq!(conf.get_servicetype(), FileService::Local);
-        writeln!(stdout(), "{:?}", conf.get_baseurl())?;
+        debug!("{:?}", conf.get_baseurl());
         assert_eq!(conf.get_baseurl(), &baseurl);
         Ok(())
     }
@@ -312,7 +312,7 @@ mod tests {
 
         let new_flist = flist.fill_file_list().await?;
 
-        writeln!(stdout(), "0 {}", new_flist.len())?;
+        debug!("0 {}", new_flist.len());
 
         let fset: HashMap<_, _> = new_flist
             .iter()
@@ -323,7 +323,7 @@ mod tests {
 
         let result = fset.get("file_list_local.rs").unwrap();
 
-        writeln!(stdout(), "{:?}", result)?;
+        debug!("{:?}", result);
 
         assert!(result
             .filepath
@@ -338,7 +338,7 @@ mod tests {
             .ends_with("file_list_local.rs"));
 
         let cache_info: InsertFileInfoCache = result.into();
-        writeln!(stdout(), "{:?}", cache_info)?;
+        debug!("{:?}", cache_info);
         assert_eq!(
             &result.md5sum.as_ref().unwrap().0,
             cache_info.md5sum.as_ref().unwrap()
@@ -351,29 +351,29 @@ mod tests {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
-        writeln!(stdout(), "1 {}", new_flist.len())?;
+        debug!("1 {}", new_flist.len());
 
         let mut flist = FileListLocal::new(&basepath, &config, &pool)?;
         flist.with_list(new_flist);
 
-        writeln!(stdout(), "2 {}", flist.get_filemap().len())?;
+        debug!("2 {}", flist.get_filemap().len());
 
-        writeln!(stdout(), "wrote {}", flist.cache_file_list()?)?;
+        debug!("wrote {}", flist.cache_file_list()?);
 
-        writeln!(stdout(), "{:?}", flist.get_servicesession())?;
+        debug!("{:?}", flist.get_servicesession());
 
         let new_flist = flist.load_file_list()?;
 
         assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
-        writeln!(stdout(), "{}", new_flist.len())?;
+        debug!("{}", new_flist.len());
         assert!(new_flist.len() != 0);
 
         let new_flist = flist.fill_file_list().await?;
 
         assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
-        writeln!(stdout(), "{}", new_flist.len())?;
+        debug!("{}", new_flist.len());
         assert!(new_flist.len() != 0);
 
         flist.clear_file_list()?;

@@ -281,7 +281,7 @@ impl FileListTrait for FileListS3 {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
-    use std::io::{stdout, Write};
+    use log::debug;
 
     use crate::{
         config::Config, file_list::FileListTrait, file_list_s3::FileListS3, pgpool::PgPool,
@@ -305,7 +305,7 @@ mod tests {
 
         let new_flist = flist.fill_file_list().await?;
 
-        writeln!(stdout(), "{} {:?}", bucket, new_flist.get(0))?;
+        debug!("{} {:?}", bucket, new_flist.get(0));
         assert!(new_flist.len() > 0);
 
         flist.with_list(new_flist);
@@ -331,7 +331,7 @@ mod tests {
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
         let klist = s3_instance.get_list_of_keys(&bucket, None).await?;
-        writeln!(stdout(), "{} {}", bucket, klist.len())?;
+        debug!("{} {}", bucket, klist.len());
         assert!(klist.len() > 0);
         Ok(())
     }

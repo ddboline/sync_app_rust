@@ -452,10 +452,10 @@ impl FileListTrait for FileListGDrive {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
+    use log::debug;
     use std::{
         collections::HashMap,
         fs::remove_file,
-        io::{stdout, Write},
         path::Path,
     };
 
@@ -489,7 +489,7 @@ mod tests {
 
         flist.with_list(new_flist);
 
-        writeln!(stdout(), "wrote {}", flist.cache_file_list()?)?;
+        debug!("wrote {}", flist.cache_file_list()?);
 
         let new_flist = flist.load_file_list()?;
 
@@ -497,21 +497,21 @@ mod tests {
 
         flist.clear_file_list()?;
 
-        writeln!(stdout(), "dmap {}", flist.directory_map.read().len())?;
+        debug!("dmap {}", flist.directory_map.read().len());
 
         let dnamemap = GDriveInstance::get_directory_name_map(&flist.directory_map.read());
         for f in flist.get_filemap().values() {
             let u = f.urlname.as_ref().unwrap();
             let parent_id = GDriveInstance::get_parent_id(u, &dnamemap)?;
             assert!(!parent_id.is_none());
-            writeln!(stdout(), "{} {:?}", u, parent_id)?;
+            debug!("{} {:?}", u, parent_id);
         }
 
         let multimap: HashMap<_, _> = dnamemap.iter().filter(|(_, v)| v.len() > 1).collect();
-        writeln!(stdout(), "multimap {}", multimap.len())?;
+        debug!("multimap {}", multimap.len());
         for (key, val) in &multimap {
             if val.len() > 1 {
-                writeln!(stdout(), "{} {}", key, val.len())?;
+                debug!("{} {}", key, val.len());
             }
         }
 

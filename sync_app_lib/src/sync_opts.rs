@@ -6,7 +6,6 @@ use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
 use std::{
-    io::{stdout, Write},
     sync::Arc,
 };
 use structopt::StructOpt;

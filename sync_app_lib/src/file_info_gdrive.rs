@@ -96,9 +96,9 @@ impl FileInfoGDrive {
 
 #[cfg(test)]
 mod tests {
+    use log::debug;
     use std::{
         collections::HashMap,
-        io::{stdout, Write},
         path::Path,
     };
     use url::Url;
@@ -116,7 +116,7 @@ mod tests {
             .parse()
             .unwrap();
         let finfo = FileInfoGDrive::from_url(&url).unwrap();
-        writeln!(stdout(), "{:?}", finfo).unwrap();
+        debug!("{:?}", finfo);
         assert_eq!(finfo.get_finfo().filename, "test.txt");
         assert_eq!(finfo.get_finfo().servicetype, FileService::GDrive);
     }
@@ -163,13 +163,13 @@ mod tests {
         let list = gdrive.get_all_files(false).unwrap();
         assert_eq!(list.len(), 10);
         let test_info = list.iter().filter(|f| !f.parents.is_none()).next().unwrap();
-        writeln!(stdout(), "test_info {:?}", test_info).unwrap();
+        debug!("test_info {:?}", test_info);
 
         let gdriveid = test_info.id.as_ref().unwrap();
         let parent = &test_info.parents.as_ref().unwrap()[0];
         let local_path = Path::new("/tmp/temp.file");
         let mime = test_info.mime_type.as_ref().unwrap().to_string();
-        writeln!(stdout(), "mime {}", mime).unwrap();
+        debug!("mime {}", mime);
         gdrive
             .download(&gdriveid, &local_path, &Some(mime))
             .unwrap();
@@ -179,14 +179,12 @@ mod tests {
             .unwrap();
         let local_url = Url::from_file_path(basepath).unwrap();
         let new_file = gdrive.upload(&local_url, &parent).unwrap();
-        writeln!(stdout(), "new_file {:?}", new_file).unwrap();
-        writeln!(stdout(), "start_page_token {:?}", gdrive.start_page_token).unwrap();
-        writeln!(
-            stdout(),
+        debug!("new_file {:?}", new_file);
+        debug!("start_page_token {:?}", gdrive.start_page_token);
+        debug!(
             "current_start_page_token {:?}",
             gdrive.get_start_page_token().unwrap()
-        )
-        .unwrap();
+        );
 
         let changes = gdrive.get_all_changes().unwrap();
         let changes_map: HashMap<_, _> = changes
@@ -203,27 +201,23 @@ mod tests {
                 }
             })
             .collect();
-        writeln!(stdout(), "N files {}", changes_map.len()).unwrap();
+        debug!("N files {}", changes_map.len());
         for ((f, t), ch) in changes_map {
-            writeln!(stdout(), "ch {:?} {:?} {:?}", f, t, ch.file).unwrap();
+            debug!("ch {:?} {:?} {:?}", f, t, ch.file);
         }
 
         let new_driveid = new_file.id.unwrap();
         gdrive.move_to_trash(&new_driveid).unwrap();
-        writeln!(
-            stdout(),
+        debug!(
             "trash {:?}",
             gdrive.get_file_metadata(&new_driveid).unwrap()
-        )
-        .unwrap();
+        );
 
         gdrive.delete_permanently(&new_driveid).unwrap();
-        writeln!(
-            stdout(),
+        debug!(
             "error {}",
             gdrive.get_file_metadata(&new_driveid).unwrap_err()
-        )
-        .unwrap();
+        );
     }
 
     #[test]

@@ -281,10 +281,10 @@ impl FileListTrait for FileListSSH {
 
 #[cfg(test)]
 mod tests {
+    use log::debug;
     use anyhow::Error;
     use std::{
         fs::remove_file,
-        io::{stdout, Write},
         path::{Path, PathBuf},
     };
     use url::Url;
@@ -302,7 +302,7 @@ mod tests {
         let pool = PgPool::new(&config.database_url);
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
         let conf = FileListSSH::from_url(&url, &config, &pool)?;
-        writeln!(stdout(), "{:?}", conf)?;
+        debug!("{:?}", conf);
         assert_eq!(conf.get_baseurl(), &url);
         assert_eq!(conf.get_servicetype(), FileService::SSH);
         Ok(())
