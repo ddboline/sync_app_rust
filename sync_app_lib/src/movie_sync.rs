@@ -241,7 +241,7 @@ mod tests {
         let s = MovieSync::new(config);
         s.client.init("list").await.unwrap();
         let result = s.run_sync().await.unwrap();
-        debug!("{:?}", result).unwrap();
+        debug!("{:?}", result);
         assert!(result.len() > 0);
     }
 }
