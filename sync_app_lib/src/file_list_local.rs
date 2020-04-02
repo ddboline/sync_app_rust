@@ -358,7 +358,8 @@ mod tests {
 
         debug!("2 {}", flist.get_filemap().len());
 
-        debug!("wrote {}", flist.cache_file_list()?);
+        let result = flist.cache_file_list()?;
+        debug!("wrote {}", result);
 
         debug!("{:?}", flist.get_servicesession());
 

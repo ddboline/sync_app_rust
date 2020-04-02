@@ -489,7 +489,8 @@ mod tests {
 
         flist.with_list(new_flist);
 
-        debug!("wrote {}", flist.cache_file_list()?);
+        let result = flist.cache_file_list()?;
+        debug!("wrote {}", result);
 
         let new_flist = flist.load_file_list()?;
 
