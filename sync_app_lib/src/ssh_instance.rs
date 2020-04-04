@@ -78,13 +78,13 @@ impl SSHInstance {
             let user_host = self.get_ssh_username_host()?;
             let command = format!(r#"ssh {} "{}""#, user_host, cmd);
             let stream = Exec::shell(command).stream_stdout()?;
-            let reader = BufReader::new(stream);
-
-            let stdout = stdout();
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    writeln!(stdout.lock(), "ssh://{}{}", user_host, l)?;
+            let mut reader = BufReader::new(stream);
+            let mut line = String::new();
+            loop {
+                if reader.read_line(&mut line)? == 0 {
+                    break;
                 }
+                writeln!(stdout(), "ssh://{}{}", user_host, line)?;
             }
             Ok(())
         } else {
