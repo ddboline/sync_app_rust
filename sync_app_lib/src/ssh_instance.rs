@@ -81,6 +81,7 @@ impl SSHInstance {
             let mut reader = BufReader::new(stream);
             let mut line = String::new();
             loop {
+                line.clear();
                 if reader.read_line(&mut line)? == 0 {
                     break;
                 }
