@@ -33,7 +33,7 @@ impl FileInfoGDrive {
             .parse()?;
 
         let finfo = FileInfo::new(
-            filename.into(),
+            filename,
             Some(filepath.to_path_buf().into()),
             Some(url.clone().into()),
             None,

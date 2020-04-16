@@ -316,11 +316,12 @@ pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, 
 
 #[cfg(test)]
 mod tests {
+    use crate::stack_string::StackString;
     use crate::file_info::{map_parse, ServiceSession};
 
     #[test]
     fn test_map_parse() {
-        let test_sessionstr: Option<_> = Some("test_sessionname".into());
+        let test_sessionstr: Option<StackString> = Some("test_sessionname".into());
         let test_sessionname: Option<ServiceSession> = map_parse(&test_sessionstr).unwrap();
 
         assert_eq!(
