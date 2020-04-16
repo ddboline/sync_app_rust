@@ -451,13 +451,13 @@ impl FileListTrait for FileListGDrive {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Error;
-    use log::debug;
+    use anyhow::{Error, format_err};
+    use log::{debug, error};
     use std::{
         collections::HashMap,
-        fs::remove_file,
-        path::Path,
+        path::{Path, PathBuf},
     };
+    use tokio::fs::{copy, rename, remove_file};
 
     use gdrive_lib::gdrive_instance::GDriveInstance;
 
@@ -465,10 +465,42 @@ mod tests {
         config::Config, file_list::FileListTrait, file_list_gdrive::FileListGDrive, pgpool::PgPool,
     };
 
+    struct TempStartPageToken {original: PathBuf, new: PathBuf, backup: PathBuf}
+
+    impl TempStartPageToken {
+        async fn new(fname: &str) -> Result<Self, Error> {
+            let original = Path::new(&fname).to_path_buf();
+            let backup = Path::new(&format!("{}.backup", fname)).to_path_buf();
+            let new = Path::new(&format!("{}.new", fname)).to_path_buf();
+
+            if new.exists() {
+                remove_file(&new).await?;
+            }
+            if original.exists() {
+                rename(&original, &backup).await?;
+            }
+            Ok(Self{original, new, backup})
+        }
+
+        async fn cleanup(&self) -> Result<(), Error> {
+            if self.backup.exists() {
+                rename(&self.backup, &self.original).await?;
+            }
+            if self.new.exists() {
+                remove_file(&self.new).await?;
+            }
+            Ok(())
+        }
+    }
+
     #[tokio::test]
     #[ignore]
     async fn test_gdrive_fill_file_list() -> Result<(), Error> {
         let config = Config::init_config()?;
+
+        let fname = format!("{}/{}_start_page_token", config.gdrive_token_path, "ddboline@gmail.com");
+        let tmp = TempStartPageToken::new(&fname).await?;
+
         let pool = PgPool::new(&config.database_url);
         let mut gdrive = GDriveInstance::new(
             &config.gdrive_token_path,
@@ -516,14 +548,6 @@ mod tests {
             }
         }
 
-        let fname = format!(
-            "{}/{}_start_page_token",
-            config.gdrive_token_path,
-            flist.get_servicesession().0
-        );
-        if Path::new(&fname).exists() {
-            remove_file(&fname)?;
-        }
-        Ok(())
+        tmp.cleanup().await
     }
 }
