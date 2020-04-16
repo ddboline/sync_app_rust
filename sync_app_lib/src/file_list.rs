@@ -409,12 +409,12 @@ pub trait FileListTrait: Send + Sync + Debug {
                 };
 
                 InsertDirectoryInfoCache {
-                    directory_id: d.directory_id.to_string(),
-                    directory_name: d.directory_name.to_string(),
-                    parent_id: d.parentid.clone(),
+                    directory_id: d.directory_id.as_str().into(),
+                    directory_name: d.directory_name.as_str().into(),
+                    parent_id: d.parentid.as_ref().map(Into::into),
                     is_root,
-                    servicetype: self.get_servicetype().to_string(),
-                    servicesession: self.get_servicesession().0.to_string(),
+                    servicetype: self.get_servicetype().to_string().into(),
+                    servicesession: self.get_servicesession().0.as_str().into(),
                 }
             })
             .collect();

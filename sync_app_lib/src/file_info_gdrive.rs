@@ -7,6 +7,7 @@ use gdrive_lib::gdrive_instance::GDriveInfo;
 use crate::{
     file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum},
     file_service::FileService,
+    stack_string::StackString,
 };
 
 #[derive(Debug, Default)]
@@ -19,13 +20,12 @@ impl FileInfoGDrive {
         }
         let path = url.path();
         let filepath = Path::new(&path);
-        let filename = filepath
+        let filename: StackString = filepath
             .file_name()
             .ok_or_else(|| format_err!("Parse failure"))?
             .to_os_string()
-            .into_string()
-            .map_err(|_| format_err!("Parse failure"))?;
-        let serviceid = Some(filename.to_string().into());
+            .to_string_lossy().into_owned().into();
+        let serviceid = Some(filename.clone().into());
         let servicesession = url
             .as_str()
             .trim_start_matches("gdrive://")
@@ -33,7 +33,7 @@ impl FileInfoGDrive {
             .parse()?;
 
         let finfo = FileInfo::new(
-            filename,
+            filename.into(),
             Some(filepath.to_path_buf().into()),
             Some(url.clone().into()),
             None,
@@ -76,7 +76,7 @@ impl FileInfoGDrive {
         let servicesession = item.servicesession.and_then(|s| s.parse().ok());
 
         let finfo = FileInfo::new(
-            item.filename,
+            item.filename.into(),
             item.filepath.map(Into::into),
             item.urlname.map(Into::into),
             md5sum,

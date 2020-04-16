@@ -261,7 +261,7 @@ impl FileListTrait for FileListSSH {
                     finfo.urlname = finfo
                         .urlname
                         .and_then(|u| u.as_str().replace("file://", &url_prefix).parse().ok());
-                    finfo.serviceid = Some(baseurl.to_string().into());
+                    finfo.serviceid = Some(baseurl.into());
                     finfo.servicesession = baseurl.parse().ok();
                     Ok(FileInfo::from_inner(finfo))
                 })

@@ -126,7 +126,7 @@ impl FileSync {
                             );
                             if url1.as_str().contains(flist1.get_baseurl().as_str()) {
                                 let finfo1 = FileInfo::new(
-                                    k.clone(),
+                                    k.into(),
                                     Some(path1.into()),
                                     Some(url1.into()),
                                     None,
@@ -168,7 +168,7 @@ impl FileSync {
                             );
                             if url0.as_str().contains(flist0.get_baseurl().as_str()) {
                                 let finfo0 = FileInfo::new(
-                                    k.clone(),
+                                    k.into(),
                                     Some(path0.into()),
                                     Some(url0.into()),
                                     None,
@@ -488,7 +488,7 @@ mod tests {
             "file://{}/src/file_sync.rs",
             current_dir()?.to_string_lossy()
         );
-        assert!(cache_list.contains_key(&test_key));
+        assert!(cache_list.contains_key(test_key.as_str()));
 
         for val in cache_list.values() {
             val.delete_cache_entry(&pool).await?;
@@ -542,7 +542,7 @@ mod tests {
         debug!("{:?}", cache_list);
 
         let test_key = "s3://test_bucket/src/file_sync.rs".to_string();
-        assert!(cache_list.contains_key(&test_key));
+        assert!(cache_list.contains_key(test_key.as_str()));
 
         for val in cache_list.values() {
             val.delete_cache_entry(&pool).await?;

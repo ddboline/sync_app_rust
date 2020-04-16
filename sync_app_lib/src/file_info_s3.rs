@@ -23,9 +23,7 @@ impl FileInfoS3 {
         let filename = filepath
             .file_name()
             .ok_or_else(|| format_err!("Parse failure"))?
-            .to_os_string()
-            .into_string()
-            .map_err(|_| format_err!("Parse failure"))?;
+            .to_string_lossy().into_owned().into();
         let fileurl: Url = format!("s3://{}/{}", bucket, key).parse()?;
         let serviceid = Some(bucket.to_string().into());
         let servicesession = Some(bucket.parse()?);
@@ -75,8 +73,7 @@ impl FileInfoS3 {
             .file_name()
             .ok_or_else(|| format_err!("Parse failure"))?
             .to_os_string()
-            .into_string()
-            .map_err(|_| format_err!("Parse failure"))?;
+            .to_string_lossy().into_owned().into();
         let md5sum = item.e_tag.and_then(|m| m.trim_matches('"').parse().ok());
         let st_mtime = DateTime::parse_from_rfc3339(
             item.last_modified

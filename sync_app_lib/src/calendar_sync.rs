@@ -6,21 +6,22 @@ use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
 
-use super::{
+use crate::{
     config::Config,
     iso_8601_datetime,
     reqwest_session::{ReqwestSession, SyncClient},
+    stack_string::StackString,
 };
 
 #[derive(Queryable, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarList {
     pub id: i32,
-    pub calendar_name: String,
-    pub gcal_id: String,
-    pub gcal_name: Option<String>,
-    pub gcal_description: Option<String>,
-    pub gcal_location: Option<String>,
-    pub gcal_timezone: Option<String>,
+    pub calendar_name: StackString,
+    pub gcal_id: StackString,
+    pub gcal_name: Option<StackString>,
+    pub gcal_description: Option<StackString>,
+    pub gcal_location: Option<StackString>,
+    pub gcal_timezone: Option<StackString>,
     pub sync: bool,
     pub last_modified: DateTime<Utc>,
 }
@@ -28,14 +29,14 @@ pub struct CalendarList {
 #[derive(Queryable, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarCache {
     pub id: i32,
-    pub gcal_id: String,
-    pub event_id: String,
+    pub gcal_id: StackString,
+    pub event_id: StackString,
     pub event_start_time: DateTime<Utc>,
     pub event_end_time: DateTime<Utc>,
-    pub event_url: Option<String>,
-    pub event_name: String,
-    pub event_description: Option<String>,
-    pub event_location_name: Option<String>,
+    pub event_url: Option<StackString>,
+    pub event_name: StackString,
+    pub event_description: Option<StackString>,
+    pub event_location_name: Option<StackString>,
     pub event_location_lat: Option<f64>,
     pub event_location_lon: Option<f64>,
     pub last_modified: DateTime<Utc>,

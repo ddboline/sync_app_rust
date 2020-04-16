@@ -14,6 +14,12 @@ impl From<String> for PathBufWrapper {
     }
 }
 
+impl From<&str> for PathBufWrapper {
+    fn from(item: &str) -> Self {
+        Self(item.into())
+    }
+}
+
 impl AsRef<Path> for PathBufWrapper {
     fn as_ref(&self) -> &Path {
         self.0.as_ref()

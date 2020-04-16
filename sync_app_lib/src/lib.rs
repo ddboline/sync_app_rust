@@ -39,6 +39,7 @@ pub mod schema;
 pub mod ssh_instance;
 pub mod sync_opts;
 pub mod url_wrapper;
+pub mod stack_string;
 
 use anyhow::Error;
 use rand::{
@@ -48,13 +49,14 @@ use rand::{
 use std::{future::Future, str::FromStr};
 use tokio::time::{delay_for, Duration};
 
-pub fn map_parse<T>(x: &Option<String>) -> Result<Option<T>, Error>
+pub fn map_parse<T, U>(x: &Option<U>) -> Result<Option<T>, Error>
 where
     T: FromStr,
     <T as std::str::FromStr>::Err: Into<Error>,
+    U: AsRef<str>,
 {
     x.as_ref()
-        .map(|y| y.parse::<T>())
+        .map(|y| y.as_ref().parse::<T>())
         .transpose()
         .map_err(Into::into)
 }

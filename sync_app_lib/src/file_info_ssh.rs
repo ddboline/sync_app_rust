@@ -19,8 +19,7 @@ impl FileInfoSSH {
                 .file_name()
                 .ok_or_else(|| format_err!("Parse failure"))?
                 .to_os_string()
-                .into_string()
-                .map_err(|_| format_err!("Parse failure"))?;
+                .to_string_lossy().into_owned().into();
             let finfo = FileInfo::new(
                 filename,
                 Some(filepath.to_path_buf().into()),

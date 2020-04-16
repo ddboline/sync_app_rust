@@ -24,6 +24,7 @@ use crate::{
     pgpool::PgPool,
     schema::file_info_cache,
     url_wrapper::UrlWrapper,
+    stack_string::StackString,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,14 +34,20 @@ pub struct FileStat {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Md5Sum(pub String);
+pub struct Md5Sum(pub StackString);
+
+impl From<StackString> for Md5Sum {
+    fn from(s: StackString) -> Self {
+        Self(s)
+    }
+}
 
 impl FromStr for Md5Sum {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() == 32 {
-            Ok(Self(s.to_string()))
+            Ok(Self(s.into()))
         } else {
             Err(format_err!("Invalid md5sum {}", s))
         }
@@ -48,14 +55,20 @@ impl FromStr for Md5Sum {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Sha1Sum(pub String);
+pub struct Sha1Sum(pub StackString);
+
+impl From<StackString> for Sha1Sum {
+    fn from(s: StackString) -> Self {
+        Self(s)
+    }
+}
 
 impl FromStr for Sha1Sum {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() == 40 {
-            Ok(Self(s.to_string()))
+            Ok(Self(s.into()))
         } else {
             Err(format_err!("Invalid sha1sum {}", s))
         }
@@ -63,11 +76,23 @@ impl FromStr for Sha1Sum {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ServiceId(pub String);
+pub struct ServiceId(pub StackString);
+
+impl From<StackString> for ServiceId {
+    fn from(s: StackString) -> Self {
+        Self(s)
+    }
+}
 
 impl From<String> for ServiceId {
     fn from(s: String) -> Self {
-        Self(s)
+        Self(s.into())
+    }
+}
+
+impl From<&str> for ServiceId {
+    fn from(s: &str) -> Self {
+        Self(s.into())
     }
 }
 
@@ -78,7 +103,7 @@ impl From<ServiceSession> for ServiceId {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ServiceSession(pub String);
+pub struct ServiceSession(pub StackString);
 
 impl FromStr for ServiceSession {
     type Err = Error;
@@ -87,14 +112,14 @@ impl FromStr for ServiceSession {
         if s.is_empty() {
             Err(format_err!("Session name must not be empty"))
         } else {
-            Ok(Self(s.to_string()))
+            Ok(Self(s.into()))
         }
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct FileInfoInner {
-    pub filename: String,
+    pub filename: StackString,
     pub filepath: Option<PathBufWrapper>,
     pub urlname: Option<UrlWrapper>,
     pub md5sum: Option<Md5Sum>,
@@ -135,7 +160,7 @@ pub trait FileInfoTrait: Send + Sync + Debug {
 impl FileInfo {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        filename: String,
+        filename: StackString,
         filepath: Option<PathBufWrapper>,
         urlname: Option<UrlWrapper>,
         md5sum: Option<Md5Sum>,
@@ -204,8 +229,8 @@ impl TryFrom<&FileInfoCache> for FileInfo {
     type Error = Error;
     fn try_from(item: &FileInfoCache) -> Result<Self, Self::Error> {
         let inner = FileInfoInner {
-            filename: item.filename.to_string(),
-            filepath: item.filepath.clone().map(Into::into),
+            filename: item.filename.clone(),
+            filepath: item.filepath.as_ref().map(|f| f.as_str().into()),
             urlname: match item.urlname.as_ref() {
                 Some(urlname) => match urlname.parse() {
                     Ok(urlname) => Some(urlname),
@@ -225,7 +250,7 @@ impl TryFrom<&FileInfoCache> for FileInfo {
                 },
                 None => None,
             },
-            serviceid: item.serviceid.clone().map(Into::into),
+            serviceid: item.serviceid.as_ref().map(|s| s.as_str().into()),
             servicetype: item.servicetype.parse()?,
             servicesession: map_parse(&item.servicesession)?,
         };
@@ -255,19 +280,19 @@ impl FileInfo {
 impl From<&FileInfo> for InsertFileInfoCache {
     fn from(item: &FileInfo) -> Self {
         Self {
-            filename: item.filename.to_string(),
+            filename: item.filename.clone(),
             filepath: match item.filepath.as_ref() {
-                Some(f) => Some(f.to_string_lossy().to_string()),
+                Some(f) => Some(f.to_string_lossy().as_ref().into()),
                 None => None,
             },
-            urlname: item.urlname.as_ref().map(UrlWrapper::to_string),
-            md5sum: item.md5sum.as_ref().map(|m| m.0.to_string()),
-            sha1sum: item.sha1sum.as_ref().map(|s| s.0.to_string()),
+            urlname: item.urlname.as_ref().map(|s| s.as_str().into()),
+            md5sum: item.md5sum.as_ref().map(|m| m.0.clone()),
+            sha1sum: item.sha1sum.as_ref().map(|s| s.0.clone()),
             filestat_st_mtime: item.filestat.map(|f| f.st_mtime as i32),
             filestat_st_size: item.filestat.map(|f| f.st_size as i32),
-            serviceid: item.serviceid.as_ref().map(|s| s.0.to_string()),
-            servicetype: item.servicetype.to_string(),
-            servicesession: item.servicesession.as_ref().map(|s| s.0.to_string()),
+            serviceid: item.serviceid.as_ref().map(|s| s.0.clone()),
+            servicetype: item.servicetype.to_string().into(),
+            servicesession: item.servicesession.as_ref().map(|s| s.0.clone()),
         }
     }
 }
@@ -295,12 +320,12 @@ mod tests {
 
     #[test]
     fn test_map_parse() {
-        let test_sessionstr: Option<_> = Some("test_sessionname".to_string());
+        let test_sessionstr: Option<_> = Some("test_sessionname".into());
         let test_sessionname: Option<ServiceSession> = map_parse(&test_sessionstr).unwrap();
 
         assert_eq!(
             test_sessionname,
-            Some(ServiceSession("test_sessionname".to_string()))
+            Some(ServiceSession("test_sessionname".into()))
         );
     }
 }

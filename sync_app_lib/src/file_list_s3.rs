@@ -181,7 +181,7 @@ impl FileListTrait for FileListS3 {
                 != finfo1
                     .md5sum
                     .clone()
-                    .map_or_else(|| "".to_string(), |u| u.0)
+                    .map_or_else(|| "".into(), |u| u.0)
             {
                 debug!(
                     "Multipart upload? {} {}",

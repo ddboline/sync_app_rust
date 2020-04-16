@@ -142,7 +142,7 @@ impl FileListTrait for FileListLocal {
                     };
                     FileInfoLocal::from_direntry(
                         &entry,
-                        Some(servicesession.0.to_string().into()),
+                        Some(servicesession.0.clone().into()),
                         Some(servicesession.clone()),
                     )
                     .ok()

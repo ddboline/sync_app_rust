@@ -12,45 +12,46 @@ use crate::{
     schema::{
         authorized_users, directory_info_cache, file_info_cache, file_sync_cache, file_sync_config,
     },
+    stack_string::StackString,
 };
 
 #[derive(Queryable, Clone)]
 pub struct FileInfoCache {
     pub id: i32,
-    pub filename: String,
-    pub filepath: Option<String>,
-    pub urlname: Option<String>,
-    pub md5sum: Option<String>,
-    pub sha1sum: Option<String>,
+    pub filename: StackString,
+    pub filepath: Option<StackString>,
+    pub urlname: Option<StackString>,
+    pub md5sum: Option<StackString>,
+    pub sha1sum: Option<StackString>,
     pub filestat_st_mtime: Option<i32>,
     pub filestat_st_size: Option<i32>,
-    pub serviceid: Option<String>,
-    pub servicetype: String,
-    pub servicesession: Option<String>,
+    pub serviceid: Option<StackString>,
+    pub servicetype: StackString,
+    pub servicesession: Option<StackString>,
 }
 
 #[derive(Insertable, Debug, Clone)]
 #[table_name = "file_info_cache"]
 pub struct InsertFileInfoCache {
-    pub filename: String,
-    pub filepath: Option<String>,
-    pub urlname: Option<String>,
-    pub md5sum: Option<String>,
-    pub sha1sum: Option<String>,
+    pub filename: StackString,
+    pub filepath: Option<StackString>,
+    pub urlname: Option<StackString>,
+    pub md5sum: Option<StackString>,
+    pub sha1sum: Option<StackString>,
     pub filestat_st_mtime: Option<i32>,
     pub filestat_st_size: Option<i32>,
-    pub serviceid: Option<String>,
-    pub servicetype: String,
-    pub servicesession: Option<String>,
+    pub serviceid: Option<StackString>,
+    pub servicetype: StackString,
+    pub servicesession: Option<StackString>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FileInfoKey {
-    pub filename: String,
-    pub filepath: String,
-    pub urlname: String,
-    pub serviceid: String,
-    pub servicesession: String,
+    pub filename: StackString,
+    pub filepath: StackString,
+    pub urlname: StackString,
+    pub serviceid: StackString,
+    pub servicesession: StackString,
 }
 
 impl From<FileInfoCache> for InsertFileInfoCache {
@@ -130,23 +131,23 @@ impl InsertFileInfoCache {
 #[derive(Queryable, Clone)]
 pub struct DirectoryInfoCache {
     pub id: i32,
-    pub directory_id: String,
-    pub directory_name: String,
-    pub parent_id: Option<String>,
+    pub directory_id: StackString,
+    pub directory_name: StackString,
+    pub parent_id: Option<StackString>,
     pub is_root: bool,
-    pub servicetype: String,
-    pub servicesession: String,
+    pub servicetype: StackString,
+    pub servicesession: StackString,
 }
 
 #[derive(Insertable, Debug, Clone)]
 #[table_name = "directory_info_cache"]
 pub struct InsertDirectoryInfoCache {
-    pub directory_id: String,
-    pub directory_name: String,
-    pub parent_id: Option<String>,
+    pub directory_id: StackString,
+    pub directory_name: StackString,
+    pub parent_id: Option<StackString>,
     pub is_root: bool,
-    pub servicetype: String,
-    pub servicesession: String,
+    pub servicetype: StackString,
+    pub servicesession: StackString,
 }
 
 impl From<DirectoryInfoCache> for InsertDirectoryInfoCache {
@@ -165,9 +166,9 @@ impl From<DirectoryInfoCache> for InsertDirectoryInfoCache {
 impl DirectoryInfoCache {
     pub fn into_directory_info(self) -> DirectoryInfo {
         DirectoryInfo {
-            directory_id: self.directory_id,
-            directory_name: self.directory_name,
-            parentid: self.parent_id,
+            directory_id: self.directory_id.to_string(),
+            directory_name: self.directory_name.to_string(),
+            parentid: self.parent_id.map(Into::into),
         }
     }
 }
@@ -175,16 +176,16 @@ impl DirectoryInfoCache {
 #[derive(Queryable, Clone, Debug)]
 pub struct FileSyncCache {
     pub id: i32,
-    pub src_url: String,
-    pub dst_url: String,
+    pub src_url: StackString,
+    pub dst_url: StackString,
     pub created_at: DateTime<Utc>,
 }
 
 #[derive(Insertable, Debug, Clone)]
 #[table_name = "file_sync_cache"]
 pub struct InsertFileSyncCache {
-    pub src_url: String,
-    pub dst_url: String,
+    pub src_url: StackString,
+    pub dst_url: StackString,
     pub created_at: DateTime<Utc>,
 }
 
@@ -254,8 +255,8 @@ impl InsertFileSyncCache {
         let src_url: Url = src_url.parse()?;
         let dst_url: Url = dst_url.parse()?;
         let value = Self {
-            src_url: src_url.into_string(),
-            dst_url: dst_url.into_string(),
+            src_url: src_url.as_str().into(),
+            dst_url: dst_url.as_str().into(),
             created_at: Utc::now(),
         };
         spawn_blocking(move || value.cache_sync_sync(&pool)).await?
@@ -265,16 +266,16 @@ impl InsertFileSyncCache {
 #[derive(Queryable, Clone)]
 pub struct FileSyncConfig {
     pub id: i32,
-    pub src_url: String,
-    pub dst_url: String,
+    pub src_url: StackString,
+    pub dst_url: StackString,
     pub last_run: DateTime<Utc>,
 }
 
 #[derive(Insertable, Debug, Clone)]
 #[table_name = "file_sync_config"]
 pub struct InsertFileSyncConfig {
-    pub src_url: String,
-    pub dst_url: String,
+    pub src_url: StackString,
+    pub dst_url: StackString,
     pub last_run: DateTime<Utc>,
 }
 
@@ -335,8 +336,8 @@ impl InsertFileSyncConfig {
         let src_url: Url = src_url.parse()?;
         let dst_url: Url = dst_url.parse()?;
         let value = Self {
-            src_url: src_url.into_string(),
-            dst_url: dst_url.into_string(),
+            src_url: src_url.as_str().into(),
+            dst_url: dst_url.as_str().into(),
             last_run: Utc::now(),
         };
         let pool = pool.clone();
@@ -347,7 +348,7 @@ impl InsertFileSyncConfig {
 #[derive(Queryable, Insertable, Clone, Debug)]
 #[table_name = "authorized_users"]
 pub struct AuthorizedUsers {
-    pub email: String,
+    pub email: StackString,
 }
 
 impl AuthorizedUsers {
@@ -366,7 +367,7 @@ impl AuthorizedUsers {
 #[derive(Queryable, Clone, Debug)]
 pub struct FileSyncBlacklist {
     pub id: i32,
-    pub blacklist_url: String,
+    pub blacklist_url: StackString,
 }
 
 impl FileSyncBlacklist {
@@ -394,7 +395,7 @@ impl BlackList {
     pub fn is_in_blacklist(&self, url: &Url) -> bool {
         self.blacklist
             .par_iter()
-            .any(|item| url.as_str().contains(&item.blacklist_url))
+            .any(|item| url.as_str().contains(item.blacklist_url.as_str()))
     }
 
     pub fn could_be_in_blacklist(&self, url: &Url) -> bool {

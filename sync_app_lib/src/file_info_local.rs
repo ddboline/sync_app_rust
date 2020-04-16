@@ -23,12 +23,8 @@ impl FileInfoLocal {
             let path = url
                 .to_file_path()
                 .map_err(|_| format_err!("Parse failure"))?;
-            let filename = path
-                .file_name()
-                .ok_or_else(|| format_err!("Parse failure"))?
-                .to_os_string()
-                .into_string()
-                .map_err(|_| format_err!("Parse failure"))?;
+            
+            let filename = path.file_name().ok_or_else(|| format_err!("Parse failure"))?.to_string_lossy().into_owned().into();
             let finfo = FileInfo::new(
                 filename,
                 Some(path.into()),
@@ -58,14 +54,14 @@ impl FileInfoTrait for FileInfoLocal {
 
     fn get_md5(&self) -> Option<Md5Sum> {
         match self.0.filepath.as_ref() {
-            Some(p) => _get_md5sum(&p).ok().map(Md5Sum),
+            Some(p) => _get_md5sum(&p).ok().map(|s| Md5Sum(s.into())),
             None => None,
         }
     }
 
     fn get_sha1(&self) -> Option<Sha1Sum> {
         match self.0.filepath.as_ref() {
-            Some(p) => _get_sha1sum(&p).ok().map(Sha1Sum),
+            Some(p) => _get_sha1sum(&p).ok().map(|s| Sha1Sum(s.into())),
             None => None,
         }
     }
@@ -120,9 +116,7 @@ impl FileInfoLocal {
         let filename = path
             .file_name()
             .ok_or_else(|| format_err!("Parse failure"))?
-            .to_os_string()
-            .into_string()
-            .map_err(|_| format_err!("Parse failure"))?;
+            .to_string_lossy().into_owned().into();
         let filestat = match metadata {
             Some(metadata) => {
                 let modified = metadata
@@ -141,8 +135,8 @@ impl FileInfoLocal {
         let filepath = path.canonicalize()?;
         let fileurl = Url::from_file_path(filepath.clone())
             .map_err(|_| format_err!("Failed to parse url"))?;
-        let md5sum = _get_md5sum(&filepath).ok().map(Md5Sum);
-        let sha1sum = _get_sha1sum(&filepath).ok().map(Sha1Sum);
+        let md5sum = _get_md5sum(&filepath).ok().map(|s| Md5Sum(s.into()));
+        let sha1sum = _get_sha1sum(&filepath).ok().map(|s| Sha1Sum(s.into()));
 
         let finfo = FileInfo::new(
             filename,

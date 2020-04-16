@@ -17,6 +17,7 @@ lazy_static! {
 }
 
 use crate::exponential_retry;
+use crate::stack_string::StackString;
 
 #[derive(Clone)]
 pub struct S3Instance {
@@ -164,7 +165,7 @@ impl S3Instance {
         bucket_name: &str,
         key_name: &str,
         fname: &str,
-    ) -> Result<String, Error> {
+    ) -> Result<StackString, Error> {
         exponential_retry(|| {
             let req = GetObjectRequest {
                 bucket: bucket_name.to_string(),
@@ -179,7 +180,7 @@ impl S3Instance {
                         x.e_tag
                             .as_ref()
                             .map_or("", |y| y.trim_matches('"'))
-                            .to_string()
+                            .into()
                     })
                     .map_err(Into::into)
             }
