@@ -397,14 +397,10 @@ impl FileSync {
 
 #[cfg(test)]
 mod tests {
-    use log::debug;
     use anyhow::Error;
+    use log::debug;
     use rusoto_s3::{Object, Owner};
-    use std::{
-        collections::HashMap,
-        env::current_dir,
-        path::Path,
-    };
+    use std::{collections::HashMap, env::current_dir, path::Path};
 
     use crate::{
         config::Config,

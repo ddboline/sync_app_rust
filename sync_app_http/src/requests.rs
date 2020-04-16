@@ -2,10 +2,10 @@ use anyhow::Error;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
 use std::{
     io::{BufRead, BufReader},
     path::Path,
+    time::Instant,
 };
 use subprocess::Exec;
 use tokio::{sync::Mutex, task::spawn_blocking};

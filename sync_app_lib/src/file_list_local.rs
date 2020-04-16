@@ -267,11 +267,7 @@ impl FileListTrait for FileListLocal {
 mod tests {
     use anyhow::Error;
     use log::debug;
-    use std::{
-        collections::HashMap,
-        convert::TryInto,
-        path::PathBuf,
-    };
+    use std::{collections::HashMap, convert::TryInto, path::PathBuf};
     use url::Url;
 
     use crate::{

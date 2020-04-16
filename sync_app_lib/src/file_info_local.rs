@@ -23,8 +23,13 @@ impl FileInfoLocal {
             let path = url
                 .to_file_path()
                 .map_err(|_| format_err!("Parse failure"))?;
-            
-            let filename = path.file_name().ok_or_else(|| format_err!("Parse failure"))?.to_string_lossy().into_owned().into();
+
+            let filename = path
+                .file_name()
+                .ok_or_else(|| format_err!("Parse failure"))?
+                .to_string_lossy()
+                .into_owned()
+                .into();
             let finfo = FileInfo::new(
                 filename,
                 Some(path.into()),
@@ -116,7 +121,9 @@ impl FileInfoLocal {
         let filename = path
             .file_name()
             .ok_or_else(|| format_err!("Parse failure"))?
-            .to_string_lossy().into_owned().into();
+            .to_string_lossy()
+            .into_owned()
+            .into();
         let filestat = match metadata {
             Some(metadata) => {
                 let modified = metadata

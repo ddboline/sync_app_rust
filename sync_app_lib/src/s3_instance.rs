@@ -16,8 +16,7 @@ lazy_static! {
     static ref S3INSTANCE_TEST_MUTEX: Mutex<()> = Mutex::new(());
 }
 
-use crate::exponential_retry;
-use crate::stack_string::StackString;
+use crate::{exponential_retry, stack_string::StackString};
 
 #[derive(Clone)]
 pub struct S3Instance {
@@ -176,12 +175,7 @@ impl S3Instance {
                 self.s3_client
                     .download_to_file(req, fname)
                     .await
-                    .map(|x| {
-                        x.e_tag
-                            .as_ref()
-                            .map_or("", |y| y.trim_matches('"'))
-                            .into()
-                    })
+                    .map(|x| x.e_tag.as_ref().map_or("", |y| y.trim_matches('"')).into())
                     .map_err(Into::into)
             }
         })

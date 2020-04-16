@@ -281,8 +281,8 @@ impl FileListTrait for FileListSSH {
 
 #[cfg(test)]
 mod tests {
-    use log::debug;
     use anyhow::Error;
+    use log::debug;
     use std::{
         fs::remove_file,
         path::{Path, PathBuf},

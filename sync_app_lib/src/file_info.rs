@@ -23,8 +23,8 @@ use crate::{
     path_buf_wrapper::PathBufWrapper,
     pgpool::PgPool,
     schema::file_info_cache,
-    url_wrapper::UrlWrapper,
     stack_string::StackString,
+    url_wrapper::UrlWrapper,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -316,8 +316,10 @@ pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, 
 
 #[cfg(test)]
 mod tests {
-    use crate::stack_string::StackString;
-    use crate::file_info::{map_parse, ServiceSession};
+    use crate::{
+        file_info::{map_parse, ServiceSession},
+        stack_string::StackString,
+    };
 
     #[test]
     fn test_map_parse() {

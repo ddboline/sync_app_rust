@@ -177,12 +177,7 @@ impl FileListTrait for FileListS3 {
                 remove_file(&local_file)?;
             }
             let md5sum = self.s3.download(&bucket, &key, &local_file).await?;
-            if md5sum
-                != finfo1
-                    .md5sum
-                    .clone()
-                    .map_or_else(|| "".into(), |u| u.0)
-            {
+            if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
                 debug!(
                     "Multipart upload? {} {}",
                     finfo1.urlname.as_ref().map_or_else(|| "", |u| u.as_str()),

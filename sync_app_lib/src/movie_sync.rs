@@ -6,11 +6,7 @@ use log::debug;
 use maplit::hashmap;
 use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fmt::Debug,
-    future::Future,
-};
+use std::{collections::HashMap, fmt::Debug, future::Future};
 
 use crate::{
     config::Config,

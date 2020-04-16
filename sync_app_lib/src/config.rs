@@ -39,7 +39,8 @@ macro_rules! set_config_parse {
 
 macro_rules! set_config_must {
     ($s:ident, $id:ident) => {
-        $s.$id = var(&stringify!($id).to_uppercase()).map(Into::into)
+        $s.$id = var(&stringify!($id).to_uppercase())
+            .map(Into::into)
             .map_err(|e| format_err!("{} must be set: {}", stringify!($id).to_uppercase(), e))?;
     };
 }

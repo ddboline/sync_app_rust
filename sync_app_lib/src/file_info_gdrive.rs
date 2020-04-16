@@ -24,7 +24,9 @@ impl FileInfoGDrive {
             .file_name()
             .ok_or_else(|| format_err!("Parse failure"))?
             .to_os_string()
-            .to_string_lossy().into_owned().into();
+            .to_string_lossy()
+            .into_owned()
+            .into();
         let serviceid = Some(filename.clone().into());
         let servicesession = url
             .as_str()
@@ -97,10 +99,7 @@ impl FileInfoGDrive {
 #[cfg(test)]
 mod tests {
     use log::debug;
-    use std::{
-        collections::HashMap,
-        path::Path,
-    };
+    use std::{collections::HashMap, path::Path};
     use url::Url;
 
     use gdrive_lib::gdrive_instance::{GDriveInfo, GDriveInstance};

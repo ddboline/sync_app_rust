@@ -451,13 +451,13 @@ impl FileListTrait for FileListGDrive {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::{Error, format_err};
+    use anyhow::{format_err, Error};
     use log::{debug, error};
     use std::{
         collections::HashMap,
         path::{Path, PathBuf},
     };
-    use tokio::fs::{copy, rename, remove_file};
+    use tokio::fs::{copy, remove_file, rename};
 
     use gdrive_lib::gdrive_instance::GDriveInstance;
 
@@ -465,7 +465,11 @@ mod tests {
         config::Config, file_list::FileListTrait, file_list_gdrive::FileListGDrive, pgpool::PgPool,
     };
 
-    struct TempStartPageToken {original: PathBuf, new: PathBuf, backup: PathBuf}
+    struct TempStartPageToken {
+        original: PathBuf,
+        new: PathBuf,
+        backup: PathBuf,
+    }
 
     impl TempStartPageToken {
         async fn new(fname: &str) -> Result<Self, Error> {
@@ -479,7 +483,11 @@ mod tests {
             if original.exists() {
                 rename(&original, &backup).await?;
             }
-            Ok(Self{original, new, backup})
+            Ok(Self {
+                original,
+                new,
+                backup,
+            })
         }
 
         async fn cleanup(&self) -> Result<(), Error> {
@@ -498,7 +506,10 @@ mod tests {
     async fn test_gdrive_fill_file_list() -> Result<(), Error> {
         let config = Config::init_config()?;
 
-        let fname = format!("{}/{}_start_page_token", config.gdrive_token_path, "ddboline@gmail.com");
+        let fname = format!(
+            "{}/{}_start_page_token",
+            config.gdrive_token_path, "ddboline@gmail.com"
+        );
         let tmp = TempStartPageToken::new(&fname).await?;
 
         let pool = PgPool::new(&config.database_url);

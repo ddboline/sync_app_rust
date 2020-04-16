@@ -5,9 +5,7 @@ use log::debug;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
-use std::{
-    sync::Arc,
-};
+use std::sync::Arc;
 use structopt::StructOpt;
 use url::Url;
 

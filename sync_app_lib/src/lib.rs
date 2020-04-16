@@ -37,9 +37,9 @@ pub mod reqwest_session;
 pub mod s3_instance;
 pub mod schema;
 pub mod ssh_instance;
+pub mod stack_string;
 pub mod sync_opts;
 pub mod url_wrapper;
-pub mod stack_string;
 
 use anyhow::Error;
 use rand::{
