@@ -34,6 +34,9 @@ pub enum FileSyncAction {
     Serialize,
     AddConfig,
     ShowCache,
+    SyncGarmin,
+    SyncMovie,
+    SyncCalendar,
 }
 
 impl FromStr for FileSyncAction {
@@ -51,6 +54,9 @@ impl FromStr for FileSyncAction {
             "ser" | "serialize" => Ok(Self::Serialize),
             "add" | "add_config" => Ok(Self::AddConfig),
             "show" | "show_cache" => Ok(Self::ShowCache),
+            "sync_garmin" => Ok(Self::SyncGarmin),
+            "sync_movie" => Ok(Self::SyncMovie),
+            "sync_calendar" => Ok(Self::SyncCalendar),
             _ => Err(format_err!("Parse failure")),
         }
     }

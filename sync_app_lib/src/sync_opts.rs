@@ -10,12 +10,15 @@ use structopt::StructOpt;
 use url::Url;
 
 use crate::{
+    calendar_sync::CalendarSync,
     config::Config,
     file_info::{FileInfo, FileInfoTrait},
     file_list::{group_urls, FileList, FileListTrait},
     file_service::FileService,
     file_sync::{FileSync, FileSyncAction},
+    garmin_sync::GarminSync,
     models::{BlackList, FileSyncCache, FileSyncConfig, InsertFileSyncConfig},
+    movie_sync::MovieSync,
     pgpool::PgPool,
 };
 
@@ -24,7 +27,8 @@ pub struct SyncOpts {
     #[structopt(parse(try_from_str))]
     /// Available commands are: "index", "sync", "proc(ess)", "copy" or "cp",
     /// "list" or "ls", "delete" or "rm", "move" or "mv", "ser" or
-    /// "serialize", "add" or "add_config", "show" or "show_cache"
+    /// "serialize", "add" or "add_config", "show", "show_cache"
+    /// "sync_garmin", "sync_movie", "sync_calendar"
     pub action: FileSyncAction,
     #[structopt(short = "u", long = "urls", parse(try_from_str))]
     pub urls: Vec<Url>,
@@ -252,6 +256,21 @@ impl SyncOpts {
                     .map(|v| format!("{} {}", v.src_url, v.dst_url))
                     .collect();
                 output.push(clist.join("\n"));
+                Ok(output)
+            }
+            FileSyncAction::SyncGarmin => {
+                let sync = GarminSync::new(config.clone());
+                output.extend_from_slice(&sync.run_sync().await?);
+                Ok(output)
+            }
+            FileSyncAction::SyncMovie => {
+                let sync = MovieSync::new(config.clone());
+                output.extend_from_slice(&sync.run_sync().await?);
+                Ok(output)
+            }
+            FileSyncAction::SyncCalendar => {
+                let sync = CalendarSync::new(config.clone());
+                output.extend_from_slice(&sync.run_sync().await?);
                 Ok(output)
             }
         }
