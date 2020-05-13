@@ -247,13 +247,14 @@ impl CalendarSync {
             }
             let url = to_url.join(path)?;
             for activity in events.chunks(100) {
-                let act: HashMap<String, CalendarCache> = activity
+                let act: Vec<CalendarCache> = activity
                     .iter()
-                    .map(|(k, v)| ((*k).to_string(), (*v).clone()))
+                    .map(|(_, v)| (*v).clone())
                     .collect();
                 let data = hashmap! {
                     js_prefix => act,
                 };
+                debug!("posting data: {:?}", data);
                 session
                     .post(&url, &HeaderMap::new(), &data)
                     .await?
