@@ -24,6 +24,8 @@ pub struct CalendarList {
     pub gcal_timezone: Option<String>,
     pub sync: bool,
     pub last_modified: DateTime<Utc>,
+    pub edit: bool,
+    pub display: bool,
 }
 
 #[derive(Queryable, Clone, Debug, Serialize, Deserialize)]
@@ -162,7 +164,7 @@ impl CalendarSync {
                 output = format!("session1 {}", measurements.len());
             }
             let url = to_url.join(path)?;
-            for meas in measurements.chunks(100) {
+            for meas in measurements.chunks(10) {
                 let data = hashmap! {
                     js_prefix => meas,
                 };
@@ -246,7 +248,7 @@ impl CalendarSync {
                 output = format!("session1 {}", events.len());
             }
             let url = to_url.join(path)?;
-            for activity in events.chunks(100) {
+            for activity in events.chunks(10) {
                 let act: Vec<CalendarCache> = activity
                     .iter()
                     .map(|(_, v)| (*v).clone())
