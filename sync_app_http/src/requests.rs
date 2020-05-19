@@ -132,7 +132,7 @@ impl HandleRequest<SyncPodcastsRequest> for PgPool {
         if !Path::new("/usr/bin/podcatch-rust").exists() {
             return Ok(Vec::new());
         }
-        let command = "/usr/bin/podcatch-rust -g".to_string();
+        let command = "/usr/bin/podcatch-rust".to_string();
         spawn_blocking(move || {
             let stream = Exec::shell(command)
                 .env_remove("DATABASE_URL")
