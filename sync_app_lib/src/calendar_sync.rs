@@ -249,10 +249,7 @@ impl CalendarSync {
             }
             let url = to_url.join(path)?;
             for activity in events.chunks(10) {
-                let act: Vec<CalendarCache> = activity
-                    .iter()
-                    .map(|(_, v)| (*v).clone())
-                    .collect();
+                let act: Vec<CalendarCache> = activity.iter().map(|(_, v)| (*v).clone()).collect();
                 let data = hashmap! {
                     js_prefix => act,
                 };
