@@ -23,6 +23,7 @@ struct ReqwestSessionInner {
     headers: HeaderMap,
 }
 
+#[derive(Clone)]
 pub struct ReqwestSession {
     client: Arc<Mutex<ReqwestSessionInner>>,
 }
@@ -149,6 +150,7 @@ impl ReqwestSession {
     }
 }
 
+#[derive(Clone)]
 pub struct SyncClient {
     pub session0: ReqwestSession,
     pub session1: ReqwestSession,
