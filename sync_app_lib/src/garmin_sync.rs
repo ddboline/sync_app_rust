@@ -35,6 +35,7 @@ pub struct StravaItem {
     pub title: String,
 }
 
+#[derive(Clone)]
 pub struct GarminSync {
     client: SyncClient,
 }
@@ -56,11 +57,11 @@ impl GarminSync {
                 |resp| {
                     let url = resp.url().clone();
                     async move {
-                        let results: Vec<ScaleMeasurement> = resp.json().await?;
-                        debug!("measurements {} {}", url, results.len());
-                        let results: HashMap<_, _> =
-                            results.into_iter().map(|val| (val.datetime, val)).collect();
-                        Ok(results)
+                        let measurements: Vec<ScaleMeasurement> = resp.json().await?;
+                        debug!("measurements {} {}", url, measurements.len());
+                        let measurement_map: HashMap<_, _> =
+                            measurements.into_iter().map(|val| (val.datetime, val)).collect();
+                        Ok(measurement_map)
                     }
                 },
             )
@@ -71,9 +72,9 @@ impl GarminSync {
             .run_single_sync_activities("garmin/strava/activities_db", "updates", |resp| {
                 let url = resp.url().clone();
                 async move {
-                    let results: HashMap<String, StravaItem> = resp.json().await?;
-                    debug!("activities {} {}", url, results.len());
-                    Ok(results)
+                    let item_map: HashMap<String, StravaItem> = resp.json().await?;
+                    debug!("activities {} {}", url, item_map.len());
+                    Ok(item_map)
                 }
             })
             .await?;
