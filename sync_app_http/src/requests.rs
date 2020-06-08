@@ -19,9 +19,9 @@ use sync_app_lib::{
 lazy_static! {
     static ref CONFIG: Config = Config::init_config().expect("Failed to load config");
     static ref SYNCLOCK: Mutex<()> = Mutex::new(());
-    static ref GARMINLOCK: Mutex<()> = Mutex::new(());
-    static ref MOVIELOCK: Mutex<()> = Mutex::new(());
-    static ref CALENDARLOCK: Mutex<()> = Mutex::new(());
+    static ref GARMINLOCK: Mutex<GarminSync> = Mutex::new(GarminSync::new(CONFIG.clone()));
+    static ref MOVIELOCK: Mutex<MovieSync> = Mutex::new(MovieSync::new(CONFIG.clone()));
+    static ref CALENDARLOCK: Mutex<CalendarSync> = Mutex::new(CalendarSync::new(CONFIG.clone()));
     static ref PODCASTLOCK: Mutex<()> = Mutex::new(());
     static ref SECURITYLOCK: Mutex<()> = Mutex::new(());
 }
@@ -75,10 +75,7 @@ pub struct GarminSyncRequest {}
 impl HandleRequest<GarminSyncRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
     async fn handle(&self, _: GarminSyncRequest) -> Self::Result {
-        let _ = GARMINLOCK.lock().await;
-        let config = CONFIG.clone();
-        let sync = GarminSync::new(config);
-        sync.run_sync().await
+        GARMINLOCK.lock().await.run_sync().await
     }
 }
 pub struct MovieSyncRequest {}
@@ -87,10 +84,7 @@ pub struct MovieSyncRequest {}
 impl HandleRequest<MovieSyncRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
     async fn handle(&self, _: MovieSyncRequest) -> Self::Result {
-        let _ = MOVIELOCK.lock().await;
-        let config = CONFIG.clone();
-        let sync = MovieSync::new(config);
-        sync.run_sync().await
+        MOVIELOCK.lock().await.run_sync().await
     }
 }
 
@@ -100,10 +94,7 @@ pub struct CalendarSyncRequest {}
 impl HandleRequest<CalendarSyncRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
     async fn handle(&self, _: CalendarSyncRequest) -> Self::Result {
-        let _ = CALENDARLOCK.lock().await;
-        let config = CONFIG.clone();
-        let sync = CalendarSync::new(config);
-        sync.run_sync().await
+        CALENDARLOCK.lock().await.run_sync().await
     }
 }
 
@@ -116,6 +107,7 @@ pub struct SyncRemoveRequest {
 impl HandleRequest<SyncRemoveRequest> for PgPool {
     type Result = Result<Vec<String>, Error>;
     async fn handle(&self, req: SyncRemoveRequest) -> Self::Result {
+        let _ = SYNCLOCK.lock().await;
         let url = req.url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
         sync.process_sync_opts(&CONFIG, self).await
