@@ -55,6 +55,7 @@ impl CalendarSync {
         }
     }
 
+    #[allow(clippy::similar_names)]
     pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
         self.client.init("calendar").await?;
         let mut output = Vec::new();
@@ -93,6 +94,7 @@ impl CalendarSync {
         Ok(output)
     }
 
+    #[allow(clippy::similar_names)]
     async fn run_single_sync_calendar_list<F, T>(
         &self,
         path: &str,
@@ -137,6 +139,7 @@ impl CalendarSync {
         Ok(output)
     }
 
+    #[allow(clippy::similar_names)]
     async fn combine_measurements(
         &self,
         measurements0: &HashMap<String, CalendarList>,
@@ -177,6 +180,7 @@ impl CalendarSync {
         Ok(output)
     }
 
+    #[allow(clippy::similar_names)]
     async fn run_single_sync_calendar_events<T, F>(
         &self,
         path: &str,

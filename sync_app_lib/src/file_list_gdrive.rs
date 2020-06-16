@@ -233,6 +233,7 @@ impl FileListTrait for FileListGDrive {
         self.flist.with_list(filelist)
     }
 
+    #[allow(clippy::similar_names)]
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let glist = self.clone();
         spawn_blocking(move || {

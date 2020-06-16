@@ -51,6 +51,7 @@ impl SyncOpts {
     }
 
     #[allow(clippy::cognitive_complexity)]
+    #[allow(clippy::similar_names)]
     pub async fn process_sync_opts(
         &self,
         config: &Config,
