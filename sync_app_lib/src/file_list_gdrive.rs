@@ -269,8 +269,16 @@ impl FileListTrait for FileListGDrive {
                 .gdrive
                 .clone()
                 .with_start_page_token(&start_page_token);
-            let start_page_path = format!("{}.new", glist.gdrive.start_page_token_filename);
-            let start_page_path = Path::new(&start_page_path);
+            let ext = glist
+                .gdrive
+                .start_page_token_filename
+                .extension()
+                .ok_or_else(|| format_err!("No ext"))?
+                .to_string_lossy();
+            let start_page_path = glist
+                .gdrive
+                .start_page_token_filename
+                .with_extension(format!("{}.new", ext));
             gdrive.store_start_page_token(&start_page_path)?;
 
             Ok(flist)
@@ -472,10 +480,13 @@ mod tests {
     }
 
     impl TempStartPageToken {
-        async fn new(fname: &str) -> Result<Self, Error> {
-            let original = Path::new(&fname).to_path_buf();
-            let backup = Path::new(&format!("{}.backup", fname)).to_path_buf();
-            let new = Path::new(&format!("{}.new", fname)).to_path_buf();
+        async fn new(fname: &Path) -> Result<Self, Error> {
+            let original = fname.to_path_buf();
+            let ext = original.extension().unwrap().to_string_lossy();
+            let backup = fname
+                .with_extension(format!("{}.backup", ext))
+                .to_path_buf();
+            let new = fname.with_extension(format!("{}.new", ext)).to_path_buf();
 
             if new.exists() {
                 remove_file(&new).await?;
@@ -506,10 +517,9 @@ mod tests {
     async fn test_gdrive_fill_file_list() -> Result<(), Error> {
         let config = Config::init_config()?;
 
-        let fname = format!(
-            "{}/{}_start_page_token",
-            config.gdrive_token_path, "ddboline@gmail.com"
-        );
+        let fname = config
+            .gdrive_token_path
+            .join(format!("{}_start_page_token", "ddboline@gmail.com"));
         let tmp = TempStartPageToken::new(&fname).await?;
 
         let pool = PgPool::new(&config.database_url);

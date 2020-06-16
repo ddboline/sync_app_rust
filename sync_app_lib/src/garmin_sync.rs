@@ -59,8 +59,10 @@ impl GarminSync {
                     async move {
                         let measurements: Vec<ScaleMeasurement> = resp.json().await?;
                         debug!("measurements {} {}", url, measurements.len());
-                        let measurement_map: HashMap<_, _> =
-                            measurements.into_iter().map(|val| (val.datetime, val)).collect();
+                        let measurement_map: HashMap<_, _> = measurements
+                            .into_iter()
+                            .map(|val| (val.datetime, val))
+                            .collect();
                         Ok(measurement_map)
                     }
                 },

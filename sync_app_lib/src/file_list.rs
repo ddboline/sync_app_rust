@@ -158,14 +158,16 @@ pub trait FileListTrait: Send + Sync + Debug {
     fn cleanup(&self) -> Result<(), Error> {
         if self.get_servicetype() == FileService::GDrive {
             let config = &self.get_config();
-            let fname = format!(
-                "{}/{}_start_page_token",
-                config.gdrive_token_path,
-                self.get_servicesession().0
-            );
-            let start_page_path = format!("{}.new", fname);
-            debug!("{} {}", start_page_path, fname);
-            if Path::new(&start_page_path).exists() {
+            let fname = config
+                .gdrive_token_path
+                .join(format!("{}_start_page_token", self.get_servicesession().0));
+            let ext = fname
+                .extension()
+                .ok_or_else(|| format_err!("No extension"))?
+                .to_string_lossy();
+            let start_page_path = fname.with_extension(format!("{}.new", ext));
+            debug!("{:?} {:?}", start_page_path, fname);
+            if start_page_path.exists() {
                 rename(&start_page_path, &fname).map_err(Into::into)
             } else {
                 Ok(())

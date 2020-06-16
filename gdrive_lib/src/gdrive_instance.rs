@@ -72,7 +72,7 @@ pub struct GDriveInstance {
     pub max_keys: Option<usize>,
     pub session_name: String,
     pub start_page_token: Option<String>,
-    pub start_page_token_filename: String,
+    pub start_page_token_filename: PathBuf,
 }
 
 impl fmt::Debug for GDriveInstance {
@@ -82,9 +82,9 @@ impl fmt::Debug for GDriveInstance {
 }
 
 impl GDriveInstance {
-    pub fn new(gdrive_token_path: &str, gdrive_secret_file: &str, session_name: &str) -> Self {
-        let fname = format!("{}/{}_start_page_token", gdrive_token_path, session_name);
-        let path = Path::new(&fname);
+    pub fn new(gdrive_token_path: &Path, gdrive_secret_file: &Path, session_name: &str) -> Self {
+        let fname = gdrive_token_path.join(format!("{}_start_page_token", session_name));
+
         Self {
             gdrive: Arc::new(Mutex::new(
                 Self::create_drive(gdrive_token_path, gdrive_secret_file, session_name).unwrap(),
@@ -92,7 +92,7 @@ impl GDriveInstance {
             page_size: 1000,
             max_keys: None,
             session_name: session_name.to_string(),
-            start_page_token: Self::read_start_page_token(&path).unwrap_or(None),
+            start_page_token: Self::read_start_page_token(&fname).unwrap_or(None),
             start_page_token_filename: fname,
         }
     }
@@ -113,14 +113,14 @@ impl GDriveInstance {
     }
 
     pub fn read_start_page_token_from_file(mut self) -> Self {
-        let path = Path::new(&self.start_page_token_filename);
-        self.start_page_token = Self::read_start_page_token(&path).unwrap_or(None);
+        self.start_page_token =
+            Self::read_start_page_token(&self.start_page_token_filename).unwrap_or(None);
         self
     }
 
     fn create_drive_auth(
-        gdrive_token_path: &str,
-        gdrive_secret_file: &str,
+        gdrive_token_path: &Path,
+        gdrive_secret_file: &Path,
         session_name: &str,
     ) -> Result<GCAuthenticator, Error> {
         let secret_file = File::open(gdrive_secret_file)?;
@@ -128,12 +128,11 @@ impl GDriveInstance {
         let secret = secret
             .installed
             .ok_or_else(|| format_err!("ConsoleApplicationSecret.installed is None"))?;
-        let token_file = format!("{}/{}.json", gdrive_token_path, session_name);
+        let token_file = gdrive_token_path.join(format!("{}.json", session_name));
+        let token_file = token_file.to_string_lossy().into_owned();
 
-        let parent = Path::new(gdrive_token_path);
-
-        if !parent.exists() {
-            create_dir_all(parent)?;
+        if !gdrive_token_path.exists() {
+            create_dir_all(gdrive_token_path)?;
         }
 
         let auth = Authenticator::new(
@@ -150,8 +149,8 @@ impl GDriveInstance {
 
     /// Creates a drive hub.
     fn create_drive(
-        gdrive_token_path: &str,
-        gdrive_secret_file: &str,
+        gdrive_token_path: &Path,
+        gdrive_secret_file: &Path,
         session_name: &str,
     ) -> Result<GCDrive, Error> {
         let auth = Self::create_drive_auth(gdrive_token_path, gdrive_secret_file, session_name)?;
