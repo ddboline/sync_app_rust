@@ -28,11 +28,21 @@ struct FitbitHeartRate {
     pub value: i32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct StravaItem {
+#[derive(Serialize, Deserialize, FromSqlRow, Debug, Clone)]
+pub struct StravaActivity {
+    pub name: String,
     #[serde(with = "iso_8601_datetime")]
-    pub begin_datetime: DateTime<Utc>,
-    pub title: String,
+    pub start_date: DateTime<Utc>,
+    pub id: i64,
+    pub distance: Option<f64>,
+    pub moving_time: Option<i64>,
+    pub elapsed_time: i64,
+    pub total_elevation_gain: Option<f64>,
+    pub elev_high: Option<f64>,
+    pub elev_low: Option<f64>,
+    #[serde(rename = "type")]
+    pub activity_type: String,
+    pub timezone: String,
 }
 
 #[derive(Clone)]
@@ -74,7 +84,11 @@ impl GarminSync {
             .run_single_sync_activities("garmin/strava/activities_db", "updates", |resp| {
                 let url = resp.url().clone();
                 async move {
-                    let item_map: HashMap<String, StravaItem> = resp.json().await?;
+                    let items: Vec<StravaActivity> = resp.json().await?;
+                    let item_map: HashMap<i64, StravaActivity> = items
+                        .into_iter()
+                        .map(|activity| (activity.id, activity))
+                        .collect();
                     debug!("activities {} {}", url, item_map.len());
                     Ok(item_map)
                 }
@@ -177,7 +191,7 @@ impl GarminSync {
     ) -> Result<Vec<String>, Error>
     where
         T: FnMut(Response) -> F,
-        F: Future<Output = Result<HashMap<String, StravaItem>, Error>>,
+        F: Future<Output = Result<HashMap<i64, StravaActivity>, Error>>,
     {
         let mut output = Vec::new();
         let (from_url, to_url) = self.client.get_urls()?;
@@ -217,8 +231,8 @@ impl GarminSync {
 
     async fn combine_activities(
         &self,
-        activities0: &HashMap<String, StravaItem>,
-        activities1: &HashMap<String, StravaItem>,
+        activities0: &HashMap<i64, StravaActivity>,
+        activities1: &HashMap<i64, StravaActivity>,
         to_url: &Url,
         path: &str,
         js_prefix: &str,
@@ -228,7 +242,7 @@ impl GarminSync {
         let activities: Vec<_> = activities0
             .iter()
             .filter_map(|(k, v)| {
-                if activities1.contains_key(k.as_str()) {
+                if activities1.contains_key(&k) {
                     None
                 } else {
                     Some((k, v))
@@ -243,10 +257,8 @@ impl GarminSync {
             }
             let url = to_url.join(path)?;
             for activity in activities.chunks(100) {
-                let act: HashMap<String, StravaItem> = activity
-                    .iter()
-                    .map(|(k, v)| ((*k).to_string(), (*v).clone()))
-                    .collect();
+                let act: HashMap<i64, StravaActivity> =
+                    activity.iter().map(|(k, v)| (**k, (*v).clone())).collect();
                 let data = hashmap! {
                     js_prefix => act,
                 };
