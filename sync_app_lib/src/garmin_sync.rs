@@ -45,6 +45,50 @@ pub struct StravaActivity {
     pub timezone: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, FromSqlRow)]
+pub struct FitbitActivityEntry {
+    #[serde(rename = "logType")]
+    log_type: String,
+    #[serde(rename = "startTime")]
+    start_time: DateTime<Utc>,
+    #[serde(rename = "tcxLink")]
+    tcx_link: Option<String>,
+    #[serde(rename = "activityTypeId")]
+    activity_type_id: Option<i64>,
+    #[serde(rename = "activityName")]
+    activity_name: Option<String>,
+    duration: i64,
+    distance: Option<f64>,
+    #[serde(rename = "distanceUnit")]
+    distance_unit: Option<String>,
+    steps: Option<i64>,
+    #[serde(rename = "logId")]
+    log_id: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, FromSqlRow, Clone)]
+pub struct GarminConnectActivity {
+    #[serde(rename = "activityId")]
+    pub activity_id: i64,
+    #[serde(rename = "activityName")]
+    pub activity_name: Option<String>,
+    pub description: Option<String>,
+    #[serde(rename = "startTimeGMT")]
+    pub start_time_gmt: DateTime<Utc>,
+    pub distance: Option<f64>,
+    pub duration: f64,
+    #[serde(rename = "elapsedDuration")]
+    pub elapsed_duration: Option<f64>,
+    #[serde(rename = "movingDuration")]
+    pub moving_duration: Option<f64>,
+    pub steps: Option<i64>,
+    pub calories: Option<f64>,
+    #[serde(rename = "averageHR")]
+    pub average_hr: Option<f64>,
+    #[serde(rename = "maxHR")]
+    pub max_hr: Option<f64>,
+}
+
 #[derive(Clone)]
 pub struct GarminSync {
     client: SyncClient,
@@ -88,6 +132,38 @@ impl GarminSync {
                     let item_map: HashMap<i64, StravaActivity> = items
                         .into_iter()
                         .map(|activity| (activity.id, activity))
+                        .collect();
+                    debug!("activities {} {}", url, item_map.len());
+                    Ok(item_map)
+                }
+            })
+            .await?;
+        output.extend_from_slice(&results);
+
+        let results = self
+            .run_single_sync_activities("garmin/fitbit/fitbit_activities_db", "updates", |resp| {
+                let url = resp.url().clone();
+                async move {
+                    let items: Vec<FitbitActivityEntry> = resp.json().await?;
+                    let item_map: HashMap<i64, FitbitActivityEntry> = items
+                        .into_iter()
+                        .map(|activity| (activity.log_id, activity))
+                        .collect();
+                    debug!("activities {} {}", url, item_map.len());
+                    Ok(item_map)
+                }
+            })
+            .await?;
+        output.extend_from_slice(&results);
+
+        let results = self
+            .run_single_sync_activities("garmin/garmin_connect_activities_db", "updates", |resp| {
+                let url = resp.url().clone();
+                async move {
+                    let items: Vec<GarminConnectActivity> = resp.json().await?;
+                    let item_map: HashMap<i64, GarminConnectActivity> = items
+                        .into_iter()
+                        .map(|activity| (activity.activity_id, activity))
                         .collect();
                     debug!("activities {} {}", url, item_map.len());
                     Ok(item_map)
@@ -183,7 +259,7 @@ impl GarminSync {
         Ok(output)
     }
 
-    async fn run_single_sync_activities<T, F>(
+    async fn run_single_sync_activities<T, U, F>(
         &self,
         path: &str,
         js_prefix: &str,
@@ -191,7 +267,8 @@ impl GarminSync {
     ) -> Result<Vec<String>, Error>
     where
         T: FnMut(Response) -> F,
-        F: Future<Output = Result<HashMap<i64, StravaActivity>, Error>>,
+        U: Debug + Clone + Serialize,
+        F: Future<Output = Result<HashMap<i64, U>, Error>>,
     {
         let mut output = Vec::new();
         let (from_url, to_url) = self.client.get_urls()?;
@@ -229,15 +306,18 @@ impl GarminSync {
         Ok(output)
     }
 
-    async fn combine_activities(
+    async fn combine_activities<T>(
         &self,
-        activities0: &HashMap<i64, StravaActivity>,
-        activities1: &HashMap<i64, StravaActivity>,
+        activities0: &HashMap<i64, T>,
+        activities1: &HashMap<i64, T>,
         to_url: &Url,
         path: &str,
         js_prefix: &str,
         session: &ReqwestSession,
-    ) -> Result<String, Error> {
+    ) -> Result<String, Error>
+    where
+        T: Debug + Clone + Serialize,
+    {
         let mut output = String::new();
         let activities: Vec<_> = activities0
             .iter()
@@ -257,7 +337,7 @@ impl GarminSync {
             }
             let url = to_url.join(path)?;
             for activity in activities.chunks(100) {
-                let act: HashMap<i64, StravaActivity> =
+                let act: HashMap<i64, T> =
                     activity.iter().map(|(k, v)| (**k, (*v).clone())).collect();
                 let data = hashmap! {
                     js_prefix => act,
