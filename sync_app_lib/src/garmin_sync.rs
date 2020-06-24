@@ -337,11 +337,10 @@ impl GarminSync {
             }
             let url = to_url.join(path)?;
             for activity in activities.chunks(100) {
-                let act: HashMap<i64, T> =
-                    activity.iter().map(|(k, v)| (**k, (*v).clone())).collect();
                 let data = hashmap! {
-                    js_prefix => act,
+                    js_prefix => activity,
                 };
+                println!("{:?}", activity);
                 session
                     .post(&url, &HeaderMap::new(), &data)
                     .await?
