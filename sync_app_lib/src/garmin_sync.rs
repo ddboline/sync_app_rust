@@ -325,13 +325,13 @@ impl GarminSync {
                 if activities1.contains_key(&k) {
                     None
                 } else {
-                    Some((k, v))
+                    Some(v)
                 }
             })
             .collect();
         if !activities.is_empty() {
             if activities.len() < 20 {
-                output = format!("{:?}", activities);
+                output = format!("session1 {:?}", activities);
             } else {
                 output = format!("session1 {}", activities.len());
             }
@@ -340,7 +340,7 @@ impl GarminSync {
                 let data = hashmap! {
                     js_prefix => activity,
                 };
-                println!("{:?}", activity);
+                println!("data {}", serde_json::to_string(&data)?);
                 session
                     .post(&url, &HeaderMap::new(), &data)
                     .await?
