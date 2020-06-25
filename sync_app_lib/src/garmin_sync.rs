@@ -340,7 +340,7 @@ impl GarminSync {
                 let data = hashmap! {
                     js_prefix => activity,
                 };
-                println!("data {}", serde_json::to_string(&data)?);
+                debug!("data {}", serde_json::to_string(&data)?);
                 session
                     .post(&url, &HeaderMap::new(), &data)
                     .await?
