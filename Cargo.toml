@@ -13,6 +13,9 @@ sync_app_http = {path = "sync_app_http"}
 gdrive_lib = {path="gdrive_lib"}
 tokio = {version="0.2", features=["full"]}
 anyhow = "1.0"
+dirs = "2.0"
+walkdir = "2.3"
+chrono = "0.4"
 
 [workspace]
 members = [
@@ -29,4 +32,9 @@ doc = false
 [[bin]]
 name = "sync-app-http"
 path = "src/sync_rust_http.rs"
+doc = false
+
+[[bin]]
+name = "export-old-gdrive-diary-elog"
+path = "src/export_old_gdrive_diary_elog.rs"
 doc = false

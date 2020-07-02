@@ -397,6 +397,25 @@ impl GDriveInstance {
         }
     }
 
+    pub fn export(&self, gdriveid: &str, local: &Path, mime_type: &str) -> Result<(), Error> {
+        exponential_retry(move || {
+            let mut response = self
+                .gdrive
+                .lock()
+                .files()
+                .export(gdriveid, mime_type)
+                .add_scope(drive3::Scope::Full)
+                .doit()
+                .map_err(|e| format_err!("{:#?}", e))?;
+
+            let mut content: Vec<u8> = Vec::new();
+            response.read_to_end(&mut content)?;
+
+            let mut outfile = File::create(local.to_path_buf())?;
+            outfile.write_all(&content).map_err(Into::into)
+        })
+    }
+
     pub fn download(
         &self,
         gdriveid: &str,
