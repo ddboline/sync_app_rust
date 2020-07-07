@@ -5,6 +5,8 @@ use rust_auth_server::static_files::login_html;
 use std::fmt::Debug;
 use thiserror::Error;
 
+use stack_string::StackString;
+
 use crate::logged_user::TRIGGER_DB_UPDATE;
 
 #[derive(Error, Debug)]
@@ -12,13 +14,13 @@ pub enum ServiceError {
     #[error("Internal Server Error")]
     InternalServerError,
     #[error("BadRequest: {0}")]
-    BadRequest(String),
+    BadRequest(StackString),
     #[error("Unauthorized")]
     Unauthorized,
     #[error("Anyhow error {0}")]
     AnyhowError(#[from] AnyhowError),
     #[error("blocking error {0}")]
-    BlockingError(String),
+    BlockingError(StackString),
 }
 
 // impl ResponseError trait allows to convert our errors into http responses
@@ -40,6 +42,6 @@ impl ResponseError for ServiceError {
 
 impl<T: Debug> From<BlockingError<T>> for ServiceError {
     fn from(item: BlockingError<T>) -> Self {
-        Self::BlockingError(format!("{:?}", item))
+        Self::BlockingError(format!("{:?}", item).into())
     }
 }

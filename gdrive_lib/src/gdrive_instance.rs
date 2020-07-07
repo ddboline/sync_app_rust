@@ -19,7 +19,7 @@ use std::{
     cmp,
     collections::{HashMap, HashSet},
     ffi::OsStr,
-    fmt,
+    fmt::{self, Debug, Formatter},
     fs::{create_dir_all, File},
     io,
     io::{Read, Seek, SeekFrom, Write},
@@ -29,6 +29,8 @@ use std::{
 };
 use url::Url;
 use yup_oauth2 as oauth2;
+
+use stack_string::StackString;
 
 use crate::{directory_info::DirectoryInfo, exponential_retry};
 
@@ -70,13 +72,13 @@ pub struct GDriveInstance {
     pub gdrive: Arc<Mutex<GCDrive>>,
     pub page_size: i32,
     pub max_keys: Option<usize>,
-    pub session_name: String,
-    pub start_page_token: Option<String>,
+    pub session_name: StackString,
+    pub start_page_token: Option<StackString>,
     pub start_page_token_filename: PathBuf,
 }
 
-impl fmt::Debug for GDriveInstance {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Debug for GDriveInstance {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "GDriveInstance")
     }
 }
@@ -91,7 +93,7 @@ impl GDriveInstance {
             )),
             page_size: 1000,
             max_keys: None,
-            session_name: session_name.to_string(),
+            session_name: session_name.into(),
             start_page_token: Self::read_start_page_token(&fname).unwrap_or(None),
             start_page_token_filename: fname,
         }
@@ -108,7 +110,7 @@ impl GDriveInstance {
     }
 
     pub fn with_start_page_token(mut self, start_page_token: &str) -> Self {
-        self.start_page_token = Some(start_page_token.to_string());
+        self.start_page_token = Some(start_page_token.into());
         self
     }
 
@@ -162,9 +164,9 @@ impl GDriveInstance {
 
     fn get_filelist(
         &self,
-        page_token: &Option<String>,
+        page_token: &Option<StackString>,
         get_folders: bool,
-        parents: &Option<Vec<String>>,
+        parents: &Option<Vec<StackString>>,
     ) -> Result<drive3::FileList, Error> {
         let fields = vec![
             "name",
@@ -197,11 +199,11 @@ impl GDriveInstance {
                 request = request.page_token(token);
             };
 
-            let mut query_chain: Vec<String> = Vec::new();
+            let mut query_chain: Vec<StackString> = Vec::new();
             if get_folders {
-                query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.to_string());
+                query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.into());
             } else {
-                query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.to_string());
+                query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.into());
             }
             if let Some(ref p) = parents {
                 let q = p
@@ -210,9 +212,9 @@ impl GDriveInstance {
                     .collect::<Vec<_>>()
                     .join(" or ");
 
-                query_chain.push(format!("({})", q));
+                query_chain.push(format!("({})", q).into());
             }
-            query_chain.push("trashed = false".to_string());
+            query_chain.push("trashed = false".into());
 
             let query = query_chain.join(" and ");
             let (_, filelist) = request
@@ -225,7 +227,7 @@ impl GDriveInstance {
 
     pub fn get_all_files(&self, get_folders: bool) -> Result<Vec<drive3::File>, Error> {
         let mut all_files = Vec::new();
-        let mut page_token: Option<String> = None;
+        let mut page_token: Option<StackString> = None;
         loop {
             let filelist = self.get_filelist(&page_token, get_folders, &None)?;
 
@@ -233,7 +235,7 @@ impl GDriveInstance {
                 all_files.extend(files);
             }
 
-            page_token = filelist.next_page_token;
+            page_token = filelist.next_page_token.map(Into::into);
             if page_token.is_none() {
                 break;
             }
@@ -251,7 +253,7 @@ impl GDriveInstance {
     pub fn get_all_file_info(
         &self,
         get_folders: bool,
-        directory_map: &HashMap<String, DirectoryInfo>,
+        directory_map: &HashMap<StackString, DirectoryInfo>,
     ) -> Result<Vec<GDriveInfo>, Error> {
         let files = self.get_all_files(get_folders)?;
         self.convert_file_list_to_gdrive_info(&files, directory_map)
@@ -260,7 +262,7 @@ impl GDriveInstance {
     pub fn convert_file_list_to_gdrive_info(
         &self,
         flist: &[drive3::File],
-        directory_map: &HashMap<String, DirectoryInfo>,
+        directory_map: &HashMap<StackString, DirectoryInfo>,
     ) -> Result<Vec<GDriveInfo>, Error> {
         flist
             .par_iter()
@@ -286,14 +288,14 @@ impl GDriveInstance {
 
     pub fn process_list_of_keys<T>(
         &self,
-        parents: &Option<Vec<String>>,
+        parents: &Option<Vec<StackString>>,
         callback: T,
     ) -> Result<(), Error>
     where
         T: Fn(&drive3::File) -> Result<(), Error>,
     {
         let mut n_processed = 0;
-        let mut page_token: Option<String> = None;
+        let mut page_token: Option<StackString> = None;
         loop {
             let filelist = self.get_filelist(&page_token, false, parents)?;
 
@@ -304,7 +306,7 @@ impl GDriveInstance {
                 }
             }
 
-            page_token = filelist.next_page_token;
+            page_token = filelist.next_page_token.map(Into::into);
             if page_token.is_none() {
                 break;
             }
@@ -389,9 +391,9 @@ impl GDriveInstance {
         })
     }
 
-    pub fn is_unexportable(mime_type: &Option<String>) -> bool {
-        if let Some(mime) = mime_type.clone() {
-            UNEXPORTABLE_MIME_TYPES.contains::<str>(&mime)
+    pub fn is_unexportable<T: AsRef<str>>(mime_type: &Option<T>) -> bool {
+        if let Some(mime) = mime_type {
+            UNEXPORTABLE_MIME_TYPES.contains::<str>(mime.as_ref())
         } else {
             false
         }
@@ -416,14 +418,17 @@ impl GDriveInstance {
         })
     }
 
-    pub fn download(
+    pub fn download<T>(
         &self,
         gdriveid: &str,
         local: &Path,
-        mime_type: &Option<String>,
-    ) -> Result<(), Error> {
-        if let Some(mime) = mime_type.clone() {
-            if UNEXPORTABLE_MIME_TYPES.contains::<str>(&mime) {
+        mime_type: &Option<T>,
+    ) -> Result<(), Error>
+    where
+        T: AsRef<str> + Debug,
+    {
+        if let Some(mime) = mime_type {
+            if UNEXPORTABLE_MIME_TYPES.contains::<str>(mime.as_ref()) {
                 return Err(format_err!(
                     "UNEXPORTABLE_FILE: The MIME type of this file is {:?}, which can not be \
                      exported from Drive. Web content link provided by Drive: {:?}\n",
@@ -438,7 +443,7 @@ impl GDriveInstance {
 
         let export_type: Option<&'static str> = mime_type
             .as_ref()
-            .and_then(|ref t| MIME_TYPES.get::<str>(&t))
+            .and_then(|t| MIME_TYPES.get::<str>(t.as_ref()))
             .cloned();
 
         exponential_retry(move || {
@@ -527,10 +532,10 @@ impl GDriveInstance {
 
     pub fn get_directory_map(
         &self,
-    ) -> Result<(HashMap<String, DirectoryInfo>, Option<String>), Error> {
+    ) -> Result<(HashMap<StackString, DirectoryInfo>, Option<StackString>), Error> {
         let dlist: Vec<_> = self.get_all_files(true)?;
-        let mut root_id: Option<String> = None;
-        let mut dmap: HashMap<_, _> = dlist
+        let mut root_id: Option<StackString> = None;
+        let mut dmap: HashMap<StackString, _> = dlist
             .iter()
             .filter_map(|d| {
                 if let Some(owners) = d.owners.as_ref() {
@@ -548,11 +553,11 @@ impl GDriveInstance {
                         if let Some(parents) = d.parents.as_ref() {
                             if !parents.is_empty() {
                                 return Some((
-                                    gdriveid.to_string(),
+                                    gdriveid.into(),
                                     DirectoryInfo {
-                                        directory_id: gdriveid.to_string(),
-                                        directory_name: name.to_string(),
-                                        parentid: Some(parents[0].to_string()),
+                                        directory_id: gdriveid.into(),
+                                        directory_name: name.into(),
+                                        parentid: Some(parents[0].clone().into()),
                                     },
                                 ));
                             }
@@ -560,13 +565,13 @@ impl GDriveInstance {
                             if root_id.is_none()
                                 && d.name != Some("Chrome Syncable FileSystem".to_string())
                             {
-                                root_id = Some(gdriveid.to_string());
+                                root_id = Some(gdriveid.into());
                             }
                             return Some((
-                                gdriveid.to_string(),
+                                gdriveid.into(),
                                 DirectoryInfo {
-                                    directory_id: gdriveid.to_string(),
-                                    directory_name: name.to_string(),
+                                    directory_id: gdriveid.into(),
+                                    directory_name: name.into(),
                                     parentid: None,
                                 },
                             ));
@@ -602,15 +607,15 @@ impl GDriveInstance {
                         && root_id.is_none()
                         && d.name != Some("Chrome Syncable FileSystem".to_string())
                     {
-                        root_id = Some(gdriveid.to_string());
+                        root_id = Some(gdriveid.into());
                     }
                     let val = DirectoryInfo {
-                        directory_id: gdriveid.to_string(),
-                        directory_name: name.to_string(),
-                        parentid: parents,
+                        directory_id: gdriveid.into(),
+                        directory_name: name.into(),
+                        parentid: parents.map(Into::into),
                     };
 
-                    dmap.entry(gdriveid.to_string()).or_insert(val);
+                    dmap.entry(gdriveid.into()).or_insert(val);
                 }
             }
         }
@@ -618,10 +623,10 @@ impl GDriveInstance {
     }
 
     pub fn get_directory_name_map(
-        directory_map: &HashMap<String, DirectoryInfo>,
-    ) -> HashMap<String, Vec<DirectoryInfo>> {
+        directory_map: &HashMap<StackString, DirectoryInfo>,
+    ) -> HashMap<StackString, Vec<DirectoryInfo>> {
         directory_map.values().fold(HashMap::new(), |mut h, m| {
-            let key = m.directory_name.to_string();
+            let key = m.directory_name.clone();
             let val = m.clone();
             h.entry(key).or_insert_with(Vec::new).push(val);
             h
@@ -631,17 +636,17 @@ impl GDriveInstance {
     pub fn get_export_path(
         &self,
         finfo: &drive3::File,
-        dirmap: &HashMap<String, DirectoryInfo>,
-    ) -> Result<Vec<String>, Error> {
+        dirmap: &HashMap<StackString, DirectoryInfo>,
+    ) -> Result<Vec<StackString>, Error> {
         let mut fullpath = Vec::new();
         if let Some(name) = finfo.name.as_ref() {
-            fullpath.push(name.to_string());
+            fullpath.push(name.clone().into());
         }
-        let mut pid = if let Some(parents) = finfo.parents.as_ref() {
+        let mut pid: Option<StackString> = if let Some(parents) = finfo.parents.as_ref() {
             if parents.is_empty() {
                 None
             } else {
-                Some(parents[0].to_string())
+                Some(parents[0].to_string().into())
             }
         } else {
             None
@@ -649,7 +654,7 @@ impl GDriveInstance {
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
                 if let Some(dinfo) = dirmap.get(pid_) {
-                    fullpath.push(format!("{}/", dinfo.directory_name));
+                    fullpath.push(format!("{}/", dinfo.directory_name).into());
                     dinfo.parentid.clone()
                 } else {
                     self.get_file_metadata(pid_)
@@ -660,7 +665,7 @@ impl GDriveInstance {
                             if v.is_empty() {
                                 None
                             } else {
-                                Some(v[0].to_string())
+                                Some(v[0].to_string().into())
                             }
                         })
                 }
@@ -677,24 +682,24 @@ impl GDriveInstance {
 
     pub fn get_parent_id(
         url: &Url,
-        dir_name_map: &HashMap<String, Vec<DirectoryInfo>>,
-    ) -> Result<Option<String>, Error> {
-        let mut previous_parent_id: Option<String> = None;
+        dir_name_map: &HashMap<StackString, Vec<DirectoryInfo>>,
+    ) -> Result<Option<StackString>, Error> {
+        let mut previous_parent_id: Option<StackString> = None;
         if let Some(segments) = url.path_segments() {
             for seg in segments {
                 let name = percent_decode(seg.as_bytes())
                     .decode_utf8_lossy()
                     .to_string();
-                let mut matching_directory: Option<String> = None;
-                if let Some(parents) = dir_name_map.get(&name) {
+                let mut matching_directory: Option<StackString> = None;
+                if let Some(parents) = dir_name_map.get(name.as_str()) {
                     for parent in parents {
                         if previous_parent_id.is_none() {
-                            previous_parent_id = Some(parent.directory_id.to_string());
-                            matching_directory = Some(parent.directory_id.to_string());
+                            previous_parent_id = Some(parent.directory_id.clone());
+                            matching_directory = Some(parent.directory_id.clone());
                             break;
                         }
                         if parent.parentid.is_some() && parent.parentid == previous_parent_id {
-                            matching_directory = Some(parent.directory_id.to_string())
+                            matching_directory = Some(parent.directory_id.clone())
                         }
                     }
                 }
@@ -708,7 +713,7 @@ impl GDriveInstance {
         Ok(None)
     }
 
-    pub fn get_start_page_token(&self) -> Result<String, Error> {
+    pub fn get_start_page_token(&self) -> Result<StackString, Error> {
         self.gdrive
             .lock()
             .changes()
@@ -716,13 +721,15 @@ impl GDriveInstance {
             .add_scope(drive3::Scope::Full)
             .doit()
             .map_err(|e| format_err!("{:#?}", e))
-            .map(|result| {
-                result.1.start_page_token.unwrap_or_else(|| {
-                    format_err!(
-                        "Received OK response from drive but there is no startPageToken included.",
-                    )
-                    .to_string()
-                })
+            .and_then(|(_, token)| {
+                token
+                    .start_page_token
+                    .ok_or_else(|| {
+                        format_err!(
+                    "Received OK response from drive but there is no startPageToken included.",
+                )
+                    })
+                    .map(Into::into)
             })
     }
 
@@ -734,14 +741,14 @@ impl GDriveInstance {
         Ok(())
     }
 
-    pub fn read_start_page_token(path: &Path) -> Result<Option<String>, Error> {
+    pub fn read_start_page_token(path: &Path) -> Result<Option<StackString>, Error> {
         if !path.exists() {
             return Ok(None);
         }
         let mut f = File::open(path)?;
         let mut buf = String::new();
         f.read_to_string(&mut buf)?;
-        Ok(Some(buf.trim().to_string()))
+        Ok(Some(buf.trim().into()))
     }
 
     pub fn get_all_changes(&self) -> Result<Vec<drive3::Change>, Error> {
@@ -801,7 +808,7 @@ impl GDriveInstance {
                     break;
                 }
                 match changelist.next_page_token {
-                    Some(token) => start_page_token = token,
+                    Some(token) => start_page_token = token.into(),
                     None => break,
                 };
             }
@@ -815,21 +822,21 @@ impl GDriveInstance {
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct GDriveInfo {
-    pub filename: String,
+    pub filename: StackString,
     pub filepath: Option<PathBuf>,
     pub urlname: Option<Url>,
-    pub md5sum: Option<String>,
-    pub sha1sum: Option<String>,
+    pub md5sum: Option<StackString>,
+    pub sha1sum: Option<StackString>,
     pub filestat: Option<(u32, u32)>,
-    pub serviceid: Option<String>,
-    pub servicesession: Option<String>,
+    pub serviceid: Option<StackString>,
+    pub servicesession: Option<StackString>,
 }
 
 impl GDriveInfo {
     pub fn from_object(
         item: &drive3::File,
         gdrive: &GDriveInstance,
-        directory_map: &HashMap<String, DirectoryInfo>,
+        directory_map: &HashMap<StackString, DirectoryInfo>,
     ) -> Result<Self, Error> {
         let filename = item
             .name
@@ -843,12 +850,12 @@ impl GDriveInfo {
         )?
         .timestamp();
         let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
-        let serviceid = item.id.as_ref().map(ToString::to_string);
+        let serviceid = item.id.as_ref().map(Into::into);
         let servicesession = Some(gdrive.session_name.parse()?);
 
         let export_path = gdrive.get_export_path(&item, &directory_map)?;
         let filepath = export_path.iter().fold(PathBuf::new(), |mut p, e| {
-            p.push(e);
+            p.push(e.as_str());
             p
         });
         let urlname = format!("gdrive://{}/", gdrive.session_name);
@@ -862,7 +869,7 @@ impl GDriveInfo {
         });
 
         let finfo = Self {
-            filename: filename.to_string(),
+            filename: filename.into(),
             filepath: Some(filepath),
             urlname: Some(urlname),
             md5sum,
@@ -881,7 +888,7 @@ impl GDriveInfo {
     pub fn from_changes_object(
         item: drive3::Change,
         gdrive: &GDriveInstance,
-        directory_map: &HashMap<String, DirectoryInfo>,
+        directory_map: &HashMap<StackString, DirectoryInfo>,
     ) -> Result<Self, Error> {
         let file = item.file.ok_or_else(|| format_err!("No file"))?;
         Self::from_object(&file, gdrive, directory_map)

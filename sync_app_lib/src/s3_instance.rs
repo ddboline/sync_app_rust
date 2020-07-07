@@ -16,7 +16,9 @@ lazy_static! {
     static ref S3INSTANCE_TEST_MUTEX: Mutex<()> = Mutex::new(());
 }
 
-use crate::{exponential_retry, stack_string::StackString};
+use stack_string::StackString;
+
+use crate::exponential_retry;
 
 #[derive(Clone)]
 pub struct S3Instance {

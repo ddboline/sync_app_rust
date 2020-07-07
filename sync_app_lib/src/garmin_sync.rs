@@ -6,6 +6,8 @@ use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
 
+use stack_string::StackString;
+
 use super::{
     config::Config,
     iso_8601_datetime,
@@ -30,7 +32,7 @@ struct FitbitHeartRate {
 
 #[derive(Serialize, Deserialize, FromSqlRow, Debug, Clone)]
 pub struct StravaActivity {
-    pub name: String,
+    pub name: StackString,
     #[serde(with = "iso_8601_datetime")]
     pub start_date: DateTime<Utc>,
     pub id: i64,
@@ -41,26 +43,26 @@ pub struct StravaActivity {
     pub elev_high: Option<f64>,
     pub elev_low: Option<f64>,
     #[serde(rename = "type")]
-    pub activity_type: String,
-    pub timezone: String,
+    pub activity_type: StackString,
+    pub timezone: StackString,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, FromSqlRow)]
 pub struct FitbitActivityEntry {
     #[serde(rename = "logType")]
-    log_type: String,
+    log_type: StackString,
     #[serde(rename = "startTime")]
     start_time: DateTime<Utc>,
     #[serde(rename = "tcxLink")]
-    tcx_link: Option<String>,
+    tcx_link: Option<StackString>,
     #[serde(rename = "activityTypeId")]
     activity_type_id: Option<i64>,
     #[serde(rename = "activityName")]
-    activity_name: Option<String>,
+    activity_name: Option<StackString>,
     duration: i64,
     distance: Option<f64>,
     #[serde(rename = "distanceUnit")]
-    distance_unit: Option<String>,
+    distance_unit: Option<StackString>,
     steps: Option<i64>,
     #[serde(rename = "logId")]
     log_id: i64,
@@ -71,8 +73,8 @@ pub struct GarminConnectActivity {
     #[serde(rename = "activityId")]
     pub activity_id: i64,
     #[serde(rename = "activityName")]
-    pub activity_name: Option<String>,
-    pub description: Option<String>,
+    pub activity_name: Option<StackString>,
+    pub description: Option<StackString>,
     #[serde(rename = "startTimeGMT")]
     pub start_time_gmt: DateTime<Utc>,
     pub distance: Option<f64>,
@@ -101,7 +103,7 @@ impl GarminSync {
         }
     }
 
-    pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
+    pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
         self.client.init("garmin").await?;
         let mut output = Vec::new();
         let results = self
@@ -180,7 +182,7 @@ impl GarminSync {
         path: &str,
         js_prefix: &str,
         mut transform: T,
-    ) -> Result<Vec<String>, Error>
+    ) -> Result<Vec<StackString>, Error>
     where
         T: FnMut(Response) -> F,
         F: Future<Output = Result<HashMap<DateTime<Utc>, ScaleMeasurement>, Error>>,
@@ -227,8 +229,8 @@ impl GarminSync {
         js_prefix: &str,
         to_url: &Url,
         session: &ReqwestSession,
-    ) -> Result<String, Error> {
-        let mut output = String::new();
+    ) -> Result<StackString, Error> {
+        let mut output = StackString::new();
         let measurements: Vec<_> = measurements0
             .iter()
             .filter_map(|(k, v)| {
@@ -241,9 +243,9 @@ impl GarminSync {
             .collect();
         if !measurements.is_empty() {
             if measurements.len() < 20 {
-                output = format!("{:?}", measurements);
+                output = format!("{:?}", measurements).into();
             } else {
-                output = format!("session1 {}", measurements.len());
+                output = format!("session1 {}", measurements.len()).into();
             }
             let url = to_url.join(path)?;
             for meas in measurements.chunks(100) {
@@ -264,7 +266,7 @@ impl GarminSync {
         path: &str,
         js_prefix: &str,
         mut transform: T,
-    ) -> Result<Vec<String>, Error>
+    ) -> Result<Vec<StackString>, Error>
     where
         T: FnMut(Response) -> F,
         U: Debug + Clone + Serialize,
@@ -314,11 +316,11 @@ impl GarminSync {
         path: &str,
         js_prefix: &str,
         session: &ReqwestSession,
-    ) -> Result<String, Error>
+    ) -> Result<StackString, Error>
     where
         T: Debug + Clone + Serialize,
     {
-        let mut output = String::new();
+        let mut output = StackString::new();
         let activities: Vec<_> = activities0
             .iter()
             .filter_map(|(k, v)| {
@@ -331,9 +333,9 @@ impl GarminSync {
             .collect();
         if !activities.is_empty() {
             if activities.len() < 20 {
-                output = format!("session1 {:?}", activities);
+                output = format!("session1 {:?}", activities).into();
             } else {
-                output = format!("session1 {}", activities.len());
+                output = format!("session1 {}", activities.len()).into();
             }
             let url = to_url.join(path)?;
             for activity in activities.chunks(100) {

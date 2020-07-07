@@ -9,6 +9,8 @@ use std::sync::Arc;
 use structopt::StructOpt;
 use url::Url;
 
+use stack_string::StackString;
+
 use crate::{
     calendar_sync::CalendarSync,
     config::Config,
@@ -42,7 +44,7 @@ impl SyncOpts {
         }
     }
 
-    pub async fn process_args() -> Result<Vec<String>, Error> {
+    pub async fn process_args() -> Result<Vec<StackString>, Error> {
         let opts = Self::from_args();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
@@ -56,7 +58,7 @@ impl SyncOpts {
         &self,
         config: &Config,
         pool: &PgPool,
-    ) -> Result<Vec<String>, Error> {
+    ) -> Result<Vec<StackString>, Error> {
         let mut output = Vec::new();
         let blacklist = Arc::new(BlackList::new(pool).await?);
 
@@ -148,7 +150,7 @@ impl SyncOpts {
                 let results: Vec<_> = FileSyncCache::get_cache_list(&pool)
                     .await?
                     .into_iter()
-                    .map(|entry| format!("{} {}", entry.src_url, entry.dst_url))
+                    .map(|entry| format!("{} {}", entry.src_url, entry.dst_url).into())
                     .collect();
                 output.extend_from_slice(&results);
                 Ok(output)
@@ -231,7 +233,7 @@ impl SyncOpts {
                         results
                     });
                     let results: Result<Vec<_>, Error> = try_join_all(futures).await;
-                    let results: Vec<_> = results?.into_iter().flatten().collect();
+                    let results: Vec<_> = results?.into_iter().flatten().map(Into::into).collect();
                     output.extend_from_slice(&results);
                     Ok(output)
                 }
@@ -256,7 +258,7 @@ impl SyncOpts {
                     .into_iter()
                     .map(|v| format!("{} {}", v.src_url, v.dst_url))
                     .collect();
-                output.push(clist.join("\n"));
+                output.push(clist.join("\n").into());
                 Ok(output)
             }
             FileSyncAction::SyncGarmin => {

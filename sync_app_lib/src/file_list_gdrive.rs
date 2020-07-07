@@ -18,6 +18,8 @@ use gdrive_lib::{
     gdrive_instance::{GDriveInfo, GDriveInstance},
 };
 
+use stack_string::StackString;
+
 use crate::{
     config::Config,
     file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession},
@@ -31,8 +33,8 @@ use crate::{
 pub struct FileListGDrive {
     pub flist: FileList,
     pub gdrive: GDriveInstance,
-    pub directory_map: Arc<RwLock<HashMap<String, DirectoryInfo>>>,
-    pub root_directory: Arc<RwLock<Option<String>>>,
+    pub directory_map: Arc<RwLock<HashMap<StackString, DirectoryInfo>>>,
+    pub root_directory: Arc<RwLock<Option<StackString>>>,
 }
 
 impl FileListGDrive {
@@ -137,9 +139,7 @@ impl FileListGDrive {
     }
 
     pub fn set_root_directory(&self, root_directory: &str) {
-        self.root_directory
-            .write()
-            .replace(root_directory.to_string());
+        self.root_directory.write().replace(root_directory.into());
     }
 
     fn convert_gdriveinfo_to_file_info(
@@ -181,13 +181,13 @@ impl FileListGDrive {
         Ok(flist)
     }
 
-    fn get_all_changes(&self) -> Result<(Vec<String>, Vec<FileInfo>), Error> {
+    fn get_all_changes(&self) -> Result<(Vec<StackString>, Vec<FileInfo>), Error> {
         let chlist: Vec<_> = self.gdrive.get_all_changes()?;
         let delete_list: Vec<_> = chlist
             .iter()
             .filter_map(|ch| match ch.file {
                 Some(_) => None,
-                None => ch.file_id.clone(),
+                None => ch.file_id.clone().map(Into::into),
             })
             .collect();
         let flist: Vec<_> = chlist.into_iter().filter_map(|ch| ch.file).collect();
@@ -225,7 +225,7 @@ impl FileListTrait for FileListGDrive {
         &self.flist.pool
     }
 
-    fn get_filemap(&self) -> &HashMap<String, FileInfo> {
+    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
         self.flist.get_filemap()
     }
 
@@ -260,7 +260,7 @@ impl FileListTrait for FileListGDrive {
 
             for f in flist {
                 if let Some(fid) = f.serviceid.as_ref() {
-                    flist_dict.insert(fid.0.to_string(), f);
+                    flist_dict.insert(fid.0.clone(), f);
                 }
             }
 
@@ -461,6 +461,7 @@ impl FileListTrait for FileListGDrive {
 #[cfg(test)]
 mod tests {
     use anyhow::{format_err, Error};
+    use chrono::NaiveDate;
     use log::{debug, error};
     use std::{
         collections::HashMap,
@@ -470,7 +471,6 @@ mod tests {
     };
     use tokio::fs::{copy, remove_file, rename};
     use walkdir::WalkDir;
-    use chrono::NaiveDate;
 
     use gdrive_lib::gdrive_instance::GDriveInstance;
 

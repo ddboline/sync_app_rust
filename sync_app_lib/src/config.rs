@@ -7,7 +7,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::stack_string::StackString;
+use stack_string::StackString;
 
 #[derive(Default, Debug, Deserialize)]
 pub struct ConfigInner {

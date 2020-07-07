@@ -13,7 +13,7 @@ actix-identity = "0.2"
 actix-rt = "1.1"
 chrono = "0.4"
 lazy_static = "1.4"
-parking_lot = "0.10"
+parking_lot = "0.11"
 sync_app_lib = {path = "../sync_app_lib"}
 serde = "1.0"
 serde_derive = "1.0"
@@ -24,9 +24,10 @@ url = "2.1"
 anyhow = "1.0"
 thiserror = "1.0"
 actix-threadpool = "0.3"
-rust_auth_server = { git = "https://github.com/ddboline/rust-auth-server.git", tag="0.5.13" }
+rust_auth_server = { git = "https://github.com/ddboline/rust-auth-server.git", tag="0.5.14" }
 maplit = "1.0"
 async-trait = "0.1"
 log = "0.4"
 subprocess = "0.2"
 dirs = "2.0"
+stack_string = {path="../stack_string"}

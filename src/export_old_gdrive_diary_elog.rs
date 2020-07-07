@@ -1,22 +1,19 @@
-use anyhow::{Error};
+use anyhow::Error;
+use chrono::NaiveDate;
 use std::{
-    path::PathBuf,
     fs::{create_dir_all, File},
     io::{BufRead, BufReader, Write},
+    path::PathBuf,
 };
 use walkdir::WalkDir;
-use chrono::NaiveDate;
+
+use stack_string::StackString;
 
 use sync_app_lib::{
-    stack_string::StackString,
-    config::Config,
-    pgpool::PgPool,
-    file_list_gdrive::FileListGDrive,
-    file_list::FileListTrait,
+    config::Config, file_list::FileListTrait, file_list_gdrive::FileListGDrive, pgpool::PgPool,
 };
 
 use gdrive_lib::gdrive_instance::GDriveInstance;
-
 
 fn main() -> Result<(), Error> {
     export_diary_to_text("diary")?;

@@ -11,6 +11,8 @@ use std::{
 use tokio::task::spawn_blocking;
 use url::Url;
 
+use stack_string::StackString;
+
 use crate::{
     config::Config,
     file_info::{FileInfo, FileInfoTrait, ServiceSession},
@@ -99,7 +101,7 @@ impl FileListTrait for FileListS3 {
         &self.flist.pool
     }
 
-    fn get_filemap(&self) -> &HashMap<String, FileInfo> {
+    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
         self.flist.get_filemap()
     }
 

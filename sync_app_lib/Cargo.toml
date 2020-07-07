@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 gdrive_lib = {path="../gdrive_lib"}
+stack_string = {path="../stack_string"}
 rusoto_core = {version = "0.44", default_features = false, features=["rustls"]}
 rusoto_s3 = {version = "0.44", default_features = false, features=["rustls"]}
 s3-ext = "0.1"
@@ -30,18 +31,17 @@ maplit = "1.0"
 mime = "0.3"
 rand = "0.7"
 percent-encoding = "2.1"
-parking_lot = "0.10"
+parking_lot = "0.11"
 log = "0.4"
 env_logger = "0.7"
 reqwest = {version="0.10", features=["cookies", "json"]}
 crossbeam-utils = "0.7"
 anyhow = "1.0"
 thiserror = "1.0"
-dirs = "2.0"
+dirs = "3.0"
 derive_more = "0.99"
 tokio = {version="0.2", features=["full"]}
 async-trait = "0.1"
 futures = "0.3"
 itertools = "0.9"
-inlinable_string = "0.1"
 envy = "0.4"

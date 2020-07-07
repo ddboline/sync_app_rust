@@ -6,22 +6,23 @@ use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
 
+use stack_string::StackString;
+
 use crate::{
     config::Config,
     iso_8601_datetime,
     reqwest_session::{ReqwestSession, SyncClient},
-    stack_string::StackString,
 };
 
 #[derive(Queryable, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarList {
     pub id: i32,
-    pub calendar_name: String,
-    pub gcal_id: String,
-    pub gcal_name: Option<String>,
-    pub gcal_description: Option<String>,
-    pub gcal_location: Option<String>,
-    pub gcal_timezone: Option<String>,
+    pub calendar_name: StackString,
+    pub gcal_id: StackString,
+    pub gcal_name: Option<StackString>,
+    pub gcal_description: Option<StackString>,
+    pub gcal_location: Option<StackString>,
+    pub gcal_timezone: Option<StackString>,
     pub sync: bool,
     pub last_modified: DateTime<Utc>,
     pub edit: bool,
@@ -31,14 +32,14 @@ pub struct CalendarList {
 #[derive(Queryable, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarCache {
     pub id: i32,
-    pub gcal_id: String,
-    pub event_id: String,
+    pub gcal_id: StackString,
+    pub event_id: StackString,
     pub event_start_time: DateTime<Utc>,
     pub event_end_time: DateTime<Utc>,
-    pub event_url: Option<String>,
-    pub event_name: String,
-    pub event_description: Option<String>,
-    pub event_location_name: Option<String>,
+    pub event_url: Option<StackString>,
+    pub event_name: StackString,
+    pub event_description: Option<StackString>,
+    pub event_location_name: Option<StackString>,
     pub event_location_lat: Option<f64>,
     pub event_location_lon: Option<f64>,
     pub last_modified: DateTime<Utc>,
@@ -56,7 +57,7 @@ impl CalendarSync {
     }
 
     #[allow(clippy::similar_names)]
-    pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
+    pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
         self.client.init("calendar").await?;
         let mut output = Vec::new();
         let results = self
@@ -67,7 +68,7 @@ impl CalendarSync {
                     debug!("calendars {} {}", url, results.len());
                     let results: HashMap<_, _> = results
                         .into_iter()
-                        .map(|val| (val.gcal_id.to_string(), val))
+                        .map(|val| (val.gcal_id.clone().into(), val))
                         .collect();
                     Ok(results)
                 }
@@ -80,9 +81,14 @@ impl CalendarSync {
                 let url = resp.url().clone();
                 async move {
                     let results: Vec<CalendarCache> = resp.json().await?;
-                    let results: HashMap<String, CalendarCache> = results
+                    let results: HashMap<StackString, CalendarCache> = results
                         .into_iter()
-                        .map(|event| (format!("{}_{}", event.gcal_id, event.event_id), event))
+                        .map(|event| {
+                            (
+                                format!("{}_{}", event.gcal_id, event.event_id).into(),
+                                event,
+                            )
+                        })
                         .collect();
                     debug!("activities {} {}", url, results.len());
                     Ok(results)
@@ -100,10 +106,10 @@ impl CalendarSync {
         path: &str,
         js_prefix: &str,
         mut transform: T,
-    ) -> Result<Vec<String>, Error>
+    ) -> Result<Vec<StackString>, Error>
     where
         T: FnMut(Response) -> F,
-        F: Future<Output = Result<HashMap<String, CalendarList>, Error>>,
+        F: Future<Output = Result<HashMap<StackString, CalendarList>, Error>>,
     {
         let mut output = Vec::new();
         let (from_url, to_url) = self.client.get_urls()?;
@@ -142,14 +148,14 @@ impl CalendarSync {
     #[allow(clippy::similar_names)]
     async fn combine_measurements(
         &self,
-        measurements0: &HashMap<String, CalendarList>,
-        measurements1: &HashMap<String, CalendarList>,
+        measurements0: &HashMap<StackString, CalendarList>,
+        measurements1: &HashMap<StackString, CalendarList>,
         path: &str,
         js_prefix: &str,
         to_url: &Url,
         session: &ReqwestSession,
-    ) -> Result<String, Error> {
-        let mut output = String::new();
+    ) -> Result<StackString, Error> {
+        let mut output = StackString::new();
         let measurements: Vec<_> = measurements0
             .iter()
             .filter_map(|(k, v)| {
@@ -162,9 +168,9 @@ impl CalendarSync {
             .collect();
         if !measurements.is_empty() {
             if measurements.len() < 20 {
-                output = format!("{:?}", measurements);
+                output = format!("{:?}", measurements).into();
             } else {
-                output = format!("session1 {}", measurements.len());
+                output = format!("session1 {}", measurements.len()).into();
             }
             let url = to_url.join(path)?;
             for meas in measurements.chunks(10) {
@@ -186,10 +192,10 @@ impl CalendarSync {
         path: &str,
         js_prefix: &str,
         mut transform: T,
-    ) -> Result<Vec<String>, Error>
+    ) -> Result<Vec<StackString>, Error>
     where
         T: FnMut(Response) -> F,
-        F: Future<Output = Result<HashMap<String, CalendarCache>, Error>>,
+        F: Future<Output = Result<HashMap<StackString, CalendarCache>, Error>>,
     {
         let mut output = Vec::new();
         let (from_url, to_url) = self.client.get_urls()?;
@@ -227,14 +233,14 @@ impl CalendarSync {
 
     async fn combine_events(
         &self,
-        events0: &HashMap<String, CalendarCache>,
-        events1: &HashMap<String, CalendarCache>,
+        events0: &HashMap<StackString, CalendarCache>,
+        events1: &HashMap<StackString, CalendarCache>,
         to_url: &Url,
         path: &str,
         js_prefix: &str,
         session: &ReqwestSession,
-    ) -> Result<String, Error> {
-        let mut output = String::new();
+    ) -> Result<StackString, Error> {
+        let mut output = StackString::new();
         let events: Vec<_> = events0
             .iter()
             .filter_map(|(k, v)| {
@@ -247,9 +253,9 @@ impl CalendarSync {
             .collect();
         if !events.is_empty() {
             if events.len() < 20 {
-                output = format!("{:?}", events);
+                output = format!("{:?}", events).into();
             } else {
-                output = format!("session1 {}", events.len());
+                output = format!("session1 {}", events.len()).into();
             }
             let url = to_url.join(path)?;
             for activity in events.chunks(10) {

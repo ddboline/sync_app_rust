@@ -7,12 +7,13 @@ use url::Url;
 
 use gdrive_lib::directory_info::DirectoryInfo;
 
+use stack_string::StackString;
+
 use crate::{
     pgpool::PgPool,
     schema::{
         authorized_users, directory_info_cache, file_info_cache, file_sync_cache, file_sync_config,
     },
-    stack_string::StackString,
 };
 
 #[derive(Queryable, Clone)]
@@ -166,8 +167,8 @@ impl From<DirectoryInfoCache> for InsertDirectoryInfoCache {
 impl DirectoryInfoCache {
     pub fn into_directory_info(self) -> DirectoryInfo {
         DirectoryInfo {
-            directory_id: self.directory_id.to_string(),
-            directory_name: self.directory_name.to_string(),
+            directory_id: self.directory_id,
+            directory_name: self.directory_name,
             parentid: self.parent_id.map(Into::into),
         }
     }

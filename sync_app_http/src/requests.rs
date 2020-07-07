@@ -10,6 +10,8 @@ use std::{
 use subprocess::Exec;
 use tokio::{sync::Mutex, task::spawn_blocking};
 
+use stack_string::StackString;
+
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
     garmin_sync::GarminSync, models::FileSyncCache, movie_sync::MovieSync, pgpool::PgPool,
@@ -38,7 +40,7 @@ pub struct SyncRequest {
 
 #[async_trait]
 impl HandleRequest<SyncRequest> for PgPool {
-    type Result = Result<Vec<String>, Error>;
+    type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, req: SyncRequest) -> Self::Result {
         let _ = SYNCLOCK.lock().await;
         let opts = SyncOpts::new(req.action, &[]);
@@ -73,7 +75,7 @@ pub struct GarminSyncRequest {}
 
 #[async_trait]
 impl HandleRequest<GarminSyncRequest> for PgPool {
-    type Result = Result<Vec<String>, Error>;
+    type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, _: GarminSyncRequest) -> Self::Result {
         GARMINLOCK.lock().await.run_sync().await
     }
@@ -82,7 +84,7 @@ pub struct MovieSyncRequest {}
 
 #[async_trait]
 impl HandleRequest<MovieSyncRequest> for PgPool {
-    type Result = Result<Vec<String>, Error>;
+    type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, _: MovieSyncRequest) -> Self::Result {
         MOVIELOCK.lock().await.run_sync().await
     }
@@ -92,7 +94,7 @@ pub struct CalendarSyncRequest {}
 
 #[async_trait]
 impl HandleRequest<CalendarSyncRequest> for PgPool {
-    type Result = Result<Vec<String>, Error>;
+    type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, _: CalendarSyncRequest) -> Self::Result {
         CALENDARLOCK.lock().await.run_sync().await
     }
@@ -100,12 +102,12 @@ impl HandleRequest<CalendarSyncRequest> for PgPool {
 
 #[derive(Serialize, Deserialize)]
 pub struct SyncRemoveRequest {
-    pub url: String,
+    pub url: StackString,
 }
 
 #[async_trait]
 impl HandleRequest<SyncRemoveRequest> for PgPool {
-    type Result = Result<Vec<String>, Error>;
+    type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, req: SyncRemoveRequest) -> Self::Result {
         let _ = SYNCLOCK.lock().await;
         let url = req.url.parse()?;
@@ -118,7 +120,7 @@ pub struct SyncPodcastsRequest {}
 
 #[async_trait]
 impl HandleRequest<SyncPodcastsRequest> for PgPool {
-    type Result = Result<Vec<String>, Error>;
+    type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, _: SyncPodcastsRequest) -> Self::Result {
         let _ = PODCASTLOCK.lock().await;
         if !Path::new("/usr/bin/podcatch-rust").exists() {
@@ -131,7 +133,7 @@ impl HandleRequest<SyncPodcastsRequest> for PgPool {
                 .env_remove("GOOGLE_MUSIC_DIRECTORY")
                 .stream_stdout()?;
             let reader = BufReader::new(stream);
-            reader.lines().map(|line| Ok(line?)).collect()
+            reader.lines().map(|line| Ok(line?.into())).collect()
         })
         .await?
     }
@@ -141,7 +143,7 @@ pub struct SyncSecurityRequest {}
 
 #[async_trait]
 impl HandleRequest<SyncSecurityRequest> for PgPool {
-    type Result = Result<Vec<String>, Error>;
+    type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, _: SyncSecurityRequest) -> Self::Result {
         let home_dir = match dirs::home_dir() {
             Some(home_dir) => home_dir,
@@ -153,18 +155,18 @@ impl HandleRequest<SyncSecurityRequest> for PgPool {
         }
         let _ = SECURITYLOCK.lock().await;
         let start_time = Instant::now();
-        let lines: Result<Vec<String>, Error> = spawn_blocking(move || {
+        let lines: Result<Vec<StackString>, Error> = spawn_blocking(move || {
             let stream = Exec::cmd(script)
                 .env_remove("DATABASE_URL")
                 .env_remove("EXPORT_DIR")
                 .stream_stdout()?;
             let reader = BufReader::new(stream);
-            reader.lines().map(|line| Ok(line?)).collect()
+            reader.lines().map(|line| Ok(line?.into())).collect()
         })
         .await?;
         let run_time = Instant::now() - start_time;
         let mut lines = lines?;
-        lines.push(format!("Run time {:0.2} s", run_time.as_secs_f64()));
+        lines.push(format!("Run time {:0.2} s", run_time.as_secs_f64()).into());
         Ok(lines)
     }
 }

@@ -132,7 +132,7 @@ impl FileSync {
                             );
                             if url1.as_str().contains(flist1.get_baseurl().as_str()) {
                                 let finfo1 = FileInfo::new(
-                                    k.into(),
+                                    k.clone(),
                                     Some(path1.into()),
                                     Some(url1.into()),
                                     None,
@@ -174,7 +174,7 @@ impl FileSync {
                             );
                             if url0.as_str().contains(flist0.get_baseurl().as_str()) {
                                 let finfo0 = FileInfo::new(
-                                    k.into(),
+                                    k.clone(),
                                     Some(path0.into()),
                                     Some(url0.into()),
                                     None,
@@ -366,7 +366,7 @@ impl FileSync {
                 let flist = flist.clone();
                 let fdict = fdict.clone();
                 async move {
-                    let finfo = if let Some(f) = fdict.get(&url.as_str().to_string()) {
+                    let finfo = if let Some(f) = fdict.get(url.as_str()) {
                         f.clone()
                     } else {
                         FileInfo::from_url(&url)?

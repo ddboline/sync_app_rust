@@ -12,6 +12,8 @@ use std::{
 };
 use url::Url;
 
+use stack_string::StackString;
+
 use crate::{
     file_info_gdrive::FileInfoGDrive,
     file_info_local::FileInfoLocal,
@@ -23,7 +25,6 @@ use crate::{
     path_buf_wrapper::PathBufWrapper,
     pgpool::PgPool,
     schema::file_info_cache,
-    stack_string::StackString,
     url_wrapper::UrlWrapper,
 };
 
@@ -316,9 +317,11 @@ pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, 
 
 #[cfg(test)]
 mod tests {
+    use stack_string::StackString;
+
     use crate::{
         file_info::{map_parse, ServiceSession},
-        stack_string::StackString,
+        
     };
 
     #[test]

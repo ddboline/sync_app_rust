@@ -18,6 +18,7 @@ use tokio::task::spawn_blocking;
 use url::Url;
 
 use gdrive_lib::{directory_info::DirectoryInfo, gdrive_instance::GDriveInstance};
+use stack_string::StackString;
 
 use crate::{
     config::Config,
@@ -34,7 +35,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct FileList {
     baseurl: Url,
-    filemap: Arc<HashMap<String, FileInfo>>,
+    filemap: Arc<HashMap<StackString, FileInfo>>,
     inner: Arc<FileListInner>,
 }
 
@@ -52,7 +53,7 @@ impl FileList {
         config: Config,
         servicetype: FileService,
         servicesession: ServiceSession,
-        filemap: HashMap<String, FileInfo>,
+        filemap: HashMap<StackString, FileInfo>,
         pool: PgPool,
     ) -> Self {
         Self {
@@ -114,7 +115,7 @@ pub trait FileListTrait: Send + Sync + Debug {
     fn get_config(&self) -> &Config;
 
     fn get_pool(&self) -> &PgPool;
-    fn get_filemap(&self) -> &HashMap<String, FileInfo>;
+    fn get_filemap(&self) -> &HashMap<StackString, FileInfo>;
 
     fn with_list(&mut self, filelist: Vec<FileInfo>);
 
@@ -322,32 +323,32 @@ pub trait FileListTrait: Send + Sync + Debug {
         &self,
         file_list: &[FileInfoCache],
         key_type: FileInfoKeyType,
-    ) -> HashMap<String, FileInfo> {
+    ) -> HashMap<StackString, FileInfo> {
         file_list
             .par_iter()
             .filter_map(|entry| match key_type {
                 FileInfoKeyType::FileName => entry
                     .try_into()
                     .ok()
-                    .map(|val| (entry.filename.to_string(), val)),
+                    .map(|val| (entry.filename.clone(), val)),
                 FileInfoKeyType::FilePath => entry.filepath.as_ref().and_then(|fp| {
-                    let key = fp.to_string();
+                    let key = fp.clone();
                     entry.try_into().ok().map(|val| (key, val))
                 }),
                 FileInfoKeyType::UrlName => entry.urlname.as_ref().and_then(|url| {
-                    let key = url.to_string();
+                    let key = url.clone();
                     entry.try_into().ok().map(|val| (key, val))
                 }),
                 FileInfoKeyType::Md5Sum => entry.md5sum.as_ref().and_then(|fp| {
-                    let key = fp.to_string();
+                    let key = fp.clone();
                     entry.try_into().ok().map(|val| (key, val))
                 }),
                 FileInfoKeyType::Sha1Sum => entry.sha1sum.as_ref().and_then(|fp| {
-                    let key = fp.to_string();
+                    let key = fp.clone();
                     entry.try_into().ok().map(|val| (key, val))
                 }),
                 FileInfoKeyType::ServiceId => entry.serviceid.as_ref().and_then(|fp| {
-                    let key = fp.to_string();
+                    let key = fp.clone();
                     entry.try_into().ok().map(|val| (key, val))
                 }),
             })
@@ -374,10 +375,10 @@ pub trait FileListTrait: Send + Sync + Debug {
     fn get_directory_map_cache(
         &self,
         directory_list: Vec<DirectoryInfoCache>,
-    ) -> (HashMap<String, DirectoryInfo>, Option<String>) {
-        let root_id: Option<String> = directory_list.iter().find_map(|d| {
+    ) -> (HashMap<StackString, DirectoryInfo>, Option<StackString>) {
+        let root_id: Option<StackString> = directory_list.iter().find_map(|d| {
             if d.is_root {
-                Some(d.directory_id.to_string())
+                Some(d.directory_id.clone())
             } else {
                 None
             }
@@ -394,8 +395,8 @@ pub trait FileListTrait: Send + Sync + Debug {
 
     fn cache_directory_map(
         &self,
-        directory_map: &HashMap<String, DirectoryInfo>,
-        root_id: &Option<String>,
+        directory_map: &HashMap<StackString, DirectoryInfo>,
+        root_id: &Option<StackString>,
     ) -> Result<usize, Error> {
         use crate::schema::directory_info_cache;
 
@@ -413,7 +414,7 @@ pub trait FileListTrait: Send + Sync + Debug {
                 InsertDirectoryInfoCache {
                     directory_id: d.directory_id.as_str().into(),
                     directory_name: d.directory_name.as_str().into(),
-                    parent_id: d.parentid.as_ref().map(Into::into),
+                    parent_id: d.parentid.clone(),
                     is_root,
                     servicetype: self.get_servicetype().to_string().into(),
                     servicesession: self.get_servicesession().0.as_str().into(),
@@ -517,7 +518,7 @@ impl FileListTrait for FileList {
         &self.pool
     }
 
-    fn get_filemap(&self) -> &HashMap<String, FileInfo> {
+    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
         &self.filemap
     }
 
@@ -528,7 +529,7 @@ impl FileListTrait for FileList {
                 let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
                     remove_basepath(&path, &self.get_basepath().to_string_lossy())
                 } else {
-                    f.filename.to_string()
+                    f.filename.clone()
                 };
                 let mut inner = f.inner().clone();
                 inner.servicesession = Some(self.get_servicesession().clone());
@@ -552,9 +553,9 @@ impl FileListTrait for FileList {
     }
 }
 
-pub fn remove_baseurl(urlname: &Url, baseurl: &Url) -> String {
+pub fn remove_baseurl(urlname: &Url, baseurl: &Url) -> StackString {
     let baseurl = format!("{}/", baseurl.as_str().trim_end_matches('/'));
-    urlname.as_str().replacen(&baseurl, "", 1)
+    urlname.as_str().replacen(&baseurl, "", 1).into()
 }
 
 pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<Url, Error> {
@@ -564,9 +565,9 @@ pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<
     Url::parse(&urlstr).map_err(Into::into)
 }
 
-pub fn remove_basepath(basename: &str, basepath: &str) -> String {
+pub fn remove_basepath(basename: &str, basepath: &str) -> StackString {
     let basepath = format!("{}/", basepath.trim_end_matches('/'));
-    basename.replacen(&basepath, "", 1)
+    basename.replacen(&basepath, "", 1).into()
 }
 
 pub fn replace_basepath(basename: &Path, basepath0: &Path, basepath1: &Path) -> PathBuf {
@@ -581,12 +582,10 @@ pub fn replace_basepath(basename: &Path, basepath0: &Path, basepath1: &Path) -> 
     new_path.to_path_buf()
 }
 
-pub fn group_urls(url_list: &[Url]) -> HashMap<String, Vec<Url>> {
+pub fn group_urls(url_list: &[Url]) -> HashMap<StackString, Vec<Url>> {
     url_list.iter().fold(HashMap::new(), |mut h, m| {
         let key = m.scheme();
-        h.entry(key.to_string())
-            .or_insert_with(Vec::new)
-            .push(m.clone());
+        h.entry(key.into()).or_insert_with(Vec::new).push(m.clone());
         h
     })
 }

@@ -15,6 +15,8 @@ use tokio::{
 use url::Url;
 use walkdir::WalkDir;
 
+use stack_string::StackString;
+
 use crate::{
     config::Config,
     file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession},
@@ -92,7 +94,7 @@ impl FileListTrait for FileListLocal {
         &self.0.pool
     }
 
-    fn get_filemap(&self) -> &HashMap<String, FileInfo> {
+    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
         self.0.get_filemap()
     }
 
@@ -133,7 +135,7 @@ impl FileListTrait for FileListLocal {
                             (modified, size)
                         },
                     );
-                    if let Some(finfo) = flist_dict.get(&filepath) {
+                    if let Some(finfo) = flist_dict.get(filepath.as_str()) {
                         if let Some(fstat) = finfo.filestat {
                             if fstat.st_mtime >= modified && fstat.st_size == size {
                                 return Some(finfo.clone());

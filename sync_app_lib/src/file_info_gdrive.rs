@@ -3,11 +3,11 @@ use std::path::Path;
 use url::Url;
 
 use gdrive_lib::gdrive_instance::GDriveInfo;
+use stack_string::StackString;
 
 use crate::{
     file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum},
     file_service::FileService,
-    stack_string::StackString,
 };
 
 #[derive(Debug, Default)]
@@ -124,18 +124,18 @@ mod tests {
     #[ignore]
     fn test_file_info_from_object() {
         let f = GDriveInfo {
-            filename: "armstrong_thesis_2003.pdf".to_string(),
+            filename: "armstrong_thesis_2003.pdf".into(),
             filepath: Some("armstrong_thesis_2003.pdf".parse().unwrap()),
             urlname: Some(
                 "gdrive://ddboline@gmail.com/My%20Drive/armstrong_thesis_2003.pdf"
                     .parse()
                     .unwrap(),
             ),
-            md5sum: Some("afde42b3861d522796faeb33a9eaec8a".to_string()),
+            md5sum: Some("afde42b3861d522796faeb33a9eaec8a".into()),
             sha1sum: None,
             filestat: Some((123, 123)),
-            serviceid: Some("1REd76oJ6YheyjF2R9Il0E8xbjalgpNgG".to_string()),
-            servicesession: Some("ddboline@gmail.com".to_string()),
+            serviceid: Some("1REd76oJ6YheyjF2R9Il0E8xbjalgpNgG".into()),
+            servicesession: Some("ddboline@gmail.com".into()),
         };
 
         let finfo = FileInfoGDrive::from_gdriveinfo(f).unwrap();
@@ -234,6 +234,6 @@ mod tests {
         let p = Path::new("/tmp/temp_start_page_token.txt");
         gdrive.store_start_page_token(&p).unwrap();
         let result = GDriveInstance::read_start_page_token(&p).unwrap();
-        assert_eq!(result, Some("test_string".to_string()));
+        assert_eq!(result, Some("test_string".into()));
     }
 }

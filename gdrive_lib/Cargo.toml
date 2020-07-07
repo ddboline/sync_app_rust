@@ -7,6 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+stack_string = {path="../stack_string"}
 google-drive3-fork = "1.0.10"
 hyper = "0.10"
 hyper-native-tls = "0.3.0"

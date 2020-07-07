@@ -11,6 +11,7 @@ actix-rt = "1.1"
 sync_app_lib = {path = "sync_app_lib"}
 sync_app_http = {path = "sync_app_http"}
 gdrive_lib = {path="gdrive_lib"}
+stack_string = {path="stack_string"}
 tokio = {version="0.2", features=["full"]}
 anyhow = "1.0"
 dirs = "2.0"

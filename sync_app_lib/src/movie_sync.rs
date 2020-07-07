@@ -8,6 +8,8 @@ use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
 
+use stack_string::StackString;
+
 use crate::{
     config::Config,
     reqwest_session::{ReqwestSession, SyncClient},
@@ -15,28 +17,28 @@ use crate::{
 
 #[derive(Deserialize)]
 struct LastModifiedStruct {
-    table: String,
+    table: StackString,
     last_modified: DateTime<Utc>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ImdbEpisodes {
-    pub show: String,
-    pub title: String,
+    pub show: StackString,
+    pub title: StackString,
     pub season: i32,
     pub episode: i32,
     pub airdate: NaiveDate,
     pub rating: f64,
-    pub eptitle: String,
-    pub epurl: String,
+    pub eptitle: StackString,
+    pub epurl: StackString,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ImdbRatings {
     pub index: i32,
-    pub show: String,
-    pub title: Option<String>,
-    pub link: String,
+    pub show: StackString,
+    pub title: Option<StackString>,
+    pub link: StackString,
     pub rating: Option<f64>,
     pub istv: Option<bool>,
     pub source: Option<TvShowSource>,
@@ -57,16 +59,16 @@ pub enum TvShowSource {
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct MovieCollectionRow {
     pub idx: i32,
-    pub path: String,
-    pub show: String,
+    pub path: StackString,
+    pub show: StackString,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct MovieQueueRow {
     pub idx: i32,
     pub collection_idx: i32,
-    pub path: String,
-    pub show: String,
+    pub path: StackString,
+    pub show: StackString,
 }
 
 pub struct MovieSync {
@@ -80,7 +82,7 @@ impl MovieSync {
         }
     }
 
-    pub async fn run_sync(&self) -> Result<Vec<String>, Error> {
+    pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
         self.client.init("list").await?;
         let mut output = Vec::new();
 
@@ -129,7 +131,7 @@ impl MovieSync {
     async fn get_last_modified(
         url: &Url,
         session: &ReqwestSession,
-    ) -> Result<HashMap<String, DateTime<Utc>>, Error> {
+    ) -> Result<HashMap<StackString, DateTime<Utc>>, Error> {
         let last_modified: Vec<LastModifiedStruct> =
             session.get(url, &HeaderMap::new()).await?.json().await?;
         let results = last_modified
@@ -146,7 +148,7 @@ impl MovieSync {
         last_modified1: DateTime<Utc>,
         js_prefix: &str,
         transform: U,
-    ) -> Result<Vec<String>, Error>
+    ) -> Result<Vec<StackString>, Error>
     where
         T: Debug + Serialize,
         U: FnMut(Response) -> F,
@@ -190,7 +192,7 @@ async fn _run_single_sync<T, U, F>(
     last_modified: DateTime<Utc>,
     js_prefix: &str,
     mut transform: U,
-) -> Result<Vec<String>, Error>
+) -> Result<Vec<StackString>, Error>
 where
     T: Debug + Serialize,
     U: FnMut(Response) -> F,
@@ -205,13 +207,13 @@ where
     );
     let url = endpoint0.join(&path)?;
     debug!("{}", url);
-    output.push(format!("{}", url));
+    output.push(format!("{}", url).into());
     let data = transform(session0.get(&url, &HeaderMap::new()).await?).await?;
 
     let path = format!("list/{}", table);
     let url = endpoint1.join(&path)?;
     debug!("{} {:#?}", url, data);
-    output.push(format!("{}", url));
+    output.push(format!("{}", url).into());
     for chunk in data.chunks(100) {
         let js = hashmap! {
             js_prefix=> chunk,
