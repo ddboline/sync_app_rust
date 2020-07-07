@@ -319,10 +319,7 @@ pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, 
 mod tests {
     use stack_string::StackString;
 
-    use crate::{
-        file_info::{map_parse, ServiceSession},
-        
-    };
+    use crate::file_info::{map_parse, ServiceSession};
 
     #[test]
     fn test_map_parse() {

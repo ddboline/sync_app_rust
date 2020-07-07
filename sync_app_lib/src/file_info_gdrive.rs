@@ -78,7 +78,7 @@ impl FileInfoGDrive {
         let servicesession = item.servicesession.and_then(|s| s.parse().ok());
 
         let finfo = FileInfo::new(
-            item.filename.into(),
+            item.filename,
             item.filepath.map(Into::into),
             item.urlname.map(Into::into),
             md5sum,

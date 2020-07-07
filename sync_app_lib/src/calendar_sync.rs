@@ -68,7 +68,7 @@ impl CalendarSync {
                     debug!("calendars {} {}", url, results.len());
                     let results: HashMap<_, _> = results
                         .into_iter()
-                        .map(|val| (val.gcal_id.clone().into(), val))
+                        .map(|val| (val.gcal_id.clone(), val))
                         .collect();
                     Ok(results)
                 }

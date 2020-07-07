@@ -57,7 +57,7 @@ fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
                     if let Some(serviceid) = item.serviceid {
                         let gdriveid = serviceid;
                         if let Ok(gfile) = gdrive.get_file_metadata(&gdriveid) {
-                            if gfile.mime_type.as_ref().map(String::as_str)
+                            if gfile.mime_type.as_deref()
                                 == Some("application/vnd.google-apps.document")
                             {
                                 if !outpath.exists() {

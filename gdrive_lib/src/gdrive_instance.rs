@@ -726,8 +726,9 @@ impl GDriveInstance {
                     .start_page_token
                     .ok_or_else(|| {
                         format_err!(
-                    "Received OK response from drive but there is no startPageToken included.",
-                )
+                            "Received OK response from drive but there is no startPageToken \
+                             included.",
+                        )
                     })
                     .map(Into::into)
             })
