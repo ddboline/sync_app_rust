@@ -30,4 +30,4 @@ async-trait = "0.1"
 log = "0.4"
 subprocess = "0.2"
 dirs = "2.0"
-stack_string = {path="../stack_string"}
+stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", branch="master", features=["diesel_types"] }

@@ -6,7 +6,6 @@ use std::{
     path::PathBuf,
 };
 use walkdir::WalkDir;
-
 use stack_string::StackString;
 
 use sync_app_lib::{

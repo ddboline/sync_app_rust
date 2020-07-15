@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 gdrive_lib = {path="../gdrive_lib"}
-stack_string = {path="../stack_string"}
 rusoto_core = {version = "0.44", default_features = false, features=["rustls"]}
 rusoto_s3 = {version = "0.44", default_features = false, features=["rustls"]}
 s3-ext = "0.1"
@@ -45,3 +44,4 @@ async-trait = "0.1"
 futures = "0.3"
 itertools = "0.9"
 envy = "0.4"
+stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", branch="master", features=["diesel_types"] }
