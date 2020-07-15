@@ -116,6 +116,27 @@ impl HandleRequest<SyncRemoveRequest> for PgPool {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SyncEntryProcessRequest {
+    pub id: i32,
+}
+
+#[async_trait]
+impl HandleRequest<SyncEntryProcessRequest> for PgPool {
+    type Result = Result<(), Error>;
+    async fn handle(&self, req: SyncEntryProcessRequest) -> Self::Result {
+        let _ = SYNCLOCK.lock().await;
+
+        let entry = FileSyncCache::get_by_id(self, req.id).await?;
+        let src_url = entry.src_url.parse()?;
+        let dst_url = entry.dst_url.parse()?;
+        let sync = SyncOpts::new(FileSyncAction::Copy, &[src_url, dst_url]);
+        sync.process_sync_opts(&CONFIG, self).await?;
+        entry.delete_cache_entry(self).await?;
+        Ok(())
+    }
+}
+
 pub struct SyncPodcastsRequest {}
 
 #[async_trait]

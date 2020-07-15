@@ -14,7 +14,7 @@ use super::{
     requests::{
         CalendarSyncRequest, GarminSyncRequest, HandleRequest, ListSyncCacheRequest,
         MovieSyncRequest, SyncEntryDeleteRequest, SyncPodcastsRequest, SyncRemoveRequest,
-        SyncRequest, SyncSecurityRequest,
+        SyncRequest, SyncSecurityRequest, SyncEntryProcessRequest,
     },
 };
 
@@ -75,6 +75,16 @@ pub async fn list_sync_cache(_: LoggedUser, data: Data<AppState>) -> Result<Http
         .collect();
     let body = clist.join("\n");
     form_http_response(body)
+}
+
+pub async fn process_cache_entry(
+    query: Query<SyncEntryProcessRequest>,
+    _: LoggedUser,
+    data: Data<AppState>,
+) -> Result<HttpResponse, Error> {
+    let query = query.into_inner();
+    data.db.handle(query).await?;
+    form_http_response("finished".to_string())
 }
 
 pub async fn delete_cache_entry(

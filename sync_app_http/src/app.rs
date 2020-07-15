@@ -11,6 +11,7 @@ use super::{
     routes::{
         delete_cache_entry, list_sync_cache, proc_all, remove, sync_all, sync_calendar,
         sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
+        process_cache_entry,
     },
 };
 
@@ -48,7 +49,8 @@ pub async fn start_app() {
             ))
             .service(web::resource("/sync/index.html").route(web::get().to(sync_frontpage)))
             .service(web::resource("/sync/sync").route(web::get().to(sync_all)))
-            .service(web::resource("/sync/proc").route(web::get().to(proc_all)))
+            .service(web::resource("/sync/proc_all").route(web::get().to(proc_all)))
+            .service(web::resource("/sync/proc").route(web::get().to(process_cache_entry)))
             .service(web::resource("/sync/remove").route(web::get().to(remove)))
             .service(web::resource("/sync/list_sync_cache").route(web::get().to(list_sync_cache)))
             .service(

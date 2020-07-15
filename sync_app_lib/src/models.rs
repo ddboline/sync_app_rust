@@ -215,6 +215,17 @@ impl FileSyncCache {
         spawn_blocking(move || Self::get_cache_list_sync(&pool)).await?
     }
 
+    pub fn get_by_id_sync(pool: &PgPool, id_: i32) -> Result<Self, Error> {
+        use crate::schema::file_sync_cache::dsl::{file_sync_cache, id};
+        let conn = pool.get()?;
+        file_sync_cache.filter(id.eq(id_)).first(&conn).map_err(Into::into)
+    }
+
+    pub async fn get_by_id(pool: &PgPool, id: i32) -> Result<Self, Error> {
+        let pool = pool.clone();
+        spawn_blocking(move || Self::get_by_id_sync(&pool, id)).await?
+    }
+
     pub fn delete_cache_entry_sync(&self, pool: &PgPool) -> Result<(), Error> {
         Self::delete_by_id_sync(pool, self.id)
     }
