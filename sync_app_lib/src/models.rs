@@ -218,7 +218,10 @@ impl FileSyncCache {
     pub fn get_by_id_sync(pool: &PgPool, id_: i32) -> Result<Self, Error> {
         use crate::schema::file_sync_cache::dsl::{file_sync_cache, id};
         let conn = pool.get()?;
-        file_sync_cache.filter(id.eq(id_)).first(&conn).map_err(Into::into)
+        file_sync_cache
+            .filter(id.eq(id_))
+            .first(&conn)
+            .map_err(Into::into)
     }
 
     pub async fn get_by_id(pool: &PgPool, id: i32) -> Result<Self, Error> {

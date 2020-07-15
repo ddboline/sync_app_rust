@@ -9,9 +9,8 @@ use sync_app_lib::{config::Config, pgpool::PgPool};
 use super::{
     logged_user::{fill_from_db, TRIGGER_DB_UPDATE},
     routes::{
-        delete_cache_entry, list_sync_cache, proc_all, remove, sync_all, sync_calendar,
-        sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
-        process_cache_entry,
+        delete_cache_entry, list_sync_cache, proc_all, process_cache_entry, remove, sync_all,
+        sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
     },
 };
 
