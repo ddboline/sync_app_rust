@@ -230,10 +230,10 @@ mod tests {
         )
         .with_max_keys(10)
         .with_page_size(10)
-        .with_start_page_token("test_string");
+        .with_start_page_token(8675309);
         let p = Path::new("/tmp/temp_start_page_token.txt");
         gdrive.store_start_page_token(&p).unwrap();
         let result = GDriveInstance::read_start_page_token(&p).unwrap();
-        assert_eq!(result, Some("test_string".into()));
+        assert_eq!(result, Some(8675309));
     }
 }
