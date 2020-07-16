@@ -266,10 +266,7 @@ impl FileListTrait for FileListGDrive {
 
             let flist = flist_dict.into_iter().map(|(_, v)| v).collect();
 
-            let gdrive = glist
-                .gdrive
-                .clone()
-                .with_start_page_token(&start_page_token);
+            let gdrive = glist.gdrive.clone().with_start_page_token(start_page_token);
             let ext = glist
                 .gdrive
                 .start_page_token_filename
@@ -479,37 +476,25 @@ mod tests {
     };
 
     struct TempStartPageToken {
-        original: PathBuf,
         new: PathBuf,
-        backup: PathBuf,
     }
 
     impl TempStartPageToken {
         async fn new(fname: &Path) -> Result<Self, Error> {
             let original = fname.to_path_buf();
             let ext = original.extension().unwrap().to_string_lossy();
-            let backup = fname
-                .with_extension(format!("{}.backup", ext))
-                .to_path_buf();
             let new = fname.with_extension(format!("{}.new", ext)).to_path_buf();
 
             if new.exists() {
                 remove_file(&new).await?;
             }
             if original.exists() {
-                rename(&original, &backup).await?;
+                remove_file(&original).await?;
             }
-            Ok(Self {
-                original,
-                new,
-                backup,
-            })
+            Ok(Self { new })
         }
 
         async fn cleanup(&self) -> Result<(), Error> {
-            if self.backup.exists() {
-                rename(&self.backup, &self.original).await?;
-            }
             if self.new.exists() {
                 remove_file(&self.new).await?;
             }
@@ -528,12 +513,6 @@ mod tests {
         let tmp = TempStartPageToken::new(&fname).await?;
 
         let pool = PgPool::new(&config.database_url);
-        let mut gdrive = GDriveInstance::new(
-            &config.gdrive_token_path,
-            &config.gdrive_secret_file,
-            "ddboline@gmail.com",
-        );
-        gdrive.start_page_token = None;
 
         let mut flist =
             FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool)?.max_keys(100);
@@ -574,6 +553,18 @@ mod tests {
             }
         }
 
-        tmp.cleanup().await
+        tmp.cleanup().await?;
+
+        let mut flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool)?;
+        flist.set_directory_map(false)?;
+
+        let new_flist = flist.fill_file_list().await?;
+        assert!(new_flist.len() > 0);
+        flist.with_list(new_flist);
+        let result = flist.cache_file_list()?;
+        debug!("wrote {}", result);
+        flist.cleanup()?;
+
+        Ok(())
     }
 }
