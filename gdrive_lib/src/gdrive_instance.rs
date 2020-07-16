@@ -73,7 +73,7 @@ pub struct GDriveInstance {
     pub page_size: i32,
     pub max_keys: Option<usize>,
     pub session_name: StackString,
-    pub start_page_token: Option<StackString>,
+    pub start_page_token: Option<usize>,
     pub start_page_token_filename: PathBuf,
 }
 
@@ -109,8 +109,8 @@ impl GDriveInstance {
         self
     }
 
-    pub fn with_start_page_token(mut self, start_page_token: &str) -> Self {
-        self.start_page_token = Some(start_page_token.into());
+    pub fn with_start_page_token(mut self, start_page_token: usize) -> Self {
+        self.start_page_token = Some(start_page_token);
         self
     }
 
@@ -713,7 +713,7 @@ impl GDriveInstance {
         Ok(None)
     }
 
-    pub fn get_start_page_token(&self) -> Result<StackString, Error> {
+    pub fn get_start_page_token(&self) -> Result<usize, Error> {
         self.gdrive
             .lock()
             .changes()
@@ -730,31 +730,32 @@ impl GDriveInstance {
                              included.",
                         )
                     })
-                    .map(Into::into)
+                    .and_then(|s| s.parse().map_err(Into::into))
             })
     }
 
     pub fn store_start_page_token(&self, path: &Path) -> Result<(), Error> {
         if let Some(start_page_token) = self.start_page_token.as_ref() {
             let mut f = File::create(path)?;
-            writeln!(f, "{}", start_page_token)?;
+            write!(f, "{}", start_page_token)?;
         }
         Ok(())
     }
 
-    pub fn read_start_page_token(path: &Path) -> Result<Option<StackString>, Error> {
+    pub fn read_start_page_token(path: &Path) -> Result<Option<usize>, Error> {
         if !path.exists() {
             return Ok(None);
         }
         let mut f = File::open(path)?;
         let mut buf = String::new();
         f.read_to_string(&mut buf)?;
-        Ok(Some(buf.trim().into()))
+        let start_page_token = buf.parse()?;
+        Ok(Some(start_page_token))
     }
 
     pub fn get_all_changes(&self) -> Result<Vec<drive3::Change>, Error> {
         if self.start_page_token.is_some() {
-            let mut start_page_token = self.start_page_token.clone().unwrap();
+            let mut start_page_token = self.start_page_token.as_ref().unwrap().to_string();
 
             let mut all_changes = Vec::new();
 
