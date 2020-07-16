@@ -1,12 +1,12 @@
 use anyhow::Error;
 use chrono::NaiveDate;
+use stack_string::StackString;
 use std::{
     fs::{create_dir_all, File},
     io::{BufRead, BufReader, Write},
     path::PathBuf,
 };
 use walkdir::WalkDir;
-use stack_string::StackString;
 
 use sync_app_lib::{
     config::Config, file_list::FileListTrait, file_list_gdrive::FileListGDrive, pgpool::PgPool,
