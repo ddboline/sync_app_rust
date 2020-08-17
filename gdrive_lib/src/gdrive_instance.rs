@@ -410,7 +410,7 @@ impl GDriveInstance {
                 .doit()
                 .map_err(|e| format_err!("{:#?}", e))?;
 
-            let mut content: Vec<u8> = Vec::new();
+            let mut content = Vec::new();
             response.read_to_end(&mut content)?;
 
             let mut outfile = File::create(local.to_path_buf())?;
@@ -469,7 +469,7 @@ impl GDriveInstance {
                 response
             };
 
-            let mut content: Vec<u8> = Vec::new();
+            let mut content = Vec::new();
             response.read_to_end(&mut content)?;
 
             let mut outfile = File::create(local.to_path_buf())?;
@@ -676,8 +676,7 @@ impl GDriveInstance {
                 break;
             }
         }
-        let fullpath: Vec<_> = fullpath.into_iter().rev().collect();
-        Ok(fullpath)
+        Ok(fullpath.into_iter().rev().collect())
     }
 
     pub fn get_parent_id(

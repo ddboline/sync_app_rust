@@ -182,7 +182,10 @@ impl HandleRequest<SyncSecurityRequest> for PgPool {
                 .env_remove("EXPORT_DIR")
                 .stream_stdout()?;
             let reader = BufReader::new(stream);
-            reader.lines().map(|line| Ok(line?.into())).collect()
+            reader
+                .lines()
+                .map(|line| line.map(Into::into).map_err(Into::into))
+                .collect()
         })
         .await?;
         let run_time = Instant::now() - start_time;

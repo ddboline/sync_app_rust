@@ -32,8 +32,10 @@ where
 }
 
 pub async fn sync_frontpage(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
-    let clist = data.db.handle(ListSyncCacheRequest {}).await?;
-    let clist: Vec<_> = clist
+    let clist: Vec<_> = data
+        .db
+        .handle(ListSyncCacheRequest {})
+        .await?
         .into_iter()
         .map(|v| {
             format!(
@@ -70,8 +72,10 @@ pub async fn proc_all(_: LoggedUser, data: Data<AppState>) -> Result<HttpRespons
 }
 
 pub async fn list_sync_cache(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
-    let clist = data.db.handle(ListSyncCacheRequest {}).await?;
-    let clist: Vec<_> = clist
+    let clist: Vec<_> = data
+        .db
+        .handle(ListSyncCacheRequest {})
+        .await?
         .into_iter()
         .map(|v| format!("{} {}", v.src_url, v.dst_url))
         .collect();

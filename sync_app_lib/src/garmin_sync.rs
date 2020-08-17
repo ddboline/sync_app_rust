@@ -1,5 +1,5 @@
 use anyhow::{format_err, Error};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use log::debug;
 use maplit::hashmap;
 use reqwest::{header::HeaderMap, Response, Url};
@@ -91,6 +91,18 @@ pub struct GarminConnectActivity {
     pub max_hr: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromSqlRow, PartialEq)]
+pub struct RaceResults {
+    pub id: i64,
+    pub race_type: String,
+    pub race_date: Option<NaiveDate>,
+    pub race_name: Option<StackString>,
+    pub race_distance: i32, // distance in meters
+    pub race_time: f64,
+    pub race_flag: bool,
+    pub race_filename: Option<StackString>,
+}
+
 #[derive(Clone)]
 pub struct GarminSync {
     client: SyncClient,
@@ -168,6 +180,22 @@ impl GarminSync {
                         .map(|activity| (activity.activity_id, activity))
                         .collect();
                     debug!("activities {} {}", url, item_map.len());
+                    Ok(item_map)
+                }
+            })
+            .await?;
+        output.extend_from_slice(&results);
+
+        let results = self
+            .run_single_sync_activities("garmin/race_results_db", "updates", |resp| {
+                let url = resp.url().clone();
+                async move {
+                    let items: Vec<RaceResults> = resp.json().await?;
+                    let item_map: HashMap<i64, RaceResults> = items
+                        .into_iter()
+                        .map(|result| (result.id, result))
+                        .collect();
+                    debug!("results {} {}", url, item_map.len());
                     Ok(item_map)
                 }
             })
