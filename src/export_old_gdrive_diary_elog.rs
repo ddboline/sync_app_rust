@@ -116,7 +116,7 @@ fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
             match reader.read_line(&mut line) {
                 Ok(0) => break,
                 Err(_) => continue,
-                _ => (),
+                Ok(_) => (),
             };
             let linestr = line.trim_matches('\u{feff}');
             if let Ok(date) = NaiveDate::parse_from_str(&linestr.trim(), "%B%d%Y") {

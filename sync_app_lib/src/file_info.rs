@@ -235,7 +235,7 @@ impl TryFrom<&FileInfoCache> for FileInfo {
             urlname: match item.urlname.as_ref() {
                 Some(urlname) => match urlname.parse() {
                     Ok(urlname) => Some(urlname),
-                    _ => None,
+                    Err(_) => None,
                 },
                 None => None,
             },

@@ -168,7 +168,7 @@ impl HandleRequest<SyncSecurityRequest> for PgPool {
     async fn handle(&self, _: SyncSecurityRequest) -> Self::Result {
         let home_dir = match dirs::home_dir() {
             Some(home_dir) => home_dir,
-            _ => return Ok(Vec::new()),
+            None => return Ok(Vec::new()),
         };
         let script = home_dir.join("bin").join("run_security_log_parse.sh");
         if !script.exists() {
