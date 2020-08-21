@@ -809,7 +809,7 @@ impl GDriveInstance {
                     break;
                 }
                 match changelist.next_page_token {
-                    Some(token) => start_page_token = token.into(),
+                    Some(token) => start_page_token = token,
                     None => break,
                 };
             }

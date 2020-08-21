@@ -41,19 +41,7 @@ pub struct ImdbRatings {
     pub link: StackString,
     pub rating: Option<f64>,
     pub istv: Option<bool>,
-    pub source: Option<TvShowSource>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum TvShowSource {
-    #[serde(rename = "netflix")]
-    Netflix,
-    #[serde(rename = "hulu")]
-    Hulu,
-    #[serde(rename = "amazon")]
-    Amazon,
-    #[serde(rename = "all")]
-    All,
+    pub source: Option<StackString>,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug)]

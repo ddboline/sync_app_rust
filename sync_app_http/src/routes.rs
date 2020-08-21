@@ -18,20 +18,22 @@ use super::{
     },
 };
 
-fn form_http_response(body: String) -> Result<HttpResponse, Error> {
+pub type HttpResult = Result<HttpResponse, Error>;
+
+fn form_http_response(body: String) -> HttpResult {
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type("text/html; charset=utf-8")
         .body(body))
 }
 
-fn to_json<T>(js: T) -> Result<HttpResponse, Error>
+fn to_json<T>(js: T) -> HttpResult
 where
     T: Serialize,
 {
     Ok(HttpResponse::Ok().json(js))
 }
 
-pub async fn sync_frontpage(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn sync_frontpage(_: LoggedUser, data: Data<AppState>) -> HttpResult {
     let clist: Vec<_> = data
         .db
         .handle(ListSyncCacheRequest {})
@@ -55,7 +57,7 @@ pub async fn sync_frontpage(_: LoggedUser, data: Data<AppState>) -> Result<HttpR
     form_http_response(include_str!("../../templates/index.html").replace("DISPLAY_TEXT", &body))
 }
 
-pub async fn sync_all(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn sync_all(_: LoggedUser, data: Data<AppState>) -> HttpResult {
     let req = SyncRequest {
         action: FileSyncAction::Sync,
     };
@@ -63,7 +65,7 @@ pub async fn sync_all(_: LoggedUser, data: Data<AppState>) -> Result<HttpRespons
     form_http_response(lines.join("\n"))
 }
 
-pub async fn proc_all(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn proc_all(_: LoggedUser, data: Data<AppState>) -> HttpResult {
     let req = SyncRequest {
         action: FileSyncAction::Process,
     };
@@ -71,7 +73,7 @@ pub async fn proc_all(_: LoggedUser, data: Data<AppState>) -> Result<HttpRespons
     form_http_response(lines.join("\n"))
 }
 
-pub async fn list_sync_cache(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn list_sync_cache(_: LoggedUser, data: Data<AppState>) -> HttpResult {
     let clist: Vec<_> = data
         .db
         .handle(ListSyncCacheRequest {})
@@ -87,7 +89,7 @@ pub async fn process_cache_entry(
     query: Query<SyncEntryProcessRequest>,
     _: LoggedUser,
     data: Data<AppState>,
-) -> Result<HttpResponse, Error> {
+) -> HttpResult {
     let query = query.into_inner();
     data.db.handle(query).await?;
     form_http_response("finished".to_string())
@@ -97,23 +99,23 @@ pub async fn delete_cache_entry(
     query: Query<SyncEntryDeleteRequest>,
     _: LoggedUser,
     data: Data<AppState>,
-) -> Result<HttpResponse, Error> {
+) -> HttpResult {
     let query = query.into_inner();
     data.db.handle(query).await?;
     form_http_response("finished".to_string())
 }
 
-pub async fn sync_garmin(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn sync_garmin(_: LoggedUser, data: Data<AppState>) -> HttpResult {
     let body = data.db.handle(GarminSyncRequest {}).await?;
     form_http_response(body.join("<br>"))
 }
 
-pub async fn sync_movie(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn sync_movie(_: LoggedUser, data: Data<AppState>) -> HttpResult {
     let body = data.db.handle(MovieSyncRequest {}).await?;
     form_http_response(body.join("<br>"))
 }
 
-pub async fn sync_calendar(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn sync_calendar(_: LoggedUser, data: Data<AppState>) -> HttpResult {
     let body = data.db.handle(CalendarSyncRequest {}).await?;
     form_http_response(body.join("<br>"))
 }
@@ -122,13 +124,13 @@ pub async fn remove(
     query: Query<SyncRemoveRequest>,
     _: LoggedUser,
     data: Data<AppState>,
-) -> Result<HttpResponse, Error> {
+) -> HttpResult {
     let query = query.into_inner();
     let lines = data.db.handle(query).await?;
     form_http_response(lines.join("\n"))
 }
 
-pub async fn sync_podcasts(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn sync_podcasts(_: LoggedUser, data: Data<AppState>) -> HttpResult {
     let results = data.db.handle(SyncPodcastsRequest {}).await?;
     let body = format!(
         r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
@@ -137,11 +139,11 @@ pub async fn sync_podcasts(_: LoggedUser, data: Data<AppState>) -> Result<HttpRe
     form_http_response(body)
 }
 
-pub async fn user(user: LoggedUser) -> Result<HttpResponse, Error> {
+pub async fn user(user: LoggedUser) -> HttpResult {
     to_json(user)
 }
 
-pub async fn sync_security(_: LoggedUser, data: Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn sync_security(_: LoggedUser, data: Data<AppState>) -> HttpResult {
     let results = data.db.handle(SyncSecurityRequest {}).await?;
     let body = format!(
         r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,

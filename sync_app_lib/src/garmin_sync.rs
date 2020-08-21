@@ -32,10 +32,10 @@ struct FitbitHeartRate {
 
 #[derive(Serialize, Deserialize, FromSqlRow, Debug, Clone)]
 pub struct StravaActivity {
+    pub id: i64,
     pub name: StackString,
     #[serde(with = "iso_8601_datetime")]
     pub start_date: DateTime<Utc>,
-    pub id: i64,
     pub distance: Option<f64>,
     pub moving_time: Option<i64>,
     pub elapsed_time: i64,
@@ -49,6 +49,8 @@ pub struct StravaActivity {
 
 #[derive(Serialize, Deserialize, Clone, Debug, FromSqlRow)]
 pub struct FitbitActivityEntry {
+    #[serde(rename = "logId")]
+    log_id: i64,
     #[serde(rename = "logType")]
     log_type: StackString,
     #[serde(rename = "startTime")]
@@ -64,8 +66,6 @@ pub struct FitbitActivityEntry {
     #[serde(rename = "distanceUnit")]
     distance_unit: Option<StackString>,
     steps: Option<i64>,
-    #[serde(rename = "logId")]
-    log_id: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, FromSqlRow, Clone)]
@@ -361,9 +361,9 @@ impl GarminSync {
             .collect();
         if !activities.is_empty() {
             if activities.len() < 20 {
-                output = format!("session1 {:?}", activities).into();
+                output = format!("{} session1 {:?}", to_url, activities).into();
             } else {
-                output = format!("session1 {}", activities.len()).into();
+                output = format!("{} session1 {}", to_url, activities.len()).into();
             }
             let url = to_url.join(path)?;
             for activity in activities.chunks(100) {
