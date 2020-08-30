@@ -24,12 +24,6 @@ struct ScaleMeasurement {
     pub bone_pct: f64,
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
-struct FitbitHeartRate {
-    pub datetime: DateTime<Utc>,
-    pub value: i32,
-}
-
 #[derive(Serialize, Deserialize, FromSqlRow, Debug, Clone)]
 pub struct StravaActivity {
     pub id: i64,

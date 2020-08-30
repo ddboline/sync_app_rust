@@ -172,13 +172,13 @@ impl SyncClient {
             .garmin_from_url
             .as_ref()
             .ok_or_else(|| format_err!("No From URL"))?
-            .parse()?;
+            .clone();
         let to_url: Url = self
             .config
             .garmin_to_url
             .as_ref()
             .ok_or_else(|| format_err!("No To URL"))?
-            .parse()?;
+            .clone();
         Ok((from_url, to_url))
     }
 
