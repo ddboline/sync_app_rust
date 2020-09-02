@@ -10,10 +10,7 @@ use std::{collections::HashMap, fmt::Debug, future::Future};
 
 use stack_string::StackString;
 
-use crate::{
-    config::Config,
-    reqwest_session::{ReqwestSession, SyncClient},
-};
+use crate::{config::Config, reqwest_session::ReqwestSession, sync_client::SyncClient};
 
 #[derive(Deserialize)]
 struct LastModifiedStruct {
@@ -66,7 +63,7 @@ pub struct MovieSync {
 impl MovieSync {
     pub fn new(config: Config) -> Self {
         Self {
-            client: SyncClient::new(config),
+            client: SyncClient::new(config, "/usr/bin/movie-queue-cli"),
         }
     }
 

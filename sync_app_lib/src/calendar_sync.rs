@@ -9,9 +9,7 @@ use std::{collections::HashMap, fmt::Debug, future::Future};
 use stack_string::StackString;
 
 use crate::{
-    config::Config,
-    iso_8601_datetime,
-    reqwest_session::{ReqwestSession, SyncClient},
+    config::Config, iso_8601_datetime, reqwest_session::ReqwestSession, sync_client::SyncClient,
 };
 
 #[derive(Queryable, Clone, Debug, Serialize, Deserialize)]
@@ -52,7 +50,7 @@ pub struct CalendarSync {
 impl CalendarSync {
     pub fn new(config: Config) -> Self {
         Self {
-            client: SyncClient::new(config),
+            client: SyncClient::new(config, "/usr/bin/calendar-app-rust"),
         }
     }
 
@@ -61,39 +59,47 @@ impl CalendarSync {
         self.client.init("calendar").await?;
         let mut output = Vec::new();
         let results = self
-            .run_single_sync_calendar_list("calendar/calendar_list", "updates", |resp| {
-                let url = resp.url().clone();
-                async move {
-                    let results: Vec<CalendarList> = resp.json().await?;
-                    debug!("calendars {} {}", url, results.len());
-                    let results: HashMap<_, _> = results
-                        .into_iter()
-                        .map(|val| (val.gcal_id.clone(), val))
-                        .collect();
-                    Ok(results)
-                }
-            })
+            .run_single_sync_calendar_list(
+                "calendar/calendar_list",
+                "updates",
+                "calendar_list",
+                |results| {
+                    async move {
+                        debug!("calendars {}", results.len());
+                        let results: HashMap<_, _> = results
+                            .into_iter()
+                            .map(|val| (val.gcal_id.clone(), val))
+                            .collect();
+                        Ok(results)
+                    }
+                },
+            )
             .await?;
         output.extend_from_slice(&results);
 
         let results = self
-            .run_single_sync_calendar_events("calendar/calendar_cache", "updates", |resp| {
-                let url = resp.url().clone();
-                async move {
-                    let results: Vec<CalendarCache> = resp.json().await?;
-                    let results: HashMap<StackString, CalendarCache> = results
-                        .into_iter()
-                        .map(|event| {
-                            (
-                                format!("{}_{}", event.gcal_id, event.event_id).into(),
-                                event,
-                            )
-                        })
-                        .collect();
-                    debug!("activities {} {}", url, results.len());
-                    Ok(results)
-                }
-            })
+            .run_single_sync_calendar_events(
+                "calendar/calendar_cache",
+                "updates",
+                "calendar_cache",
+                |resp| {
+                    let url = resp.url().clone();
+                    async move {
+                        let results: Vec<CalendarCache> = resp.json().await?;
+                        let results: HashMap<StackString, CalendarCache> = results
+                            .into_iter()
+                            .map(|event| {
+                                (
+                                    format!("{}_{}", event.gcal_id, event.event_id).into(),
+                                    event,
+                                )
+                            })
+                            .collect();
+                        debug!("activities {} {}", url, results.len());
+                        Ok(results)
+                    }
+                },
+            )
             .await?;
         output.extend_from_slice(&results);
 
@@ -105,21 +111,20 @@ impl CalendarSync {
         &self,
         path: &str,
         js_prefix: &str,
+        table: &str,
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
     where
-        T: FnMut(Response) -> F,
+        T: FnMut(Vec<CalendarList>) -> F,
         F: Future<Output = Result<HashMap<StackString, CalendarList>, Error>>,
     {
         let mut output = Vec::new();
         let (from_url, to_url) = self.client.get_urls()?;
 
         let url = from_url.join(path)?;
-        let measurements0 =
-            transform(self.client.session0.get(&url, &HeaderMap::new()).await?).await?;
+        let measurements0 = transform(self.client.get_remote(&url).await?).await?;
         let url = to_url.join(path)?;
-        let measurements1 =
-            transform(self.client.session1.get(&url, &HeaderMap::new()).await?).await?;
+        let measurements1 = transform(self.client.get_local(table, None).await?).await?;
 
         output.extend_from_slice(&[self
             .combine_measurements(
@@ -191,6 +196,7 @@ impl CalendarSync {
         &self,
         path: &str,
         js_prefix: &str,
+        table: &str,
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
     where

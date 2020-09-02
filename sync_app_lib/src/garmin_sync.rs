@@ -9,9 +9,7 @@ use std::{collections::HashMap, fmt::Debug, future::Future};
 use stack_string::StackString;
 
 use super::{
-    config::Config,
-    iso_8601_datetime,
-    reqwest_session::{ReqwestSession, SyncClient},
+    config::Config, iso_8601_datetime, reqwest_session::ReqwestSession, sync_client::SyncClient,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
@@ -105,7 +103,7 @@ pub struct GarminSync {
 impl GarminSync {
     pub fn new(config: Config) -> Self {
         Self {
-            client: SyncClient::new(config),
+            client: SyncClient::new(config, "/usr/bin/garmin-rust-cli"),
         }
     }
 
