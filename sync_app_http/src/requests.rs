@@ -7,8 +7,7 @@ use std::{
     path::Path,
     time::Instant,
 };
-use tokio::process::Command;
-use tokio::{sync::Mutex, task::spawn_blocking};
+use tokio::{process::Command, sync::Mutex, task::spawn_blocking};
 
 use stack_string::StackString;
 
