@@ -46,22 +46,26 @@ pub async fn start_app() {
                     .max_age_time(Duration::days(1))
                     .secure(false),
             ))
-            .service(web::scope("/sync")
-                .service(web::resource("/index.html").route(web::get().to(sync_frontpage)))
-                .service(web::resource("/sync").route(web::get().to(sync_all)))
-                .service(web::resource("/proc_all").route(web::get().to(proc_all)))
-                .service(web::resource("/proc").route(web::get().to(process_cache_entry)))
-                .service(web::resource("/remove").route(web::get().to(remove)))
-                .service(web::resource("/list_sync_cache").route(web::get().to(list_sync_cache)))
-                .service(
-                    web::resource("/delete_cache_entry").route(web::get().to(delete_cache_entry)),
-                )
-                .service(web::resource("/sync_garmin").route(web::get().to(sync_garmin)))
-                .service(web::resource("/sync_movie").route(web::get().to(sync_movie)))
-                .service(web::resource("/sync_calendar").route(web::get().to(sync_calendar)))
-                .service(web::resource("/sync_podcasts").route(web::get().to(sync_podcasts)))
-                .service(web::resource("/sync_security").route(web::get().to(sync_security)))
-                .service(web::resource("/user").route(web::get().to(user)))
+            .service(
+                web::scope("/sync")
+                    .service(web::resource("/index.html").route(web::get().to(sync_frontpage)))
+                    .service(web::resource("/sync").route(web::get().to(sync_all)))
+                    .service(web::resource("/proc_all").route(web::get().to(proc_all)))
+                    .service(web::resource("/proc").route(web::get().to(process_cache_entry)))
+                    .service(web::resource("/remove").route(web::get().to(remove)))
+                    .service(
+                        web::resource("/list_sync_cache").route(web::get().to(list_sync_cache)),
+                    )
+                    .service(
+                        web::resource("/delete_cache_entry")
+                            .route(web::get().to(delete_cache_entry)),
+                    )
+                    .service(web::resource("/sync_garmin").route(web::get().to(sync_garmin)))
+                    .service(web::resource("/sync_movie").route(web::get().to(sync_movie)))
+                    .service(web::resource("/sync_calendar").route(web::get().to(sync_calendar)))
+                    .service(web::resource("/sync_podcasts").route(web::get().to(sync_podcasts)))
+                    .service(web::resource("/sync_security").route(web::get().to(sync_security)))
+                    .service(web::resource("/user").route(web::get().to(user))),
             )
     })
     .bind(&format!("127.0.0.1:{}", port))
