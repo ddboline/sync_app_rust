@@ -66,7 +66,7 @@ impl SSHInstance {
         Ok(ssh_str)
     }
 
-    pub async fn run_command_stream_stdout(&self, cmd: &str) -> Result<Vec<String>, Error> {
+    pub async fn run_command_stream_stdout(&self, cmd: &str) -> Result<String, Error> {
         if let Some(host_lock) = LOCK_CACHE.read().await.get(&self.host) {
             let _ = host_lock.lock().await;
             debug!("cmd {}", cmd);
@@ -74,15 +74,7 @@ impl SSHInstance {
             let mut args: SmallVec<[&str; 4]> = user_host.iter().map(String::as_str).collect();
             args.push(cmd);
             let process = Command::new("ssh").args(&args).output().await?;
-            if process.stdout.is_empty() {
-                Ok(Vec::new())
-            } else {
-                process
-                    .stdout
-                    .split(|c| *c == b'\n')
-                    .map(|s| String::from_utf8(s.to_vec()).map_err(Into::into))
-                    .collect()
-            }
+            String::from_utf8(process.stdout).map_err(Into::into)
         } else {
             Err(format_err!("Failed to acquire lock"))
         }
@@ -119,6 +111,7 @@ impl SSHInstance {
                 } else {
                     break;
                 }
+                line.clear();
             }
             ssh_task.await??;
         }
