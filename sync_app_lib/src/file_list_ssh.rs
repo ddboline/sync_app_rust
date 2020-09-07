@@ -255,23 +255,26 @@ impl FileListTrait for FileListSSH {
 
         let url_prefix = format!("ssh://{}", user_host);
         let baseurl = self.get_baseurl().clone();
-
-        self.ssh
-            .run_command_stream_stdout(&command)
-            .await?
-            .into_iter()
-            .map(|line| {
-                let baseurl = baseurl.as_str();
-                let mut finfo: FileInfoInner = serde_json::from_str(&line)?;
-                finfo.servicetype = FileService::SSH;
-                finfo.urlname = finfo
-                    .urlname
-                    .and_then(|u| u.as_str().replace("file://", &url_prefix).parse().ok());
-                finfo.serviceid = Some(baseurl.into());
-                finfo.servicesession = baseurl.parse().ok();
-                Ok(FileInfo::from_inner(finfo))
-            })
-            .collect()
+        let output = self.ssh.run_command_stream_stdout(&command).await?;
+        let output = output.trim();
+        if output.is_empty() {
+            Ok(Vec::new())
+        } else {
+            output
+                .split('\n')
+                .map(|line| {
+                    let baseurl = baseurl.as_str();
+                    let mut finfo: FileInfoInner = serde_json::from_str(line)?;
+                    finfo.servicetype = FileService::SSH;
+                    finfo.urlname = finfo
+                        .urlname
+                        .and_then(|u| u.as_str().replace("file://", &url_prefix).parse().ok());
+                    finfo.serviceid = Some(baseurl.into());
+                    finfo.servicesession = baseurl.parse().ok();
+                    Ok(FileInfo::from_inner(finfo))
+                })
+                .collect()
+        }
     }
 
     async fn print_list(&self) -> Result<(), Error> {
