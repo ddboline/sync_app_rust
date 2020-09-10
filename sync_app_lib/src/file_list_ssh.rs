@@ -31,7 +31,7 @@ pub struct FileListSSH {
 }
 
 impl FileListSSH {
-    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+    pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "ssh" {
             let basepath = Path::new(url.path()).to_path_buf();
             let host = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
@@ -54,7 +54,7 @@ impl FileListSSH {
                 pool.clone(),
             );
             let url = url.clone();
-            let ssh = SSHInstance::from_url(&url)?;
+            let ssh = SSHInstance::from_url(&url).await?;
 
             Ok(Self { flist, ssh })
         } else {
@@ -122,18 +122,17 @@ impl FileListTrait for FileListSSH {
                 create_dir_all(&parent_dir)?;
             }
 
-            let command = format!(
-                "scp {} {}",
-                self.ssh.get_ssh_str(&path0)?,
-                finfo1
-                    .filepath
-                    .as_ref()
-                    .ok_or_else(|| format_err!("No path"))?
-                    .to_string_lossy()
-            );
-            debug!("command {}", command);
-            let ssh = self.ssh.clone();
-            spawn_blocking(move || ssh.run_command(&command)).await?
+            self.ssh
+                .run_scp(
+                    &self.ssh.get_ssh_str(&path0)?,
+                    finfo1
+                        .filepath
+                        .as_ref()
+                        .ok_or_else(|| format_err!("No path"))?
+                        .to_string_lossy()
+                        .as_ref(),
+                )
+                .await
         } else {
             Err(format_err!(
                 "Invalid types {} {}",
@@ -166,24 +165,23 @@ impl FileListTrait for FileListSSH {
                 .ok_or_else(|| format_err!("No local path"))?
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?
-                .to_string_lossy();
+                .to_string_lossy()
+                .replace(" ", r#"\ "#);
 
             let command = format!("mkdir -p {}", parent_dir);
-            let ssh = self.ssh.clone();
-            spawn_blocking(move || ssh.run_command_ssh(&command)).await??;
+            self.ssh.run_command_ssh(&command).await?;
 
-            let command = format!(
-                "scp {} {}",
-                finfo0
-                    .filepath
-                    .as_ref()
-                    .ok_or_else(|| format_err!("No path"))?
-                    .to_string_lossy(),
-                self.ssh.get_ssh_str(&path1)?,
-            );
-            debug!("command {}", command);
-            let ssh = self.ssh.clone();
-            spawn_blocking(move || ssh.run_command(&command)).await?
+            self.ssh
+                .run_scp(
+                    finfo0
+                        .filepath
+                        .as_ref()
+                        .ok_or_else(|| format_err!("No path"))?
+                        .to_string_lossy()
+                        .as_ref(),
+                    &self.ssh.get_ssh_str(&path1)?,
+                )
+                .await
         } else {
             Err(format_err!(
                 "Invalid types {} {}",
@@ -219,12 +217,14 @@ impl FileListTrait for FileListSSH {
             return Ok(());
         }
 
-        let path0 = Path::new(url0.path()).to_string_lossy();
-        let path1 = Path::new(url1.path()).to_string_lossy();
+        let path0 = Path::new(url0.path())
+            .to_string_lossy()
+            .replace(" ", r#"\ "#);
+        let path1 = Path::new(url1.path())
+            .to_string_lossy()
+            .replace(" ", r#"\ "#);
         let command = format!("mv {} {}", path0, path1);
-        debug!("command {}", command);
-        let ssh = self.ssh.clone();
-        spawn_blocking(move || ssh.run_command_ssh(&command)).await?
+        self.ssh.run_command_ssh(&command).await
     }
 
     async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
@@ -234,31 +234,37 @@ impl FileListTrait for FileListSSH {
             .urlname
             .as_ref()
             .ok_or_else(|| format_err!("No url"))?;
-        let path = Path::new(url.path()).to_string_lossy();
+        let path = Path::new(url.path())
+            .to_string_lossy()
+            .replace(" ", r#"\ "#);
         let command = format!("rm {}", path);
-        let ssh = self.ssh.clone();
-        spawn_blocking(move || ssh.run_command_ssh(&command)).await?
+        self.ssh.run_command_ssh(&command).await
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let path = self.get_basepath().to_string_lossy();
         let user_host = self.ssh.get_ssh_username_host()?;
+        let user_host = user_host
+            .iter()
+            .last()
+            .ok_or_else(|| format_err!("No hostname"))?;
         let command = format!("sync-app-rust index -u file://{}", path);
-        let ssh = self.ssh.clone();
-        spawn_blocking(move || ssh.run_command_ssh(&command)).await??;
+        self.ssh.run_command_ssh(&command).await?;
 
         let command = format!("sync-app-rust ser -u file://{}", path);
 
         let url_prefix = format!("ssh://{}", user_host);
-
-        let ssh = self.ssh.clone();
         let baseurl = self.get_baseurl().clone();
-        spawn_blocking(move || {
-            ssh.run_command_stream_stdout(&command)?
-                .into_iter()
+        let output = self.ssh.run_command_stream_stdout(&command).await?;
+        let output = output.trim();
+        if output.is_empty() {
+            Ok(Vec::new())
+        } else {
+            output
+                .split('\n')
                 .map(|line| {
                     let baseurl = baseurl.as_str();
-                    let mut finfo: FileInfoInner = serde_json::from_str(&line)?;
+                    let mut finfo: FileInfoInner = serde_json::from_str(line)?;
                     finfo.servicetype = FileService::SSH;
                     finfo.urlname = finfo
                         .urlname
@@ -268,16 +274,14 @@ impl FileListTrait for FileListSSH {
                     Ok(FileInfo::from_inner(finfo))
                 })
                 .collect()
-        })
-        .await?
+        }
     }
 
     async fn print_list(&self) -> Result<(), Error> {
         let path = self.get_basepath().to_string_lossy();
         let command = format!("sync-app-rust ls -u file://{}", path);
         writeln!(stdout(), "{}", command)?;
-        let ssh = self.ssh.clone();
-        spawn_blocking(move || ssh.run_command_print_stdout(&command)).await?
+        self.ssh.run_command_print_stdout(&command).await
     }
 }
 
@@ -297,13 +301,13 @@ mod tests {
         file_service::FileService, pgpool::PgPool,
     };
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
+    async fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
-        let conf = FileListSSH::from_url(&url, &config, &pool)?;
+        let conf = FileListSSH::from_url(&url, &config, &pool).await?;
         debug!("{:?}", conf);
         assert_eq!(conf.get_baseurl(), &url);
         assert_eq!(conf.get_servicetype(), FileService::SSH);
@@ -321,7 +325,7 @@ mod tests {
         let finfo1 = FileInfoLocal::from_url(&url)?;
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
-        let flist = FileListSSH::from_url(&url, &config, &pool)?;
+        let flist = FileListSSH::from_url(&url, &config, &pool).await?;
         flist.copy_from(&finfo0, &finfo1).await?;
         let p = Path::new("/tmp/temp0.txt");
         if p.exists() {
@@ -343,7 +347,7 @@ mod tests {
         let finfo1 = FileInfoSSH::from_url(&url)?;
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/".parse()?;
-        let flist = FileListSSH::from_url(&url, &config, &pool)?;
+        let flist = FileListSSH::from_url(&url, &config, &pool).await?;
 
         flist.copy_to(&finfo0, &finfo1).await?;
         flist.delete(&finfo1).await?;

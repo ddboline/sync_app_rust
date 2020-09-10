@@ -88,7 +88,7 @@ impl FileList {
                 Ok(Box::new(flist))
             }
             "ssh" => {
-                let flist = FileListSSH::from_url(url, config, pool)?;
+                let flist = FileListSSH::from_url(url, config, pool).await?;
                 Ok(Box::new(flist))
             }
             _ => Err(format_err!("Bad scheme")),

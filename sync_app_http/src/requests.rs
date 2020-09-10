@@ -7,8 +7,7 @@ use std::{
     path::Path,
     time::Instant,
 };
-use subprocess::Exec;
-use tokio::{sync::Mutex, task::spawn_blocking};
+use tokio::{process::Command, sync::Mutex, task::spawn_blocking};
 
 use stack_string::StackString;
 
@@ -148,15 +147,24 @@ impl HandleRequest<SyncPodcastsRequest> for PgPool {
             return Ok(Vec::new());
         }
         let command = "/usr/bin/podcatch-rust".to_string();
-        spawn_blocking(move || {
-            let stream = Exec::shell(command)
-                .env_remove("DATABASE_URL")
-                .env_remove("GOOGLE_MUSIC_DIRECTORY")
-                .stream_stdout()?;
-            let reader = BufReader::new(stream);
-            reader.lines().map(|line| Ok(line?.into())).collect()
-        })
-        .await?
+        let process = Command::new(&command)
+            .env_remove("DATABASE_URL")
+            .env_remove("GOOGLE_MUSIC_DIRECTORY")
+            .output()
+            .await?;
+        if process.stdout.is_empty() {
+            Ok(Vec::new())
+        } else {
+            process
+                .stdout
+                .split(|c| *c == b'\n')
+                .map(|s| {
+                    String::from_utf8(s.to_vec())
+                        .map_err(Into::into)
+                        .map(Into::into)
+                })
+                .collect()
+        }
     }
 }
 
@@ -176,18 +184,20 @@ impl HandleRequest<SyncSecurityRequest> for PgPool {
         }
         let _ = SECURITYLOCK.lock().await;
         let start_time = Instant::now();
-        let lines: Result<Vec<StackString>, Error> = spawn_blocking(move || {
-            let stream = Exec::cmd(script)
-                .env_remove("DATABASE_URL")
-                .env_remove("EXPORT_DIR")
-                .stream_stdout()?;
-            let reader = BufReader::new(stream);
-            reader
-                .lines()
-                .map(|line| line.map(Into::into).map_err(Into::into))
-                .collect()
-        })
-        .await?;
+        let lines: Result<Vec<StackString>, Error> = Command::new(&script)
+            .env_remove("DATABASE_URL")
+            .env_remove("EXPORT_DIR")
+            .output()
+            .await?
+            .stdout
+            .split(|c| *c == b'\n')
+            .map(|s| {
+                String::from_utf8(s.to_vec())
+                    .map_err(Into::into)
+                    .map(Into::into)
+            })
+            .collect();
+
         let run_time = Instant::now() - start_time;
         let mut lines = lines?;
         lines.push(format!("Run time {:0.2} s", run_time.as_secs_f64()).into());
