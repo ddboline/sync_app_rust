@@ -114,11 +114,10 @@ impl SyncClient {
         table: &str,
         start_timestamp: Option<DateTime<Utc>>,
     ) -> Result<Vec<T>, Error> {
-        let f = NamedTempFile::new()?;
-        self.local_session
-            .export(table, &f, start_timestamp)
+        let data = self
+            .local_session
+            .run_command_export(table, start_timestamp)
             .await?;
-        let data = fs::read(f).await?;
         if data.is_empty() {
             Ok(Vec::new())
         } else {
@@ -132,12 +131,9 @@ impl SyncClient {
         data: &[T],
         start_timestamp: Option<DateTime<Utc>>,
     ) -> Result<(), Error> {
-        let f = NamedTempFile::new()?;
         let data = serde_json::to_vec(&data)?;
-        fs::write(&f, data).await?;
         self.local_session
-            .import(table, &f, start_timestamp)
-            .await?;
-        Ok(())
+            .run_command_import(table, &data, start_timestamp)
+            .await
     }
 }

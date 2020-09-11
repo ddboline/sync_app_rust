@@ -4,7 +4,10 @@ use std::{
     path::{Path, PathBuf},
     process::Stdio,
 };
-use tokio::process::{Child, Command};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader},
+    process::{Child, Command},
+};
 
 #[derive(Clone)]
 pub struct LocalSession {
@@ -21,51 +24,67 @@ impl LocalSession {
         Self { exe_path }
     }
 
-    async fn run_command<T: AsRef<Path>>(
+    pub async fn run_command_export(
         &self,
-        command: &str,
         table: &str,
-        output: T,
         start_timestamp: Option<DateTime<Utc>>,
-    ) -> Result<(), Error> {
-        let output = output.as_ref().to_string_lossy();
-        let mut args = vec![command, "-t", table, "-f", output.as_ref()];
+    ) -> Result<Vec<u8>, Error> {
+        let mut args = vec!["export", "-t", table];
         let start_timestamp = start_timestamp.map(|t| t.to_rfc3339());
         if let Some(start_timestamp) = start_timestamp.as_ref() {
             args.push("-s");
             args.push(&start_timestamp);
         }
-        let status = Command::new(&self.exe_path)
+        let output = Command::new(&self.exe_path)
             .env_remove("DATABASE_URL")
             .env_remove("PGURL")
             .args(&args)
             .kill_on_drop(true)
-            .status()
+            .output()
             .await?;
-        if status.success() {
-            Ok(())
+        if output.status.success() {
+            Ok(output.stdout)
         } else {
-            Err(format_err!("Process returned {:?}", status))
+            Err(format_err!(
+                "Process returned {:?} {:?}",
+                output.status,
+                output.stderr
+            ))
         }
     }
 
-    pub async fn export<T: AsRef<Path>>(
+    pub async fn run_command_import(
         &self,
         table: &str,
-        input: T,
+        input: &[u8],
         start_timestamp: Option<DateTime<Utc>>,
     ) -> Result<(), Error> {
-        self.run_command("export", table, input, start_timestamp)
-            .await
-    }
-
-    pub async fn import<T: AsRef<Path>>(
-        &self,
-        table: &str,
-        input: T,
-        start_timestamp: Option<DateTime<Utc>>,
-    ) -> Result<(), Error> {
-        self.run_command("import", table, input, start_timestamp)
-            .await
+        let mut args = vec!["import", "-t", table];
+        let start_timestamp = start_timestamp.map(|t| t.to_rfc3339());
+        if let Some(start_timestamp) = start_timestamp.as_ref() {
+            args.push("-s");
+            args.push(&start_timestamp);
+        }
+        let mut child = Command::new(&self.exe_path)
+            .env_remove("DATABASE_URL")
+            .env_remove("PGURL")
+            .args(&args)
+            .kill_on_drop(true)
+            .stdin(Stdio::piped())
+            .spawn()?;
+        let stdin = child.stdin.take();
+        if let Some(mut stdin) = stdin {
+            stdin.write_all(input).await?;
+        }
+        let output = child.wait_with_output().await?;
+        if output.status.success() {
+            Ok(())
+        } else {
+            Err(format_err!(
+                "Process returned {:?} {:?}",
+                output.status,
+                output.stderr
+            ))
+        }
     }
 }
