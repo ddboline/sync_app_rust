@@ -1,5 +1,5 @@
-use chrono::{DateTime, Utc};
 use anyhow::{format_err, Error};
+use chrono::{DateTime, Utc};
 use maplit::hashmap;
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
@@ -9,8 +9,7 @@ use reqwest::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::path::Path;
 use tempfile::NamedTempFile;
-use tokio::fs;
-use tokio::task::spawn_blocking;
+use tokio::{fs, task::spawn_blocking};
 
 use crate::{config::Config, local_session::LocalSession, reqwest_session::ReqwestSession};
 
@@ -32,20 +31,14 @@ impl SyncClient {
         }
     }
 
-    pub fn get_urls(&self) -> Result<(Url, Url), Error> {
+    pub fn get_url(&self) -> Result<Url, Error> {
         let from_url: Url = self
             .config
             .garmin_from_url
             .as_ref()
             .ok_or_else(|| format_err!("No From URL"))?
             .clone();
-        let to_url: Url = self
-            .config
-            .garmin_to_url
-            .as_ref()
-            .ok_or_else(|| format_err!("No To URL"))?
-            .clone();
-        Ok((from_url, to_url))
+        Ok(from_url)
     }
 
     pub async fn init(&self, base_url: &str) -> Result<(), Error> {
@@ -54,7 +47,7 @@ impl SyncClient {
             email: String,
         }
 
-        let (from_url, to_url) = self.get_urls()?;
+        let from_url = self.get_url()?;
         let user = self
             .config
             .garmin_username
@@ -79,28 +72,9 @@ impl SyncClient {
             .error_for_status()?;
         let _: Vec<_> = resp.cookies().collect();
 
-        let url = to_url.join("api/auth")?;
-        let resp = self
-            .session1
-            .post(&url, &HeaderMap::new(), &data)
-            .await?
-            .error_for_status()?;
-        let _: Vec<_> = resp.cookies().collect();
-
         let url = from_url.join(&format!("{}/user", base_url))?;
         let resp = self
             .session0
-            .get(&url, &HeaderMap::new())
-            .await?
-            .error_for_status()?;
-        let _: LoggedUser = resp
-            .json()
-            .await
-            .map_err(|e| format_err!("Login problem {:?}", e))?;
-
-        let url = to_url.join(&format!("{}/user", base_url))?;
-        let resp = self
-            .session1
             .get(&url, &HeaderMap::new())
             .await?
             .error_for_status()?;
@@ -117,7 +91,12 @@ impl SyncClient {
         resp.json().await.map_err(Into::into)
     }
 
-    pub async fn put_remote<T: Serialize>(&self, url: &Url, data: &[T], js_prefix: &str) -> Result<(), Error> {
+    pub async fn put_remote<T: Serialize>(
+        &self,
+        url: &Url,
+        data: &[T],
+        js_prefix: &str,
+    ) -> Result<(), Error> {
         if !data.is_empty() {
             for data in data.chunks(10) {
                 let data = hashmap! {
@@ -134,19 +113,29 @@ impl SyncClient {
 
     pub async fn get_local<T: DeserializeOwned + Send + 'static>(
         &self,
-        table: &str, start_timestamp: Option<DateTime<Utc>>,
+        table: &str,
+        start_timestamp: Option<DateTime<Utc>>,
     ) -> Result<Vec<T>, Error> {
         let f = NamedTempFile::new()?;
-        self.local_session.export(table, &f, start_timestamp).await?;
+        self.local_session
+            .export(table, &f, start_timestamp)
+            .await?;
         let data = fs::read(f).await?;
         spawn_blocking(move || serde_json::from_slice(&data).map_err(Into::into)).await?
     }
 
-    pub async fn put_local<T: Serialize + Send + 'static>(&self, table: &str, data: &[T], start_timestamp: Option<DateTime<Utc>>,) -> Result<(), Error> {
+    pub async fn put_local<T: Serialize>(
+        &self,
+        table: &str,
+        data: &[T],
+        start_timestamp: Option<DateTime<Utc>>,
+    ) -> Result<(), Error> {
         let f = NamedTempFile::new()?;
         let data = serde_json::to_vec(&data)?;
         fs::write(&f, data).await?;
-        self.local_session.import(table, &f, start_timestamp).await?;
+        self.local_session
+            .import(table, &f, start_timestamp)
+            .await?;
         Ok(())
     }
 }

@@ -64,14 +64,12 @@ impl CalendarSync {
                 "updates",
                 "calendar_list",
                 |results| {
-                    async move {
-                        debug!("calendars {}", results.len());
-                        let results: HashMap<_, _> = results
-                            .into_iter()
-                            .map(|val| (val.gcal_id.clone(), val))
-                            .collect();
-                        Ok(results)
-                    }
+                    debug!("calendars {}", results.len());
+                    let results: HashMap<_, _> = results
+                        .into_iter()
+                        .map(|val| (val.gcal_id.clone(), val))
+                        .collect();
+                    results
                 },
             )
             .await?;
@@ -82,22 +80,16 @@ impl CalendarSync {
                 "calendar/calendar_cache",
                 "updates",
                 "calendar_cache",
-                |resp| {
-                    let url = resp.url().clone();
-                    async move {
-                        let results: Vec<CalendarCache> = resp.json().await?;
-                        let results: HashMap<StackString, CalendarCache> = results
-                            .into_iter()
-                            .map(|event| {
-                                (
-                                    format!("{}_{}", event.gcal_id, event.event_id).into(),
-                                    event,
-                                )
-                            })
-                            .collect();
-                        debug!("activities {} {}", url, results.len());
-                        Ok(results)
-                    }
+                |results| {
+                    results
+                        .into_iter()
+                        .map(|event| {
+                            (
+                                format!("{}_{}", event.gcal_id, event.event_id).into(),
+                                event,
+                            )
+                        })
+                        .collect()
                 },
             )
             .await?;
@@ -107,7 +99,7 @@ impl CalendarSync {
     }
 
     #[allow(clippy::similar_names)]
-    async fn run_single_sync_calendar_list<F, T>(
+    async fn run_single_sync_calendar_list<T>(
         &self,
         path: &str,
         js_prefix: &str,
@@ -115,53 +107,47 @@ impl CalendarSync {
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
     where
-        T: FnMut(Vec<CalendarList>) -> F,
-        F: Future<Output = Result<HashMap<StackString, CalendarList>, Error>>,
+        T: FnMut(Vec<CalendarList>) -> HashMap<StackString, CalendarList>,
     {
         let mut output = Vec::new();
-        let (from_url, to_url) = self.client.get_urls()?;
+        let from_url = self.client.get_url()?;
 
         let url = from_url.join(path)?;
-        let measurements0 = transform(self.client.get_remote(&url).await?).await?;
-        let url = to_url.join(path)?;
-        let measurements1 = transform(self.client.get_local(table, None).await?).await?;
+        let measurements0 = transform(self.client.get_remote(&url).await?);
+        let measurements1 = transform(self.client.get_local(table, None).await?);
 
-        output.extend_from_slice(&[self
-            .combine_measurements(
-                &measurements0,
-                &measurements1,
-                path,
-                js_prefix,
-                &to_url,
-                &self.client.session1,
-            )
-            .await?]);
-        output.extend_from_slice(&[self
-            .combine_measurements(
-                &measurements1,
-                &measurements0,
-                path,
-                js_prefix,
-                &from_url,
-                &self.client.session0,
-            )
-            .await?]);
+        let measurements2 = Self::combine_maps(&measurements0, &measurements1);
+        let measurements3 = Self::combine_maps(&measurements1, &measurements0);
+
+        output.extend(Self::get_debug(&measurements2));
+        output.extend(Self::get_debug(&measurements3));
+
+        let url = from_url.join(path)?;
+        self.client.put_local(table, &measurements2, None).await?;
+        self.client
+            .put_remote(&url, &measurements3, js_prefix)
+            .await?;
 
         Ok(output)
     }
 
+    fn get_debug<T: Debug>(items: &[T]) -> Vec<StackString> {
+        if items.len() < 10 {
+            items
+                .iter()
+                .map(|item| format!("{:?}", item).into())
+                .collect()
+        } else {
+            vec![format!("items {}", items.len()).into()]
+        }
+    }
+
     #[allow(clippy::similar_names)]
-    async fn combine_measurements(
-        &self,
-        measurements0: &HashMap<StackString, CalendarList>,
-        measurements1: &HashMap<StackString, CalendarList>,
-        path: &str,
-        js_prefix: &str,
-        to_url: &Url,
-        session: &ReqwestSession,
-    ) -> Result<StackString, Error> {
-        let mut output = StackString::new();
-        let measurements: Vec<_> = measurements0
+    fn combine_maps<'a, T>(
+        measurements0: &'a HashMap<StackString, T>,
+        measurements1: &'a HashMap<StackString, T>,
+    ) -> Vec<&'a T> {
+        measurements0
             .iter()
             .filter_map(|(k, v)| {
                 if measurements1.contains_key(k) {
@@ -170,29 +156,11 @@ impl CalendarSync {
                     Some(v)
                 }
             })
-            .collect();
-        if !measurements.is_empty() {
-            if measurements.len() < 20 {
-                output = format!("{:?}", measurements).into();
-            } else {
-                output = format!("session1 {}", measurements.len()).into();
-            }
-            let url = to_url.join(path)?;
-            for meas in measurements.chunks(10) {
-                let data = hashmap! {
-                    js_prefix => meas,
-                };
-                session
-                    .post(&url, &HeaderMap::new(), &data)
-                    .await?
-                    .error_for_status()?;
-            }
-        }
-        Ok(output)
+            .collect()
     }
 
     #[allow(clippy::similar_names)]
-    async fn run_single_sync_calendar_events<T, F>(
+    async fn run_single_sync_calendar_events<T>(
         &self,
         path: &str,
         js_prefix: &str,
@@ -200,82 +168,25 @@ impl CalendarSync {
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
     where
-        T: FnMut(Response) -> F,
-        F: Future<Output = Result<HashMap<StackString, CalendarCache>, Error>>,
+        T: FnMut(Vec<CalendarCache>) -> HashMap<StackString, CalendarCache>,
     {
         let mut output = Vec::new();
-        let (from_url, to_url) = self.client.get_urls()?;
+        let from_url = self.client.get_url()?;
 
         let url = from_url.join(path)?;
-        let events0 = transform(self.client.session0.get(&url, &HeaderMap::new()).await?).await?;
-        let url = to_url.join(path)?;
-        let events1 = transform(self.client.session1.get(&url, &HeaderMap::new()).await?).await?;
+        let events0 = transform(self.client.get_remote(&url).await?);
+        let events1 = transform(self.client.get_local(table, None).await?);
 
-        output.push(
-            self.combine_events(
-                &events0,
-                &events1,
-                &to_url,
-                path,
-                js_prefix,
-                &self.client.session1,
-            )
-            .await?,
-        );
-        output.push(
-            self.combine_events(
-                &events1,
-                &events0,
-                &from_url,
-                path,
-                js_prefix,
-                &self.client.session0,
-            )
-            .await?,
-        );
+        let events2 = Self::combine_maps(&events0, &events1);
+        let events3 = Self::combine_maps(&events1, &events0);
 
-        Ok(output)
-    }
+        output.extend(Self::get_debug(&events2));
+        output.extend(Self::get_debug(&events3));
 
-    async fn combine_events(
-        &self,
-        events0: &HashMap<StackString, CalendarCache>,
-        events1: &HashMap<StackString, CalendarCache>,
-        to_url: &Url,
-        path: &str,
-        js_prefix: &str,
-        session: &ReqwestSession,
-    ) -> Result<StackString, Error> {
-        let mut output = StackString::new();
-        let events: Vec<_> = events0
-            .iter()
-            .filter_map(|(k, v)| {
-                if events1.contains_key(k.as_str()) {
-                    None
-                } else {
-                    Some((k, v))
-                }
-            })
-            .collect();
-        if !events.is_empty() {
-            if events.len() < 20 {
-                output = format!("{:?}", events).into();
-            } else {
-                output = format!("session1 {}", events.len()).into();
-            }
-            let url = to_url.join(path)?;
-            for activity in events.chunks(10) {
-                let act: Vec<CalendarCache> = activity.iter().map(|(_, v)| (*v).clone()).collect();
-                let data = hashmap! {
-                    js_prefix => act,
-                };
-                debug!("posting data: {:?}", data);
-                session
-                    .post(&url, &HeaderMap::new(), &data)
-                    .await?
-                    .error_for_status()?;
-            }
-        }
+        let url = from_url.join(path)?;
+        self.client.put_local(table, &events2, None).await?;
+        self.client.put_remote(&url, &events3, js_prefix).await?;
+
         Ok(output)
     }
 }
