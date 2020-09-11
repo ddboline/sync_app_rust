@@ -30,7 +30,6 @@ pub struct ConfigInner {
     pub garmin_username: Option<StackString>,
     pub garmin_password: Option<StackString>,
     pub garmin_from_url: Option<Url>,
-    pub garmin_to_url: Option<Url>,
 }
 
 #[derive(Default, Debug, Clone)]

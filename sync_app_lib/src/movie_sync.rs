@@ -74,7 +74,7 @@ impl MovieSync {
         let from_url = self.client.get_url()?;
         let url = from_url.join("list/last_modified")?;
         debug!("{}", url);
-        let last_modified0 = Self::get_last_modified(&url, &self.client.session0).await?;
+        let last_modified0 = self.get_last_modified(&url).await?;
         let last_modified1 =
             Self::transform_last_modified(self.client.get_local("last_modified", None).await?);
 
@@ -104,11 +104,10 @@ impl MovieSync {
     }
 
     async fn get_last_modified(
+        &self,
         url: &Url,
-        session: &ReqwestSession,
     ) -> Result<HashMap<StackString, DateTime<Utc>>, Error> {
-        let last_modified: Vec<LastModifiedStruct> =
-            session.get(url, &HeaderMap::new()).await?.json().await?;
+        let last_modified: Vec<LastModifiedStruct> = self.client.get_remote(url).await?;
         let results = Self::transform_last_modified(last_modified);
         Ok(results)
     }

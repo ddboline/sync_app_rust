@@ -15,17 +15,15 @@ use crate::{config::Config, local_session::LocalSession, reqwest_session::Reqwes
 
 #[derive(Clone)]
 pub struct SyncClient {
-    pub session0: ReqwestSession,
-    pub session1: ReqwestSession,
-    pub local_session: LocalSession,
-    pub config: Config,
+    remote_session: ReqwestSession,
+    local_session: LocalSession,
+    config: Config,
 }
 
 impl SyncClient {
     pub fn new<T: AsRef<Path>>(config: Config, exe_path: T) -> Self {
         Self {
-            session0: ReqwestSession::new(true),
-            session1: ReqwestSession::new(true),
+            remote_session: ReqwestSession::new(true),
             local_session: LocalSession::new(exe_path),
             config,
         }
@@ -66,7 +64,7 @@ impl SyncClient {
 
         let url = from_url.join("api/auth")?;
         let resp = self
-            .session0
+            .remote_session
             .post(&url, &HeaderMap::new(), &data)
             .await?
             .error_for_status()?;
@@ -74,7 +72,7 @@ impl SyncClient {
 
         let url = from_url.join(&format!("{}/user", base_url))?;
         let resp = self
-            .session0
+            .remote_session
             .get(&url, &HeaderMap::new())
             .await?
             .error_for_status()?;
@@ -87,7 +85,7 @@ impl SyncClient {
     }
 
     pub async fn get_remote<T: DeserializeOwned>(&self, url: &Url) -> Result<Vec<T>, Error> {
-        let resp = self.session0.get(&url, &HeaderMap::new()).await?;
+        let resp = self.remote_session.get(&url, &HeaderMap::new()).await?;
         resp.json().await.map_err(Into::into)
     }
 
@@ -102,7 +100,7 @@ impl SyncClient {
                 let data = hashmap! {
                     js_prefix => data,
                 };
-                self.session0
+                self.remote_session
                     .post(&url, &HeaderMap::new(), &data)
                     .await?
                     .error_for_status()?;
