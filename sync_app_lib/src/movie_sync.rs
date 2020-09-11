@@ -88,13 +88,8 @@ impl MovieSync {
                 let now = Utc::now();
                 let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
                 let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
-                let last_mod = if last_mod0 < last_mod1 {
-                    *last_mod0
-                } else {
-                    *last_mod1
-                };
                 let results = self
-                    .run_single_sync::<$T>(table, last_mod, js_prefix)
+                    .run_single_sync::<$T>(table, *last_mod0, *last_mod1, js_prefix)
                     .await?;
                 output.extend_from_slice(&results);
             }};
@@ -129,22 +124,30 @@ impl MovieSync {
     async fn run_single_sync<T>(
         &self,
         table: &str,
-        last_modified: DateTime<Utc>,
+        last_modified_remote: DateTime<Utc>,
+        last_modified_local: DateTime<Utc>,
         js_prefix: &str,
     ) -> Result<Vec<StackString>, Error>
     where
         T: Debug + Serialize + DeserializeOwned + Send + 'static,
     {
         let from_url = self.client.get_url()?;
-        self._run_single_sync::<T>(&from_url, table, last_modified, js_prefix)
-            .await
+        self._run_single_sync::<T>(
+            &from_url,
+            table,
+            last_modified_remote,
+            last_modified_local,
+            js_prefix,
+        )
+        .await
     }
 
     async fn _run_single_sync<T>(
         &self,
         endpoint: &Url,
         table: &str,
-        last_modified: DateTime<Utc>,
+        last_modified_remote: DateTime<Utc>,
+        last_modified_local: DateTime<Utc>,
         js_prefix: &str,
     ) -> Result<Vec<StackString>, Error>
     where
@@ -155,22 +158,21 @@ impl MovieSync {
         let path = format!(
             "list/{}?start_timestamp={}",
             table,
-            last_modified.format("%Y-%m-%dT%H:%M:%S%.fZ")
+            last_modified_local.format("%Y-%m-%dT%H:%M:%S%.fZ")
         );
         let url = endpoint.join(&path)?;
         debug!("{}", url);
         output.push(format!("{}", url).into());
         let remote_data: Vec<T> = self.client.get_remote(&url).await?;
-        let local_data: Vec<T> = self.client.get_local(table, Some(last_modified)).await?;
-
-        debug!("{:#?}", remote_data);
-        self.client
-            .put_local(table, &remote_data, Some(last_modified))
+        let local_data: Vec<T> = self
+            .client
+            .get_local(table, Some(last_modified_remote))
             .await?;
+
+        self.client.put_local(table, &remote_data, None).await?;
 
         let path = format!("list/{}", table);
         let url = endpoint.join(&path)?;
-        debug!("{} {:#?}", url, local_data);
         self.client.put_remote(&url, &local_data, js_prefix).await?;
 
         Ok(output)

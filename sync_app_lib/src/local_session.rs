@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
 use std::{
     path::{Path, PathBuf},
@@ -35,12 +35,18 @@ impl LocalSession {
             args.push("-s");
             args.push(&start_timestamp);
         }
-        Command::new(&self.exe_path)
+        let status = Command::new(&self.exe_path)
+            .env_remove("DATABASE_URL")
+            .env_remove("PGURL")
             .args(&args)
             .kill_on_drop(true)
             .status()
             .await?;
-        Ok(())
+        if status.success() {
+            Ok(())
+        } else {
+            Err(format_err!("Process returned {:?}", status))
+        }
     }
 
     pub async fn export<T: AsRef<Path>>(
