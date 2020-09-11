@@ -30,6 +30,7 @@ pub mod file_service;
 pub mod file_sync;
 pub mod garmin_sync;
 pub mod iso_8601_datetime;
+pub mod local_session;
 pub mod models;
 pub mod movie_sync;
 pub mod path_buf_wrapper;
@@ -38,6 +39,7 @@ pub mod reqwest_session;
 pub mod s3_instance;
 pub mod schema;
 pub mod ssh_instance;
+pub mod sync_client;
 pub mod sync_opts;
 pub mod url_wrapper;
 

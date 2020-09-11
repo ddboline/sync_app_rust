@@ -3,15 +3,13 @@ use chrono::{DateTime, NaiveDate, Utc};
 use log::debug;
 use maplit::hashmap;
 use reqwest::{header::HeaderMap, Response, Url};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
 
 use stack_string::StackString;
 
 use super::{
-    config::Config,
-    iso_8601_datetime,
-    reqwest_session::{ReqwestSession, SyncClient},
+    config::Config, iso_8601_datetime, reqwest_session::ReqwestSession, sync_client::SyncClient,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
@@ -22,12 +20,6 @@ struct ScaleMeasurement {
     pub water_pct: f64,
     pub muscle_pct: f64,
     pub bone_pct: f64,
-}
-
-#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
-struct FitbitHeartRate {
-    pub datetime: DateTime<Utc>,
-    pub value: i32,
 }
 
 #[derive(Serialize, Deserialize, FromSqlRow, Debug, Clone)]
@@ -111,7 +103,7 @@ pub struct GarminSync {
 impl GarminSync {
     pub fn new(config: Config) -> Self {
         Self {
-            client: SyncClient::new(config),
+            client: SyncClient::new(config, "/usr/bin/garmin-rust-cli"),
         }
     }
 
@@ -122,16 +114,13 @@ impl GarminSync {
             .run_single_sync_scale_measurement(
                 "garmin/scale_measurements",
                 "measurements",
-                |resp| {
-                    let url = resp.url().clone();
-                    async move {
-                        let measurements: Vec<ScaleMeasurement> = resp.json().await?;
-                        debug!("measurements {} {}", url, measurements.len());
-                        let measurement_map: HashMap<_, _> = measurements
+                "scale_measurements",
+                |measurements| {
+                    {
+                        measurements
                             .into_iter()
                             .map(|val| (val.datetime, val))
-                            .collect();
-                        Ok(measurement_map)
+                            .collect()
                     }
                 },
             )
@@ -139,244 +128,177 @@ impl GarminSync {
         output.extend_from_slice(&results);
 
         let results = self
-            .run_single_sync_activities("garmin/strava/activities_db", "updates", |resp| {
-                let url = resp.url().clone();
-                async move {
-                    let items: Vec<StravaActivity> = resp.json().await?;
-                    let item_map: HashMap<i64, StravaActivity> = items
+            .run_single_sync_activities(
+                "garmin/strava/activities_db",
+                "updates",
+                "strava_activities",
+                |items: Vec<StravaActivity>| {
+                    items
                         .into_iter()
                         .map(|activity| (activity.id, activity))
-                        .collect();
-                    debug!("activities {} {}", url, item_map.len());
-                    Ok(item_map)
-                }
-            })
+                        .collect()
+                },
+            )
             .await?;
         output.extend_from_slice(&results);
 
         let results = self
-            .run_single_sync_activities("garmin/fitbit/fitbit_activities_db", "updates", |resp| {
-                let url = resp.url().clone();
-                async move {
-                    let items: Vec<FitbitActivityEntry> = resp.json().await?;
-                    let item_map: HashMap<i64, FitbitActivityEntry> = items
+            .run_single_sync_activities(
+                "garmin/fitbit/fitbit_activities_db",
+                "updates",
+                "fitbit_activities",
+                |items: Vec<FitbitActivityEntry>| {
+                    items
                         .into_iter()
                         .map(|activity| (activity.log_id, activity))
-                        .collect();
-                    debug!("activities {} {}", url, item_map.len());
-                    Ok(item_map)
-                }
-            })
+                        .collect()
+                },
+            )
             .await?;
         output.extend_from_slice(&results);
 
         let results = self
-            .run_single_sync_activities("garmin/garmin_connect_activities_db", "updates", |resp| {
-                let url = resp.url().clone();
-                async move {
-                    let items: Vec<GarminConnectActivity> = resp.json().await?;
-                    let item_map: HashMap<i64, GarminConnectActivity> = items
-                        .into_iter()
-                        .map(|activity| (activity.activity_id, activity))
-                        .collect();
-                    debug!("activities {} {}", url, item_map.len());
-                    Ok(item_map)
-                }
-            })
+            .run_single_sync_activities(
+                "garmin/garmin_connect_activities_db",
+                "updates",
+                "garmin_connect_activities",
+                |items: Vec<GarminConnectActivity>| {
+                    {
+                        items
+                            .into_iter()
+                            .map(|activity| (activity.activity_id, activity))
+                            .collect()
+                    }
+                },
+            )
             .await?;
         output.extend_from_slice(&results);
 
         let results = self
-            .run_single_sync_activities("garmin/race_results_db", "updates", |resp| {
-                let url = resp.url().clone();
-                async move {
-                    let items: Vec<RaceResults> = resp.json().await?;
-                    let item_map: HashMap<i64, RaceResults> = items
-                        .into_iter()
-                        .map(|result| (result.id, result))
-                        .collect();
-                    debug!("results {} {}", url, item_map.len());
-                    Ok(item_map)
-                }
-            })
+            .run_single_sync_activities(
+                "garmin/race_results_db",
+                "updates",
+                "race_results",
+                |items: Vec<RaceResults>| {
+                    {
+                        items
+                            .into_iter()
+                            .map(|result| (result.id, result))
+                            .collect()
+                    }
+                },
+            )
             .await?;
         output.extend_from_slice(&results);
 
         Ok(output)
     }
 
-    async fn run_single_sync_scale_measurement<F, T>(
+    async fn run_single_sync_scale_measurement<T>(
         &self,
         path: &str,
         js_prefix: &str,
+        table: &str,
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
     where
-        T: FnMut(Response) -> F,
-        F: Future<Output = Result<HashMap<DateTime<Utc>, ScaleMeasurement>, Error>>,
+        T: FnMut(Vec<ScaleMeasurement>) -> HashMap<DateTime<Utc>, ScaleMeasurement>,
     {
         let mut output = Vec::new();
-        let (from_url, to_url) = self.client.get_urls()?;
+        let from_url = self.client.get_url()?;
 
         let url = from_url.join(path)?;
-        let measurements0 =
-            transform(self.client.session0.get(&url, &HeaderMap::new()).await?).await?;
-        let url = to_url.join(path)?;
-        let measurements1 =
-            transform(self.client.session1.get(&url, &HeaderMap::new()).await?).await?;
+        let measurements0 = transform(self.client.get_remote(&url).await?);
+        let measurements1 = transform(self.client.get_local(table, None).await?);
 
-        output.extend_from_slice(&[self
-            .combine_measurements(
-                &measurements0,
-                &measurements1,
-                path,
-                js_prefix,
-                &to_url,
-                &self.client.session1,
-            )
-            .await?]);
-        output.extend_from_slice(&[self
-            .combine_measurements(
-                &measurements1,
-                &measurements0,
-                path,
-                js_prefix,
-                &from_url,
-                &self.client.session0,
-            )
-            .await?]);
+        let measurements2 = Self::combine_measurements(&measurements0, &measurements1);
+        let measurements3 = Self::combine_measurements(&measurements1, &measurements0);
+
+        output.extend(Self::get_debug(&measurements2));
+        output.extend(Self::get_debug(&measurements3));
+
+        let url = from_url.join(path)?;
+        self.client.put_local(table, &measurements2, None).await?;
+        self.client
+            .put_remote(&url, &measurements3, js_prefix)
+            .await?;
 
         Ok(output)
     }
 
-    async fn combine_measurements(
-        &self,
-        measurements0: &HashMap<DateTime<Utc>, ScaleMeasurement>,
-        measurements1: &HashMap<DateTime<Utc>, ScaleMeasurement>,
-        path: &str,
-        js_prefix: &str,
-        to_url: &Url,
-        session: &ReqwestSession,
-    ) -> Result<StackString, Error> {
-        let mut output = StackString::new();
-        let measurements: Vec<_> = measurements0
+    fn get_debug<T: Debug>(items: &[T]) -> Vec<StackString> {
+        if items.len() < 10 {
+            items
+                .iter()
+                .map(|item| format!("{:?}", item).into())
+                .collect()
+        } else {
+            vec![format!("items {}", items.len()).into()]
+        }
+    }
+
+    fn combine_measurements<'a, T>(
+        measurements0: &'a HashMap<DateTime<Utc>, T>,
+        measurements1: &'a HashMap<DateTime<Utc>, T>,
+    ) -> Vec<&'a T> {
+        measurements0
             .iter()
             .filter_map(|(k, v)| {
-                if measurements1.contains_key(&k) {
+                if measurements1.contains_key(k) {
                     None
                 } else {
                     Some(v)
                 }
             })
-            .collect();
-        if !measurements.is_empty() {
-            if measurements.len() < 20 {
-                output = format!("{:?}", measurements).into();
-            } else {
-                output = format!("session1 {}", measurements.len()).into();
-            }
-            let url = to_url.join(path)?;
-            for meas in measurements.chunks(100) {
-                let data = hashmap! {
-                    js_prefix => meas,
-                };
-                session
-                    .post(&url, &HeaderMap::new(), &data)
-                    .await?
-                    .error_for_status()?;
-            }
-        }
-        Ok(output)
+            .collect()
     }
 
-    async fn run_single_sync_activities<T, U, F>(
+    async fn run_single_sync_activities<T, U>(
         &self,
         path: &str,
         js_prefix: &str,
+        table: &str,
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
     where
-        T: FnMut(Response) -> F,
-        U: Debug + Clone + Serialize,
-        F: Future<Output = Result<HashMap<i64, U>, Error>>,
+        T: FnMut(Vec<U>) -> HashMap<i64, U>,
+        U: DeserializeOwned + Send + Debug + Serialize + 'static,
     {
         let mut output = Vec::new();
-        let (from_url, to_url) = self.client.get_urls()?;
+        let from_url = self.client.get_url()?;
 
         let url = from_url.join(path)?;
-        let activities0 =
-            transform(self.client.session0.get(&url, &HeaderMap::new()).await?).await?;
-        let url = to_url.join(path)?;
-        let activities1 =
-            transform(self.client.session1.get(&url, &HeaderMap::new()).await?).await?;
+        let activities0 = transform(self.client.get_remote(&url).await?);
+        let activities1 = transform(self.client.get_local(table, None).await?);
 
-        output.push(
-            self.combine_activities(
-                &activities0,
-                &activities1,
-                &to_url,
-                path,
-                js_prefix,
-                &self.client.session1,
-            )
-            .await?,
-        );
-        output.push(
-            self.combine_activities(
-                &activities1,
-                &activities0,
-                &from_url,
-                path,
-                js_prefix,
-                &self.client.session0,
-            )
-            .await?,
-        );
+        let activities2 = Self::combine_activities(&activities0, &activities1);
+        let activities3 = Self::combine_activities(&activities1, &activities0);
+
+        output.extend(Self::get_debug(&activities2));
+        output.extend(Self::get_debug(&activities3));
+
+        let url = from_url.join(path)?;
+        self.client.put_local(table, &activities2, None).await?;
+        self.client
+            .put_remote(&url, &activities3, js_prefix)
+            .await?;
 
         Ok(output)
     }
 
-    async fn combine_activities<T>(
-        &self,
-        activities0: &HashMap<i64, T>,
-        activities1: &HashMap<i64, T>,
-        to_url: &Url,
-        path: &str,
-        js_prefix: &str,
-        session: &ReqwestSession,
-    ) -> Result<StackString, Error>
-    where
-        T: Debug + Clone + Serialize,
-    {
-        let mut output = StackString::new();
-        let activities: Vec<_> = activities0
+    fn combine_activities<'a, T>(
+        measurements0: &'a HashMap<i64, T>,
+        measurements1: &'a HashMap<i64, T>,
+    ) -> Vec<&'a T> {
+        measurements0
             .iter()
             .filter_map(|(k, v)| {
-                if activities1.contains_key(&k) {
+                if measurements1.contains_key(k) {
                     None
                 } else {
                     Some(v)
                 }
             })
-            .collect();
-        if !activities.is_empty() {
-            if activities.len() < 20 {
-                output = format!("{} session1 {:?}", to_url, activities).into();
-            } else {
-                output = format!("{} session1 {}", to_url, activities.len()).into();
-            }
-            let url = to_url.join(path)?;
-            for activity in activities.chunks(100) {
-                let data = hashmap! {
-                    js_prefix => activity,
-                };
-                debug!("data {}", serde_json::to_string(&data)?);
-                session
-                    .post(&url, &HeaderMap::new(), &data)
-                    .await?
-                    .error_for_status()?;
-            }
-        }
-        Ok(output)
+            .collect()
     }
 }

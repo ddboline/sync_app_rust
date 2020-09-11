@@ -5,15 +5,12 @@ use chrono::{DateTime, NaiveDate, Utc};
 use log::debug;
 use maplit::hashmap;
 use reqwest::{header::HeaderMap, Response, Url};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
 
 use stack_string::StackString;
 
-use crate::{
-    config::Config,
-    reqwest_session::{ReqwestSession, SyncClient},
-};
+use crate::{config::Config, reqwest_session::ReqwestSession, sync_client::SyncClient};
 
 #[derive(Deserialize)]
 struct LastModifiedStruct {
@@ -66,7 +63,7 @@ pub struct MovieSync {
 impl MovieSync {
     pub fn new(config: Config) -> Self {
         Self {
-            client: SyncClient::new(config),
+            client: SyncClient::new(config, "/usr/bin/movie-queue-cli"),
         }
     }
 
@@ -74,13 +71,12 @@ impl MovieSync {
         self.client.init("list").await?;
         let mut output = Vec::new();
 
-        let (from_url, to_url) = self.client.get_urls()?;
+        let from_url = self.client.get_url()?;
         let url = from_url.join("list/last_modified")?;
         debug!("{}", url);
         let last_modified0 = Self::get_last_modified(&url, &self.client.session0).await?;
-        let url = to_url.join("list/last_modified")?;
-        debug!("{}", url);
-        let last_modified1 = Self::get_last_modified(&url, &self.client.session1).await?;
+        let last_modified1 =
+            Self::transform_last_modified(self.client.get_local("last_modified", None).await?);
 
         debug!("{:?} {:?}", last_modified0, last_modified1);
 
@@ -93,16 +89,7 @@ impl MovieSync {
                 let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
                 let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
                 let results = self
-                    .run_single_sync(
-                        table,
-                        *last_mod0,
-                        *last_mod1,
-                        js_prefix,
-                        |resp| async move {
-                            let result: Vec<$T> = resp.json().await?;
-                            Ok(result)
-                        },
-                    )
+                    .run_single_sync::<$T>(table, *last_mod0, *last_mod1, js_prefix)
                     .await?;
                 output.extend_from_slice(&results);
             }};
@@ -122,96 +109,74 @@ impl MovieSync {
     ) -> Result<HashMap<StackString, DateTime<Utc>>, Error> {
         let last_modified: Vec<LastModifiedStruct> =
             session.get(url, &HeaderMap::new()).await?.json().await?;
-        let results = last_modified
-            .into_iter()
-            .map(|entry| (entry.table, entry.last_modified))
-            .collect();
+        let results = Self::transform_last_modified(last_modified);
         Ok(results)
     }
 
-    async fn run_single_sync<T, U, F>(
+    fn transform_last_modified(
+        data: Vec<LastModifiedStruct>,
+    ) -> HashMap<StackString, DateTime<Utc>> {
+        data.into_iter()
+            .map(|entry| (entry.table, entry.last_modified))
+            .collect()
+    }
+
+    async fn run_single_sync<T>(
         &self,
         table: &str,
-        last_modified0: DateTime<Utc>,
-        last_modified1: DateTime<Utc>,
+        last_modified_remote: DateTime<Utc>,
+        last_modified_local: DateTime<Utc>,
         js_prefix: &str,
-        transform: U,
     ) -> Result<Vec<StackString>, Error>
     where
-        T: Debug + Serialize,
-        U: FnMut(Response) -> F,
-        F: Future<Output = Result<Vec<T>, Error>>,
+        T: Debug + Serialize + DeserializeOwned + Send + 'static,
     {
-        let (from_url, to_url) = self.client.get_urls()?;
-        if last_modified0 > last_modified1 {
-            _run_single_sync(
-                &from_url,
-                &self.client.session0,
-                &to_url,
-                &self.client.session1,
-                table,
-                last_modified1,
-                js_prefix,
-                transform,
-            )
-            .await
-        } else {
-            _run_single_sync(
-                &to_url,
-                &self.client.session1,
-                &from_url,
-                &self.client.session0,
-                table,
-                last_modified0,
-                js_prefix,
-                transform,
-            )
-            .await
-        }
+        let from_url = self.client.get_url()?;
+        self._run_single_sync::<T>(
+            &from_url,
+            table,
+            last_modified_remote,
+            last_modified_local,
+            js_prefix,
+        )
+        .await
     }
-}
 
-async fn _run_single_sync<T, U, F>(
-    endpoint0: &Url,
-    session0: &ReqwestSession,
-    endpoint1: &Url,
-    session1: &ReqwestSession,
-    table: &str,
-    last_modified: DateTime<Utc>,
-    js_prefix: &str,
-    mut transform: U,
-) -> Result<Vec<StackString>, Error>
-where
-    T: Debug + Serialize,
-    U: FnMut(Response) -> F,
-    F: Future<Output = Result<Vec<T>, Error>>,
-{
-    let mut output = Vec::new();
+    async fn _run_single_sync<T>(
+        &self,
+        endpoint: &Url,
+        table: &str,
+        last_modified_remote: DateTime<Utc>,
+        last_modified_local: DateTime<Utc>,
+        js_prefix: &str,
+    ) -> Result<Vec<StackString>, Error>
+    where
+        T: Debug + Serialize + DeserializeOwned + Send + 'static,
+    {
+        let mut output = Vec::new();
 
-    let path = format!(
-        "list/{}?start_timestamp={}",
-        table,
-        last_modified.format("%Y-%m-%dT%H:%M:%S%.fZ")
-    );
-    let url = endpoint0.join(&path)?;
-    debug!("{}", url);
-    output.push(format!("{}", url).into());
-    let data = transform(session0.get(&url, &HeaderMap::new()).await?).await?;
+        let path = format!(
+            "list/{}?start_timestamp={}",
+            table,
+            last_modified_local.format("%Y-%m-%dT%H:%M:%S%.fZ")
+        );
+        let url = endpoint.join(&path)?;
+        debug!("{}", url);
+        output.push(format!("{}", url).into());
+        let remote_data: Vec<T> = self.client.get_remote(&url).await?;
+        let local_data: Vec<T> = self
+            .client
+            .get_local(table, Some(last_modified_remote))
+            .await?;
 
-    let path = format!("list/{}", table);
-    let url = endpoint1.join(&path)?;
-    debug!("{} {:#?}", url, data);
-    output.push(format!("{}", url).into());
-    for chunk in data.chunks(100) {
-        let js = hashmap! {
-            js_prefix=> chunk,
-        };
-        session1
-            .post(&url, &HeaderMap::new(), &js)
-            .await?
-            .error_for_status()?;
+        self.client.put_local(table, &remote_data, None).await?;
+
+        let path = format!("list/{}", table);
+        let url = endpoint.join(&path)?;
+        self.client.put_remote(&url, &local_data, js_prefix).await?;
+
+        Ok(output)
     }
-    Ok(output)
 }
 
 #[cfg(test)]
