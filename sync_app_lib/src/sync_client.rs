@@ -121,7 +121,11 @@ impl SyncClient {
             .export(table, &f, start_timestamp)
             .await?;
         let data = fs::read(f).await?;
-        spawn_blocking(move || serde_json::from_slice(&data).map_err(Into::into)).await?
+        if data.is_empty() {
+            Ok(Vec::new())
+        } else {
+            spawn_blocking(move || serde_json::from_slice(&data).map_err(Into::into)).await?
+        }
     }
 
     pub async fn put_local<T: Serialize>(
