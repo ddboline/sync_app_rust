@@ -32,6 +32,7 @@ impl LocalSession {
         let mut args = vec![command, "-t", table, "-f", output.as_ref()];
         let start_timestamp = start_timestamp.map(|t| t.to_rfc3339());
         if let Some(start_timestamp) = start_timestamp.as_ref() {
+            args.push("-s");
             args.push(&start_timestamp);
         }
         Command::new(&self.exe_path)
