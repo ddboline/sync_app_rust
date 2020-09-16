@@ -8,18 +8,12 @@ use tokio::time::interval;
 use sync_app_lib::{config::Config, pgpool::PgPool};
 
 use super::{
-    logged_user::{fill_from_db, JWT_SECRET, SECRET_KEY, TRIGGER_DB_UPDATE},
+    logged_user::{fill_from_db, get_secrets, JWT_SECRET, SECRET_KEY, TRIGGER_DB_UPDATE},
     routes::{
         delete_cache_entry, list_sync_cache, proc_all, process_cache_entry, remove, sync_all,
         sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
     },
 };
-
-async fn get_secrets(config: &Config) -> Result<(), Error> {
-    SECRET_KEY.read_from_file(&config.secret_path).await?;
-    JWT_SECRET.read_from_file(&config.jwt_secret_path).await?;
-    Ok(())
-}
 
 pub struct AppState {
     pub db: PgPool,
@@ -29,14 +23,14 @@ pub async fn start_app() -> Result<(), Error> {
     async fn _update_db(pool: PgPool) {
         let mut i = interval(time::Duration::from_secs(60));
         loop {
-            i.tick().await;
             fill_from_db(&pool).await.unwrap_or(());
+            i.tick().await;
         }
     }
     TRIGGER_DB_UPDATE.set();
 
     let config = Config::init_config().expect("Failed to load config");
-    get_secrets(&config).await?;
+    get_secrets(&config.secret_path, &config.jwt_secret_path).await?;
     let pool = PgPool::new(&config.database_url);
 
     actix_rt::spawn(_update_db(pool.clone()));
