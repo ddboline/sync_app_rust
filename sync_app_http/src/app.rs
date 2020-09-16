@@ -1,5 +1,6 @@
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{web, App, HttpServer};
+use anyhow::Error;
 use chrono::Duration;
 use std::time;
 use tokio::time::interval;
@@ -7,18 +8,24 @@ use tokio::time::interval;
 use sync_app_lib::{config::Config, pgpool::PgPool};
 
 use super::{
-    logged_user::{fill_from_db, TRIGGER_DB_UPDATE},
+    logged_user::{fill_from_db, JWT_SECRET, SECRET_KEY, TRIGGER_DB_UPDATE},
     routes::{
         delete_cache_entry, list_sync_cache, proc_all, process_cache_entry, remove, sync_all,
         sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
     },
 };
 
+async fn get_secrets(config: &Config) -> Result<(), Error> {
+    SECRET_KEY.read_from_file(&config.secret_path).await?;
+    JWT_SECRET.read_from_file(&config.jwt_secret_path).await?;
+    Ok(())
+}
+
 pub struct AppState {
     pub db: PgPool,
 }
 
-pub async fn start_app() {
+pub async fn start_app() -> Result<(), Error> {
     async fn _update_db(pool: PgPool) {
         let mut i = interval(time::Duration::from_secs(60));
         loop {
@@ -29,6 +36,7 @@ pub async fn start_app() {
     TRIGGER_DB_UPDATE.set();
 
     let config = Config::init_config().expect("Failed to load config");
+    get_secrets(&config).await?;
     let pool = PgPool::new(&config.database_url);
 
     actix_rt::spawn(_update_db(pool.clone()));
@@ -39,7 +47,7 @@ pub async fn start_app() {
         App::new()
             .data(AppState { db: pool.clone() })
             .wrap(IdentityService::new(
-                CookieIdentityPolicy::new(config.secret_key.as_bytes())
+                CookieIdentityPolicy::new(&SECRET_KEY.load())
                     .name("auth")
                     .path("/")
                     .domain(config.domain.as_str())
@@ -72,5 +80,5 @@ pub async fn start_app() {
     .unwrap_or_else(|_| panic!("Failed to bind to port {}", port))
     .run()
     .await
-    .expect("Failed to start app");
+    .map_err(Into::into)
 }

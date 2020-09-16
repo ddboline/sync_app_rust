@@ -19,8 +19,6 @@ pub struct ConfigInner {
     pub gdrive_token_path: PathBuf,
     #[serde(default = "default_aws_region_name")]
     pub aws_region_name: StackString,
-    #[serde(default = "default_secret_key")]
-    pub secret_key: StackString,
     #[serde(default = "default_domain")]
     pub domain: StackString,
     #[serde(default = "default_port")]
@@ -30,6 +28,10 @@ pub struct ConfigInner {
     pub garmin_username: Option<StackString>,
     pub garmin_password: Option<StackString>,
     pub garmin_from_url: Option<Url>,
+    #[serde(default = "default_secret_path")]
+    pub secret_path: PathBuf,
+    #[serde(default = "default_secret_path")]
+    pub jwt_secret_path: PathBuf,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -55,14 +57,17 @@ fn default_aws_region_name() -> StackString {
 fn default_port() -> u32 {
     3084
 }
-fn default_secret_key() -> StackString {
-    "0123".repeat(8).into()
-}
 fn default_domain() -> StackString {
     "localhost".into()
 }
 fn default_n_db_workers() -> usize {
     2
+}
+fn default_secret_path() -> PathBuf {
+    dirs::config_dir()
+        .unwrap()
+        .join("aws_app_rust")
+        .join("secret.bin")
 }
 
 impl Config {
