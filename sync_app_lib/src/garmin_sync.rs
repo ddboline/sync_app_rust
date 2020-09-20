@@ -320,7 +320,7 @@ impl GarminSync {
                 .iter()
                 .filter_map(|result| {
                     if result.race_type == race_type {
-                        Some((result.race_distance as i64, result))
+                        Some((i64::from(result.race_distance), result))
                     } else {
                         None
                     }
