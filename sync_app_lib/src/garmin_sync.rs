@@ -175,19 +175,7 @@ impl GarminSync {
         output.extend_from_slice(&results);
 
         let results = self
-            .run_single_sync_activities(
-                "garmin/race_results_db",
-                "updates",
-                "race_results",
-                |items: Vec<RaceResults>| {
-                    {
-                        items
-                            .into_iter()
-                            .map(|result| (result.id, result))
-                            .collect()
-                    }
-                },
-            )
+            .run_single_sync_race_results("garmin/race_results_db", "updates", "race_results")
             .await?;
         output.extend_from_slice(&results);
 
@@ -297,6 +285,100 @@ impl GarminSync {
                     None
                 } else {
                     Some(v)
+                }
+            })
+            .collect()
+    }
+
+    async fn run_single_sync_race_results(
+        &self,
+        path: &str,
+        js_prefix: &str,
+        table: &str,
+    ) -> Result<Vec<StackString>, Error> {
+        fn transform_personal<'a>(
+            activities: &'a [RaceResults],
+        ) -> HashMap<(&'a StackString, NaiveDate), &'a RaceResults> {
+            activities
+                .iter()
+                .filter_map(|result| {
+                    if result.race_type == "personal" {
+                        let race_name = result.race_name.as_ref().unwrap();
+                        let race_date = result.race_date.unwrap();
+                        Some(((race_name, race_date), result))
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        }
+        fn transform_world_record<'a>(
+            activities: &'a [RaceResults],
+            race_type: &'a str,
+        ) -> HashMap<i64, &'a RaceResults> {
+            activities
+                .iter()
+                .filter_map(|result| {
+                    if result.race_type == race_type {
+                        Some((result.race_distance as i64, result))
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        }
+
+        let mut output = Vec::new();
+        let from_url = self.client.get_url()?;
+
+        let url = from_url.join(path)?;
+        let activities0: Vec<RaceResults> = self.client.get_remote(&url).await?;
+        let activities1: Vec<RaceResults> = self.client.get_local(table, None).await?;
+
+        {
+            let activities0 = transform_personal(&activities0);
+            let activities1 = transform_personal(&activities1);
+            let activities2 = Self::combine_personal_race_results(&activities0, &activities1);
+            let activities3 = Self::combine_personal_race_results(&activities1, &activities0);
+            output.extend(Self::get_debug(&activities2));
+            output.extend(Self::get_debug(&activities3));
+
+            let url = from_url.join(path)?;
+            self.client.put_local(table, &activities2, None).await?;
+            self.client
+                .put_remote(&url, &activities3, js_prefix)
+                .await?;
+        }
+
+        for race_type in &["world_record_men", "world_record_women"] {
+            let activities0 = transform_world_record(&activities0, race_type);
+            let activities1 = transform_world_record(&activities1, race_type);
+            let activities2 = Self::combine_activities(&activities0, &activities1);
+            let activities3 = Self::combine_activities(&activities1, &activities0);
+            output.extend(Self::get_debug(&activities2));
+            output.extend(Self::get_debug(&activities3));
+
+            let url = from_url.join(path)?;
+            self.client.put_local(table, &activities2, None).await?;
+            self.client
+                .put_remote(&url, &activities3, js_prefix)
+                .await?;
+        }
+
+        Ok(output)
+    }
+
+    fn combine_personal_race_results<'a, T>(
+        race_results0: &'a HashMap<(&'a StackString, NaiveDate), &'a T>,
+        race_results1: &'a HashMap<(&'a StackString, NaiveDate), &'a T>,
+    ) -> Vec<&'a T> {
+        race_results0
+            .iter()
+            .filter_map(|(k, v)| {
+                if race_results1.contains_key(k) {
+                    None
+                } else {
+                    Some(*v)
                 }
             })
             .collect()
