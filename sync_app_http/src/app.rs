@@ -8,7 +8,7 @@ use tokio::time::interval;
 use sync_app_lib::{config::Config, pgpool::PgPool};
 
 use super::{
-    logged_user::{fill_from_db, get_secrets, JWT_SECRET, SECRET_KEY, TRIGGER_DB_UPDATE},
+    logged_user::{fill_from_db, get_secrets, SECRET_KEY, TRIGGER_DB_UPDATE},
     routes::{
         delete_cache_entry, list_sync_cache, proc_all, process_cache_entry, remove, sync_all,
         sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
@@ -41,7 +41,7 @@ pub async fn start_app() -> Result<(), Error> {
         App::new()
             .data(AppState { db: pool.clone() })
             .wrap(IdentityService::new(
-                CookieIdentityPolicy::new(&SECRET_KEY.load())
+                CookieIdentityPolicy::new(&SECRET_KEY.get())
                     .name("auth")
                     .path("/")
                     .domain(config.domain.as_str())
