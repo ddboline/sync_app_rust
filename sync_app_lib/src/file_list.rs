@@ -278,7 +278,7 @@ pub trait FileListTrait: Send + Sync + Debug {
             .collect();
         results?;
 
-        let flist_cache_insert: Vec<_> = flist_cache_map
+        let results: Result<Vec<_>, Error> = flist_cache_map
             .into_par_iter()
             .filter_map(|(k, v)| {
                 if current_cache.get(&k).is_none() {
@@ -287,9 +287,7 @@ pub trait FileListTrait: Send + Sync + Debug {
                     None
                 }
             })
-            .collect();
-
-        let results: Result<Vec<_>, Error> = flist_cache_insert
+            .collect::<Vec<_>>()
             .into_par_iter()
             .chunks(1000)
             .map(|v| {

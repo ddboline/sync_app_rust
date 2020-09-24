@@ -3,6 +3,7 @@ use fmt::Debug;
 use futures::future::try_join_all;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use smallvec::{smallvec, SmallVec};
 use std::{
     collections::HashMap,
     convert::From,
@@ -341,17 +342,18 @@ impl FileSync {
     }
 
     pub async fn delete_files(&self, urls: &[Url], pool: &PgPool) -> Result<(), Error> {
-        let all_urls: Vec<_> = if urls.is_empty() {
-            let proc_list: Result<Vec<_>, Error> = FileSyncCache::get_cache_list(pool)
-                .await?
-                .into_par_iter()
-                .map(|v| {
-                    let u0: Url = v.src_url.parse()?;
-                    let u1: Url = v.dst_url.parse()?;
-                    Ok(vec![u0, u1])
-                })
-                .collect();
-            proc_list?.into_par_iter().flatten().collect()
+        let all_urls: Vec<Url> = if urls.is_empty() {
+            let proc_list: Result<Vec<SmallVec<[Url; 2]>>, Error> =
+                FileSyncCache::get_cache_list(pool)
+                    .await?
+                    .into_par_iter()
+                    .map(|v| {
+                        let u0: Url = v.src_url.parse()?;
+                        let u1: Url = v.dst_url.parse()?;
+                        Ok(smallvec![u0, u1])
+                    })
+                    .collect();
+            proc_list?.into_iter().flatten().collect()
         } else {
             urls.to_vec()
         };

@@ -253,12 +253,13 @@ impl SyncOpts {
                 }
             }
             FileSyncAction::ShowCache => {
-                let clist: Vec<_> = FileSyncCache::get_cache_list(&pool)
+                let clist = FileSyncCache::get_cache_list(&pool)
                     .await?
                     .into_iter()
                     .map(|v| format!("{} {}", v.src_url, v.dst_url))
-                    .collect();
-                output.push(clist.join("\n").into());
+                    .join("\n")
+                    .into();
+                output.push(clist);
                 Ok(output)
             }
             FileSyncAction::SyncGarmin => {

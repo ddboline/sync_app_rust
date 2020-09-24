@@ -4,6 +4,7 @@ use drive3::Drive;
 use google_drive3_fork as drive3;
 use hyper::{net::HttpsConnector, Client};
 use hyper_native_tls::NativeTlsClient;
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use log::debug;
 use maplit::{hashmap, hashset};
@@ -20,7 +21,7 @@ use std::{
     collections::{HashMap, HashSet},
     ffi::OsStr,
     fmt::{self, Debug, Formatter},
-    fs::{create_dir_all, File},
+    fs::{self, create_dir_all, File},
     io,
     io::{Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
@@ -209,7 +210,6 @@ impl GDriveInstance {
                 let q = p
                     .iter()
                     .map(|id| format!("'{}' in parents", id))
-                    .collect::<Vec<_>>()
                     .join(" or ");
 
                 query_chain.push(format!("({})", q).into());
@@ -401,20 +401,17 @@ impl GDriveInstance {
 
     pub fn export(&self, gdriveid: &str, local: &Path, mime_type: &str) -> Result<(), Error> {
         exponential_retry(move || {
-            let mut response = self
-                .gdrive
+            let mut content = Vec::new();
+            self.gdrive
                 .lock()
                 .files()
                 .export(gdriveid, mime_type)
                 .add_scope(drive3::Scope::Full)
                 .doit()
-                .map_err(|e| format_err!("{:#?}", e))?;
+                .map_err(|e| format_err!("{:#?}", e))?
+                .read_to_end(&mut content)?;
 
-            let mut content = Vec::new();
-            response.read_to_end(&mut content)?;
-
-            let mut outfile = File::create(local.to_path_buf())?;
-            outfile.write_all(&content).map_err(Into::into)
+            fs::write(local, &content).map_err(Into::into)
         })
     }
 
@@ -472,8 +469,7 @@ impl GDriveInstance {
             let mut content = Vec::new();
             response.read_to_end(&mut content)?;
 
-            let mut outfile = File::create(local.to_path_buf())?;
-            outfile.write_all(&content).map_err(Into::into)
+            fs::write(local, &content).map_err(Into::into)
         })
     }
 
@@ -533,10 +529,10 @@ impl GDriveInstance {
     pub fn get_directory_map(
         &self,
     ) -> Result<(HashMap<StackString, DirectoryInfo>, Option<StackString>), Error> {
-        let dlist: Vec<_> = self.get_all_files(true)?;
         let mut root_id: Option<StackString> = None;
-        let mut dmap: HashMap<StackString, _> = dlist
-            .iter()
+        let mut dmap: HashMap<StackString, _> = self
+            .get_all_files(true)?
+            .into_iter()
             .filter_map(|d| {
                 if let Some(owners) = d.owners.as_ref() {
                     if owners.is_empty() {
@@ -758,8 +754,8 @@ impl GDriveInstance {
 
             let mut all_changes = Vec::new();
 
-            let changes_fields = vec!["kind", "type", "time", "removed", "fileId"];
-            let file_fields = vec![
+            let changes_fields = ["kind", "type", "time", "removed", "fileId"].join(",");
+            let file_fields = [
                 "name",
                 "id",
                 "size",
@@ -773,11 +769,11 @@ impl GDriveInstance {
                 "md5Checksum",
                 "fileExtension",
                 "webContentLink",
-            ];
+            ]
+            .join(",");
             let fields = format!(
                 "kind,nextPageToken,newStartPageToken,changes({},file({}))",
-                changes_fields.join(","),
-                file_fields.join(",")
+                changes_fields, file_fields,
             );
 
             loop {

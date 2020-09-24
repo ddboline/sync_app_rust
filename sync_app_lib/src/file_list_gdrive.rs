@@ -150,7 +150,7 @@ impl FileListGDrive {
             .par_iter()
             .map(|f| FileInfoGDrive::from_gdriveinfo(f.clone()).map(FileInfoTrait::into_finfo))
             .collect();
-        let flist: Vec<_> = flist?
+        let flist = flist?
             .into_par_iter()
             .filter(|f| {
                 if let Some(url) = f.urlname.as_ref() {
@@ -183,7 +183,7 @@ impl FileListGDrive {
 
     fn get_all_changes(&self) -> Result<(Vec<StackString>, Vec<FileInfo>), Error> {
         let chlist: Vec<_> = self.gdrive.get_all_changes()?;
-        let delete_list: Vec<_> = chlist
+        let delete_list = chlist
             .iter()
             .filter_map(|ch| match ch.file {
                 Some(_) => None,

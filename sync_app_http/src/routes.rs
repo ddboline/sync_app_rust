@@ -3,6 +3,7 @@ use actix_web::{
     web::{block, Data, Query},
     HttpResponse,
 };
+use itertools::Itertools;
 use serde::Serialize;
 
 use sync_app_lib::file_sync::FileSyncAction;
@@ -34,7 +35,7 @@ where
 }
 
 pub async fn sync_frontpage(_: LoggedUser, data: Data<AppState>) -> HttpResult {
-    let clist: Vec<_> = data
+    let body = data
         .db
         .handle(ListSyncCacheRequest {})
         .await?
@@ -52,8 +53,7 @@ pub async fn sync_frontpage(_: LoggedUser, data: Data<AppState>) -> HttpResult {
                 dst = v.dst_url
             )
         })
-        .collect();
-    let body = clist.join("<br>");
+        .join("<br>");
     form_http_response(include_str!("../../templates/index.html").replace("DISPLAY_TEXT", &body))
 }
 
@@ -74,14 +74,13 @@ pub async fn proc_all(_: LoggedUser, data: Data<AppState>) -> HttpResult {
 }
 
 pub async fn list_sync_cache(_: LoggedUser, data: Data<AppState>) -> HttpResult {
-    let clist: Vec<_> = data
+    let body = data
         .db
         .handle(ListSyncCacheRequest {})
         .await?
         .into_iter()
         .map(|v| format!("{} {}", v.src_url, v.dst_url))
-        .collect();
-    let body = clist.join("\n");
+        .join("\n");
     form_http_response(body)
 }
 

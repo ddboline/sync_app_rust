@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
+use log::debug;
 use maplit::hashmap;
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
@@ -63,12 +64,10 @@ impl SyncClient {
         };
 
         let url = from_url.join("api/auth")?;
-        let resp = self
-            .remote_session
+        self.remote_session
             .post(&url, &HeaderMap::new(), &data)
             .await?
             .error_for_status()?;
-        let _: Vec<_> = resp.cookies().collect();
 
         let url = from_url.join(&format!("{}/user", base_url))?;
         let resp = self
@@ -76,11 +75,11 @@ impl SyncClient {
             .get(&url, &HeaderMap::new())
             .await?
             .error_for_status()?;
-        let _: LoggedUser = resp
+        let user: LoggedUser = resp
             .json()
             .await
             .map_err(|e| format_err!("Login problem {:?}", e))?;
-
+        debug!("user: {:?}", user.email);
         Ok(())
     }
 
