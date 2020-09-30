@@ -33,7 +33,7 @@ impl SyncClient {
     pub fn get_url(&self) -> Result<Url, Error> {
         let from_url: Url = self
             .config
-            .garmin_from_url
+            .remote_url
             .as_ref()
             .ok_or_else(|| format_err!("No From URL"))?
             .clone();
@@ -49,12 +49,12 @@ impl SyncClient {
         let from_url = self.get_url()?;
         let user = self
             .config
-            .garmin_username
+            .remote_username
             .as_ref()
             .ok_or_else(|| format_err!("No Username"))?;
         let password = self
             .config
-            .garmin_password
+            .remote_password
             .as_ref()
             .ok_or_else(|| format_err!("No Password"))?;
 

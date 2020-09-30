@@ -25,9 +25,9 @@ pub struct ConfigInner {
     pub port: u32,
     #[serde(default = "default_n_db_workers")]
     pub n_db_workers: usize,
-    pub garmin_username: Option<StackString>,
-    pub garmin_password: Option<StackString>,
-    pub garmin_from_url: Option<Url>,
+    pub remote_username: Option<StackString>,
+    pub remote_password: Option<StackString>,
+    pub remote_url: Option<Url>,
     #[serde(default = "default_secret_path")]
     pub secret_path: PathBuf,
     #[serde(default = "default_secret_path")]
