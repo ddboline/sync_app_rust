@@ -30,7 +30,6 @@ use std::{
 };
 use url::Url;
 use yup_oauth2 as oauth2;
-
 use stack_string::StackString;
 
 use crate::{directory_info::DirectoryInfo, exponential_retry};

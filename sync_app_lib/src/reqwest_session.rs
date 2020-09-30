@@ -14,10 +14,11 @@ use std::{
     collections::HashMap, future::Future, pin::Pin, sync::Arc, thread::sleep, time::Duration,
 };
 use tokio::sync::Mutex;
+use arc_swap::ArcSwap;
 
 use crate::config::Config;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ReqwestSessionInner {
     client: Client,
     headers: HeaderMap,
@@ -25,7 +26,7 @@ struct ReqwestSessionInner {
 
 #[derive(Clone)]
 pub struct ReqwestSession {
-    client: Arc<Mutex<ReqwestSessionInner>>,
+    client: ArcSwap<ReqwestSessionInner>,
 }
 
 impl Default for ReqwestSession {
@@ -35,7 +36,7 @@ impl Default for ReqwestSession {
 }
 
 impl ReqwestSessionInner {
-    pub async fn get(&mut self, url: Url, mut headers: HeaderMap) -> Result<Response, Error> {
+    pub async fn get(&self, url: Url, mut headers: HeaderMap) -> Result<Response, Error> {
         for (k, v) in &self.headers {
             headers.insert(k, v.into());
         }
@@ -48,7 +49,7 @@ impl ReqwestSessionInner {
     }
 
     pub async fn post<T>(
-        &mut self,
+        &self,
         url: Url,
         mut headers: HeaderMap,
         form: &HashMap<&str, T>,
@@ -77,7 +78,7 @@ impl ReqwestSession {
             Policy::none()
         };
         Self {
-            client: Arc::new(Mutex::new(ReqwestSessionInner {
+            client: ArcSwap::new(Arc::new(ReqwestSessionInner {
                 client: Client::builder()
                     .cookie_store(true)
                     .redirect(redirect_policy)
@@ -113,8 +114,7 @@ impl ReqwestSession {
     pub async fn get(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
         Self::exponential_retry(|| async move {
             self.client
-                .lock()
-                .await
+                .load().clone()
                 .get(url.clone(), headers.clone())
                 .await
         })
@@ -132,8 +132,7 @@ impl ReqwestSession {
     {
         Self::exponential_retry(|| async move {
             self.client
-                .lock()
-                .await
+                .load()
                 .post(url.clone(), headers.clone(), form)
                 .await
         })
@@ -141,11 +140,13 @@ impl ReqwestSession {
     }
 
     pub async fn set_default_headers(&self, headers: HashMap<&str, &str>) -> Result<(), Error> {
+        let mut client = self.client.load().clone();
         for (k, v) in headers {
             let name: HeaderName = k.parse()?;
             let val: HeaderValue = v.parse()?;
-            self.client.lock().await.headers.insert(name, val);
+            Arc::make_mut(&mut client).headers.insert(name, val);
         }
+        self.client.store(client);
         Ok(())
     }
 }

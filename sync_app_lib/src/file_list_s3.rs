@@ -289,7 +289,7 @@ mod tests {
     #[ignore]
     #[allow(clippy::similar_names)]
     async fn test_fill_file_list() -> Result<(), Error> {
-        let _ = S3Instance::get_instance_lock();
+        let _guard = S3Instance::get_instance_lock();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let s3 = S3Instance::new(&config.aws_region_name);
@@ -322,7 +322,7 @@ mod tests {
     #[ignore]
     #[allow(clippy::similar_names)]
     async fn test_list_buckets() -> Result<(), Error> {
-        let _ = S3Instance::get_instance_lock();
+        let _guard = S3Instance::get_instance_lock();
         let s3_instance = S3Instance::new("us-east-1").max_keys(100);
         let blist = s3_instance.get_list_of_buckets().await?;
         let bucket = blist

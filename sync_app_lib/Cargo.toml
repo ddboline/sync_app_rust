@@ -43,4 +43,5 @@ itertools = "0.9"
 envy = "0.4"
 tempfile = "3.1"
 smallvec = "1.4"
+arc-swap = "0.4"
 stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.6", features=["diesel_types"] }

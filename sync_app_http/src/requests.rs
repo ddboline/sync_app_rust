@@ -41,7 +41,7 @@ pub struct SyncRequest {
 impl HandleRequest<SyncRequest> for PgPool {
     type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, req: SyncRequest) -> Self::Result {
-        let _ = SYNCLOCK.lock().await;
+        let _guard = SYNCLOCK.lock().await;
         let opts = SyncOpts::new(req.action, &[]);
         opts.process_sync_opts(&CONFIG, self).await
     }
@@ -108,7 +108,7 @@ pub struct SyncRemoveRequest {
 impl HandleRequest<SyncRemoveRequest> for PgPool {
     type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, req: SyncRemoveRequest) -> Self::Result {
-        let _ = SYNCLOCK.lock().await;
+        let _guard = SYNCLOCK.lock().await;
         let url = req.url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
         sync.process_sync_opts(&CONFIG, self).await
@@ -124,7 +124,7 @@ pub struct SyncEntryProcessRequest {
 impl HandleRequest<SyncEntryProcessRequest> for PgPool {
     type Result = Result<(), Error>;
     async fn handle(&self, req: SyncEntryProcessRequest) -> Self::Result {
-        let _ = SYNCLOCK.lock().await;
+        let _guard = SYNCLOCK.lock().await;
 
         let entry = FileSyncCache::get_by_id(self, req.id).await?;
         let src_url = entry.src_url.parse()?;
@@ -142,7 +142,7 @@ pub struct SyncPodcastsRequest {}
 impl HandleRequest<SyncPodcastsRequest> for PgPool {
     type Result = Result<Vec<StackString>, Error>;
     async fn handle(&self, _: SyncPodcastsRequest) -> Self::Result {
-        let _ = PODCASTLOCK.lock().await;
+        let _guard = PODCASTLOCK.lock().await;
         if !Path::new("/usr/bin/podcatch-rust").exists() {
             return Ok(Vec::new());
         }
@@ -182,7 +182,7 @@ impl HandleRequest<SyncSecurityRequest> for PgPool {
         if !script.exists() {
             return Ok(Vec::new());
         }
-        let _ = SECURITYLOCK.lock().await;
+        let _guard = SECURITYLOCK.lock().await;
         let start_time = Instant::now();
         let lines: Result<Vec<StackString>, Error> = Command::new(&script)
             .env_remove("DATABASE_URL")
