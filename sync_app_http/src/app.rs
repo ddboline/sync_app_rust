@@ -1,5 +1,5 @@
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpServer, middleware::Compress};
 use anyhow::Error;
 use chrono::Duration;
 use std::time;
@@ -40,6 +40,7 @@ pub async fn start_app() -> Result<(), Error> {
     HttpServer::new(move || {
         App::new()
             .data(AppState { db: pool.clone() })
+            .wrap(Compress::default())
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&SECRET_KEY.get())
                     .name("auth")
