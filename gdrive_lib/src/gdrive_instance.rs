@@ -16,6 +16,7 @@ use oauth2::{
 use parking_lot::Mutex;
 use percent_encoding::percent_decode;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use stack_string::StackString;
 use std::{
     cmp,
     collections::{HashMap, HashSet},
@@ -30,7 +31,6 @@ use std::{
 };
 use url::Url;
 use yup_oauth2 as oauth2;
-use stack_string::StackString;
 
 use crate::{directory_info::DirectoryInfo, exponential_retry};
 

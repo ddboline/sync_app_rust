@@ -1,5 +1,5 @@
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{web, App, HttpServer, middleware::Compress};
+use actix_web::{middleware::Compress, web, App, HttpServer};
 use anyhow::Error;
 use chrono::Duration;
 use std::time;

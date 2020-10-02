@@ -1,4 +1,5 @@
 use anyhow::{format_err, Error};
+use arc_swap::ArcSwap;
 use maplit::hashmap;
 use rand::{
     distributions::{Distribution, Uniform},
@@ -14,7 +15,6 @@ use std::{
     collections::HashMap, future::Future, pin::Pin, sync::Arc, thread::sleep, time::Duration,
 };
 use tokio::sync::Mutex;
-use arc_swap::ArcSwap;
 
 use crate::config::Config;
 
@@ -114,7 +114,8 @@ impl ReqwestSession {
     pub async fn get(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
         Self::exponential_retry(|| async move {
             self.client
-                .load().clone()
+                .load()
+                .clone()
                 .get(url.clone(), headers.clone())
                 .await
         })
