@@ -30,7 +30,7 @@ pub struct SyncOpts {
     /// Available commands are: "index", "sync", "proc(ess)", "copy" or "cp",
     /// "list" or "ls", "delete" or "rm", "move" or "mv", "ser" or
     /// "serialize", "add" or "add_config", "show", "show_cache"
-    /// "sync_garmin", "sync_movie", "sync_calendar"
+    /// "sync_garmin", "sync_movie", "sync_calendar", "show_config"
     pub action: FileSyncAction,
     #[structopt(short = "u", long = "urls", parse(try_from_str))]
     pub urls: Vec<Url>,
@@ -251,6 +251,16 @@ impl SyncOpts {
                 } else {
                     Err(format_err!("Need exactly 2 Urls"))
                 }
+            }
+            FileSyncAction::ShowConfig => {
+                let clist = FileSyncConfig::get_config_list(&pool)
+                    .await?
+                    .into_iter()
+                    .map(|v| format!("{} {}", v.src_url, v.dst_url))
+                    .join("\n")
+                    .into();
+                output.push(clist);
+                Ok(output)
             }
             FileSyncAction::ShowCache => {
                 let clist = FileSyncCache::get_cache_list(&pool)
