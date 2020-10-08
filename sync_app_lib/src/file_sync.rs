@@ -23,7 +23,7 @@ use crate::{
     pgpool::PgPool,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum FileSyncAction {
     Index,
     Sync,
@@ -39,6 +39,7 @@ pub enum FileSyncAction {
     SyncGarmin,
     SyncMovie,
     SyncCalendar,
+    SyncAll,
 }
 
 impl FromStr for FileSyncAction {
@@ -60,6 +61,7 @@ impl FromStr for FileSyncAction {
             "sync_garmin" => Ok(Self::SyncGarmin),
             "sync_movie" => Ok(Self::SyncMovie),
             "sync_calendar" => Ok(Self::SyncCalendar),
+            "sync_all" => Ok(Self::SyncAll),
             _ => Err(format_err!("Parse failure")),
         }
     }

@@ -30,7 +30,8 @@ pub struct SyncOpts {
     /// Available commands are: "index", "sync", "proc(ess)", "copy" or "cp",
     /// "list" or "ls", "delete" or "rm", "move" or "mv", "ser" or
     /// "serialize", "add" or "add_config", "show", "show_cache"
-    /// "sync_garmin", "sync_movie", "sync_calendar", "show_config"
+    /// "sync_garmin", "sync_movie", "sync_calendar", "show_config",
+    /// "sync_all"
     pub action: FileSyncAction,
     #[structopt(short = "u", long = "urls", parse(try_from_str))]
     pub urls: Vec<Url>,
@@ -49,7 +50,24 @@ impl SyncOpts {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
-        opts.process_sync_opts(&config, &pool).await
+        if opts.action == FileSyncAction::SyncAll {
+            let mut output = Vec::new();
+            for action in &[
+                FileSyncAction::Sync,
+                FileSyncAction::SyncGarmin,
+                FileSyncAction::SyncMovie,
+                FileSyncAction::SyncCalendar,
+            ] {
+                output.extend_from_slice(
+                    &Self::new(*action, &[])
+                        .process_sync_opts(&config, &pool)
+                        .await?,
+                );
+            }
+            Ok(output)
+        } else {
+            opts.process_sync_opts(&config, &pool).await
+        }
     }
 
     #[allow(clippy::cognitive_complexity)]
@@ -287,6 +305,7 @@ impl SyncOpts {
                 output.extend_from_slice(&sync.run_sync().await?);
                 Ok(output)
             }
+            FileSyncAction::SyncAll => Ok(output),
         }
     }
 }
