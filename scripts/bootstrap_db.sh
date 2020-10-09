@@ -1,8 +1,8 @@
 #!/bin/bash
 
-PASSWORD=`head -c1000 /dev/urandom | tr -dc [:alpha:][:digit:] | head -c 16; echo ;`
-JWT_SECRET=`head -c1000 /dev/urandom | tr -dc [:alpha:][:digit:] | head -c 32; echo ;`
-SECRET_KEY=`head -c1000 /dev/urandom | tr -dc [:alpha:][:digit:] | head -c 32; echo ;`
+if [ -z "$PASSWORD" ]; then
+    PASSWORD=`head -c1000 /dev/urandom | tr -dc [:alpha:][:digit:] | head -c 16; echo ;`
+fi
 DB=sync_app_cache
 
 sudo apt-get install -y postgresql
@@ -15,4 +15,12 @@ sudo -u postgres createdb $DB
 mkdir -p ${HOME}/.config/sync_app_rust
 cat > ${HOME}/.config/sync_app_rust/config.env <<EOL
 DATABASE_URL=postgresql://$USER:$PASSWORD@localhost:5432/$DB
+EOL
+
+cat > ${HOME}/.config/sync_app_rust/postgres.toml <<EOL
+[sync_app_rust]
+database_url = 'postgresql://$USER:$PASSWORD@localhost:5432/$DB'
+destination = 'file://${HOME}/setup_files/build/sync_app_rust/backup'
+tables = ['directory_info_cache', 'file_info_cache']
+sequences = {file_info_cache_id_seq=['file_info_cache', 'id']}
 EOL
