@@ -36,7 +36,8 @@ impl SyncClient {
             .remote_url
             .as_ref()
             .ok_or_else(|| format_err!("No From URL"))?
-            .clone();
+            .clone()
+            .into();
         Ok(from_url)
     }
 

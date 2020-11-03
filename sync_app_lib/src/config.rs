@@ -1,6 +1,8 @@
 use anyhow::{format_err, Error};
-use serde::Deserialize;
+use derive_more::Into;
+use serde::{Deserialize, Serialize};
 use std::{
+    convert::TryFrom,
     env::var,
     ops::Deref,
     path::{Path, PathBuf},
@@ -27,7 +29,7 @@ pub struct ConfigInner {
     pub n_db_workers: usize,
     pub remote_username: Option<StackString>,
     pub remote_password: Option<StackString>,
-    pub remote_url: Option<Url>,
+    pub remote_url: Option<UrlWrapper>,
     #[serde(default = "default_secret_path")]
     pub secret_path: PathBuf,
     #[serde(default = "default_secret_path")]
@@ -103,5 +105,23 @@ impl Deref for Config {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Into, PartialEq)]
+#[serde(into = "String", try_from = "String")]
+pub struct UrlWrapper(Url);
+
+impl From<UrlWrapper> for String {
+    fn from(item: UrlWrapper) -> String {
+        item.0.into_string()
+    }
+}
+
+impl TryFrom<String> for UrlWrapper {
+    type Error = Error;
+    fn try_from(item: String) -> Result<Self, Self::Error> {
+        let url: Url = item.parse()?;
+        Ok(Self(url))
     }
 }
