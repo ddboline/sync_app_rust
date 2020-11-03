@@ -588,11 +588,7 @@ impl GDriveInstance {
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
                     let parents = d.parents.as_ref().and_then(|p| {
-                        if p.is_empty() {
-                            None
-                        } else {
-                            Some(p[0].to_string())
-                        }
+                        p.get(0).map(ToString::to_string)
                     });
                     if parents.is_none()
                         && root_id.is_none()
@@ -634,11 +630,7 @@ impl GDriveInstance {
             fullpath.push(name.clone().into());
         }
         let mut pid: Option<StackString> = finfo.parents.as_ref().and_then(|parents| {
-            if parents.is_empty() {
-                None
-            } else {
-                Some(parents[0].to_string().into())
-            }
+            parents.get(0).map(|p| p.to_string().into())
         });
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
