@@ -443,12 +443,12 @@ impl FileListTrait for FileListGDrive {
         let glist = self.clone();
         spawn_blocking(move || {
             glist.set_directory_map(true)?;
-            if finfo.servicetype != FileService::GDrive {
-                Err(format_err!("Wrong service type"))
-            } else {
+            if finfo.servicetype == FileService::GDrive {
                 finfo.serviceid.as_ref().map_or(Ok(()), |gdriveid| {
                     glist.gdrive.delete_permanently(&gdriveid.0).map(|_| ())
                 })
+            } else {
+                Err(format_err!("Wrong service type"))
             }
         })
         .await?
