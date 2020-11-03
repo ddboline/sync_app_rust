@@ -97,11 +97,10 @@ impl SyncOpts {
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                             list.into_par_iter()
                                 .filter(|entry| {
-                                    if let Some(url) = entry.urlname.as_ref() {
-                                        !blacklist.is_in_blacklist(url)
-                                    } else {
-                                        true
-                                    }
+                                    entry
+                                        .urlname
+                                        .as_ref()
+                                        .map_or(true, |url| !blacklist.is_in_blacklist(url))
                                 })
                                 .collect()
                         } else {
@@ -138,11 +137,10 @@ impl SyncOpts {
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                             list.into_par_iter()
                                 .filter(|entry| {
-                                    if let Some(url) = entry.urlname.as_ref() {
-                                        !blacklist.is_in_blacklist(url)
-                                    } else {
-                                        true
-                                    }
+                                    entry
+                                        .urlname
+                                        .as_ref()
+                                        .map_or(true, |url| !blacklist.is_in_blacklist(url))
                                 })
                                 .collect()
                         } else {

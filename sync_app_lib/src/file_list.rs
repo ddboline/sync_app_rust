@@ -403,11 +403,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let dmap_cache_insert: Vec<InsertDirectoryInfoCache> = directory_map
             .values()
             .map(|d| {
-                let is_root = if let Some(rid) = root_id {
-                    rid == &d.directory_id
-                } else {
-                    false
-                };
+                let is_root = root_id.as_ref().map_or(false, |rid| rid == &d.directory_id);
 
                 InsertDirectoryInfoCache {
                     directory_id: d.directory_id.as_str().into(),
@@ -524,11 +520,13 @@ impl FileListTrait for FileList {
         let filemap = filelist
             .into_par_iter()
             .map(|f| {
-                let key = if let Some(path) = f.filepath.as_ref().map(|x| x.to_string_lossy()) {
-                    remove_basepath(&path, &self.get_basepath().to_string_lossy())
-                } else {
-                    f.filename.clone()
-                };
+                let key = f.filepath.as_ref().map_or_else(
+                    || f.filename.clone(),
+                    |x| {
+                        let path = x.to_string_lossy();
+                        remove_basepath(&path, &self.get_basepath().to_string_lossy())
+                    },
+                );
                 let mut inner = f.inner().clone();
                 inner.servicesession = Some(self.get_servicesession().clone());
                 let f = FileInfo::from_inner(inner);

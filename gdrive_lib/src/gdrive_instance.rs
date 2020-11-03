@@ -391,11 +391,9 @@ impl GDriveInstance {
     }
 
     pub fn is_unexportable<T: AsRef<str>>(mime_type: &Option<T>) -> bool {
-        if let Some(mime) = mime_type {
+        mime_type.as_ref().map_or(false, |mime| {
             UNEXPORTABLE_MIME_TYPES.contains::<str>(mime.as_ref())
-        } else {
-            false
-        }
+        })
     }
 
     pub fn export(&self, gdriveid: &str, local: &Path, mime_type: &str) -> Result<(), Error> {
@@ -589,15 +587,13 @@ impl GDriveInstance {
             let d = self.get_file_metadata(&parent)?;
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
-                    let parents = if let Some(p) = d.parents.as_ref() {
+                    let parents = d.parents.as_ref().and_then(|p| {
                         if p.is_empty() {
                             None
                         } else {
                             Some(p[0].to_string())
                         }
-                    } else {
-                        None
-                    };
+                    });
                     if parents.is_none()
                         && root_id.is_none()
                         && d.name != Some("Chrome Syncable FileSystem".to_string())
@@ -637,15 +633,13 @@ impl GDriveInstance {
         if let Some(name) = finfo.name.as_ref() {
             fullpath.push(name.clone().into());
         }
-        let mut pid: Option<StackString> = if let Some(parents) = finfo.parents.as_ref() {
+        let mut pid: Option<StackString> = finfo.parents.as_ref().and_then(|parents| {
             if parents.is_empty() {
                 None
             } else {
                 Some(parents[0].to_string().into())
             }
-        } else {
-            None
-        };
+        });
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
                 if let Some(dinfo) = dirmap.get(pid_) {

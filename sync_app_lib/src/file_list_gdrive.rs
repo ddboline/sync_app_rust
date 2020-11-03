@@ -445,10 +445,10 @@ impl FileListTrait for FileListGDrive {
             glist.set_directory_map(true)?;
             if finfo.servicetype != FileService::GDrive {
                 Err(format_err!("Wrong service type"))
-            } else if let Some(gdriveid) = finfo.serviceid.as_ref() {
-                glist.gdrive.delete_permanently(&gdriveid.0).map(|_| ())
             } else {
-                Ok(())
+                finfo.serviceid.as_ref().map_or(Ok(()), |gdriveid| {
+                    glist.gdrive.delete_permanently(&gdriveid.0).map(|_| ())
+                })
             }
         })
         .await?
