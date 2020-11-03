@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 log = "0.4"
-env_logger = "0.7"
+env_logger = "0.8"
 actix-rt = "1.1"
 sync_app_lib = {path = "sync_app_lib"}
 sync_app_http = {path = "sync_app_http"}
@@ -16,7 +16,7 @@ anyhow = "1.0"
 dirs = "3.0"
 walkdir = "2.3"
 chrono = "0.4"
-stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.6", features=["diesel_types"] }
+stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.9", features=["diesel_types"] }
 
 [workspace]
 members = [
