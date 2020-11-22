@@ -24,9 +24,16 @@ struct ReqwestSessionInner {
     headers: HeaderMap,
 }
 
-#[derive(Clone)]
 pub struct ReqwestSession {
     client: ArcSwap<ReqwestSessionInner>,
+}
+
+impl Clone for ReqwestSession {
+    fn clone(&self) -> Self {
+        Self {
+            client: ArcSwap::from(self.client.load().clone())
+        }
+    }
 }
 
 impl Default for ReqwestSession {
