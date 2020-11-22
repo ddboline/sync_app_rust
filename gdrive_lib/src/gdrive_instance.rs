@@ -587,9 +587,10 @@ impl GDriveInstance {
             let d = self.get_file_metadata(&parent)?;
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
-                    let parents = d.parents.as_ref().and_then(|p| {
-                        p.get(0).map(ToString::to_string)
-                    });
+                    let parents = d
+                        .parents
+                        .as_ref()
+                        .and_then(|p| p.get(0).map(ToString::to_string));
                     if parents.is_none()
                         && root_id.is_none()
                         && d.name != Some("Chrome Syncable FileSystem".to_string())
@@ -629,9 +630,10 @@ impl GDriveInstance {
         if let Some(name) = finfo.name.as_ref() {
             fullpath.push(name.clone().into());
         }
-        let mut pid: Option<StackString> = finfo.parents.as_ref().and_then(|parents| {
-            parents.get(0).map(|p| p.to_string().into())
-        });
+        let mut pid: Option<StackString> = finfo
+            .parents
+            .as_ref()
+            .and_then(|parents| parents.get(0).map(|p| p.to_string().into()));
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
                 if let Some(dinfo) = dirmap.get(pid_) {

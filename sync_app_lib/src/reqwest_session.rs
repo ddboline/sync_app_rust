@@ -31,7 +31,7 @@ pub struct ReqwestSession {
 impl Clone for ReqwestSession {
     fn clone(&self) -> Self {
         Self {
-            client: ArcSwap::from(self.client.load().clone())
+            client: ArcSwap::from(self.client.load().clone()),
         }
     }
 }
