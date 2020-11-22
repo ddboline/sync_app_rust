@@ -334,7 +334,7 @@ impl GDriveInstance {
     pub fn create_directory(&self, directory: &Url, parentid: &str) -> Result<(), Error> {
         let directory_path = directory
             .to_file_path()
-            .map_err(|_| format_err!("No file path"))?;
+            .map_err(|e| format_err!("No file path {:?}", e))?;
         let directory_name = directory_path
             .file_name()
             .map(OsStr::to_string_lossy)
@@ -348,7 +348,7 @@ impl GDriveInstance {
             };
             let mime: Mime = "application/octet-stream"
                 .parse()
-                .map_err(|_| format_err!("bad mimetype"))?;
+                .map_err(|e| format_err!("bad mimetype {:?}", e))?;
             let dummy_file = DummyFile::new(&[]);
 
             self.gdrive
@@ -364,12 +364,12 @@ impl GDriveInstance {
     pub fn upload(&self, local: &Url, parentid: &str) -> Result<drive3::File, Error> {
         let file_path = local
             .to_file_path()
-            .map_err(|_| format_err!("No file path"))?;
+            .map_err(|e| format_err!("No file path {:?}", e))?;
         exponential_retry(|| {
             let file_obj = File::open(&file_path)?;
             let mime: Mime = "application/octet-stream"
                 .parse()
-                .map_err(|_| format_err!("bad mimetype"))?;
+                .map_err(|e| format_err!("bad mimetype {:?}", e))?;
             let new_file = drive3::File {
                 name: file_path
                     .as_path()

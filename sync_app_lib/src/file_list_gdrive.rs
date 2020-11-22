@@ -81,7 +81,7 @@ impl FileListGDrive {
             let basepath: Url = url.as_str().replace(&tmp, "file:///").parse()?;
             let basepath = basepath
                 .to_file_path()
-                .map_err(|_| format_err!("Failure"))?;
+                .map_err(|e| format_err!("Failure {:?}", e))?;
             let basepath = basepath.to_string_lossy().to_string();
             let basepath = Path::new(basepath.trim_start_matches('/'));
             let flist = FileList::new(
@@ -384,7 +384,7 @@ impl FileListTrait for FileListGDrive {
                     .ok_or_else(|| format_err!("No local path"))?
                     .canonicalize()?;
                 let local_url =
-                    Url::from_file_path(local_file).map_err(|_| format_err!("failure"))?;
+                    Url::from_file_path(local_file).map_err(|e| format_err!("failure {:?}", e))?;
 
                 let remote_url = finfo1
                     .urlname

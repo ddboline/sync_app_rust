@@ -34,7 +34,7 @@ impl FileListLocal {
         let basepath = basedir.canonicalize()?;
         let basestr = basepath.to_string_lossy().to_string();
         let baseurl = Url::from_file_path(basepath.clone())
-            .map_err(|_| format_err!("Failed to parse url"))?;
+            .map_err(|e| format_err!("Failed to parse url {:?}", e))?;
         let flist = FileList::new(
             baseurl,
             basepath,
@@ -51,7 +51,7 @@ impl FileListLocal {
         if url.scheme() == "file" {
             let path = url
                 .to_file_path()
-                .map_err(|_| format_err!("Parse failure"))?;
+                .map_err(|e| format_err!("Parse failure {:?}", e))?;
             let basestr = path.to_string_lossy().to_string();
             let flist = FileList::new(
                 url.clone(),
