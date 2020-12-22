@@ -1,11 +1,16 @@
 [package]
 name = "sync_app_rust"
-version = "0.5.27"
+version = "0.5.28"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
 [package.metadata.deb]
 name = "sync-app-rust"
+priority = "optional"
+section = "rust"
+provides = "sync-app-rust"
+extended-description = """\
+Sync files between computers and cloud storage services."""
 
 [dependencies]
 log = "0.4"
@@ -19,7 +24,7 @@ anyhow = "1.0"
 dirs = "3.0"
 walkdir = "2.3"
 chrono = "0.4"
-stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.9", features=["diesel_types"] }
+stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.10", features=["diesel_types"] }
 
 [workspace]
 members = [

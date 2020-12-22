@@ -1,13 +1,13 @@
 [package]
 name = "sync_app_http"
-version = "0.5.27"
+version = "0.5.28"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "3.2"
+actix-web = "3.3"
 actix-identity = "0.3"
 actix-rt = "1.1"
 chrono = "0.4"
@@ -28,5 +28,5 @@ async-trait = "0.1"
 log = "0.4"
 dirs = "3.0"
 itertools = "0.9"
-stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.9", features=["diesel_types"] }
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.2.7"}
+stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.10", features=["diesel_types"] }
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.2.9"}
