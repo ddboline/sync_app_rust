@@ -1,6 +1,6 @@
 [package]
 name = "gdrive_lib"
-version = "0.5.28"
+version = "0.6.0"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -25,5 +25,5 @@ retry = "1.2"
 chrono = "0.4"
 rayon = "1.5"
 anyhow = "1.0"
-itertools = "0.9"
-stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.1.10", features=["diesel_types"] }
+itertools = "0.10"
+stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.2.0", features=["diesel_types"] }
