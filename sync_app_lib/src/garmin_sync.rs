@@ -324,9 +324,9 @@ impl GarminSync {
         js_prefix: &str,
         table: &str,
     ) -> Result<Vec<StackString>, Error> {
-        fn transform_personal<'a>(
-            activities: &'a [RaceResults],
-        ) -> HashMap<(&'a StackString, NaiveDate), &'a RaceResults> {
+        fn transform_personal(
+            activities: &[RaceResults],
+        ) -> HashMap<(&StackString, NaiveDate), &RaceResults> {
             activities
                 .iter()
                 .filter_map(|result| {

@@ -472,8 +472,10 @@ impl GDriveInstance {
 
     pub fn move_to_trash(&self, id: &str) -> Result<(), Error> {
         exponential_retry(|| {
-            let mut f = drive3::File::default();
-            f.trashed = Some(true);
+            let f = drive3::File {
+                trashed: Some(true),
+                ..drive3::File::default()
+            };
 
             self.gdrive
                 .lock()
@@ -508,8 +510,10 @@ impl GDriveInstance {
                 .unwrap_or_else(|| vec![String::from("root")])
                 .join(",");
 
-            let mut file = drive3::File::default();
-            file.name = Some(new_name.to_string());
+            let file = drive3::File {
+                name: Some(new_name.to_string()),
+                ..drive3::File::default()
+            };
             self.gdrive
                 .lock()
                 .files()
