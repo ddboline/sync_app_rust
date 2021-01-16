@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use chrono::{DateTime, NaiveDate, Utc};
+use core::hash::Hash;
 use log::debug;
 use maplit::hashmap;
 use reqwest::{header::HeaderMap, Response, Url};
@@ -95,6 +96,17 @@ pub struct RaceResults {
     pub race_filename: Option<StackString>,
 }
 
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, FromSqlRow)]
+pub struct FitbitStatisticsSummary {
+    pub date: NaiveDate,
+    pub min_heartrate: f64,
+    pub max_heartrate: f64,
+    pub mean_heartrate: f64,
+    pub median_heartrate: f64,
+    pub stdev_heartrate: f64,
+    pub number_of_entries: i32,
+}
+
 #[derive(Clone)]
 pub struct GarminSync {
     client: SyncClient,
@@ -152,6 +164,18 @@ impl GarminSync {
                         .into_iter()
                         .map(|activity| (activity.log_id, activity))
                         .collect()
+                },
+            )
+            .await?;
+        output.extend_from_slice(&results);
+
+        let results = self
+            .run_single_sync_activities(
+                "garmin/fitbit/heartrate_statistics_summary_db",
+                "updates",
+                "heartrate_statistics_summary",
+                |items: Vec<FitbitStatisticsSummary>| {
+                    items.into_iter().map(|item| (item.date, item)).collect()
                 },
             )
             .await?;
@@ -241,7 +265,7 @@ impl GarminSync {
             .collect()
     }
 
-    async fn run_single_sync_activities<T, U>(
+    async fn run_single_sync_activities<K, T, U>(
         &self,
         path: &str,
         js_prefix: &str,
@@ -249,7 +273,8 @@ impl GarminSync {
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
     where
-        T: FnMut(Vec<U>) -> HashMap<i64, U>,
+        K: Hash + Ord,
+        T: FnMut(Vec<U>) -> HashMap<K, U>,
         U: DeserializeOwned + Send + Debug + Serialize + 'static,
     {
         let mut output = Vec::new();
@@ -274,10 +299,13 @@ impl GarminSync {
         Ok(output)
     }
 
-    fn combine_activities<'a, T>(
-        measurements0: &'a HashMap<i64, T>,
-        measurements1: &'a HashMap<i64, T>,
-    ) -> Vec<&'a T> {
+    fn combine_activities<'a, K, T>(
+        measurements0: &'a HashMap<K, T>,
+        measurements1: &'a HashMap<K, T>,
+    ) -> Vec<&'a T>
+    where
+        K: Hash + Ord,
+    {
         measurements0
             .iter()
             .filter_map(|(k, v)| {
