@@ -93,7 +93,7 @@ pub struct RaceResults {
     pub race_distance: i32, // distance in meters
     pub race_time: f64,
     pub race_flag: bool,
-    pub race_filename: Option<StackString>,
+    pub race_summary_ids: Vec<Option<i32>>,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, FromSqlRow)]
