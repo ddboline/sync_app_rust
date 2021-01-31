@@ -15,6 +15,7 @@ use super::{
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 struct ScaleMeasurement {
+    pub id: i32,
     pub datetime: DateTime<Utc>,
     pub mass: f64,
     pub fat_pct: f64,
