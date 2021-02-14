@@ -1,5 +1,3 @@
-use anyhow::Error;
-use async_trait::async_trait;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -17,43 +15,34 @@ use sync_app_lib::{
     sync_opts::SyncOpts,
 };
 
-lazy_static! {
-    static ref CONFIG: Config = Config::init_config().expect("Failed to load config");
-    static ref SYNCLOCK: Mutex<()> = Mutex::new(());
-    static ref GARMINLOCK: Mutex<GarminSync> = Mutex::new(GarminSync::new(CONFIG.clone()));
-    static ref MOVIELOCK: Mutex<MovieSync> = Mutex::new(MovieSync::new(CONFIG.clone()));
-    static ref CALENDARLOCK: Mutex<CalendarSync> = Mutex::new(CalendarSync::new(CONFIG.clone()));
-    static ref PODCASTLOCK: Mutex<()> = Mutex::new(());
-    static ref SECURITYLOCK: Mutex<()> = Mutex::new(());
-}
-
-#[async_trait]
-pub trait HandleRequest<T> {
-    type Result;
-    async fn handle(&self, req: T) -> Self::Result;
-}
+use crate::{app::AccessLocks, errors::ServiceError as Error};
 
 pub struct SyncRequest {
     pub action: FileSyncAction,
 }
 
-#[async_trait]
-impl HandleRequest<SyncRequest> for PgPool {
-    type Result = Result<Vec<StackString>, Error>;
-    async fn handle(&self, req: SyncRequest) -> Self::Result {
-        let _guard = SYNCLOCK.lock().await;
-        let opts = SyncOpts::new(req.action, &[]);
-        opts.process_sync_opts(&CONFIG, self).await
+impl SyncRequest {
+    pub async fn handle(
+        &self,
+        pool: &PgPool,
+        config: &Config,
+        locks: &AccessLocks,
+    ) -> Result<Vec<StackString>, Error> {
+        let _guard = locks.sync.lock().await;
+        let opts = SyncOpts::new(self.action, &[]);
+        opts.process_sync_opts(&config, pool)
+            .await
+            .map_err(Into::into)
     }
 }
 
 pub struct ListSyncCacheRequest {}
 
-#[async_trait]
-impl HandleRequest<ListSyncCacheRequest> for PgPool {
-    type Result = Result<Vec<FileSyncCache>, Error>;
-    async fn handle(&self, _: ListSyncCacheRequest) -> Self::Result {
-        FileSyncCache::get_cache_list(self).await
+impl ListSyncCacheRequest {
+    pub async fn handle(&self, pool: &PgPool) -> Result<Vec<FileSyncCache>, Error> {
+        FileSyncCache::get_cache_list(pool)
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -62,40 +51,52 @@ pub struct SyncEntryDeleteRequest {
     pub id: i32,
 }
 
-#[async_trait]
-impl HandleRequest<SyncEntryDeleteRequest> for PgPool {
-    type Result = Result<(), Error>;
-    async fn handle(&self, req: SyncEntryDeleteRequest) -> Self::Result {
-        FileSyncCache::delete_by_id(self, req.id).await
+impl SyncEntryDeleteRequest {
+    pub async fn handle(&self, pool: &PgPool) -> Result<(), Error> {
+        FileSyncCache::delete_by_id(pool, self.id)
+            .await
+            .map_err(Into::into)
     }
 }
 
 pub struct GarminSyncRequest {}
 
-#[async_trait]
-impl HandleRequest<GarminSyncRequest> for PgPool {
-    type Result = Result<Vec<StackString>, Error>;
-    async fn handle(&self, _: GarminSyncRequest) -> Self::Result {
-        GARMINLOCK.lock().await.run_sync().await
+impl GarminSyncRequest {
+    pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
+        locks
+            .garmin
+            .lock()
+            .await
+            .run_sync()
+            .await
+            .map_err(Into::into)
     }
 }
 pub struct MovieSyncRequest {}
 
-#[async_trait]
-impl HandleRequest<MovieSyncRequest> for PgPool {
-    type Result = Result<Vec<StackString>, Error>;
-    async fn handle(&self, _: MovieSyncRequest) -> Self::Result {
-        MOVIELOCK.lock().await.run_sync().await
+impl MovieSyncRequest {
+    pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
+        locks
+            .movie
+            .lock()
+            .await
+            .run_sync()
+            .await
+            .map_err(Into::into)
     }
 }
 
 pub struct CalendarSyncRequest {}
 
-#[async_trait]
-impl HandleRequest<CalendarSyncRequest> for PgPool {
-    type Result = Result<Vec<StackString>, Error>;
-    async fn handle(&self, _: CalendarSyncRequest) -> Self::Result {
-        CALENDARLOCK.lock().await.run_sync().await
+impl CalendarSyncRequest {
+    pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
+        locks
+            .calendar
+            .lock()
+            .await
+            .run_sync()
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -104,14 +105,19 @@ pub struct SyncRemoveRequest {
     pub url: StackString,
 }
 
-#[async_trait]
-impl HandleRequest<SyncRemoveRequest> for PgPool {
-    type Result = Result<Vec<StackString>, Error>;
-    async fn handle(&self, req: SyncRemoveRequest) -> Self::Result {
-        let _guard = SYNCLOCK.lock().await;
-        let url = req.url.parse()?;
+impl SyncRemoveRequest {
+    pub async fn handle(
+        &self,
+        locks: &AccessLocks,
+        config: &Config,
+        pool: &PgPool,
+    ) -> Result<Vec<StackString>, Error> {
+        let _guard = locks.sync.lock().await;
+        let url = self.url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
-        sync.process_sync_opts(&CONFIG, self).await
+        sync.process_sync_opts(&config, pool)
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -120,29 +126,30 @@ pub struct SyncEntryProcessRequest {
     pub id: i32,
 }
 
-#[async_trait]
-impl HandleRequest<SyncEntryProcessRequest> for PgPool {
-    type Result = Result<(), Error>;
-    async fn handle(&self, req: SyncEntryProcessRequest) -> Self::Result {
-        let _guard = SYNCLOCK.lock().await;
+impl SyncEntryProcessRequest {
+    pub async fn handle(
+        &self,
+        locks: &AccessLocks,
+        pool: &PgPool,
+        config: &Config,
+    ) -> Result<(), Error> {
+        let _guard = locks.sync.lock().await;
 
-        let entry = FileSyncCache::get_by_id(self, req.id).await?;
+        let entry = FileSyncCache::get_by_id(pool, self.id).await?;
         let src_url = entry.src_url.parse()?;
         let dst_url = entry.dst_url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Copy, &[src_url, dst_url]);
-        sync.process_sync_opts(&CONFIG, self).await?;
-        entry.delete_cache_entry(self).await?;
+        sync.process_sync_opts(&config, pool).await?;
+        entry.delete_cache_entry(pool).await?;
         Ok(())
     }
 }
 
 pub struct SyncPodcastsRequest {}
 
-#[async_trait]
-impl HandleRequest<SyncPodcastsRequest> for PgPool {
-    type Result = Result<Vec<StackString>, Error>;
-    async fn handle(&self, _: SyncPodcastsRequest) -> Self::Result {
-        let _guard = PODCASTLOCK.lock().await;
+impl SyncPodcastsRequest {
+    pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
+        let _guard = locks.podcast.lock().await;
         if !Path::new("/usr/bin/podcatch-rust").exists() {
             return Ok(Vec::new());
         }
@@ -170,10 +177,8 @@ impl HandleRequest<SyncPodcastsRequest> for PgPool {
 
 pub struct SyncSecurityRequest {}
 
-#[async_trait]
-impl HandleRequest<SyncSecurityRequest> for PgPool {
-    type Result = Result<Vec<StackString>, Error>;
-    async fn handle(&self, _: SyncSecurityRequest) -> Self::Result {
+impl SyncSecurityRequest {
+    pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
         let home_dir = match dirs::home_dir() {
             Some(home_dir) => home_dir,
             None => return Ok(Vec::new()),
@@ -182,7 +187,7 @@ impl HandleRequest<SyncSecurityRequest> for PgPool {
         if !script.exists() {
             return Ok(Vec::new());
         }
-        let _guard = SECURITYLOCK.lock().await;
+        let _guard = locks.security.lock().await;
         let start_time = Instant::now();
         let lines: Result<Vec<StackString>, Error> = Command::new(&script)
             .env_remove("DATABASE_URL")
