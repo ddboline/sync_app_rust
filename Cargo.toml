@@ -15,7 +15,6 @@ Sync files between computers and cloud storage services."""
 [dependencies]
 log = "0.4"
 env_logger = "0.8"
-actix-rt = "2.0.0-beta.3"
 sync_app_lib = {path = "sync_app_lib"}
 sync_app_http = {path = "sync_app_http"}
 gdrive_lib = {path="gdrive_lib"}

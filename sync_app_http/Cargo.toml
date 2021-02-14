@@ -7,9 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.0.0-beta.1"
-actix-identity = {git="https://github.com/ddboline/actix-extras", branch="update-dependencies"}
-actix-rt = "2.0.0-beta.3"
+warp = "0.3"
+http = "0.2"
 chrono = "0.4"
 lazy_static = "1.4"
 parking_lot = "0.11"
@@ -28,4 +27,4 @@ log = "0.4"
 dirs = "3.0"
 itertools = "0.10"
 stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.2.0", features=["diesel_types"] }
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.3.0"}
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", branch="replace_actix_with_warp"}
