@@ -1,18 +1,17 @@
 use anyhow::{format_err, Error};
+use async_google_apis_common as common;
 use chrono::DateTime;
-use drive3::Drive;
-use google_drive3_fork as drive3;
-use hyper::{net::HttpsConnector, Client};
-use hyper_native_tls::NativeTlsClient;
+use common::{
+    yup_oauth2::{self, InstalledFlowAuthenticator},
+    DownloadResult, TlsClient,
+};
+use crossbeam::atomic::AtomicCell;
+use futures::future::try_join_all;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use log::debug;
 use maplit::{hashmap, hashset};
 use mime::Mime;
-use oauth2::{
-    Authenticator, ConsoleApplicationSecret, DefaultAuthenticatorDelegate, DiskTokenStorage,
-    FlowType,
-};
 use parking_lot::Mutex;
 use percent_encoding::percent_decode;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
@@ -22,21 +21,32 @@ use std::{
     collections::{HashMap, HashSet},
     ffi::OsStr,
     fmt::{self, Debug, Formatter},
-    fs::{self, create_dir_all, File},
-    io,
-    io::{Read, Seek, SeekFrom, Write},
+    future::Future,
     path::{Path, PathBuf},
     string::ToString,
     sync::Arc,
 };
+use tokio::{
+    fs::{self, create_dir_all},
+    io::AsyncReadExt,
+    sync::Semaphore,
+};
 use url::Url;
-use yup_oauth2 as oauth2;
 
-use crate::{directory_info::DirectoryInfo, exponential_retry};
+use crate::{
+    directory_info::DirectoryInfo,
+    drive_v3_types::{
+        Change, ChangesGetStartPageTokenParams, ChangesListParams, ChangesService, DriveParams,
+        DriveParamsAlt, DriveScopes, File, FileList, FilesCreateParams, FilesDeleteParams,
+        FilesExportParams, FilesGetParams, FilesListParams, FilesService, FilesUpdateParams,
+    },
+    exponential_retry,
+};
 
-type GCClient = Client;
-type GCAuthenticator = Authenticator<DefaultAuthenticatorDelegate, DiskTokenStorage, Client>;
-type GCDrive = Drive<GCClient, GCAuthenticator>;
+fn https_client() -> TlsClient {
+    let conn = hyper_rustls::HttpsConnector::with_native_roots();
+    hyper::Client::builder().build(conn)
+}
 
 lazy_static! {
     static ref MIME_TYPES: HashMap<&'static str, &'static str> = hashmap! {
@@ -69,12 +79,14 @@ lazy_static! {
 
 #[derive(Clone)]
 pub struct GDriveInstance {
-    pub gdrive: Arc<Mutex<GCDrive>>,
-    pub page_size: i32,
-    pub max_keys: Option<usize>,
-    pub session_name: StackString,
-    pub start_page_token: Option<usize>,
+    files: Arc<FilesService>,
+    changes: Arc<ChangesService>,
+    page_size: i32,
+    max_keys: Option<usize>,
+    session_name: StackString,
     pub start_page_token_filename: PathBuf,
+    pub start_page_token: Arc<AtomicCell<Option<usize>>>,
+    rate_limit: Arc<Semaphore>,
 }
 
 impl Debug for GDriveInstance {
@@ -84,19 +96,55 @@ impl Debug for GDriveInstance {
 }
 
 impl GDriveInstance {
-    pub fn new(gdrive_token_path: &Path, gdrive_secret_file: &Path, session_name: &str) -> Self {
+    pub async fn new(
+        gdrive_token_path: &Path,
+        gdrive_secret_file: &Path,
+        session_name: &str,
+    ) -> Result<Self, Error> {
         let fname = gdrive_token_path.join(format!("{}_start_page_token", session_name));
+        debug!("{:?}", gdrive_secret_file);
+        let https = https_client();
+        let sec = yup_oauth2::read_application_secret(gdrive_secret_file).await?;
 
-        Self {
-            gdrive: Arc::new(Mutex::new(
-                Self::create_drive(gdrive_token_path, gdrive_secret_file, session_name).unwrap(),
-            )),
+        let token_file = gdrive_token_path.join(format!("{}.json", session_name));
+
+        let parent = gdrive_token_path;
+
+        if !parent.exists() {
+            create_dir_all(parent).await?;
+        }
+
+        debug!("{:?}", token_file);
+        let auth = InstalledFlowAuthenticator::builder(
+            sec,
+            common::yup_oauth2::InstalledFlowReturnMethod::HTTPRedirect,
+        )
+        .persist_tokens_to_disk(token_file)
+        .hyper_client(https.clone())
+        .build()
+        .await?;
+        let auth = Arc::new(auth);
+
+        let scopes = vec![DriveScopes::Drive];
+
+        let mut files = FilesService::new(https.clone(), auth.clone());
+        files.set_scopes(scopes.clone());
+
+        let mut changes = ChangesService::new(https, auth);
+        changes.set_scopes(scopes);
+
+        let start_page_token = Self::read_start_page_token(&fname).await?;
+
+        Ok(Self {
+            files: Arc::new(files),
+            changes: Arc::new(changes),
             page_size: 1000,
             max_keys: None,
             session_name: session_name.into(),
-            start_page_token: Self::read_start_page_token(&fname).unwrap_or(None),
+            start_page_token: Arc::new(AtomicCell::new(start_page_token)),
             start_page_token_filename: fname,
-        }
+            rate_limit: Arc::new(Semaphore::new(8)),
+        })
     }
 
     pub fn with_max_keys(mut self, max_keys: usize) -> Self {
@@ -109,65 +157,18 @@ impl GDriveInstance {
         self
     }
 
-    pub fn with_start_page_token(mut self, start_page_token: usize) -> Self {
-        self.start_page_token = Some(start_page_token);
-        self
+    pub async fn read_start_page_token_from_file(&self) -> Result<(), Error> {
+        self.start_page_token
+            .store(Self::read_start_page_token(&self.start_page_token_filename).await?);
+        Ok(())
     }
 
-    pub fn read_start_page_token_from_file(mut self) -> Self {
-        self.start_page_token =
-            Self::read_start_page_token(&self.start_page_token_filename).unwrap_or(None);
-        self
-    }
-
-    fn create_drive_auth(
-        gdrive_token_path: &Path,
-        gdrive_secret_file: &Path,
-        session_name: &str,
-    ) -> Result<GCAuthenticator, Error> {
-        let secret_file = File::open(gdrive_secret_file)?;
-        let secret: ConsoleApplicationSecret = serde_json::from_reader(secret_file)?;
-        let secret = secret
-            .installed
-            .ok_or_else(|| format_err!("ConsoleApplicationSecret.installed is None"))?;
-        let token_file = gdrive_token_path.join(format!("{}.json", session_name));
-        let token_file = token_file.to_string_lossy().into_owned();
-
-        if !gdrive_token_path.exists() {
-            create_dir_all(gdrive_token_path)?;
-        }
-
-        let auth = Authenticator::new(
-            &secret,
-            DefaultAuthenticatorDelegate,
-            Client::with_connector(HttpsConnector::new(NativeTlsClient::new()?)),
-            DiskTokenStorage::new(&token_file)?,
-            // Some(FlowType::InstalledInteractive),
-            Some(FlowType::InstalledRedirect(8081)),
-        );
-
-        Ok(auth)
-    }
-
-    /// Creates a drive hub.
-    fn create_drive(
-        gdrive_token_path: &Path,
-        gdrive_secret_file: &Path,
-        session_name: &str,
-    ) -> Result<GCDrive, Error> {
-        let auth = Self::create_drive_auth(gdrive_token_path, gdrive_secret_file, session_name)?;
-        Ok(Drive::new(
-            Client::with_connector(HttpsConnector::new(NativeTlsClient::new()?)),
-            auth,
-        ))
-    }
-
-    fn get_filelist(
+    async fn get_filelist(
         &self,
         page_token: &Option<StackString>,
         get_folders: bool,
         parents: &Option<Vec<StackString>>,
-    ) -> Result<drive3::FileList, Error> {
+    ) -> Result<FileList, Error> {
         let fields = vec![
             "name",
             "id",
@@ -184,51 +185,45 @@ impl GDriveInstance {
             "webContentLink",
         ];
         let fields = format!("nextPageToken,files({})", fields.join(","));
-        exponential_retry(|| {
-            let gdrive = self.gdrive.lock();
-            let mut request = gdrive
-                .files()
-                .list()
-                .param("fields", &fields)
-                .spaces("drive") // TODO: maybe add photos as well
-                .corpora("user")
-                .page_size(self.page_size)
-                .add_scope(drive3::Scope::Full);
+        let p = DriveParams {
+            fields: Some(fields),
+            ..DriveParams::default()
+        };
+        let mut params = FilesListParams {
+            drive_params: Some(p),
+            corpora: Some("user".into()),
+            spaces: Some("drive".into()),
+            page_size: Some(self.page_size),
+            page_token: page_token.clone().map(Into::into),
+            ..FilesListParams::default()
+        };
+        let mut query_chain: Vec<StackString> = Vec::new();
+        if get_folders {
+            query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.into());
+        } else {
+            query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.into());
+        }
+        if let Some(ref p) = parents {
+            let q = p
+                .iter()
+                .map(|id| format!("'{}' in parents", id))
+                .join(" or ");
 
-            if let Some(token) = page_token {
-                request = request.page_token(token);
-            };
+            query_chain.push(format!("({})", q).into());
+        }
+        query_chain.push("trashed = false".into());
+        let query = query_chain.join(" and ");
+        params.q = Some(query);
 
-            let mut query_chain: Vec<StackString> = Vec::new();
-            if get_folders {
-                query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.into());
-            } else {
-                query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.into());
-            }
-            if let Some(ref p) = parents {
-                let q = p
-                    .iter()
-                    .map(|id| format!("'{}' in parents", id))
-                    .join(" or ");
-
-                query_chain.push(format!("({})", q).into());
-            }
-            query_chain.push("trashed = false".into());
-
-            let query = query_chain.join(" and ");
-            let (_, filelist) = request
-                .q(&query)
-                .doit()
-                .map_err(|e| format_err!("{:#?}", e))?;
-            Ok(filelist)
-        })
+        let _permit = self.rate_limit.acquire().await?;
+        self.files.list(&params).await
     }
 
-    pub fn get_all_files(&self, get_folders: bool) -> Result<Vec<drive3::File>, Error> {
+    pub async fn get_all_files(&self, get_folders: bool) -> Result<Vec<File>, Error> {
         let mut all_files = Vec::new();
         let mut page_token: Option<StackString> = None;
         loop {
-            let filelist = self.get_filelist(&page_token, get_folders, &None)?;
+            let filelist = self.get_filelist(&page_token, get_folders, &None).await?;
 
             if let Some(files) = filelist.files {
                 all_files.extend(files);
@@ -249,22 +244,23 @@ impl GDriveInstance {
         Ok(all_files)
     }
 
-    pub fn get_all_file_info(
+    pub async fn get_all_file_info(
         &self,
         get_folders: bool,
         directory_map: &HashMap<StackString, DirectoryInfo>,
     ) -> Result<Vec<GDriveInfo>, Error> {
-        let files = self.get_all_files(get_folders)?;
+        let files = self.get_all_files(get_folders).await?;
         self.convert_file_list_to_gdrive_info(&files, directory_map)
+            .await
     }
 
-    pub fn convert_file_list_to_gdrive_info(
+    pub async fn convert_file_list_to_gdrive_info(
         &self,
-        flist: &[drive3::File],
+        flist: &[File],
         directory_map: &HashMap<StackString, DirectoryInfo>,
     ) -> Result<Vec<GDriveInfo>, Error> {
-        flist
-            .par_iter()
+        let futures = flist
+            .iter()
             .filter(|f| {
                 if let Some(owners) = f.owners.as_ref() {
                     if owners.is_empty() {
@@ -281,26 +277,27 @@ impl GDriveInstance {
                 }
                 true
             })
-            .map(|f| GDriveInfo::from_object(f, &self, directory_map))
-            .collect()
+            .map(|f| GDriveInfo::from_object(f, &self, directory_map));
+        try_join_all(futures).await
     }
 
-    pub fn process_list_of_keys<T>(
+    pub async fn process_list_of_keys<T, U>(
         &self,
         parents: &Option<Vec<StackString>>,
         callback: T,
     ) -> Result<(), Error>
     where
-        T: Fn(&drive3::File) -> Result<(), Error>,
+        T: Fn(File) -> U,
+        U: Future<Output = Result<(), Error>>,
     {
         let mut n_processed = 0;
         let mut page_token: Option<StackString> = None;
         loop {
-            let filelist = self.get_filelist(&page_token, false, parents)?;
+            let mut filelist = self.get_filelist(&page_token, false, parents).await?;
 
-            if let Some(files) = filelist.files {
-                for f in &files {
-                    callback(f)?;
+            if let Some(files) = filelist.files.take() {
+                for f in files {
+                    callback(f).await?;
                     n_processed += 1;
                 }
             }
@@ -319,19 +316,26 @@ impl GDriveInstance {
         Ok(())
     }
 
-    pub fn get_file_metadata(&self, id: &str) -> Result<drive3::File, Error> {
-        self.gdrive
-            .lock()
-            .files()
-            .get(id)
-            .param("fields", "id,name,parents,mimeType,webContentLink")
-            .add_scope(drive3::Scope::Full)
-            .doit()
-            .map(|(_response, file)| file)
-            .map_err(|e| format_err!("{:#?}", e))
+    pub async fn get_file_metadata(&self, id: &str) -> Result<File, Error> {
+        let p = DriveParams {
+            alt: Some(DriveParamsAlt::Json),
+            fields: Some("id,name,parents,mimeType,webContentLink".into()),
+            ..DriveParams::default()
+        };
+        let params = FilesGetParams {
+            drive_params: Some(p),
+            file_id: id.into(),
+            ..FilesGetParams::default()
+        };
+        let _permit = self.rate_limit.acquire().await?;
+        if let DownloadResult::Response(f) = self.files.get(&params).await?.do_it(None).await? {
+            Ok(f)
+        } else {
+            Err(format_err!("Failed to get metadata"))
+        }
     }
 
-    pub fn create_directory(&self, directory: &Url, parentid: &str) -> Result<(), Error> {
+    pub async fn create_directory(&self, directory: &Url, parentid: &str) -> Result<File, Error> {
         let directory_path = directory
             .to_file_path()
             .map_err(|e| format_err!("No file path {:?}", e))?;
@@ -339,55 +343,47 @@ impl GDriveInstance {
             .file_name()
             .map(OsStr::to_string_lossy)
             .ok_or_else(|| format_err!("Failed to convert string"))?;
-        exponential_retry(move || {
-            let new_file = drive3::File {
-                name: Some(directory_name.to_string()),
-                mime_type: Some("application/vnd.google-apps.folder".to_string()),
-                parents: Some(vec![parentid.to_string()]),
-                ..drive3::File::default()
-            };
-            let mime: Mime = "application/octet-stream"
-                .parse()
-                .map_err(|e| format_err!("bad mimetype {:?}", e))?;
-            let dummy_file = DummyFile::new(&[]);
-
-            self.gdrive
-                .lock()
-                .files()
-                .create(new_file)
-                .upload(dummy_file, mime)
-                .map_err(|e| format_err!("{:#?}", e))
-                .map(|(_, _)| ())
-        })
+        let new_file = File {
+            name: Some(directory_name.to_string()),
+            mime_type: Some("application/vnd.google-apps.folder".to_string()),
+            parents: Some(vec![parentid.to_string()]),
+            ..File::default()
+        };
+        let params = FilesCreateParams::default();
+        let _permit = self.rate_limit.acquire().await?;
+        self.files.create(&params, &new_file).await
     }
 
-    pub fn upload(&self, local: &Url, parentid: &str) -> Result<drive3::File, Error> {
+    pub async fn upload(&self, local: &Url, parentid: &str) -> Result<File, Error> {
         let file_path = local
             .to_file_path()
             .map_err(|e| format_err!("No file path {:?}", e))?;
-        exponential_retry(|| {
-            let file_obj = File::open(&file_path)?;
-            let mime: Mime = "application/octet-stream"
-                .parse()
-                .map_err(|e| format_err!("bad mimetype {:?}", e))?;
-            let new_file = drive3::File {
-                name: file_path
-                    .as_path()
-                    .file_name()
-                    .and_then(OsStr::to_str)
-                    .map(ToString::to_string),
-                parents: Some(vec![parentid.to_string()]),
-                ..drive3::File::default()
-            };
+        let file_obj = fs::File::open(&file_path).await?;
+        let mime: Mime = "application/octet-stream"
+            .parse()
+            .map_err(|e| format_err!("bad mimetype {:?}", e))?;
+        let new_file = File {
+            name: file_path
+                .as_path()
+                .file_name()
+                .and_then(OsStr::to_str)
+                .map(ToString::to_string),
+            parents: Some(vec![parentid.to_string()]),
+            mime_type: Some(mime.to_string()),
+            ..File::default()
+        };
 
-            self.gdrive
-                .lock()
-                .files()
-                .create(new_file)
-                .upload_resumable(file_obj, mime)
-                .map_err(|e| format_err!("{:#?}", e))
-                .map(|(_, f)| f)
-        })
+        let params = FilesCreateParams {
+            ..FilesCreateParams::default()
+        };
+
+        let _permit = self.rate_limit.acquire().await?;
+        let upload = self
+            .files
+            .create_resumable_upload(&params, &new_file)
+            .await?;
+        upload.upload_file(file_obj).await?;
+        Ok(new_file)
     }
 
     pub fn is_unexportable<T: AsRef<str>>(mime_type: &Option<T>) -> bool {
@@ -396,23 +392,23 @@ impl GDriveInstance {
         })
     }
 
-    pub fn export(&self, gdriveid: &str, local: &Path, mime_type: &str) -> Result<(), Error> {
-        exponential_retry(move || {
-            let mut content = Vec::new();
-            self.gdrive
-                .lock()
-                .files()
-                .export(gdriveid, mime_type)
-                .add_scope(drive3::Scope::Full)
-                .doit()
-                .map_err(|e| format_err!("{:#?}", e))?
-                .read_to_end(&mut content)?;
-
-            fs::write(local, &content).map_err(Into::into)
-        })
+    pub async fn export(&self, gdriveid: &str, local: &Path, mime_type: &str) -> Result<(), Error> {
+        let params = FilesExportParams {
+            file_id: gdriveid.into(),
+            mime_type: mime_type.into(),
+            ..FilesExportParams::default()
+        };
+        let mut outfile = fs::File::create(local).await?;
+        let _permit = self.rate_limit.acquire().await?;
+        self.files
+            .export(&params)
+            .await?
+            .do_it(Some(&mut outfile))
+            .await?;
+        Ok(())
     }
 
-    pub fn download<T>(
+    pub async fn download<T>(
         &self,
         gdriveid: &str,
         local: &Path,
@@ -428,6 +424,7 @@ impl GDriveInstance {
                      exported from Drive. Web content link provided by Drive: {:?}\n",
                     mime,
                     self.get_file_metadata(gdriveid)
+                        .await
                         .ok()
                         .map(|metadata| metadata.web_view_link)
                         .unwrap_or_default()
@@ -440,99 +437,91 @@ impl GDriveInstance {
             .and_then(|t| MIME_TYPES.get::<str>(t.as_ref()))
             .cloned();
 
-        exponential_retry(move || {
-            let mut response = if let Some(t) = export_type {
-                self.gdrive
-                    .lock()
-                    .files()
-                    .export(gdriveid, &t)
-                    .add_scope(drive3::Scope::Full)
-                    .doit()
-                    .map_err(|e| format_err!("{:#?}", e))?
+        if let Some(t) = export_type {
+            self.export(gdriveid, &local, t).await
+        } else {
+            let p = DriveParams {
+                alt: Some(DriveParamsAlt::Media),
+                ..DriveParams::default()
+            };
+            let params = FilesGetParams {
+                drive_params: Some(p),
+                file_id: gdriveid.into(),
+                supports_all_drives: Some(false),
+                ..FilesGetParams::default()
+            };
+            let mut outfile = fs::File::create(&local).await?;
+            let _permit = self.rate_limit.acquire().await?;
+            if let DownloadResult::Downloaded = self
+                .files
+                .get(&params)
+                .await?
+                .do_it(Some(&mut outfile))
+                .await?
+            {
+                Ok(())
             } else {
-                let (response, _empty_file) = self
-                    .gdrive
-                    .lock()
-                    .files()
-                    .get(&gdriveid)
-                    .supports_team_drives(false)
-                    .param("alt", "media")
-                    .add_scope(drive3::Scope::Full)
-                    .doit()
-                    .map_err(|e| format_err!("{:#?}", e))?;
-                response
-            };
-
-            let mut content = Vec::new();
-            response.read_to_end(&mut content)?;
-
-            fs::write(local, &content).map_err(Into::into)
-        })
+                Err(format_err!("Failed to download"))
+            }
+        }
     }
 
-    pub fn move_to_trash(&self, id: &str) -> Result<(), Error> {
-        exponential_retry(|| {
-            let f = drive3::File {
-                trashed: Some(true),
-                ..drive3::File::default()
-            };
-
-            self.gdrive
-                .lock()
-                .files()
-                .update(f, id)
-                .add_scope(drive3::Scope::Full)
-                .doit_without_upload()
-                .map(|_| ())
-                .map_err(|e| format_err!("DriveFacade::move_to_trash() {}", e))
-        })
+    pub async fn move_to_trash(&self, id: &str) -> Result<(), Error> {
+        let f = File {
+            trashed: Some(true),
+            ..File::default()
+        };
+        let params = FilesUpdateParams {
+            file_id: id.into(),
+            supports_all_drives: Some(false),
+            ..FilesUpdateParams::default()
+        };
+        let _permit = self.rate_limit.acquire().await?;
+        self.files.update(&params, &f).await?;
+        Ok(())
     }
 
-    pub fn delete_permanently(&self, id: &str) -> Result<bool, Error> {
-        exponential_retry(|| {
-            self.gdrive
-                .lock()
-                .files()
-                .delete(&id)
-                .supports_team_drives(false)
-                .add_scope(drive3::Scope::Full)
-                .doit()
-                .map(|response| response.status.is_success())
-                .map_err(|e| format_err!("{:#?}", e))
-        })
+    pub async fn delete_permanently(&self, id: &str) -> Result<(), Error> {
+        let params = FilesDeleteParams {
+            file_id: id.into(),
+            supports_all_drives: Some(false),
+            ..FilesDeleteParams::default()
+        };
+        let _permit = self.rate_limit.acquire().await?;
+        self.files.delete(&params).await
     }
 
-    pub fn move_to(&self, id: &str, parent: &str, new_name: &str) -> Result<(), Error> {
-        exponential_retry(|| {
-            let current_parents = self
-                .get_file_metadata(id)?
-                .parents
-                .unwrap_or_else(|| vec![String::from("root")])
-                .join(",");
+    pub async fn move_to(&self, id: &str, parent: &str, new_name: &str) -> Result<(), Error> {
+        let current_parents = self
+            .get_file_metadata(id)
+            .await?
+            .parents
+            .unwrap_or_else(|| vec![String::from("root")])
+            .join(",");
 
-            let file = drive3::File {
-                name: Some(new_name.to_string()),
-                ..drive3::File::default()
-            };
-            self.gdrive
-                .lock()
-                .files()
-                .update(file, id)
-                .remove_parents(&current_parents)
-                .add_parents(parent)
-                .add_scope(drive3::Scope::Full)
-                .doit_without_upload()
-                .map_err(|e| format_err!("DriveFacade::move_to() {}", e))
-                .map(|_| ())
-        })
+        let file = File {
+            name: Some(new_name.to_string()),
+            ..File::default()
+        };
+        let params = FilesUpdateParams {
+            file_id: id.into(),
+            supports_all_drives: Some(false),
+            remove_parents: Some(current_parents),
+            add_parents: Some(parent.into()),
+            ..FilesUpdateParams::default()
+        };
+        let _permit = self.rate_limit.acquire().await?;
+        self.files.update(&params, &file).await?;
+        Ok(())
     }
 
-    pub fn get_directory_map(
+    pub async fn get_directory_map(
         &self,
     ) -> Result<(HashMap<StackString, DirectoryInfo>, Option<StackString>), Error> {
         let mut root_id: Option<StackString> = None;
         let mut dmap: HashMap<StackString, _> = self
-            .get_all_files(true)?
+            .get_all_files(true)
+            .await?
             .into_iter()
             .filter_map(|d| {
                 if let Some(owners) = d.owners.as_ref() {
@@ -588,7 +577,7 @@ impl GDriveInstance {
             })
             .collect();
         for parent in unmatched_parents {
-            let d = self.get_file_metadata(&parent)?;
+            let d = self.get_file_metadata(&parent).await?;
             if let Some(gdriveid) = d.id.as_ref() {
                 if let Some(name) = d.name.as_ref() {
                     let parents = d
@@ -625,9 +614,9 @@ impl GDriveInstance {
         })
     }
 
-    pub fn get_export_path(
+    pub async fn get_export_path(
         &self,
-        finfo: &drive3::File,
+        finfo: &File,
         dirmap: &HashMap<StackString, DirectoryInfo>,
     ) -> Result<Vec<StackString>, Error> {
         let mut fullpath = Vec::new();
@@ -645,6 +634,7 @@ impl GDriveInstance {
                     dinfo.parentid.clone()
                 } else {
                     self.get_file_metadata(pid_)
+                        .await
                         .ok()
                         .as_ref()
                         .and_then(|f| f.parents.as_ref())
@@ -699,49 +689,46 @@ impl GDriveInstance {
         Ok(None)
     }
 
-    pub fn get_start_page_token(&self) -> Result<usize, Error> {
-        self.gdrive
-            .lock()
-            .changes()
-            .get_start_page_token()
-            .add_scope(drive3::Scope::Full)
-            .doit()
-            .map_err(|e| format_err!("{:#?}", e))
-            .and_then(|(_, token)| {
-                token
-                    .start_page_token
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Received OK response from drive but there is no startPageToken \
-                             included.",
-                        )
-                    })
-                    .and_then(|s| s.parse().map_err(Into::into))
-            })
+    pub async fn get_start_page_token(&self) -> Result<usize, Error> {
+        let params = ChangesGetStartPageTokenParams {
+            ..ChangesGetStartPageTokenParams::default()
+        };
+        let _permit = self.rate_limit.acquire().await?;
+        if let Some(start_page_token) = self
+            .changes
+            .get_start_page_token(&params)
+            .await?
+            .start_page_token
+        {
+            Ok(start_page_token.parse()?)
+        } else {
+            Err(format_err!(
+                "Received OK response from drive but there is no startPageToken included."
+            ))
+        }
     }
 
-    pub fn store_start_page_token(&self, path: &Path) -> Result<(), Error> {
-        if let Some(start_page_token) = self.start_page_token.as_ref() {
-            let mut f = File::create(path)?;
-            write!(f, "{}", start_page_token)?;
+    pub async fn store_start_page_token(&self, path: &Path) -> Result<(), Error> {
+        if let Some(start_page_token) = self.start_page_token.load().as_ref() {
+            fs::write(path, start_page_token.to_string()).await?;
         }
         Ok(())
     }
 
-    pub fn read_start_page_token(path: &Path) -> Result<Option<usize>, Error> {
+    pub async fn read_start_page_token(path: &Path) -> Result<Option<usize>, Error> {
         if !path.exists() {
             return Ok(None);
         }
-        let mut f = File::open(path)?;
+        let mut f = fs::File::open(path).await?;
         let mut buf = String::new();
-        f.read_to_string(&mut buf)?;
+        f.read_to_string(&mut buf).await?;
         let start_page_token = buf.parse()?;
         Ok(Some(start_page_token))
     }
 
-    pub fn get_all_changes(&self) -> Result<Vec<drive3::Change>, Error> {
-        if self.start_page_token.is_some() {
-            let mut start_page_token = self.start_page_token.as_ref().unwrap().to_string();
+    pub async fn get_all_changes(&self) -> Result<Vec<Change>, Error> {
+        if let Some(start_page_token) = self.start_page_token.load() {
+            let mut start_page_token = start_page_token.to_string();
 
             let mut all_changes = Vec::new();
 
@@ -768,23 +755,22 @@ impl GDriveInstance {
             );
 
             loop {
-                let result = exponential_retry(|| {
-                    self.gdrive
-                        .lock()
-                        .changes()
-                        .list(&start_page_token)
-                        .param("fields", &fields)
-                        .spaces("drive")
-                        .restrict_to_my_drive(true)
-                        .include_removed(true)
-                        .supports_team_drives(false)
-                        .include_team_drive_items(false)
-                        .page_size(self.page_size)
-                        .add_scope(drive3::Scope::Full)
-                        .doit()
-                        .map_err(|e| format_err!("{:#?}", e))
-                });
-                let (_response, changelist) = result?;
+                let p = DriveParams {
+                    fields: Some(fields.clone()),
+                    ..DriveParams::default()
+                };
+                let params = ChangesListParams {
+                    drive_params: Some(p),
+                    page_token: start_page_token,
+                    spaces: Some("drive".into()),
+                    restrict_to_my_drive: Some(true),
+                    include_removed: Some(true),
+                    supports_all_drives: Some(false),
+                    page_size: Some(self.page_size),
+                    ..ChangesListParams::default()
+                };
+                let _permit = self.rate_limit.acquire().await?;
+                let changelist = self.changes.list(&params).await?;
 
                 if let Some(changes) = changelist.changes {
                     all_changes.extend(changes);
@@ -821,8 +807,8 @@ pub struct GDriveInfo {
 }
 
 impl GDriveInfo {
-    pub fn from_object(
-        item: &drive3::File,
+    pub async fn from_object(
+        item: &File,
         gdrive: &GDriveInstance,
         directory_map: &HashMap<StackString, DirectoryInfo>,
     ) -> Result<Self, Error> {
@@ -831,17 +817,16 @@ impl GDriveInfo {
             .as_ref()
             .ok_or_else(|| format_err!("No filename"))?;
         let md5sum = item.md5_checksum.as_ref().and_then(|x| x.parse().ok());
-        let st_mtime = DateTime::parse_from_rfc3339(
-            item.modified_time
-                .as_ref()
-                .ok_or_else(|| format_err!("No last modified"))?,
-        )?
-        .timestamp();
+        let st_mtime = item
+            .modified_time
+            .as_ref()
+            .ok_or_else(|| format_err!("No last modified"))?
+            .timestamp();
         let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
         let serviceid = item.id.as_ref().map(Into::into);
         let servicesession = Some(gdrive.session_name.parse()?);
 
-        let export_path = gdrive.get_export_path(&item, &directory_map)?;
+        let export_path = gdrive.get_export_path(&item, &directory_map).await?;
         let filepath = export_path.iter().fold(PathBuf::new(), |mut p, e| {
             p.push(e.as_str());
             p
@@ -873,58 +858,12 @@ impl GDriveInfo {
         Ok(finfo)
     }
 
-    pub fn from_changes_object(
-        item: drive3::Change,
+    pub async fn from_changes_object(
+        item: Change,
         gdrive: &GDriveInstance,
         directory_map: &HashMap<StackString, DirectoryInfo>,
     ) -> Result<Self, Error> {
         let file = item.file.ok_or_else(|| format_err!("No file"))?;
-        Self::from_object(&file, gdrive, directory_map)
-    }
-}
-
-struct DummyFile {
-    cursor: u64,
-    data: Vec<u8>,
-}
-
-impl DummyFile {
-    fn new(data: &[u8]) -> Self {
-        Self {
-            cursor: 0,
-            data: Vec::from(data),
-        }
-    }
-}
-
-impl Seek for DummyFile {
-    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        let position: i64 = match pos {
-            SeekFrom::Start(offset) => offset as i64,
-            SeekFrom::End(offset) => self.data.len() as i64 - offset,
-            SeekFrom::Current(offset) => self.cursor as i64 + offset,
-        };
-
-        if position < 0 {
-            Err(io::Error::from(io::ErrorKind::InvalidInput))
-        } else {
-            self.cursor = position as u64;
-            Ok(self.cursor)
-        }
-    }
-}
-
-impl Read for DummyFile {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let remaining = self.data.len() - self.cursor as usize;
-        let copied = cmp::min(buf.len(), remaining);
-
-        if copied > 0 {
-            buf[..]
-                .copy_from_slice(&self.data[self.cursor as usize..self.cursor as usize + copied]);
-        }
-
-        self.cursor += copied as u64;
-        Ok(copied)
+        Self::from_object(&file, gdrive, directory_map).await
     }
 }

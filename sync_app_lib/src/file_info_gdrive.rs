@@ -98,6 +98,7 @@ impl FileInfoGDrive {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Error;
     use log::debug;
     use std::{collections::HashMap, path::Path};
     use url::Url;
@@ -146,20 +147,21 @@ mod tests {
         );
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_create_drive() {
+    async fn test_create_drive() -> Result<(), Error> {
         let config = Config::init_config().unwrap();
         let gdrive = GDriveInstance::new(
             &config.gdrive_token_path,
             &config.gdrive_secret_file,
             "ddboline@gmail.com",
         )
+        .await?
         .with_max_keys(10)
-        .with_page_size(10)
-        .read_start_page_token_from_file();
+        .with_page_size(10);
+        gdrive.read_start_page_token_from_file().await?;
 
-        let list = gdrive.get_all_files(false).unwrap();
+        let list = gdrive.get_all_files(false).await?;
         assert_eq!(list.len(), 10);
         let test_info = list.iter().filter(|f| !f.parents.is_none()).next().unwrap();
         debug!("test_info {:?}", test_info);
@@ -169,23 +171,21 @@ mod tests {
         let local_path = Path::new("/tmp/temp.file");
         let mime = test_info.mime_type.as_ref().unwrap().to_string();
         debug!("mime {}", mime);
-        gdrive
-            .download(&gdriveid, &local_path, &Some(mime))
-            .unwrap();
+        gdrive.download(&gdriveid, &local_path, &Some(mime)).await?;
 
         let basepath = Path::new("../gdrive_lib/src/gdrive_instance.rs")
             .canonicalize()
             .unwrap();
         let local_url = Url::from_file_path(basepath).unwrap();
-        let new_file = gdrive.upload(&local_url, &parent).unwrap();
+        let new_file = gdrive.upload(&local_url, &parent).await?;
         debug!("new_file {:?}", new_file);
         debug!("start_page_token {:?}", gdrive.start_page_token);
         debug!(
             "current_start_page_token {:?}",
-            gdrive.get_start_page_token().unwrap()
+            gdrive.get_start_page_token().await?
         );
 
-        let changes = gdrive.get_all_changes().unwrap();
+        let changes = gdrive.get_all_changes().await?;
         let changes_map: HashMap<_, _> = changes
             .into_iter()
             .filter_map(|c| {
@@ -206,34 +206,34 @@ mod tests {
         }
 
         let new_driveid = new_file.id.unwrap();
-        gdrive.move_to_trash(&new_driveid).unwrap();
-        debug!(
-            "trash {:?}",
-            gdrive.get_file_metadata(&new_driveid).unwrap()
-        );
+        gdrive.move_to_trash(&new_driveid).await?;
+        debug!("trash {:?}", gdrive.get_file_metadata(&new_driveid).await?);
 
-        gdrive.delete_permanently(&new_driveid).unwrap();
+        gdrive.delete_permanently(&new_driveid).await?;
         debug!(
             "error {}",
-            gdrive.get_file_metadata(&new_driveid).unwrap_err()
+            gdrive.get_file_metadata(&new_driveid).await.unwrap_err()
         );
+        Ok(())
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_gdrive_store_read_change_token() {
-        let config = Config::init_config().unwrap();
+    async fn test_gdrive_store_read_change_token() -> Result<(), Error> {
+        let config = Config::init_config()?;
         let gdrive = GDriveInstance::new(
             &config.gdrive_token_path,
             &config.gdrive_secret_file,
             "ddboline@gmail.com",
         )
+        .await?
         .with_max_keys(10)
-        .with_page_size(10)
-        .with_start_page_token(8675309);
+        .with_page_size(10);
+        gdrive.start_page_token.store(Some(8675309));
         let p = Path::new("/tmp/temp_start_page_token.txt");
-        gdrive.store_start_page_token(&p).unwrap();
-        let result = GDriveInstance::read_start_page_token(&p).unwrap();
+        gdrive.store_start_page_token(&p).await?;
+        let result = GDriveInstance::read_start_page_token(&p).await?;
         assert_eq!(result, Some(8675309));
+        Ok(())
     }
 }

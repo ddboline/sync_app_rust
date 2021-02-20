@@ -23,6 +23,7 @@ anyhow = "1.0"
 dirs = "3.0"
 walkdir = "2.3"
 chrono = "0.4"
+futures = "0.3"
 stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.2.0", features=["diesel_types"] }
 
 [workspace]
