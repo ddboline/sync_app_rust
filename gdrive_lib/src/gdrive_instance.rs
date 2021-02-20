@@ -254,6 +254,7 @@ impl GDriveInstance {
             .await
     }
 
+    #[allow(clippy::filter_map)]
     pub async fn convert_file_list_to_gdrive_info(
         &self,
         flist: &[File],
