@@ -329,7 +329,9 @@ impl GDriveInstance {
         };
         let _permit = self.rate_limit.acquire().await?;
         let mut x: Option<fs::File> = None;
-        if let DownloadResult::Response(f) = self.files.get(&params).await?.do_it(x.as_mut()).await? {
+        if let DownloadResult::Response(f) =
+            self.files.get(&params).await?.do_it(x.as_mut()).await?
+        {
             Ok(f)
         } else {
             Err(format_err!("Failed to get metadata"))
@@ -383,8 +385,8 @@ impl GDriveInstance {
             .files
             .create_resumable_upload(&params, &new_file)
             .await?;
-        upload.upload_file(file_obj).await?;
-        Ok(new_file)
+        let resp = upload.upload_file(file_obj).await?;
+        Ok(resp)
     }
 
     pub fn is_unexportable<T: AsRef<str>>(mime_type: &Option<T>) -> bool {

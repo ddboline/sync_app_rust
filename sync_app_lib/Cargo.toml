@@ -44,4 +44,5 @@ envy = "0.4"
 tempfile = "3.1"
 smallvec = "1.6"
 arc-swap = "1.2"
+env_logger = "0.8"
 stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.2.0", features=["diesel_types"] }

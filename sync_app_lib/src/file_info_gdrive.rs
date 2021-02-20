@@ -150,6 +150,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_create_drive() -> Result<(), Error> {
+        env_logger::init();
         let config = Config::init_config().unwrap();
         let gdrive = GDriveInstance::new(
             &config.gdrive_token_path,
