@@ -301,7 +301,7 @@ impl FileListTrait for FileListGDrive {
                             .and_then(FileInfoGDrive::from_gdriveinfo)
                         {
                             if let Some(url) = finfo.get_finfo().urlname.as_ref() {
-                                stdout().write_all(url.as_str().as_bytes()).await?;
+                                stdout().write_all(format!("{}\n", url.as_str()).as_bytes()).await?;
                             }
                         }
                         Ok(())

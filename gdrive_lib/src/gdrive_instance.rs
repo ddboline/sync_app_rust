@@ -328,7 +328,8 @@ impl GDriveInstance {
             ..FilesGetParams::default()
         };
         let _permit = self.rate_limit.acquire().await?;
-        if let DownloadResult::Response(f) = self.files.get(&params).await?.do_it(None).await? {
+        let mut x: Option<fs::File> = None;
+        if let DownloadResult::Response(f) = self.files.get(&params).await?.do_it(x.as_mut()).await? {
             Ok(f)
         } else {
             Err(format_err!("Failed to get metadata"))
