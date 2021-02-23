@@ -32,14 +32,14 @@ impl FileInfoLocal {
                 .into();
             let finfo = FileInfo::new(
                 filename,
-                Some(path.into()),
-                Some(url.clone().into()),
+                path.into(),
+                url.clone().into(),
                 None,
                 None,
-                None,
-                None,
+                FileStat::default(),
+                ServiceId::default(),
                 FileService::Local,
-                None,
+                ServiceSession::default(),
             );
             Ok(Self(finfo))
         } else {
@@ -58,24 +58,17 @@ impl FileInfoTrait for FileInfoLocal {
     }
 
     fn get_md5(&self) -> Option<Md5Sum> {
-        match self.0.filepath.as_ref() {
-            Some(p) => _get_md5sum(&p).ok().map(|s| Md5Sum(s.into())),
-            None => None,
-        }
+        _get_md5sum(&self.0.filepath).ok().map(|s| Md5Sum(s.into()))
     }
 
     fn get_sha1(&self) -> Option<Sha1Sum> {
-        match self.0.filepath.as_ref() {
-            Some(p) => _get_sha1sum(&p).ok().map(|s| Sha1Sum(s.into())),
-            None => None,
-        }
+        _get_sha1sum(&self.0.filepath)
+            .ok()
+            .map(|s| Sha1Sum(s.into()))
     }
 
-    fn get_stat(&self) -> Option<FileStat> {
-        match self.0.filepath.as_ref() {
-            Some(p) => _get_stat(&p).ok(),
-            None => None,
-        }
+    fn get_stat(&self) -> FileStat {
+        _get_stat(&self.0.filepath).unwrap_or(FileStat::default())
     }
 }
 
@@ -124,20 +117,20 @@ impl FileInfoLocal {
             .to_string_lossy()
             .into_owned()
             .into();
-        let filestat = match metadata {
-            Some(metadata) => {
-                let modified = metadata
-                    .modified()?
-                    .duration_since(SystemTime::UNIX_EPOCH)?
-                    .as_secs() as i64;
-                let size = metadata.len();
-                Some(FileStat {
-                    st_mtime: modified as u32,
-                    st_size: size as u32,
-                })
+        let filestat = {
+            let metadata = metadata.ok_or_else(|| format_err!("No metadata"))?;
+            let modified = metadata
+                .modified()?
+                .duration_since(SystemTime::UNIX_EPOCH)?
+                .as_secs() as i64;
+            let size = metadata.len();
+            FileStat {
+                st_mtime: modified as u32,
+                st_size: size as u32,
             }
-            None => None,
         };
+        let serviceid = serviceid.ok_or_else(|| format_err!("No service id"))?;
+        let servicesession = servicesession.ok_or_else(|| format_err!("No servicesession"))?;
 
         let filepath = path.canonicalize()?;
         let fileurl = Url::from_file_path(filepath.clone())
@@ -147,8 +140,8 @@ impl FileInfoLocal {
 
         let finfo = FileInfo::new(
             filename,
-            Some(filepath.into()),
-            Some(fileurl.into()),
+            filepath.into(),
+            fileurl.into(),
             md5sum,
             sha1sum,
             filestat,

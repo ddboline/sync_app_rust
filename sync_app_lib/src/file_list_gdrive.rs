@@ -146,18 +146,14 @@ impl FileListGDrive {
         let flist = flist?
             .into_par_iter()
             .filter(|f| {
-                if let Some(url) = f.urlname.as_ref() {
-                    if url.as_str().contains(self.get_baseurl().as_str()) {
-                        return true;
-                    }
+                if f.urlname.as_str().contains(self.get_baseurl().as_str()) {
+                    return true;
                 }
                 false
             })
             .map(|f| {
                 let mut inner = f.inner().clone();
-                inner
-                    .servicesession
-                    .replace(self.get_servicesession().clone());
+                inner.servicesession = self.get_servicesession().clone();
                 FileInfo::from_inner(inner)
             })
             .collect();
@@ -250,9 +246,7 @@ impl FileListTrait for FileListGDrive {
         }
 
         for f in flist {
-            if let Some(fid) = f.serviceid.as_ref() {
-                flist_dict.insert(fid.0.clone(), f);
-            }
+            flist_dict.insert(f.serviceid.0.clone(), f);
         }
 
         let flist = flist_dict.into_iter().map(|(_, v)| v).collect();
@@ -300,11 +294,9 @@ impl FileListTrait for FileListGDrive {
                             .await
                             .and_then(FileInfoGDrive::from_gdriveinfo)
                         {
-                            if let Some(url) = finfo.get_finfo().urlname.as_ref() {
-                                stdout()
-                                    .write_all(format!("{}\n", url.as_str()).as_bytes())
-                                    .await?;
-                            }
+                            stdout()
+                                .write_all(format!("{}\n", finfo.get_finfo().urlname).as_bytes())
+                                .await?;
                         }
                         Ok(())
                     }
@@ -322,25 +314,16 @@ impl FileListTrait for FileListGDrive {
         let finfo1 = finfo1.get_finfo().clone();
         self.set_directory_map(true).await?;
         if finfo0.servicetype == FileService::GDrive && finfo1.servicetype == FileService::Local {
-            let local_path = finfo1
-                .filepath
-                .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?
-                .clone();
+            let local_path = finfo1.filepath.as_ref();
             let parent_dir = finfo1
                 .filepath
-                .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?
+                .0
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
                 create_dir_all(&parent_dir)?;
             }
-            let gdriveid = finfo0
-                .serviceid
-                .clone()
-                .ok_or_else(|| format_err!("No gdrive url"))?
-                .0;
+            let gdriveid = finfo0.serviceid.clone().0;
             let gfile = self.gdrive.get_file_metadata(&gdriveid).await?;
             debug!("{:?}", gfile.mime_type);
             if GDriveInstance::is_unexportable(&gfile.mime_type) {
@@ -370,18 +353,11 @@ impl FileListTrait for FileListGDrive {
         let finfo1 = finfo1.get_finfo().clone();
         self.set_directory_map(true).await?;
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::GDrive {
-            let local_file = finfo0
-                .filepath
-                .clone()
-                .ok_or_else(|| format_err!("No local path"))?
-                .canonicalize()?;
+            let local_file = finfo0.filepath.clone().canonicalize()?;
             let local_url =
                 Url::from_file_path(local_file).map_err(|e| format_err!("failure {:?}", e))?;
 
-            let remote_url = finfo1
-                .urlname
-                .clone()
-                .ok_or_else(|| format_err!("No remote url"))?;
+            let remote_url = finfo1.urlname.clone();
             let directory_map = self.directory_map.load().clone();
             let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
             let parent_id = GDriveInstance::get_parent_id(&remote_url, &dnamemap)?
@@ -409,15 +385,8 @@ impl FileListTrait for FileListGDrive {
         {
             return Ok(());
         }
-        let gdriveid = &finfo0
-            .serviceid
-            .as_ref()
-            .ok_or_else(|| format_err!("No serviceid"))?
-            .0;
-        let url = finfo1
-            .urlname
-            .as_ref()
-            .ok_or_else(|| format_err!("No url"))?;
+        let gdriveid = &finfo0.serviceid.0;
+        let url = finfo1.urlname.as_ref();
         let directory_map = self.directory_map.load().clone();
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
         let parentid = GDriveInstance::get_parent_id(&url, &dnamemap)?
@@ -431,9 +400,7 @@ impl FileListTrait for FileListGDrive {
         let finfo = finfo.get_finfo().clone();
         self.set_directory_map(true).await?;
         if finfo.servicetype == FileService::GDrive {
-            if let Some(gdriveid) = finfo.serviceid.as_ref() {
-                self.gdrive.delete_permanently(&gdriveid.0).await?;
-            }
+            self.gdrive.delete_permanently(&finfo.serviceid.0).await?;
             Ok(())
         } else {
             Err(format_err!("Wrong service type"))
@@ -526,10 +493,9 @@ mod tests {
         let directory_map = flist.directory_map.load().clone();
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
         for f in flist.get_filemap().values() {
-            let u = f.urlname.as_ref().unwrap();
-            let parent_id = GDriveInstance::get_parent_id(u, &dnamemap)?;
+            let parent_id = GDriveInstance::get_parent_id(&f.urlname, &dnamemap)?;
             assert!(!parent_id.is_none());
-            debug!("{} {:?}", u, parent_id);
+            debug!("{} {:?}", f.urlname, parent_id);
         }
 
         let multimap: HashMap<_, _> = dnamemap.iter().filter(|(_, v)| v.len() > 1).collect();

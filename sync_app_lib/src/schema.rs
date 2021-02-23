@@ -20,15 +20,17 @@ table! {
     file_info_cache (id) {
         id -> Int4,
         filename -> Varchar,
-        filepath -> Nullable<Text>,
-        urlname -> Nullable<Text>,
+        filepath -> Text,
+        urlname -> Text,
         md5sum -> Nullable<Text>,
         sha1sum -> Nullable<Text>,
-        filestat_st_mtime -> Nullable<Int4>,
-        filestat_st_size -> Nullable<Int4>,
-        serviceid -> Nullable<Text>,
+        filestat_st_mtime -> Int4,
+        filestat_st_size -> Int4,
+        serviceid -> Text,
         servicetype -> Text,
-        servicesession -> Nullable<Text>,
+        servicesession -> Text,
+        created_at -> Timestamptz,
+        deleted_at -> Nullable<Timestamptz>,
     }
 }
 

@@ -136,10 +136,8 @@ impl FileListTrait for FileListLocal {
                         },
                     );
                     if let Some(finfo) = flist_dict.get(filepath.as_str()) {
-                        if let Some(fstat) = finfo.filestat {
-                            if fstat.st_mtime >= modified && fstat.st_size == size {
-                                return Some(finfo.clone());
-                            }
+                        if finfo.filestat.st_mtime >= modified && finfo.filestat.st_size == size {
+                            return Some(finfo.clone());
                         }
                     };
                     FileInfoLocal::from_direntry(
@@ -196,18 +194,10 @@ impl FileListTrait for FileListLocal {
                 finfo1.servicetype
             ))
         } else {
-            let local_file = finfo1
-                .filepath
-                .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?;
-            let remote_file = finfo0
-                .filepath
-                .clone()
-                .ok_or_else(|| format_err!("No local path"))?;
+            let local_file = &finfo1.filepath;
+            let remote_file = &finfo0.filepath;
             let parent_dir = finfo1
                 .filepath
-                .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
@@ -234,14 +224,8 @@ impl FileListTrait for FileListLocal {
     ) -> Result<(), Error> {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
-        let path0 = finfo0
-            .filepath
-            .as_ref()
-            .ok_or_else(|| format_err!("No file path"))?;
-        let path1 = finfo1
-            .filepath
-            .as_ref()
-            .ok_or_else(|| format_err!("No file path"))?;
+        let path0 = &finfo0.filepath;
+        let path1 = &finfo1.filepath;
         if finfo0.servicetype != FileService::Local || finfo1.servicetype != FileService::Local {
             Ok(())
         } else {
@@ -256,12 +240,11 @@ impl FileListTrait for FileListLocal {
     async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         if finfo.servicetype != FileService::Local {
-            Err(format_err!("Wrong service type"))
-        } else if let Some(filepath) = finfo.filepath.as_ref() {
-            remove_file(filepath).await.map_err(Into::into)
-        } else {
-            Ok(())
+            return Err(format_err!("Wrong service type"));
+        } else if finfo.filepath.exists() {
+            remove_file(&finfo.filepath).await?;
         }
+        Ok(())
     }
 }
 
@@ -323,17 +306,8 @@ mod tests {
 
         debug!("{:?}", result);
 
-        assert!(result
-            .filepath
-            .as_ref()
-            .unwrap()
-            .ends_with("file_list_local.rs"));
-        assert!(result
-            .urlname
-            .as_ref()
-            .unwrap()
-            .as_str()
-            .ends_with("file_list_local.rs"));
+        assert!(result.filepath.ends_with("file_list_local.rs"));
+        assert!(result.urlname.as_str().ends_with("file_list_local.rs"));
 
         let cache_info: InsertFileInfoCache = result.into();
         debug!("{:?}", cache_info);

@@ -152,25 +152,15 @@ impl FileListTrait for FileListS3 {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::S3 && finfo1.servicetype == FileService::Local {
-            let local_file = finfo1
-                .filepath
-                .clone()
-                .ok_or_else(|| format_err!("No local path"))?
-                .to_string_lossy()
-                .to_string();
+            let local_file = finfo1.filepath.to_string_lossy().to_string();
             let parent_dir = finfo1
                 .filepath
-                .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
                 create_dir_all(&parent_dir)?;
             }
-            let remote_url = finfo0
-                .urlname
-                .clone()
-                .ok_or_else(|| format_err!("No s3 url"))?;
+            let remote_url = finfo0.urlname.clone();
             let bucket = remote_url
                 .host_str()
                 .ok_or_else(|| format_err!("No bucket"))?;
@@ -182,8 +172,8 @@ impl FileListTrait for FileListS3 {
             if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
                 debug!(
                     "Multipart upload? {} {}",
-                    finfo1.urlname.as_ref().map_or_else(|| "", |u| u.as_str()),
-                    finfo0.urlname.as_ref().map_or_else(|| "", |u| u.as_str()),
+                    finfo1.urlname.as_str(),
+                    finfo0.urlname.as_str(),
                 );
             }
             Ok(())
@@ -206,15 +196,10 @@ impl FileListTrait for FileListS3 {
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::S3 {
             let local_file = finfo0
                 .filepath
-                .clone()
-                .ok_or_else(|| format_err!("No local path"))?
                 .canonicalize()?
                 .to_string_lossy()
                 .to_string();
-            let remote_url = finfo1
-                .urlname
-                .clone()
-                .ok_or_else(|| format_err!("No s3 url"))?;
+            let remote_url = &finfo1.urlname;
             let bucket = remote_url
                 .host_str()
                 .ok_or_else(|| format_err!("No bucket"))?;
@@ -240,16 +225,10 @@ impl FileListTrait for FileListS3 {
         {
             return Ok(());
         }
-        let url0 = finfo0
-            .urlname
-            .as_ref()
-            .ok_or_else(|| format_err!("No url"))?;
+        let url0 = &finfo0.urlname;
         let bucket0 = url0.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let key0 = url0.path();
-        let url1 = finfo1
-            .urlname
-            .as_ref()
-            .ok_or_else(|| format_err!("No url"))?;
+        let url1 = &finfo1.urlname;
         let bucket1 = url1.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let key1 = url1.path();
         let new_tag = self.s3.copy_key(url0, &bucket1, &key1).await?;
@@ -262,10 +241,7 @@ impl FileListTrait for FileListS3 {
     async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         if finfo.servicetype == FileService::S3 {
-            let url = finfo
-                .urlname
-                .clone()
-                .ok_or_else(|| format_err!("No s3 url"))?;
+            let url = &finfo.urlname;
             let bucket = url.host_str().ok_or_else(|| format_err!("No bucket"))?;
             let key = url.path();
             self.s3.delete_key(&bucket, &key).await

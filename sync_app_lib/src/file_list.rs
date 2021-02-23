@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use log::debug;
 use rayon::iter::{
@@ -212,21 +213,24 @@ pub trait FileListTrait: Send + Sync + Debug {
                     Ok(())
                 } else {
                     use crate::schema::file_info_cache::dsl::{
-                        file_info_cache, filename, filepath, serviceid, servicesession, urlname,
+                        deleted_at, file_info_cache, filename, filepath, serviceid, servicesession,
+                        urlname,
                     };
 
                     let conn = pool.get()?;
 
                     debug!("remove {:?}", k);
 
-                    diesel::delete(
+                    diesel::update(
                         file_info_cache
                             .filter(filename.eq(&k.filename))
                             .filter(filepath.eq(&k.filepath))
                             .filter(serviceid.eq(&k.serviceid))
                             .filter(servicesession.eq(&k.servicesession))
-                            .filter(urlname.eq(&k.urlname)),
+                            .filter(urlname.eq(&k.urlname))
+                            .filter(deleted_at.is_null()),
                     )
+                    .set(deleted_at.eq(Some(Utc::now())))
                     .execute(&conn)?;
                     Ok(())
                 }
@@ -329,14 +333,14 @@ pub trait FileListTrait: Send + Sync + Debug {
                     .try_into()
                     .ok()
                     .map(|val| (entry.filename.clone(), val)),
-                FileInfoKeyType::FilePath => entry.filepath.as_ref().and_then(|fp| {
-                    let key = fp.clone();
+                FileInfoKeyType::FilePath => {
+                    let key = entry.filepath.clone();
                     entry.try_into().ok().map(|val| (key, val))
-                }),
-                FileInfoKeyType::UrlName => entry.urlname.as_ref().and_then(|url| {
-                    let key = url.clone();
+                }
+                FileInfoKeyType::UrlName => {
+                    let key = entry.urlname.clone();
                     entry.try_into().ok().map(|val| (key, val))
-                }),
+                }
                 FileInfoKeyType::Md5Sum => entry.md5sum.as_ref().and_then(|fp| {
                     let key = fp.clone();
                     entry.try_into().ok().map(|val| (key, val))
@@ -345,10 +349,10 @@ pub trait FileListTrait: Send + Sync + Debug {
                     let key = fp.clone();
                     entry.try_into().ok().map(|val| (key, val))
                 }),
-                FileInfoKeyType::ServiceId => entry.serviceid.as_ref().and_then(|fp| {
-                    let key = fp.clone();
+                FileInfoKeyType::ServiceId => {
+                    let key = entry.serviceid.clone();
                     entry.try_into().ok().map(|val| (key, val))
-                }),
+                }
             })
             .collect()
     }
@@ -449,20 +453,22 @@ pub trait FileListTrait: Send + Sync + Debug {
 
     fn remove_by_id(&self, gdriveid: &str) -> Result<usize, Error> {
         use crate::schema::file_info_cache::dsl::{
-            file_info_cache, serviceid, servicesession, servicetype,
+            deleted_at, file_info_cache, serviceid, servicesession, servicetype,
         };
 
         let pool = self.get_pool();
         let conn = pool.get()?;
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
+        let null: Option<DateTime<Utc>> = None;
 
-        diesel::delete(
+        diesel::update(
             file_info_cache
                 .filter(servicesession.eq(session.0.to_string()))
                 .filter(servicetype.eq(stype.to_string()))
-                .filter(serviceid.eq(Some(gdriveid))),
+                .filter(serviceid.eq(gdriveid)),
         )
+        .set(deleted_at.eq(null))
         .execute(&conn)
         .map_err(Into::into)
     }
@@ -520,15 +526,10 @@ impl FileListTrait for FileList {
         let filemap = filelist
             .into_par_iter()
             .map(|f| {
-                let key = f.filepath.as_ref().map_or_else(
-                    || f.filename.clone(),
-                    |x| {
-                        let path = x.to_string_lossy();
-                        remove_basepath(&path, &self.get_basepath().to_string_lossy())
-                    },
-                );
+                let path = f.filepath.to_string_lossy();
+                let key = remove_basepath(&path, &self.get_basepath().to_string_lossy());
                 let mut inner = f.inner().clone();
-                inner.servicesession = Some(self.get_servicesession().clone());
+                inner.servicesession = self.get_servicesession().clone();
                 let f = FileInfo::from_inner(inner);
                 (key, f)
             })

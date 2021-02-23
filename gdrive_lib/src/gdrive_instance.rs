@@ -329,10 +329,7 @@ impl GDriveInstance {
             ..FilesGetParams::default()
         };
         let _permit = self.rate_limit.acquire().await?;
-        let mut x: Option<fs::File> = None;
-        if let DownloadResult::Response(f) =
-            self.files.get(&params).await?.do_it(x.as_mut()).await?
-        {
+        if let DownloadResult::Response(f) = self.files.get(&params).await?.do_it(None).await? {
             Ok(f)
         } else {
             Err(format_err!("Failed to get metadata"))
@@ -798,16 +795,16 @@ impl GDriveInstance {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GDriveInfo {
     pub filename: StackString,
-    pub filepath: Option<PathBuf>,
-    pub urlname: Option<Url>,
+    pub filepath: PathBuf,
+    pub urlname: Url,
     pub md5sum: Option<StackString>,
     pub sha1sum: Option<StackString>,
-    pub filestat: Option<(u32, u32)>,
-    pub serviceid: Option<StackString>,
-    pub servicesession: Option<StackString>,
+    pub filestat: (u32, u32),
+    pub serviceid: StackString,
+    pub servicesession: StackString,
 }
 
 impl GDriveInfo {
@@ -827,8 +824,8 @@ impl GDriveInfo {
             .ok_or_else(|| format_err!("No last modified"))?
             .timestamp();
         let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
-        let serviceid = item.id.as_ref().map(Into::into);
-        let servicesession = Some(gdrive.session_name.parse()?);
+        let serviceid = item.id.as_ref().ok_or_else(|| format_err!("No ID"))?.into();
+        let servicesession = gdrive.session_name.parse()?;
 
         let export_path = gdrive.get_export_path(&item, &directory_map).await?;
         let filepath = export_path.iter().fold(PathBuf::new(), |mut p, e| {
@@ -847,11 +844,11 @@ impl GDriveInfo {
 
         let finfo = Self {
             filename: filename.into(),
-            filepath: Some(filepath),
-            urlname: Some(urlname),
+            filepath,
+            urlname,
             md5sum,
             sha1sum: None,
-            filestat: Some((st_mtime as u32, size as u32)),
+            filestat: (st_mtime as u32, size as u32),
             serviceid,
             servicesession,
         };
