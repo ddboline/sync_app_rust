@@ -4417,7 +4417,7 @@ impl std::fmt::Display for DriveParams {
 /// The Drive About service represents the About resource.
 pub struct AboutService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -4429,10 +4429,7 @@ impl AboutService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> AboutService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> AboutService {
         AboutService {
             client,
             authenticator: Box::new(auth),
@@ -4491,7 +4488,7 @@ impl AboutService {
 
     /// Gets information about the user, the user's Drive, and system
     /// capabilities.
-    pub async fn get(&mut self, params: &AboutGetParams) -> Result<About> {
+    pub async fn get(&self, params: &AboutGetParams) -> Result<About> {
         let rel_path = format!("about",);
         let path = self.format_path(rel_path.as_str());
 
@@ -4523,7 +4520,7 @@ impl AboutService {
 /// The Drive Changes service represents the Changes resource.
 pub struct ChangesService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -4535,10 +4532,7 @@ impl ChangesService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> ChangesService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> ChangesService {
         ChangesService {
             client,
             authenticator: Box::new(auth),
@@ -4657,7 +4651,7 @@ impl ChangesService {
     }
 
     /// Subscribes to changes for a user.
-    pub async fn watch(&mut self, params: &ChangesWatchParams, req: &Channel) -> Result<Channel> {
+    pub async fn watch(&self, params: &ChangesWatchParams, req: &Channel) -> Result<Channel> {
         let rel_path = format!("changes/watch",);
         let path = self.format_path(rel_path.as_str());
 
@@ -4690,7 +4684,7 @@ impl ChangesService {
 /// The Drive Channels service represents the Channels resource.
 pub struct ChannelsService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -4702,10 +4696,7 @@ impl ChannelsService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> ChannelsService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> ChannelsService {
         ChannelsService {
             client,
             authenticator: Box::new(auth),
@@ -4763,7 +4754,7 @@ impl ChannelsService {
     }
 
     /// Stop watching resources through this channel
-    pub async fn stop(&mut self, params: &ChannelsStopParams, req: &Channel) -> Result<()> {
+    pub async fn stop(&self, params: &ChannelsStopParams, req: &Channel) -> Result<()> {
         let rel_path = format!("channels/stop",);
         let path = self.format_path(rel_path.as_str());
 
@@ -4796,7 +4787,7 @@ impl ChannelsService {
 /// The Drive Comments service represents the Comments resource.
 pub struct CommentsService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -4808,10 +4799,7 @@ impl CommentsService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> CommentsService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> CommentsService {
         CommentsService {
             client,
             authenticator: Box::new(auth),
@@ -4869,11 +4857,7 @@ impl CommentsService {
     }
 
     /// Creates a new comment on a file.
-    pub async fn create(
-        &mut self,
-        params: &CommentsCreateParams,
-        req: &Comment,
-    ) -> Result<Comment> {
+    pub async fn create(&self, params: &CommentsCreateParams, req: &Comment) -> Result<Comment> {
         let rel_path = format!(
             "files/{fileId}/comments",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC)
@@ -4906,7 +4890,7 @@ impl CommentsService {
     }
 
     /// Deletes a comment.
-    pub async fn delete(&mut self, params: &CommentsDeleteParams) -> Result<()> {
+    pub async fn delete(&self, params: &CommentsDeleteParams) -> Result<()> {
         let rel_path = format!(
             "files/{fileId}/comments/{commentId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -4942,7 +4926,7 @@ impl CommentsService {
     }
 
     /// Gets a comment by ID.
-    pub async fn get(&mut self, params: &CommentsGetParams) -> Result<Comment> {
+    pub async fn get(&self, params: &CommentsGetParams) -> Result<Comment> {
         let rel_path = format!(
             "files/{fileId}/comments/{commentId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -4978,7 +4962,7 @@ impl CommentsService {
     }
 
     /// Lists a file's comments.
-    pub async fn list(&mut self, params: &CommentsListParams) -> Result<CommentList> {
+    pub async fn list(&self, params: &CommentsListParams) -> Result<CommentList> {
         let rel_path = format!(
             "files/{fileId}/comments",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC)
@@ -5010,11 +4994,7 @@ impl CommentsService {
     }
 
     /// Updates a comment with patch semantics.
-    pub async fn update(
-        &mut self,
-        params: &CommentsUpdateParams,
-        req: &Comment,
-    ) -> Result<Comment> {
+    pub async fn update(&self, params: &CommentsUpdateParams, req: &Comment) -> Result<Comment> {
         let rel_path = format!(
             "files/{fileId}/comments/{commentId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -5054,7 +5034,7 @@ impl CommentsService {
 /// The Drive Drives service represents the Drives resource.
 pub struct DrivesService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -5066,10 +5046,7 @@ impl DrivesService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> DrivesService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> DrivesService {
         DrivesService {
             client,
             authenticator: Box::new(auth),
@@ -5127,7 +5104,7 @@ impl DrivesService {
     }
 
     /// Creates a new shared drive.
-    pub async fn create(&mut self, params: &DrivesCreateParams, req: &Drive) -> Result<Drive> {
+    pub async fn create(&self, params: &DrivesCreateParams, req: &Drive) -> Result<Drive> {
         let rel_path = format!("drives",);
         let path = self.format_path(rel_path.as_str());
 
@@ -5158,7 +5135,7 @@ impl DrivesService {
 
     /// Permanently deletes a shared drive for which the user is an organizer.
     /// The shared drive cannot contain any untrashed items.
-    pub async fn delete(&mut self, params: &DrivesDeleteParams) -> Result<()> {
+    pub async fn delete(&self, params: &DrivesDeleteParams) -> Result<()> {
         let rel_path = format!(
             "drives/{driveId}",
             driveId = percent_encode(format!("{}", params.drive_id).as_bytes(), NON_ALPHANUMERIC)
@@ -5190,7 +5167,7 @@ impl DrivesService {
     }
 
     /// Gets a shared drive's metadata by ID.
-    pub async fn get(&mut self, params: &DrivesGetParams) -> Result<Drive> {
+    pub async fn get(&self, params: &DrivesGetParams) -> Result<Drive> {
         let rel_path = format!(
             "drives/{driveId}",
             driveId = percent_encode(format!("{}", params.drive_id).as_bytes(), NON_ALPHANUMERIC)
@@ -5222,7 +5199,7 @@ impl DrivesService {
     }
 
     /// Hides a shared drive from the default view.
-    pub async fn hide(&mut self, params: &DrivesHideParams) -> Result<Drive> {
+    pub async fn hide(&self, params: &DrivesHideParams) -> Result<Drive> {
         let rel_path = format!(
             "drives/{driveId}/hide",
             driveId = percent_encode(format!("{}", params.drive_id).as_bytes(), NON_ALPHANUMERIC)
@@ -5254,7 +5231,7 @@ impl DrivesService {
     }
 
     /// Lists the user's shared drives.
-    pub async fn list(&mut self, params: &DrivesListParams) -> Result<DriveList> {
+    pub async fn list(&self, params: &DrivesListParams) -> Result<DriveList> {
         let rel_path = format!("drives",);
         let path = self.format_path(rel_path.as_str());
 
@@ -5283,7 +5260,7 @@ impl DrivesService {
     }
 
     /// Restores a shared drive to the default view.
-    pub async fn unhide(&mut self, params: &DrivesUnhideParams) -> Result<Drive> {
+    pub async fn unhide(&self, params: &DrivesUnhideParams) -> Result<Drive> {
         let rel_path = format!(
             "drives/{driveId}/unhide",
             driveId = percent_encode(format!("{}", params.drive_id).as_bytes(), NON_ALPHANUMERIC)
@@ -5315,7 +5292,7 @@ impl DrivesService {
     }
 
     /// Updates the metadate for a shared drive.
-    pub async fn update(&mut self, params: &DrivesUpdateParams, req: &Drive) -> Result<Drive> {
+    pub async fn update(&self, params: &DrivesUpdateParams, req: &Drive) -> Result<Drive> {
         let rel_path = format!(
             "drives/{driveId}",
             driveId = percent_encode(format!("{}", params.drive_id).as_bytes(), NON_ALPHANUMERIC)
@@ -5351,7 +5328,7 @@ impl DrivesService {
 /// The Drive Files service represents the Files resource.
 pub struct FilesService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -5363,10 +5340,7 @@ impl FilesService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> FilesService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> FilesService {
         FilesService {
             client,
             authenticator: Box::new(auth),
@@ -5425,7 +5399,7 @@ impl FilesService {
 
     /// Creates a copy of a file and applies any requested updates with patch
     /// semantics. Folders cannot be copied.
-    pub async fn copy(&mut self, params: &FilesCopyParams, req: &File) -> Result<File> {
+    pub async fn copy(&self, params: &FilesCopyParams, req: &File) -> Result<File> {
         let rel_path = format!(
             "files/{fileId}/copy",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC)
@@ -5492,7 +5466,7 @@ impl FilesService {
     /// This method is a variant of `create()`, taking data for upload. It
     /// performs a multipart upload.
     pub async fn create_upload(
-        &mut self,
+        &self,
         params: &FilesCreateParams,
         req: &File,
         data: hyper::body::Bytes,
@@ -5617,7 +5591,7 @@ impl FilesService {
     }
 
     /// Permanently deletes all of the user's trashed files.
-    pub async fn empty_trash(&mut self, params: &FilesEmptyTrashParams) -> Result<()> {
+    pub async fn empty_trash(&self, params: &FilesEmptyTrashParams) -> Result<()> {
         let rel_path = format!("files/trash",);
         let path = self.format_path(rel_path.as_str());
 
@@ -5685,7 +5659,7 @@ impl FilesService {
 
     /// Generates a set of file IDs which can be provided in create or copy
     /// requests.
-    pub async fn generate_ids(&mut self, params: &FilesGenerateIdsParams) -> Result<GeneratedIds> {
+    pub async fn generate_ids(&self, params: &FilesGenerateIdsParams) -> Result<GeneratedIds> {
         let rel_path = format!("files/generateIds",);
         let path = self.format_path(rel_path.as_str());
 
@@ -5819,7 +5793,7 @@ impl FilesService {
     /// This method is a variant of `update()`, taking data for upload. It
     /// performs a multipart upload.
     pub async fn update_upload(
-        &mut self,
+        &self,
         params: &FilesUpdateParams,
         req: &File,
         data: hyper::body::Bytes,
@@ -5873,7 +5847,7 @@ impl FilesService {
     /// will be returned by the `ResumableUpload` method you choose for the
     /// upload.
     pub async fn update_resumable_upload<'client>(
-        &'client mut self,
+        &'client self,
         params: &FilesUpdateParams,
         req: &File,
     ) -> Result<ResumableUpload<'client, File>> {
@@ -5928,7 +5902,7 @@ impl FilesService {
     ///
     /// This method potentially downloads data. See documentation of `Download`.
     pub async fn watch<'a>(
-        &'a mut self,
+        &'a self,
         params: &FilesWatchParams,
         req: &'a Channel,
     ) -> Result<Download<'a, Channel, Channel>> {
@@ -5967,7 +5941,7 @@ impl FilesService {
 /// The Drive Permissions service represents the Permissions resource.
 pub struct PermissionsService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -5979,10 +5953,7 @@ impl PermissionsService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> PermissionsService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> PermissionsService {
         PermissionsService {
             client,
             authenticator: Box::new(auth),
@@ -6041,7 +6012,7 @@ impl PermissionsService {
 
     /// Creates a permission for a file or shared drive.
     pub async fn create(
-        &mut self,
+        &self,
         params: &PermissionsCreateParams,
         req: &Permission,
     ) -> Result<Permission> {
@@ -6077,7 +6048,7 @@ impl PermissionsService {
     }
 
     /// Deletes a permission.
-    pub async fn delete(&mut self, params: &PermissionsDeleteParams) -> Result<()> {
+    pub async fn delete(&self, params: &PermissionsDeleteParams) -> Result<()> {
         let rel_path = format!(
             "files/{fileId}/permissions/{permissionId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -6113,7 +6084,7 @@ impl PermissionsService {
     }
 
     /// Gets a permission by ID.
-    pub async fn get(&mut self, params: &PermissionsGetParams) -> Result<Permission> {
+    pub async fn get(&self, params: &PermissionsGetParams) -> Result<Permission> {
         let rel_path = format!(
             "files/{fileId}/permissions/{permissionId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -6149,7 +6120,7 @@ impl PermissionsService {
     }
 
     /// Lists a file's or shared drive's permissions.
-    pub async fn list(&mut self, params: &PermissionsListParams) -> Result<PermissionList> {
+    pub async fn list(&self, params: &PermissionsListParams) -> Result<PermissionList> {
         let rel_path = format!(
             "files/{fileId}/permissions",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC)
@@ -6182,7 +6153,7 @@ impl PermissionsService {
 
     /// Updates a permission with patch semantics.
     pub async fn update(
-        &mut self,
+        &self,
         params: &PermissionsUpdateParams,
         req: &Permission,
     ) -> Result<Permission> {
@@ -6225,7 +6196,7 @@ impl PermissionsService {
 /// The Drive Replies service represents the Replies resource.
 pub struct RepliesService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -6237,10 +6208,7 @@ impl RepliesService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> RepliesService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> RepliesService {
         RepliesService {
             client,
             authenticator: Box::new(auth),
@@ -6298,7 +6266,7 @@ impl RepliesService {
     }
 
     /// Creates a new reply to a comment.
-    pub async fn create(&mut self, params: &RepliesCreateParams, req: &Reply) -> Result<Reply> {
+    pub async fn create(&self, params: &RepliesCreateParams, req: &Reply) -> Result<Reply> {
         let rel_path = format!(
             "files/{fileId}/comments/{commentId}/replies",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -6335,7 +6303,7 @@ impl RepliesService {
     }
 
     /// Deletes a reply.
-    pub async fn delete(&mut self, params: &RepliesDeleteParams) -> Result<()> {
+    pub async fn delete(&self, params: &RepliesDeleteParams) -> Result<()> {
         let rel_path = format!(
             "files/{fileId}/comments/{commentId}/replies/{replyId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -6372,7 +6340,7 @@ impl RepliesService {
     }
 
     /// Gets a reply by ID.
-    pub async fn get(&mut self, params: &RepliesGetParams) -> Result<Reply> {
+    pub async fn get(&self, params: &RepliesGetParams) -> Result<Reply> {
         let rel_path = format!(
             "files/{fileId}/comments/{commentId}/replies/{replyId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -6409,7 +6377,7 @@ impl RepliesService {
     }
 
     /// Lists a comment's replies.
-    pub async fn list(&mut self, params: &RepliesListParams) -> Result<ReplyList> {
+    pub async fn list(&self, params: &RepliesListParams) -> Result<ReplyList> {
         let rel_path = format!(
             "files/{fileId}/comments/{commentId}/replies",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -6445,7 +6413,7 @@ impl RepliesService {
     }
 
     /// Updates a reply with patch semantics.
-    pub async fn update(&mut self, params: &RepliesUpdateParams, req: &Reply) -> Result<Reply> {
+    pub async fn update(&self, params: &RepliesUpdateParams, req: &Reply) -> Result<Reply> {
         let rel_path = format!(
             "files/{fileId}/comments/{commentId}/replies/{replyId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -6486,7 +6454,7 @@ impl RepliesService {
 /// The Drive Revisions service represents the Revisions resource.
 pub struct RevisionsService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -6498,10 +6466,7 @@ impl RevisionsService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> RevisionsService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> RevisionsService {
         RevisionsService {
             client,
             authenticator: Box::new(auth),
@@ -6562,7 +6527,7 @@ impl RevisionsService {
     /// files with binary content in Google Drive, like images or videos.
     /// Revisions for other files, like Google Docs or Sheets, and the last
     /// remaining file version can't be deleted.
-    pub async fn delete(&mut self, params: &RevisionsDeleteParams) -> Result<()> {
+    pub async fn delete(&self, params: &RevisionsDeleteParams) -> Result<()> {
         let rel_path = format!(
             "files/{fileId}/revisions/{revisionId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -6601,7 +6566,7 @@ impl RevisionsService {
     ///
     /// This method potentially downloads data. See documentation of `Download`.
     pub async fn get<'a>(
-        &'a mut self,
+        &'a self,
         params: &RevisionsGetParams,
     ) -> Result<Download<'a, EmptyRequest, Revision>> {
         let rel_path = format!(
@@ -6639,7 +6604,7 @@ impl RevisionsService {
     }
 
     /// Lists a file's revisions.
-    pub async fn list(&mut self, params: &RevisionsListParams) -> Result<RevisionList> {
+    pub async fn list(&self, params: &RevisionsListParams) -> Result<RevisionList> {
         let rel_path = format!(
             "files/{fileId}/revisions",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC)
@@ -6671,11 +6636,7 @@ impl RevisionsService {
     }
 
     /// Updates a revision with patch semantics.
-    pub async fn update(
-        &mut self,
-        params: &RevisionsUpdateParams,
-        req: &Revision,
-    ) -> Result<Revision> {
+    pub async fn update(&self, params: &RevisionsUpdateParams, req: &Revision) -> Result<Revision> {
         let rel_path = format!(
             "files/{fileId}/revisions/{revisionId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC),
@@ -6715,7 +6676,7 @@ impl RevisionsService {
 /// The Drive Teamdrives service represents the Teamdrives resource.
 pub struct TeamdrivesService {
     client: TlsClient,
-    authenticator: Box<dyn 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>,
+    authenticator: Box<dyn 'static + DerefAuth>,
     scopes: Vec<String>,
 
     base_url: String,
@@ -6727,10 +6688,7 @@ impl TeamdrivesService {
     /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
     /// Rc::new(authenticator))`. This way, one authenticator can be shared
     /// among several services.
-    pub fn new<A: 'static + std::ops::Deref<Target = Authenticator> + Send + Sync>(
-        client: TlsClient,
-        auth: A,
-    ) -> TeamdrivesService {
+    pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> TeamdrivesService {
         TeamdrivesService {
             client,
             authenticator: Box::new(auth),
@@ -6789,7 +6747,7 @@ impl TeamdrivesService {
 
     /// Deprecated use drives.create instead.
     pub async fn create(
-        &mut self,
+        &self,
         params: &TeamdrivesCreateParams,
         req: &TeamDrive,
     ) -> Result<TeamDrive> {
@@ -6822,7 +6780,7 @@ impl TeamdrivesService {
     }
 
     /// Deprecated use drives.delete instead.
-    pub async fn delete(&mut self, params: &TeamdrivesDeleteParams) -> Result<()> {
+    pub async fn delete(&self, params: &TeamdrivesDeleteParams) -> Result<()> {
         let rel_path = format!(
             "teamdrives/{teamDriveId}",
             teamDriveId = percent_encode(
@@ -6857,7 +6815,7 @@ impl TeamdrivesService {
     }
 
     /// Deprecated use drives.get instead.
-    pub async fn get(&mut self, params: &TeamdrivesGetParams) -> Result<TeamDrive> {
+    pub async fn get(&self, params: &TeamdrivesGetParams) -> Result<TeamDrive> {
         let rel_path = format!(
             "teamdrives/{teamDriveId}",
             teamDriveId = percent_encode(
@@ -6892,7 +6850,7 @@ impl TeamdrivesService {
     }
 
     /// Deprecated use drives.list instead.
-    pub async fn list(&mut self, params: &TeamdrivesListParams) -> Result<TeamDriveList> {
+    pub async fn list(&self, params: &TeamdrivesListParams) -> Result<TeamDriveList> {
         let rel_path = format!("teamdrives",);
         let path = self.format_path(rel_path.as_str());
 
@@ -6922,7 +6880,7 @@ impl TeamdrivesService {
 
     /// Deprecated use drives.update instead
     pub async fn update(
-        &mut self,
+        &self,
         params: &TeamdrivesUpdateParams,
         req: &TeamDrive,
     ) -> Result<TeamDrive> {

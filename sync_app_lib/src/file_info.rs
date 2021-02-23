@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use chrono::{DateTime, Utc};
+use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{Into, TryFrom, TryInto},
@@ -28,7 +29,7 @@ use crate::{
     url_wrapper::UrlWrapper,
 };
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct FileStat {
     pub st_mtime: u32,
     pub st_size: u32,
@@ -76,7 +77,7 @@ impl FromStr for Sha1Sum {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct ServiceId(pub StackString);
 
 impl From<StackString> for ServiceId {
@@ -103,7 +104,7 @@ impl From<ServiceSession> for ServiceId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct ServiceSession(pub StackString);
 
 impl FromStr for ServiceSession {
@@ -118,17 +119,33 @@ impl FromStr for ServiceSession {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileInfoInner {
     pub filename: StackString,
-    pub filepath: Option<PathBufWrapper>,
-    pub urlname: Option<UrlWrapper>,
+    pub filepath: PathBufWrapper,
+    pub urlname: UrlWrapper,
     pub md5sum: Option<Md5Sum>,
     pub sha1sum: Option<Sha1Sum>,
-    pub filestat: Option<FileStat>,
-    pub serviceid: Option<ServiceId>,
+    pub filestat: FileStat,
+    pub serviceid: ServiceId,
     pub servicetype: FileService,
-    pub servicesession: Option<ServiceSession>,
+    pub servicesession: ServiceSession,
+}
+
+impl Default for FileInfoInner {
+    fn default() -> Self {
+        Self {
+            filename: StackString::default(),
+            filepath: ".".into(),
+            urlname: ".".parse().unwrap(),
+            md5sum: None,
+            sha1sum: None,
+            filestat: FileStat::default(),
+            serviceid: ServiceId::default(),
+            servicetype: FileService::default(),
+            servicesession: ServiceSession::default(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
@@ -155,21 +172,21 @@ pub trait FileInfoTrait: Send + Sync + Debug {
     fn into_finfo(self) -> FileInfo;
     fn get_md5(&self) -> Option<Md5Sum>;
     fn get_sha1(&self) -> Option<Sha1Sum>;
-    fn get_stat(&self) -> Option<FileStat>;
+    fn get_stat(&self) -> FileStat;
 }
 
 impl FileInfo {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         filename: StackString,
-        filepath: Option<PathBufWrapper>,
-        urlname: Option<UrlWrapper>,
+        filepath: PathBufWrapper,
+        urlname: UrlWrapper,
         md5sum: Option<Md5Sum>,
         sha1sum: Option<Sha1Sum>,
-        filestat: Option<FileStat>,
-        serviceid: Option<ServiceId>,
+        filestat: FileStat,
+        serviceid: ServiceId,
         servicetype: FileService,
-        servicesession: Option<ServiceSession>,
+        servicesession: ServiceSession,
     ) -> Self {
         let inner = FileInfoInner {
             filename,
@@ -221,7 +238,7 @@ impl FileInfoTrait for FileInfo {
         self.sha1sum.clone()
     }
 
-    fn get_stat(&self) -> Option<FileStat> {
+    fn get_stat(&self) -> FileStat {
         self.filestat
     }
 }
@@ -231,29 +248,17 @@ impl TryFrom<&FileInfoCache> for FileInfo {
     fn try_from(item: &FileInfoCache) -> Result<Self, Self::Error> {
         let inner = FileInfoInner {
             filename: item.filename.clone(),
-            filepath: item.filepath.as_ref().map(|f| f.as_str().into()),
-            urlname: match item.urlname.as_ref() {
-                Some(urlname) => match urlname.parse() {
-                    Ok(urlname) => Some(urlname),
-                    Err(_) => None,
-                },
-                None => None,
-            },
+            filepath: item.filepath.as_str().into(),
+            urlname: item.urlname.parse()?,
             md5sum: map_parse(&item.md5sum)?,
             sha1sum: map_parse(&item.sha1sum)?,
-            filestat: match item.filestat_st_mtime {
-                Some(st_mtime) => match item.filestat_st_size {
-                    Some(st_size) => Some(FileStat {
-                        st_mtime: st_mtime as u32,
-                        st_size: st_size as u32,
-                    }),
-                    None => None,
-                },
-                None => None,
+            filestat: FileStat {
+                st_mtime: item.filestat_st_mtime as u32,
+                st_size: item.filestat_st_size as u32,
             },
-            serviceid: item.serviceid.as_ref().map(|s| s.as_str().into()),
+            serviceid: item.serviceid.as_str().into(),
             servicetype: item.servicetype.parse()?,
-            servicesession: map_parse(&item.servicesession)?,
+            servicesession: item.servicesession.parse()?,
         };
         Ok(Self(Arc::new(inner)))
     }
@@ -261,12 +266,13 @@ impl TryFrom<&FileInfoCache> for FileInfo {
 
 impl FileInfo {
     pub fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
-        use crate::schema::file_info_cache::dsl::{file_info_cache, urlname};
+        use crate::schema::file_info_cache::dsl::{deleted_at, file_info_cache, urlname};
 
         let conn = pool.get()?;
 
         let result = match file_info_cache
             .filter(urlname.eq(url.as_str().to_string()))
+            .filter(deleted_at.is_null())
             .load::<FileInfoCache>(&conn)?
             .get(0)
         {
@@ -282,18 +288,16 @@ impl From<&FileInfo> for InsertFileInfoCache {
     fn from(item: &FileInfo) -> Self {
         Self {
             filename: item.filename.clone(),
-            filepath: match item.filepath.as_ref() {
-                Some(f) => Some(f.to_string_lossy().as_ref().into()),
-                None => None,
-            },
-            urlname: item.urlname.as_ref().map(|s| s.as_str().into()),
+            filepath: item.filepath.to_string_lossy().as_ref().into(),
+            urlname: item.urlname.as_str().into(),
             md5sum: item.md5sum.as_ref().map(|m| m.0.clone()),
             sha1sum: item.sha1sum.as_ref().map(|s| s.0.clone()),
-            filestat_st_mtime: item.filestat.map(|f| f.st_mtime as i32),
-            filestat_st_size: item.filestat.map(|f| f.st_size as i32),
-            serviceid: item.serviceid.as_ref().map(|s| s.0.clone()),
+            filestat_st_mtime: item.filestat.st_mtime as i32,
+            filestat_st_size: item.filestat.st_size as i32,
+            serviceid: item.serviceid.0.clone(),
             servicetype: item.servicetype.to_string().into(),
-            servicesession: item.servicesession.as_ref().map(|s| s.0.clone()),
+            servicesession: item.servicesession.0.clone(),
+            created_at: Utc::now(),
         }
     }
 }
@@ -305,14 +309,35 @@ impl From<FileInfo> for InsertFileInfoCache {
 }
 
 pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, Error> {
+    use crate::schema::file_info_cache::dsl::{
+        deleted_at, file_info_cache, filename, filepath, id, serviceid, servicesession,
+        servicetype, urlname,
+    };
     let conn = pool.get()?;
 
-    let finfo_cache: InsertFileInfoCache = finfo.into();
-
-    diesel::insert_into(file_info_cache::table)
-        .values(&finfo_cache)
-        .get_result(&conn)
-        .map_err(Into::into)
+    if let Some(finfo) = file_info_cache
+        .filter(filename.eq(&finfo.filename))
+        .filter(filepath.eq(&finfo.filename))
+        .filter(urlname.eq(finfo.urlname.as_str()))
+        .filter(serviceid.eq(&finfo.serviceid.0))
+        .filter(servicetype.eq(&finfo.servicetype.to_string()))
+        .filter(servicesession.eq(&finfo.servicesession.0))
+        .get_result::<FileInfoCache>(&conn)
+        .optional()?
+    {
+        let null: Option<DateTime<Utc>> = None;
+        diesel::update(file_info_cache.filter(id.eq(finfo.id)))
+            .set(deleted_at.eq(null))
+            .execute(&conn)
+            .map_err(Into::into)
+            .map(|_| finfo)
+    } else {
+        let finfo_cache: InsertFileInfoCache = finfo.into();
+        diesel::insert_into(crate::schema::file_info_cache::table)
+            .values(&finfo_cache)
+            .get_result(&conn)
+            .map_err(Into::into)
+    }
 }
 
 #[cfg(test)]

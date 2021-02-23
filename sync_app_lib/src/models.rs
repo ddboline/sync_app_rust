@@ -20,30 +20,42 @@ use crate::{
 pub struct FileInfoCache {
     pub id: i32,
     pub filename: StackString,
-    pub filepath: Option<StackString>,
-    pub urlname: Option<StackString>,
+    pub filepath: StackString,
+    pub urlname: StackString,
     pub md5sum: Option<StackString>,
     pub sha1sum: Option<StackString>,
-    pub filestat_st_mtime: Option<i32>,
-    pub filestat_st_size: Option<i32>,
-    pub serviceid: Option<StackString>,
+    pub filestat_st_mtime: i32,
+    pub filestat_st_size: i32,
+    pub serviceid: StackString,
     pub servicetype: StackString,
-    pub servicesession: Option<StackString>,
+    pub servicesession: StackString,
+    pub created_at: DateTime<Utc>,
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Insertable, Debug, Clone)]
 #[table_name = "file_info_cache"]
 pub struct InsertFileInfoCache {
     pub filename: StackString,
-    pub filepath: Option<StackString>,
-    pub urlname: Option<StackString>,
+    pub filepath: StackString,
+    pub urlname: StackString,
     pub md5sum: Option<StackString>,
     pub sha1sum: Option<StackString>,
-    pub filestat_st_mtime: Option<i32>,
-    pub filestat_st_size: Option<i32>,
-    pub serviceid: Option<StackString>,
+    pub filestat_st_mtime: i32,
+    pub filestat_st_size: i32,
+    pub serviceid: StackString,
     pub servicetype: StackString,
-    pub servicesession: Option<StackString>,
+    pub servicesession: StackString,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(AsChangeset)]
+#[changeset_options(treat_none_as_null = "true")]
+#[table_name = "file_info_cache"]
+pub struct UpdateFileInfoCacheDeletedAtNull {
+    pub filestat_st_mtime: i32,
+    pub filestat_st_size: i32,
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -68,6 +80,7 @@ impl From<FileInfoCache> for InsertFileInfoCache {
             serviceid: item.serviceid,
             servicetype: item.servicetype,
             servicesession: item.servicesession,
+            created_at: item.created_at,
         }
     }
 }
@@ -86,6 +99,8 @@ impl FileInfoCache {
             serviceid: item.serviceid,
             servicetype: item.servicetype,
             servicesession: item.servicesession,
+            created_at: Utc::now(),
+            deleted_at: None,
         }
     }
 
@@ -98,26 +113,10 @@ impl FileInfoCache {
 impl InsertFileInfoCache {
     pub fn get_key(&self) -> Option<FileInfoKey> {
         let filename = self.filename.clone();
-        let filepath = if let Some(p) = self.filepath.as_ref() {
-            p.clone()
-        } else {
-            return None;
-        };
-        let urlname = if let Some(u) = self.urlname.as_ref() {
-            u.clone()
-        } else {
-            return None;
-        };
-        let serviceid = if let Some(s) = self.serviceid.as_ref() {
-            s.clone()
-        } else {
-            return None;
-        };
-        let servicesession = if let Some(s) = self.servicesession.as_ref() {
-            s.clone()
-        } else {
-            return None;
-        };
+        let filepath = self.filepath.clone();
+        let urlname = self.urlname.clone();
+        let serviceid = self.serviceid.clone();
+        let servicesession = self.servicesession.clone();
         let finfo = FileInfoKey {
             filename,
             filepath,

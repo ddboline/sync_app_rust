@@ -27,16 +27,16 @@ impl FileInfoS3 {
             .into_owned()
             .into();
         let fileurl: Url = format!("s3://{}/{}", bucket, key).parse()?;
-        let serviceid = Some(bucket.to_string().into());
-        let servicesession = Some(bucket.parse()?);
+        let serviceid = bucket.to_string().into();
+        let servicesession = bucket.parse()?;
 
         let finfo = FileInfo::new(
             filename,
-            Some(filepath.to_path_buf().into()),
-            Some(fileurl.into()),
+            filepath.to_path_buf().into(),
+            fileurl.into(),
             None,
             None,
-            None,
+            FileStat::default(),
             serviceid,
             FileService::S3,
             servicesession,
@@ -62,7 +62,7 @@ impl FileInfoTrait for FileInfoS3 {
         self.0.sha1sum.clone()
     }
 
-    fn get_stat(&self) -> Option<FileStat> {
+    fn get_stat(&self) -> FileStat {
         self.0.filestat
     }
 }
@@ -88,19 +88,19 @@ impl FileInfoS3 {
         let size = item.size.ok_or_else(|| format_err!("No file size"))?;
         let fileurl: Url = format!("s3://{}/{}", bucket, key).parse()?;
 
-        let serviceid = Some(bucket.to_string().into());
-        let servicesession = Some(bucket.parse()?);
+        let serviceid = bucket.to_string().into();
+        let servicesession = bucket.parse()?;
 
         let finfo = FileInfo::new(
             filename,
-            Some(filepath.to_path_buf().into()),
-            Some(fileurl.into()),
+            filepath.to_path_buf().into(),
+            fileurl.into(),
             md5sum,
             None,
-            Some(FileStat {
+            FileStat {
                 st_mtime: st_mtime as u32,
                 st_size: size as u32,
-            }),
+            },
             serviceid,
             FileService::S3,
             servicesession,
@@ -134,7 +134,7 @@ mod tests {
         let finfo = FileInfoS3::from_object("test_bucket", test_object).unwrap();
 
         assert_eq!(
-            finfo.get_finfo().urlname.as_ref().unwrap().as_str(),
+            finfo.get_finfo().urlname.as_str(),
             "s3://test_bucket/test_key"
         );
         assert_eq!(&finfo.get_finfo().filename, "test_key");

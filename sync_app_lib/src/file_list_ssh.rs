@@ -105,17 +105,11 @@ impl FileListTrait for FileListSSH {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::SSH && finfo1.servicetype == FileService::Local {
-            let url0 = finfo0
-                .get_finfo()
-                .urlname
-                .as_ref()
-                .ok_or_else(|| format_err!("No url"))?;
+            let url0 = &finfo0.get_finfo().urlname;
             let path0 = Path::new(url0.path()).to_string_lossy();
 
             let parent_dir = finfo1
                 .filepath
-                .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
@@ -125,12 +119,7 @@ impl FileListTrait for FileListSSH {
             self.ssh
                 .run_scp(
                     &self.ssh.get_ssh_str(&path0)?,
-                    finfo1
-                        .filepath
-                        .as_ref()
-                        .ok_or_else(|| format_err!("No path"))?
-                        .to_string_lossy()
-                        .as_ref(),
+                    finfo1.filepath.to_string_lossy().as_ref(),
                 )
                 .await
         } else {
@@ -152,17 +141,11 @@ impl FileListTrait for FileListSSH {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::SSH {
-            let url1 = finfo1
-                .get_finfo()
-                .urlname
-                .as_ref()
-                .ok_or_else(|| format_err!("No url"))?;
+            let url1 = &finfo1.get_finfo().urlname;
             let path1 = Path::new(url1.path()).to_string_lossy();
 
             let parent_dir = finfo1
                 .filepath
-                .as_ref()
-                .ok_or_else(|| format_err!("No local path"))?
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?
                 .to_string_lossy()
@@ -173,12 +156,7 @@ impl FileListTrait for FileListSSH {
 
             self.ssh
                 .run_scp(
-                    finfo0
-                        .filepath
-                        .as_ref()
-                        .ok_or_else(|| format_err!("No path"))?
-                        .to_string_lossy()
-                        .as_ref(),
+                    finfo0.filepath.to_string_lossy().as_ref(),
                     &self.ssh.get_ssh_str(&path1)?,
                 )
                 .await
@@ -202,16 +180,8 @@ impl FileListTrait for FileListSSH {
         {
             return Ok(());
         }
-        let url0 = finfo0
-            .get_finfo()
-            .urlname
-            .as_ref()
-            .ok_or_else(|| format_err!("No url"))?;
-        let url1 = finfo1
-            .get_finfo()
-            .urlname
-            .as_ref()
-            .ok_or_else(|| format_err!("No url"))?;
+        let url0 = &finfo0.get_finfo().urlname;
+        let url1 = &finfo1.get_finfo().urlname;
 
         if url0.username() != url1.username() || url0.host_str() != url1.host_str() {
             return Ok(());
@@ -229,11 +199,7 @@ impl FileListTrait for FileListSSH {
 
     async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
-        let url = finfo
-            .get_finfo()
-            .urlname
-            .as_ref()
-            .ok_or_else(|| format_err!("No url"))?;
+        let url = &finfo.get_finfo().urlname;
         let path = Path::new(url.path())
             .to_string_lossy()
             .replace(" ", r#"\ "#);
@@ -268,9 +234,11 @@ impl FileListTrait for FileListSSH {
                     finfo.servicetype = FileService::SSH;
                     finfo.urlname = finfo
                         .urlname
-                        .and_then(|u| u.as_str().replace("file://", &url_prefix).parse().ok());
-                    finfo.serviceid = Some(baseurl.into());
-                    finfo.servicesession = baseurl.parse().ok();
+                        .as_str()
+                        .replace("file://", &url_prefix)
+                        .parse()?;
+                    finfo.serviceid = baseurl.into();
+                    finfo.servicesession = baseurl.parse()?;
                     Ok(FileInfo::from_inner(finfo))
                 })
                 .collect()

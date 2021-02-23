@@ -96,12 +96,7 @@ impl SyncOpts {
                         let list = flist.fill_file_list().await?;
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                             list.into_par_iter()
-                                .filter(|entry| {
-                                    entry
-                                        .urlname
-                                        .as_ref()
-                                        .map_or(true, |url| !blacklist.is_in_blacklist(url))
-                                })
+                                .filter(|entry| !blacklist.is_in_blacklist(&entry.urlname))
                                 .collect()
                         } else {
                             list
@@ -136,12 +131,7 @@ impl SyncOpts {
                         let list = flist.fill_file_list().await?;
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                             list.into_par_iter()
-                                .filter(|entry| {
-                                    entry
-                                        .urlname
-                                        .as_ref()
-                                        .map_or(true, |url| !blacklist.is_in_blacklist(url))
-                                })
+                                .filter(|entry| !blacklist.is_in_blacklist(&entry.urlname))
                                 .collect()
                         } else {
                             list

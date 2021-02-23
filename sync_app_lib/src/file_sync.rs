@@ -16,7 +16,7 @@ use url::Url;
 
 use crate::{
     config::Config,
-    file_info::{FileInfo, FileInfoKeyType, FileInfoTrait},
+    file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, FileStat},
     file_list::{group_urls, replace_basepath, replace_baseurl, FileList, FileListTrait},
     file_service::FileService,
     models::{FileSyncCache, InsertFileSyncCache},
@@ -125,36 +125,27 @@ impl FileSync {
                     }
                 }
                 None => {
-                    if let Some(path0) = finfo0.filepath.as_ref() {
-                        let url0 = finfo0.urlname.as_ref().unwrap();
-                        if let Ok(url1) =
-                            replace_baseurl(&url0, &flist0.get_baseurl(), &flist1.get_baseurl())
-                        {
-                            let path1 = replace_basepath(
-                                &path0,
-                                &flist0.get_basepath(),
-                                &flist1.get_basepath(),
-                            );
-                            if url1.as_str().contains(flist1.get_baseurl().as_str()) {
-                                let finfo1 = FileInfo::new(
-                                    k.clone(),
-                                    Some(path1.into()),
-                                    Some(url1.into()),
-                                    None,
-                                    None,
-                                    None,
-                                    Some(flist1.get_servicesession().clone().into()),
-                                    flist1.get_servicetype(),
-                                    Some(flist1.get_servicesession().clone()),
-                                );
-                                debug!("ab {:?} {:?}", finfo0, finfo1);
-                                Some((finfo0.clone(), finfo1))
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        }
+                    let path0 = &finfo0.filepath;
+                    let url0 = &finfo0.urlname;
+                    let baseurl0 = flist0.get_baseurl();
+                    let baseurl1 = flist1.get_baseurl();
+                    let url1 = replace_baseurl(&url0, baseurl0, baseurl1).ok()?;
+                    let path1 =
+                        replace_basepath(&path0, &flist0.get_basepath(), &flist1.get_basepath());
+                    if url1.as_str().contains(baseurl1.as_str()) {
+                        let finfo1 = FileInfo::new(
+                            k.clone(),
+                            path1.into(),
+                            url1.into(),
+                            None,
+                            None,
+                            FileStat::default(),
+                            flist1.get_servicesession().clone().into(),
+                            flist1.get_servicetype(),
+                            flist1.get_servicesession().clone(),
+                        );
+                        debug!("ab {:?} {:?}", finfo0, finfo1);
+                        Some((finfo0.clone(), finfo1))
                     } else {
                         None
                     }
@@ -167,36 +158,27 @@ impl FileSync {
             .filter_map(|(k, finfo1)| match flist0.get_filemap().get(k) {
                 Some(_) => None,
                 None => {
-                    if let Some(path1) = finfo1.filepath.as_ref() {
-                        let url1 = finfo1.urlname.as_ref().unwrap();
-                        if let Ok(url0) =
-                            replace_baseurl(&url1, &flist1.get_baseurl(), &flist0.get_baseurl())
-                        {
-                            let path0 = replace_basepath(
-                                &path1,
-                                &flist1.get_basepath(),
-                                &flist0.get_basepath(),
-                            );
-                            if url0.as_str().contains(flist0.get_baseurl().as_str()) {
-                                let finfo0 = FileInfo::new(
-                                    k.clone(),
-                                    Some(path0.into()),
-                                    Some(url0.into()),
-                                    None,
-                                    None,
-                                    None,
-                                    Some(flist0.get_servicesession().clone().into()),
-                                    flist0.get_servicetype(),
-                                    Some(flist0.get_servicesession().clone()),
-                                );
-                                debug!("ba {:?} {:?}", finfo0, finfo1);
-                                Some((finfo1.clone(), finfo0))
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        }
+                    let path1 = &finfo1.filepath;
+                    let url1 = &finfo1.urlname;
+                    let baseurl0 = flist0.get_baseurl();
+                    let baseurl1 = flist1.get_baseurl();
+                    let url0 = replace_baseurl(url1, baseurl1, baseurl0).ok()?;
+                    let path0 =
+                        replace_basepath(path1, flist1.get_basepath(), flist0.get_basepath());
+                    if url0.as_str().contains(baseurl0.as_str()) {
+                        let finfo0 = FileInfo::new(
+                            k.clone(),
+                            path0.into(),
+                            url0.into(),
+                            None,
+                            None,
+                            FileStat::default(),
+                            flist0.get_servicesession().clone().into(),
+                            flist0.get_servicetype(),
+                            flist0.get_servicesession().clone(),
+                        );
+                        debug!("ba {:?} {:?}", finfo0, finfo1);
+                        Some((finfo1.clone(), finfo0))
                     } else {
                         None
                     }
@@ -213,12 +195,12 @@ impl FileSync {
                 .map(|(f0, f1)| {
                     let pool = pool.clone();
                     async move {
-                        if let Some(u0) = f0.urlname.as_ref() {
-                            if let Some(u1) = f1.urlname.as_ref() {
-                                InsertFileSyncCache::cache_sync(&pool, u0.as_str(), u1.as_str())
-                                    .await?;
-                            }
-                        }
+                        InsertFileSyncCache::cache_sync(
+                            &pool,
+                            f0.urlname.as_str(),
+                            f1.urlname.as_str(),
+                        )
+                        .await?;
                         Ok(())
                     }
                 });
@@ -251,15 +233,11 @@ impl FileSync {
         if is_export {
             do_update = false;
         }
-        if let Some(fstat0) = finfo0.filestat.as_ref() {
-            if let Some(fstat1) = finfo1.filestat.as_ref() {
-                if fstat0.st_mtime > fstat1.st_mtime {
-                    do_update = true;
-                }
-                if fstat0.st_size != fstat1.st_size && !is_export {
-                    do_update = true;
-                }
-            }
+        if finfo0.filestat.st_mtime > finfo1.filestat.st_mtime {
+            do_update = true;
+        }
+        if finfo0.filestat.st_size != finfo1.filestat.st_size && !is_export {
+            do_update = true;
         }
         if use_sha1 {
             if let Some(sha0) = finfo0.sha1sum.as_ref() {
@@ -436,10 +414,8 @@ mod tests {
         debug!("{:?}", finfo0);
         let mut finfo1 = finfo0.0.inner().clone();
         finfo1.md5sum = Some("51e3cc2c6f64d24ff55fae262325edee".parse()?);
-        let mut fstat = finfo1.filestat.unwrap();
-        fstat.st_mtime += 100;
-        fstat.st_size += 100;
-        finfo1.filestat = Some(fstat);
+        finfo1.filestat.st_mtime += 100;
+        finfo1.filestat.st_size += 100;
         let finfo1 = FileInfoLocal(FileInfo::from_inner(finfo1));
         debug!("{:?}", finfo1);
         assert!(FileSync::compare_objects(&finfo0, &finfo1));

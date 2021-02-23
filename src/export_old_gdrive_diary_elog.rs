@@ -50,24 +50,20 @@ async fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
         let outdir = outdir.clone();
         let gdrive = gdrive.clone();
         async move {
-            if let Some(url) = &item.urlname {
-                if url.as_str().contains(prefix) {
-                    let outpath = outdir.join(item.filename.as_str()).with_extension("txt");
-                    if outpath.exists() {
-                        return Ok(Some(item.filename));
-                    }
-                    if let Some(serviceid) = item.serviceid {
-                        let gdriveid = serviceid;
-                        if let Ok(gfile) = gdrive.get_file_metadata(&gdriveid).await {
-                            if gfile.mime_type.as_deref()
-                                == Some("application/vnd.google-apps.document")
-                            {
-                                if !outpath.exists() {
-                                    gdrive.export(&gdriveid, &outpath, "text/plain").await?;
-                                }
-                                return Ok(Some(item.filename));
-                            }
+            let url = &item.urlname;
+            if url.as_str().contains(prefix) {
+                let outpath = outdir.join(item.filename.as_str()).with_extension("txt");
+                if outpath.exists() {
+                    return Ok(Some(item.filename));
+                }
+                let serviceid = &item.serviceid;
+                let gdriveid = serviceid;
+                if let Ok(gfile) = gdrive.get_file_metadata(&gdriveid).await {
+                    if gfile.mime_type.as_deref() == Some("application/vnd.google-apps.document") {
+                        if !outpath.exists() {
+                            gdrive.export(&gdriveid, &outpath, "text/plain").await?;
                         }
+                        return Ok(Some(item.filename));
                     }
                 }
             }

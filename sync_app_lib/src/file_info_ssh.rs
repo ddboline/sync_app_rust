@@ -3,7 +3,7 @@ use std::path::Path;
 use url::Url;
 
 use crate::{
-    file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum},
+    file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, ServiceId, ServiceSession, Sha1Sum},
     file_service::FileService,
 };
 
@@ -24,14 +24,14 @@ impl FileInfoSSH {
                 .into();
             let finfo = FileInfo::new(
                 filename,
-                Some(filepath.to_path_buf().into()),
-                Some(url.clone().into()),
+                filepath.to_path_buf().into(),
+                url.clone().into(),
                 None,
                 None,
-                None,
-                None,
+                FileStat::default(),
+                ServiceId::default(),
                 FileService::SSH,
-                None,
+                ServiceSession::default(),
             );
             Ok(Self(finfo))
         } else {
@@ -56,7 +56,7 @@ impl FileInfoTrait for FileInfoSSH {
         self.0.sha1sum.clone()
     }
 
-    fn get_stat(&self) -> Option<FileStat> {
+    fn get_stat(&self) -> FileStat {
         self.0.filestat
     }
 }
@@ -75,7 +75,7 @@ mod tests {
         let finfo = FileInfoSSH::from_url(&url).unwrap();
 
         assert_eq!(
-            finfo.get_finfo().urlname.as_ref().unwrap().as_str(),
+            finfo.get_finfo().urlname.as_str(),
             "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/movie_queue.sql"
         );
         assert_eq!(&finfo.get_finfo().filename, "movie_queue.sql");

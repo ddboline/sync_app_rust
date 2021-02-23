@@ -27,7 +27,7 @@ impl FileInfoGDrive {
             .to_string_lossy()
             .into_owned()
             .into();
-        let serviceid = Some(filename.clone().into());
+        let serviceid = filename.clone().into();
         let servicesession = url
             .as_str()
             .trim_start_matches("gdrive://")
@@ -36,14 +36,14 @@ impl FileInfoGDrive {
 
         let finfo = FileInfo::new(
             filename,
-            Some(filepath.to_path_buf().into()),
-            Some(url.clone().into()),
+            filepath.to_path_buf().into(),
+            url.clone().into(),
             None,
             None,
-            None,
+            FileStat::default(),
             serviceid,
             FileService::GDrive,
-            Some(servicesession),
+            servicesession,
         );
         Ok(Self(finfo))
     }
@@ -66,7 +66,7 @@ impl FileInfoTrait for FileInfoGDrive {
         self.0.sha1sum.clone()
     }
 
-    fn get_stat(&self) -> Option<FileStat> {
+    fn get_stat(&self) -> FileStat {
         self.0.filestat
     }
 }
@@ -74,19 +74,19 @@ impl FileInfoTrait for FileInfoGDrive {
 impl FileInfoGDrive {
     pub fn from_gdriveinfo(item: GDriveInfo) -> Result<Self, Error> {
         let md5sum = item.md5sum.and_then(|m| m.parse().ok());
-        let serviceid = item.serviceid.map(|x| x.into());
-        let servicesession = item.servicesession.and_then(|s| s.parse().ok());
+        let serviceid = item.serviceid.into();
+        let servicesession = item.servicesession.parse()?;
 
         let finfo = FileInfo::new(
             item.filename,
-            item.filepath.map(Into::into),
-            item.urlname.map(Into::into),
+            item.filepath.into(),
+            item.urlname.into(),
             md5sum,
             None,
-            item.filestat.map(|i| FileStat {
-                st_mtime: i.0,
-                st_size: i.1,
-            }),
+            FileStat {
+                st_mtime: item.filestat.0,
+                st_size: item.filestat.1,
+            },
             serviceid,
             FileService::GDrive,
             servicesession,
@@ -126,23 +126,21 @@ mod tests {
     fn test_file_info_from_object() {
         let f = GDriveInfo {
             filename: "armstrong_thesis_2003.pdf".into(),
-            filepath: Some("armstrong_thesis_2003.pdf".parse().unwrap()),
-            urlname: Some(
-                "gdrive://ddboline@gmail.com/My%20Drive/armstrong_thesis_2003.pdf"
-                    .parse()
-                    .unwrap(),
-            ),
+            filepath: "armstrong_thesis_2003.pdf".parse().unwrap(),
+            urlname: "gdrive://ddboline@gmail.com/My%20Drive/armstrong_thesis_2003.pdf"
+                .parse()
+                .unwrap(),
             md5sum: Some("afde42b3861d522796faeb33a9eaec8a".into()),
             sha1sum: None,
-            filestat: Some((123, 123)),
-            serviceid: Some("1REd76oJ6YheyjF2R9Il0E8xbjalgpNgG".into()),
-            servicesession: Some("ddboline@gmail.com".into()),
+            filestat: (123, 123),
+            serviceid: "1REd76oJ6YheyjF2R9Il0E8xbjalgpNgG".into(),
+            servicesession: "ddboline@gmail.com".into(),
         };
 
         let finfo = FileInfoGDrive::from_gdriveinfo(f).unwrap();
         assert_eq!(finfo.get_finfo().filename, "armstrong_thesis_2003.pdf");
         assert_eq!(
-            finfo.get_finfo().serviceid.as_ref().unwrap().0.as_str(),
+            finfo.get_finfo().serviceid.0.as_str(),
             "1REd76oJ6YheyjF2R9Il0E8xbjalgpNgG"
         );
     }
