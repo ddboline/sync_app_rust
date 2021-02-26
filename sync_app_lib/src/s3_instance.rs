@@ -18,7 +18,7 @@ lazy_static! {
 
 use stack_string::StackString;
 
-use crate::exponential_retry;
+use gdrive_lib::exponential_retry;
 
 #[derive(Clone)]
 pub struct S3Instance {

@@ -14,6 +14,7 @@
 pub mod directory_info;
 pub mod drive_v3_types;
 pub mod gdrive_instance;
+pub mod rate_limiter;
 
 use anyhow::{format_err, Error};
 use log::error;

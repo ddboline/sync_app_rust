@@ -29,7 +29,6 @@ use std::{
 use tokio::{
     fs::{self, create_dir_all},
     io::AsyncReadExt,
-    sync::Semaphore,
 };
 use url::Url;
 
@@ -41,6 +40,7 @@ use crate::{
         FilesExportParams, FilesGetParams, FilesListParams, FilesService, FilesUpdateParams,
     },
     exponential_retry,
+    rate_limiter::RateLimiter,
 };
 
 fn https_client() -> TlsClient {
@@ -86,7 +86,7 @@ pub struct GDriveInstance {
     session_name: StackString,
     pub start_page_token_filename: PathBuf,
     pub start_page_token: Arc<AtomicCell<Option<usize>>>,
-    rate_limit: Arc<Semaphore>,
+    rate_limit: RateLimiter,
 }
 
 impl Debug for GDriveInstance {
@@ -143,7 +143,7 @@ impl GDriveInstance {
             session_name: session_name.into(),
             start_page_token: Arc::new(AtomicCell::new(start_page_token)),
             start_page_token_filename: fname,
-            rate_limit: Arc::new(Semaphore::new(8)),
+            rate_limit: RateLimiter::new(1000, 60000),
         })
     }
 
@@ -215,8 +215,11 @@ impl GDriveInstance {
         let query = query_chain.join(" and ");
         params.q = Some(query);
 
-        let _permit = self.rate_limit.acquire().await?;
-        self.files.list(&params).await
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            self.files.list(&params).await
+        })
+        .await
     }
 
     pub async fn get_all_files(&self, get_folders: bool) -> Result<Vec<File>, Error> {
@@ -328,12 +331,15 @@ impl GDriveInstance {
             file_id: id.into(),
             ..FilesGetParams::default()
         };
-        let _permit = self.rate_limit.acquire().await?;
-        if let DownloadResult::Response(f) = self.files.get(&params).await?.do_it(None).await? {
-            Ok(f)
-        } else {
-            Err(format_err!("Failed to get metadata"))
-        }
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            if let DownloadResult::Response(f) = self.files.get(&params).await?.do_it(None).await? {
+                Ok(f)
+            } else {
+                Err(format_err!("Failed to get metadata"))
+            }
+        })
+        .await
     }
 
     pub async fn create_directory(&self, directory: &Url, parentid: &str) -> Result<File, Error> {
@@ -351,8 +357,11 @@ impl GDriveInstance {
             ..File::default()
         };
         let params = FilesCreateParams::default();
-        let _permit = self.rate_limit.acquire().await?;
-        self.files.create(&params, &new_file).await
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            self.files.create(&params, &new_file).await
+        })
+        .await
     }
 
     pub async fn upload(&self, local: &Url, parentid: &str) -> Result<File, Error> {
@@ -378,7 +387,7 @@ impl GDriveInstance {
             ..FilesCreateParams::default()
         };
 
-        let _permit = self.rate_limit.acquire().await?;
+        self.rate_limit.acquire().await;
         let upload = self
             .files
             .create_resumable_upload(&params, &new_file)
@@ -400,7 +409,8 @@ impl GDriveInstance {
             ..FilesExportParams::default()
         };
         let mut outfile = fs::File::create(local).await?;
-        let _permit = self.rate_limit.acquire().await?;
+
+        self.rate_limit.acquire().await;
         self.files
             .export(&params)
             .await?
@@ -452,7 +462,8 @@ impl GDriveInstance {
                 ..FilesGetParams::default()
             };
             let mut outfile = fs::File::create(&local).await?;
-            let _permit = self.rate_limit.acquire().await?;
+
+            self.rate_limit.acquire().await;
             if let DownloadResult::Downloaded = self
                 .files
                 .get(&params)
@@ -477,9 +488,12 @@ impl GDriveInstance {
             supports_all_drives: Some(false),
             ..FilesUpdateParams::default()
         };
-        let _permit = self.rate_limit.acquire().await?;
-        self.files.update(&params, &f).await?;
-        Ok(())
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            self.files.update(&params, &f).await?;
+            Ok(())
+        })
+        .await
     }
 
     pub async fn delete_permanently(&self, id: &str) -> Result<(), Error> {
@@ -488,8 +502,11 @@ impl GDriveInstance {
             supports_all_drives: Some(false),
             ..FilesDeleteParams::default()
         };
-        let _permit = self.rate_limit.acquire().await?;
-        self.files.delete(&params).await
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            self.files.delete(&params).await
+        })
+        .await
     }
 
     pub async fn move_to(&self, id: &str, parent: &str, new_name: &str) -> Result<(), Error> {
@@ -511,9 +528,12 @@ impl GDriveInstance {
             add_parents: Some(parent.into()),
             ..FilesUpdateParams::default()
         };
-        let _permit = self.rate_limit.acquire().await?;
-        self.files.update(&params, &file).await?;
-        Ok(())
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            self.files.update(&params, &file).await?;
+            Ok(())
+        })
+        .await
     }
 
     pub async fn get_directory_map(
@@ -694,19 +714,22 @@ impl GDriveInstance {
         let params = ChangesGetStartPageTokenParams {
             ..ChangesGetStartPageTokenParams::default()
         };
-        let _permit = self.rate_limit.acquire().await?;
-        if let Some(start_page_token) = self
-            .changes
-            .get_start_page_token(&params)
-            .await?
-            .start_page_token
-        {
-            Ok(start_page_token.parse()?)
-        } else {
-            Err(format_err!(
-                "Received OK response from drive but there is no startPageToken included."
-            ))
-        }
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            if let Some(start_page_token) = self
+                .changes
+                .get_start_page_token(&params)
+                .await?
+                .start_page_token
+            {
+                Ok(start_page_token.parse()?)
+            } else {
+                Err(format_err!(
+                    "Received OK response from drive but there is no startPageToken included."
+                ))
+            }
+        })
+        .await
     }
 
     pub async fn store_start_page_token(&self, path: &Path) -> Result<(), Error> {
@@ -770,7 +793,7 @@ impl GDriveInstance {
                     page_size: Some(self.page_size),
                     ..ChangesListParams::default()
                 };
-                let _permit = self.rate_limit.acquire().await?;
+                self.rate_limit.acquire().await;
                 let changelist = self.changes.list(&params).await?;
 
                 if let Some(changes) = changelist.changes {
