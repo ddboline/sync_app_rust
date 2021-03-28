@@ -18,6 +18,7 @@ env_logger = "0.8"
 sync_app_lib = {path = "sync_app_lib"}
 sync_app_http = {path = "sync_app_http"}
 gdrive_lib = {path="gdrive_lib"}
+gcs_lib = {path="gcs_lib"}
 tokio = {version="1.0", features=["full"]}
 anyhow = "1.0"
 dirs = "3.0"
