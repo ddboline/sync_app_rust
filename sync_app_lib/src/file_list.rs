@@ -27,6 +27,7 @@ use crate::{
     file_list_gdrive::FileListGDrive,
     file_list_local::FileListLocal,
     file_list_s3::FileListS3,
+    file_list_gcs::FileListGCS,
     file_list_ssh::FileListSSH,
     file_service::FileService,
     models::{DirectoryInfoCache, FileInfoCache, InsertDirectoryInfoCache, InsertFileInfoCache},
@@ -82,6 +83,10 @@ impl FileList {
             }
             "file" => {
                 let flist = FileListLocal::from_url(url, config, pool)?;
+                Ok(Box::new(flist))
+            }
+            "gcs" => {
+                let flist = FileListGCS::from_url(url, config, pool).await?;
                 Ok(Box::new(flist))
             }
             "s3" => {
