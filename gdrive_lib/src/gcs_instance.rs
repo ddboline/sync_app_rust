@@ -231,7 +231,7 @@ impl GcsInstance {
         key_to: &str,
     ) -> Result<Option<String>, Error> {
         let source_bucket = source.host_str().ok_or_else(|| format_err!("Bad source"))?;
-        let source_key = &source.path()[1..];
+        let source_key = source.path().trim_start_matches('/');
         let params = ObjectsCopyParams {
             source_bucket: source_bucket.into(),
             source_object: source_key.into(),

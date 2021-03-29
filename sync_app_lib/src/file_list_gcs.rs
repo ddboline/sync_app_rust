@@ -228,13 +228,13 @@ impl FileListTrait for FileListGcs {
         }
         let url0 = &finfo0.urlname;
         let bucket0 = url0.host_str().ok_or_else(|| format_err!("Parse error"))?;
-        let key0 = url0.path();
+        let key0 = url0.path().trim_start_matches('/');
         let url1 = &finfo1.urlname;
         let bucket1 = url1.host_str().ok_or_else(|| format_err!("Parse error"))?;
-        let key1 = url1.path();
+        let key1 = url1.path().trim_start_matches('/');
         let new_tag = self.gcs.copy_key(url0, &bucket1, &key1).await?;
         if new_tag.is_some() {
-            self.gcs.delete_key(bucket0, key0).await?;
+            self.gcs.delete_key(bucket0, &key0).await?;
         }
         Ok(())
     }
@@ -244,7 +244,7 @@ impl FileListTrait for FileListGcs {
         if finfo.servicetype == FileService::GCS {
             let url = &finfo.urlname;
             let bucket = url.host_str().ok_or_else(|| format_err!("No bucket"))?;
-            let key = url.path();
+            let key = url.path().trim_start_matches('/');
             self.gcs.delete_key(&bucket, &key).await
         } else {
             Err(format_err!("Wrong service type"))
