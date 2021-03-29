@@ -5,12 +5,14 @@
 //!
 //! ## Getting started
 //!
-//! **Tip**: Take a look at those types ending in `...Service`. These represent API resources
-//! and contain methods to interact with an API. The remaining types are used by those methods
-//! and can be explored starting from a method you want to use.
+//! **Tip**: Take a look at those types ending in `...Service`. These represent
+//! API resources and contain methods to interact with an API. The remaining
+//! types are used by those methods and can be explored starting from a method
+//! you want to use.
 //!
-//! The generated code's dependencies are in the `async-google-apis-common` crate. The main
-//! dependencies are hyper, yup-oauth2 (for OAuth authentication), and serde.
+//! The generated code's dependencies are in the `async-google-apis-common`
+//! crate. The main dependencies are hyper, yup-oauth2 (for OAuth
+//! authentication), and serde.
 //!
 //! I'd be happy if you let me know about your use case of this code.
 //!
@@ -75,19 +77,24 @@ pub struct BucketBilling {
 ///
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketCors {
-    /// The value, in seconds, to return in the  Access-Control-Max-Age header used in preflight responses.
+    /// The value, in seconds, to return in the  Access-Control-Max-Age header
+    /// used in preflight responses.
     #[serde(rename = "maxAgeSeconds")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_age_seconds: Option<i32>,
-    /// The list of HTTP methods on which to include CORS response headers, (GET, OPTIONS, POST, etc) Note: "*" is permitted in the list of methods, and means "any method".
+    /// The list of HTTP methods on which to include CORS response headers,
+    /// (GET, OPTIONS, POST, etc) Note: "*" is permitted in the list of methods,
+    /// and means "any method".
     #[serde(rename = "method")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub method: Option<Vec<String>>,
-    /// The list of Origins eligible to receive CORS response headers. Note: "*" is permitted in the list of origins, and means "any Origin".
+    /// The list of Origins eligible to receive CORS response headers. Note: "*"
+    /// is permitted in the list of origins, and means "any Origin".
     #[serde(rename = "origin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub origin: Option<Vec<String>>,
-    /// The list of HTTP headers other than the simple response headers to give permission for the user-agent to share across domains.
+    /// The list of HTTP headers other than the simple response headers to give
+    /// permission for the user-agent to share across domains.
     #[serde(rename = "responseHeader")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub response_header: Option<Vec<String>>,
@@ -96,20 +103,28 @@ pub struct BucketCors {
 /// Encryption configuration for a bucket.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketEncryption {
-    /// A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
+    /// A Cloud KMS key that will be used to encrypt objects inserted into this
+    /// bucket, if no encryption method is specified.
     #[serde(rename = "defaultKmsKeyName")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_kms_key_name: Option<String>,
 }
 
-/// The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+/// The bucket's uniform bucket-level access configuration. The feature was
+/// formerly known as Bucket Policy Only. For backward compatibility, this field
+/// will be populated with identical information as the uniformBucketLevelAccess
+/// field. We recommend using the uniformBucketLevelAccess field to enable and
+/// disable the feature.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketIamConfigurationBucketPolicyOnly {
     /// If set, access is controlled only by bucket-level or above IAM policies.
     #[serde(rename = "enabled")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
-    /// DateTime: The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+    /// DateTime: The deadline for changing
+    /// iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339
+    /// format. iamConfiguration.bucketPolicyOnly.enabled may be changed from
+    /// true to false until the locked time, after which the field is immutable.
     #[serde(rename = "lockedTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locked_time: Option<DateTime<Utc>>,
@@ -122,7 +137,11 @@ pub struct BucketIamConfigurationUniformBucketLevelAccess {
     #[serde(rename = "enabled")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
-    /// DateTime: The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+    /// DateTime: The deadline for changing
+    /// iamConfiguration.uniformBucketLevelAccess.enabled from true to false in
+    /// RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may
+    /// be changed from true to false until the locked time, after which the
+    /// field is immutable.
     #[serde(rename = "lockedTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locked_time: Option<DateTime<Utc>>,
@@ -131,7 +150,11 @@ pub struct BucketIamConfigurationUniformBucketLevelAccess {
 /// The bucket's IAM configuration.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketIamConfiguration {
-    /// The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+    /// The bucket's uniform bucket-level access configuration. The feature was
+    /// formerly known as Bucket Policy Only. For backward compatibility, this
+    /// field will be populated with identical information as the
+    /// uniformBucketLevelAccess field. We recommend using the
+    /// uniformBucketLevelAccess field to enable and disable the feature.
     #[serde(rename = "bucketPolicyOnly")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bucket_policy_only: Option<BucketIamConfigurationBucketPolicyOnly>,
@@ -139,7 +162,8 @@ pub struct BucketIamConfiguration {
     #[serde(rename = "uniformBucketLevelAccess")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uniform_bucket_level_access: Option<BucketIamConfigurationUniformBucketLevelAccess>,
-    /// The bucket's Public Access Prevention configuration. Currently, 'unspecified' and 'enforced' are supported.
+    /// The bucket's Public Access Prevention configuration. Currently,
+    /// 'unspecified' and 'enforced' are supported.
     #[serde(rename = "publicAccessPrevention")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub public_access_prevention: Option<String>,
@@ -148,11 +172,13 @@ pub struct BucketIamConfiguration {
 /// The action to take.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketLifecycleRuleAction {
-    /// Target storage class. Required iff the type of the action is SetStorageClass.
+    /// Target storage class. Required iff the type of the action is
+    /// SetStorageClass.
     #[serde(rename = "storageClass")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_class: Option<String>,
-    /// Type of the action. Currently, only Delete and SetStorageClass are supported.
+    /// Type of the action. Currently, only Delete and SetStorageClass are
+    /// supported.
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub typ: Option<String>,
@@ -161,43 +187,69 @@ pub struct BucketLifecycleRuleAction {
 /// The condition(s) under which the action will be taken.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketLifecycleRuleCondition {
-    /// Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+    /// Age of an object (in days). This condition is satisfied when an object
+    /// reaches the specified age.
     #[serde(rename = "age")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub age: Option<i32>,
-    /// A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
+    /// A date in RFC 3339 format with only the date part (for instance,
+    /// "2013-01-15"). This condition is satisfied when an object is created
+    /// before midnight of the specified date in UTC.
     #[serde(rename = "createdBefore")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub created_before: Option<String>,
-    /// A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when the custom time on an object is before this date in UTC.
+    /// A date in RFC 3339 format with only the date part (for instance,
+    /// "2013-01-15"). This condition is satisfied when the custom time on an
+    /// object is before this date in UTC.
     #[serde(rename = "customTimeBefore")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_time_before: Option<String>,
-    /// Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+    /// Number of days elapsed since the user-specified timestamp set on an
+    /// object. The condition is satisfied if the days elapsed is at least this
+    /// number. If no custom timestamp is specified on an object, the condition
+    /// does not apply.
     #[serde(rename = "daysSinceCustomTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub days_since_custom_time: Option<i32>,
-    /// Number of days elapsed since the noncurrent timestamp of an object. The condition is satisfied if the days elapsed is at least this number. This condition is relevant only for versioned objects. The value of the field must be a nonnegative integer. If it's zero, the object version will become eligible for Lifecycle action as soon as it becomes noncurrent.
+    /// Number of days elapsed since the noncurrent timestamp of an object. The
+    /// condition is satisfied if the days elapsed is at least this number. This
+    /// condition is relevant only for versioned objects. The value of the field
+    /// must be a nonnegative integer. If it's zero, the object version will
+    /// become eligible for Lifecycle action as soon as it becomes noncurrent.
     #[serde(rename = "daysSinceNoncurrentTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub days_since_noncurrent_time: Option<i32>,
-    /// Relevant only for versioned objects. If the value is true, this condition matches live objects; if the value is false, it matches archived objects.
+    /// Relevant only for versioned objects. If the value is true, this
+    /// condition matches live objects; if the value is false, it matches
+    /// archived objects.
     #[serde(rename = "isLive")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_live: Option<bool>,
-    /// A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
+    /// A regular expression that satisfies the RE2 syntax. This condition is
+    /// satisfied when the name of the object matches the RE2 pattern. Note:
+    /// This feature is currently in the "Early Access" launch stage and is only
+    /// available to a whitelisted set of users; that means that this feature
+    /// may be changed in backward-incompatible ways and that it is not
+    /// guaranteed to be released.
     #[serde(rename = "matchesPattern")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matches_pattern: Option<String>,
-    /// Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+    /// Objects having any of the storage classes specified by this condition
+    /// will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE,
+    /// COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
     #[serde(rename = "matchesStorageClass")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matches_storage_class: Option<Vec<String>>,
-    /// A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when the noncurrent time on an object is before this date in UTC. This condition is relevant only for versioned objects.
+    /// A date in RFC 3339 format with only the date part (for instance,
+    /// "2013-01-15"). This condition is satisfied when the noncurrent time on
+    /// an object is before this date in UTC. This condition is relevant only
+    /// for versioned objects.
     #[serde(rename = "noncurrentTimeBefore")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub noncurrent_time_before: Option<String>,
-    /// Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
+    /// Relevant only for versioned objects. If the value is N, this condition
+    /// is satisfied when there are at least N versions (including the live
+    /// version) newer than this version of the object.
     #[serde(rename = "numNewerVersions")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub num_newer_versions: Option<i32>,
@@ -216,16 +268,19 @@ pub struct BucketLifecycleRule {
     pub condition: Option<BucketLifecycleRuleCondition>,
 }
 
-/// The bucket's lifecycle configuration. See lifecycle management for more information.
+/// The bucket's lifecycle configuration. See lifecycle management for more
+/// information.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketLifecycle {
-    /// A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
+    /// A lifecycle management rule, which is made of an action to take and the
+    /// condition(s) under which the action will be taken.
     #[serde(rename = "rule")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rule: Option<Vec<BucketLifecycleRule>>,
 }
 
-/// The bucket's logging configuration, which defines the destination bucket and optional name prefix for the current bucket's logs.
+/// The bucket's logging configuration, which defines the destination bucket and
+/// optional name prefix for the current bucket's logs.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketLogging {
     /// The destination bucket where the current bucket's logs should be placed.
@@ -251,10 +306,19 @@ pub struct BucketOwner {
     pub entity_id: Option<String>,
 }
 
-/// The bucket's retention policy. The retention policy enforces a minimum retention time for all objects contained in the bucket, based on their creation time. Any attempt to overwrite or delete objects younger than the retention period will result in a PERMISSION_DENIED error. An unlocked retention policy can be modified or removed from the bucket via a storage.buckets.update operation. A locked retention policy cannot be removed or shortened in duration for the lifetime of the bucket. Attempting to remove or decrease period of a locked retention policy will result in a PERMISSION_DENIED error.
+/// The bucket's retention policy. The retention policy enforces a minimum
+/// retention time for all objects contained in the bucket, based on their
+/// creation time. Any attempt to overwrite or delete objects younger than the
+/// retention period will result in a PERMISSION_DENIED error. An unlocked
+/// retention policy can be modified or removed from the bucket via a
+/// storage.buckets.update operation. A locked retention policy cannot be
+/// removed or shortened in duration for the lifetime of the bucket. Attempting
+/// to remove or decrease period of a locked retention policy will result in a
+/// PERMISSION_DENIED error.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketRetentionPolicy {
-    /// DateTime: Server-determined value that indicates the time from which policy was enforced and effective. This value is in RFC 3339 format.
+    /// DateTime: Server-determined value that indicates the time from which
+    /// policy was enforced and effective. This value is in RFC 3339 format.
     #[serde(rename = "effectiveTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub effective_time: Option<DateTime<Utc>>,
@@ -262,7 +326,10 @@ pub struct BucketRetentionPolicy {
     #[serde(rename = "isLocked")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_locked: Option<bool>,
-    /// i64: The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
+    /// i64: The duration in seconds that objects need to be retained. Retention
+    /// duration must be greater than zero and less than 100 years. Note that
+    /// enforcement of retention periods less than a day is not guaranteed. Such
+    /// periods should only be used for testing purposes.
     #[serde(rename = "retentionPeriod")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retention_period: Option<String>,
@@ -277,14 +344,21 @@ pub struct BucketVersioning {
     pub enabled: Option<bool>,
 }
 
-/// The bucket's website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+/// The bucket's website configuration, controlling how the service behaves when
+/// accessing bucket contents as a web site. See the Static Website Examples for
+/// more information.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BucketWebsite {
-    /// If the requested object path is missing, the service will ensure the path has a trailing '/', append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
+    /// If the requested object path is missing, the service will ensure the
+    /// path has a trailing '/', append this suffix, and attempt to retrieve the
+    /// resulting object. This allows the creation of index.html objects to
+    /// represent directory pages.
     #[serde(rename = "mainPageSuffix")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub main_page_suffix: Option<String>,
-    /// If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
+    /// If the requested object path is missing, and any mainPageSuffix object
+    /// is missing, if applicable, the service will return the named object from
+    /// this bucket as the content for a 404 Not Found result.
     #[serde(rename = "notFoundPage")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub not_found_page: Option<String>,
@@ -305,7 +379,19 @@ pub struct Bucket {
     #[serde(rename = "cors")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cors: Option<Vec<BucketCors>>,
-    /// The default value for event-based hold on newly created objects in this bucket. Event-based hold is a way to retain objects indefinitely until an event occurs, signified by the hold's release. After being released, such objects will be subject to bucket-level retention (if any). One sample use case of this flag is for banks to hold loan documents for at least 3 years after loan is paid in full. Here, bucket-level retention is 3 years and the event is loan being paid in full. In this example, these objects will be held intact for any number of years until the event has occurred (event-based hold on the object is released) and then 3 more years after that. That means retention duration of the objects begins from the moment event-based hold transitioned from true to false. Objects under event-based hold cannot be deleted, overwritten or archived until the hold is removed.
+    /// The default value for event-based hold on newly created objects in this
+    /// bucket. Event-based hold is a way to retain objects indefinitely until
+    /// an event occurs, signified by the hold's release. After being released,
+    /// such objects will be subject to bucket-level retention (if any). One
+    /// sample use case of this flag is for banks to hold loan documents for at
+    /// least 3 years after loan is paid in full. Here, bucket-level retention
+    /// is 3 years and the event is loan being paid in full. In this example,
+    /// these objects will be held intact for any number of years until the
+    /// event has occurred (event-based hold on the object is released) and then
+    /// 3 more years after that. That means retention duration of the objects
+    /// begins from the moment event-based hold transitioned from true to false.
+    /// Objects under event-based hold cannot be deleted, overwritten or
+    /// archived until the hold is removed.
     #[serde(rename = "defaultEventBasedHold")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_event_based_hold: Option<bool>,
@@ -325,7 +411,8 @@ pub struct Bucket {
     #[serde(rename = "iamConfiguration")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub iam_configuration: Option<BucketIamConfiguration>,
-    /// The ID of the bucket. For buckets, the id and name properties are the same.
+    /// The ID of the bucket. For buckets, the id and name properties are the
+    /// same.
     #[serde(rename = "id")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
@@ -337,11 +424,14 @@ pub struct Bucket {
     #[serde(rename = "labels")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub labels: Option<HashMap<String, String>>,
-    /// The bucket's lifecycle configuration. See lifecycle management for more information.
+    /// The bucket's lifecycle configuration. See lifecycle management for more
+    /// information.
     #[serde(rename = "lifecycle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lifecycle: Option<BucketLifecycle>,
-    /// The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
+    /// The location of the bucket. Object data for objects in the bucket
+    /// resides in physical storage within this region. Defaults to US. See the
+    /// developer's guide for the authoritative list.
     #[serde(rename = "location")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
@@ -349,7 +439,8 @@ pub struct Bucket {
     #[serde(rename = "locationType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location_type: Option<String>,
-    /// The bucket's logging configuration, which defines the destination bucket and optional name prefix for the current bucket's logs.
+    /// The bucket's logging configuration, which defines the destination bucket
+    /// and optional name prefix for the current bucket's logs.
     #[serde(rename = "logging")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logging: Option<BucketLogging>,
@@ -369,7 +460,15 @@ pub struct Bucket {
     #[serde(rename = "projectNumber")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub project_number: Option<String>,
-    /// The bucket's retention policy. The retention policy enforces a minimum retention time for all objects contained in the bucket, based on their creation time. Any attempt to overwrite or delete objects younger than the retention period will result in a PERMISSION_DENIED error. An unlocked retention policy can be modified or removed from the bucket via a storage.buckets.update operation. A locked retention policy cannot be removed or shortened in duration for the lifetime of the bucket. Attempting to remove or decrease period of a locked retention policy will result in a PERMISSION_DENIED error.
+    /// The bucket's retention policy. The retention policy enforces a minimum
+    /// retention time for all objects contained in the bucket, based on their
+    /// creation time. Any attempt to overwrite or delete objects younger than
+    /// the retention period will result in a PERMISSION_DENIED error. An
+    /// unlocked retention policy can be modified or removed from the bucket via
+    /// a storage.buckets.update operation. A locked retention policy cannot be
+    /// removed or shortened in duration for the lifetime of the bucket.
+    /// Attempting to remove or decrease period of a locked retention policy
+    /// will result in a PERMISSION_DENIED error.
     #[serde(rename = "retentionPolicy")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retention_policy: Option<BucketRetentionPolicy>,
@@ -377,7 +476,13 @@ pub struct Bucket {
     #[serde(rename = "selfLink")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub self_link: Option<String>,
-    /// The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+    /// The bucket's default storage class, used whenever no storageClass is
+    /// specified for a newly-created object. This defines how objects in the
+    /// bucket are stored and determines the SLA and the cost of storage. Values
+    /// include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE,
+    /// and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when
+    /// the bucket is created, it will default to STANDARD. For more
+    /// information, see storage classes.
     #[serde(rename = "storageClass")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_class: Option<String>,
@@ -393,11 +498,17 @@ pub struct Bucket {
     #[serde(rename = "versioning")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub versioning: Option<BucketVersioning>,
-    /// The bucket's website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+    /// The bucket's website configuration, controlling how the service behaves
+    /// when accessing bucket contents as a web site. See the Static Website
+    /// Examples for more information.
     #[serde(rename = "website")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub website: Option<BucketWebsite>,
-    /// The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+    /// The zone or zones from which the bucket is intended to use zonal quota.
+    /// Requests for data from outside the specified affinities are still
+    /// allowed but won't be able to use zonal quota. The zone or zones need to
+    /// be within the bucket location otherwise the requests will fail with a
+    /// 400 Bad Request response.
     #[serde(rename = "zoneAffinity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zone_affinity: Option<Vec<String>>,
@@ -435,7 +546,14 @@ pub struct BucketAccessControl {
     #[serde(rename = "email")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
-    /// The entity holding the permission, in one of the following forms:  - user-userId  - user-email  - group-groupId  - group-email  - domain-domain  - project-team-projectId  - allUsers  - allAuthenticatedUsers Examples:  - The user liz@example.com would be user-liz@example.com.  - The group example@googlegroups.com would be group-example@googlegroups.com.  - To refer to all members of the Google Apps for Business domain example.com, the entity would be domain-example.com.
+    /// The entity holding the permission, in one of the following forms:  -
+    /// user-userId  - user-email  - group-groupId  - group-email  -
+    /// domain-domain  - project-team-projectId  - allUsers  -
+    /// allAuthenticatedUsers Examples:  - The user liz@example.com would be
+    /// user-liz@example.com.  - The group example@googlegroups.com would be
+    /// group-example@googlegroups.com.  - To refer to all members of the Google
+    /// Apps for Business domain example.com, the entity would be
+    /// domain-example.com.
     #[serde(rename = "entity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entity: Option<String>,
@@ -451,7 +569,8 @@ pub struct BucketAccessControl {
     #[serde(rename = "id")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    /// The kind of item this is. For bucket access control entries, this is always storage#bucketAccessControl.
+    /// The kind of item this is. For bucket access control entries, this is
+    /// always storage#bucketAccessControl.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
@@ -476,7 +595,8 @@ pub struct BucketAccessControls {
     #[serde(rename = "items")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Vec<BucketAccessControl>>,
-    /// The kind of item this is. For lists of bucket access control entries, this is always storage#bucketAccessControls.
+    /// The kind of item this is. For lists of bucket access control entries,
+    /// this is always storage#bucketAccessControls.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
@@ -489,11 +609,13 @@ pub struct Buckets {
     #[serde(rename = "items")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Vec<Bucket>>,
-    /// The kind of item this is. For lists of buckets, this is always storage#buckets.
+    /// The kind of item this is. For lists of buckets, this is always
+    /// storage#buckets.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
-    /// The continuation token, used to page through large result sets. Provide this value in a subsequent request to return the next page of results.
+    /// The continuation token, used to page through large result sets. Provide
+    /// this value in a subsequent request to return the next page of results.
     #[serde(rename = "nextPageToken")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_page_token: Option<String>,
@@ -506,7 +628,8 @@ pub struct Channel {
     #[serde(rename = "address")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address: Option<String>,
-    /// i64: Date and time of notification channel expiration, expressed as a Unix timestamp, in milliseconds. Optional.
+    /// i64: Date and time of notification channel expiration, expressed as a
+    /// Unix timestamp, in milliseconds. Optional.
     #[serde(rename = "expiration")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expiration: Option<String>,
@@ -514,7 +637,8 @@ pub struct Channel {
     #[serde(rename = "id")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    /// Identifies this as a notification channel used to watch for changes to a resource, which is "api#channel".
+    /// Identifies this as a notification channel used to watch for changes to a
+    /// resource, which is "api#channel".
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
@@ -526,7 +650,8 @@ pub struct Channel {
     #[serde(rename = "payload")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub payload: Option<bool>,
-    /// An opaque ID that identifies the resource being watched on this channel. Stable across different API versions.
+    /// An opaque ID that identifies the resource being watched on this channel.
+    /// Stable across different API versions.
     #[serde(rename = "resourceId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_id: Option<String>,
@@ -534,7 +659,8 @@ pub struct Channel {
     #[serde(rename = "resourceUri")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_uri: Option<String>,
-    /// An arbitrary string delivered to the target address with each notification delivered over this channel. Optional.
+    /// An arbitrary string delivered to the target address with each
+    /// notification delivered over this channel. Optional.
     #[serde(rename = "token")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub token: Option<String>,
@@ -547,7 +673,9 @@ pub struct Channel {
 /// Conditions that must be met for this operation to execute.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct ComposeRequestSourceObjectsObjectPreconditions {
-    /// i64: Only perform the composition if the generation of the source object that would be used matches this value. If this value and a generation are both specified, they must be the same value or the call will fail.
+    /// i64: Only perform the composition if the generation of the source object
+    /// that would be used matches this value. If this value and a generation
+    /// are both specified, they must be the same value or the call will fail.
     #[serde(rename = "ifGenerationMatch")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub if_generation_match: Option<String>,
@@ -560,7 +688,8 @@ pub struct ComposeRequestSourceObjects {
     #[serde(rename = "generation")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub generation: Option<String>,
-    /// The source object's name. All source objects must reside in the same bucket.
+    /// The source object's name. All source objects must reside in the same
+    /// bucket.
     #[serde(rename = "name")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -580,34 +709,44 @@ pub struct ComposeRequest {
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
-    /// The list of source objects that will be concatenated into a single object.
+    /// The list of source objects that will be concatenated into a single
+    /// object.
     #[serde(rename = "sourceObjects")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_objects: Option<Vec<ComposeRequestSourceObjects>>,
 }
 
-/// Represents an expression text. Example: title: "User account presence" description: "Determines whether the request has a user account" expression: "size(request.user) > 0"
+/// Represents an expression text. Example: title: "User account presence"
+/// description: "Determines whether the request has a user account" expression:
+/// "size(request.user) > 0"
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Expr {
-    /// An optional description of the expression. This is a longer text which describes the expression, e.g. when hovered over it in a UI.
+    /// An optional description of the expression. This is a longer text which
+    /// describes the expression, e.g. when hovered over it in a UI.
     #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    /// Textual representation of an expression in Common Expression Language syntax. The application context of the containing message determines which well-known feature set of CEL is supported.
+    /// Textual representation of an expression in Common Expression Language
+    /// syntax. The application context of the containing message determines
+    /// which well-known feature set of CEL is supported.
     #[serde(rename = "expression")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expression: Option<String>,
-    /// An optional string indicating the location of the expression for error reporting, e.g. a file name and a position in the file.
+    /// An optional string indicating the location of the expression for error
+    /// reporting, e.g. a file name and a position in the file.
     #[serde(rename = "location")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
-    /// An optional title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
+    /// An optional title for the expression, i.e. a short string describing its
+    /// purpose. This can be used e.g. in UIs which allow to enter the
+    /// expression.
     #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
 }
 
-/// JSON template to produce a JSON-style HMAC Key resource for Create responses.
+/// JSON template to produce a JSON-style HMAC Key resource for Create
+/// responses.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct HmacKey {
     /// The kind of item this is. For HMAC keys, this is always storage#hmacKey.
@@ -638,7 +777,8 @@ pub struct HmacKeyMetadata {
     #[serde(rename = "id")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    /// The kind of item this is. For HMAC Key metadata, this is always storage#hmacKeyMetadata.
+    /// The kind of item this is. For HMAC Key metadata, this is always
+    /// storage#hmacKeyMetadata.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
@@ -662,7 +802,8 @@ pub struct HmacKeyMetadata {
     #[serde(rename = "timeCreated")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub time_created: Option<DateTime<Utc>>,
-    /// DateTime: The last modification time of the HMAC key metadata in RFC 3339 format.
+    /// DateTime: The last modification time of the HMAC key metadata in RFC
+    /// 3339 format.
     #[serde(rename = "updated")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub updated: Option<DateTime<Utc>>,
@@ -675,11 +816,13 @@ pub struct HmacKeysMetadata {
     #[serde(rename = "items")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Vec<HmacKeyMetadata>>,
-    /// The kind of item this is. For lists of hmacKeys, this is always storage#hmacKeysMetadata.
+    /// The kind of item this is. For lists of hmacKeys, this is always
+    /// storage#hmacKeysMetadata.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
-    /// The continuation token, used to page through large result sets. Provide this value in a subsequent request to return the next page of results.
+    /// The continuation token, used to page through large result sets. Provide
+    /// this value in a subsequent request to return the next page of results.
     #[serde(rename = "nextPageToken")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_page_token: Option<String>,
@@ -688,7 +831,8 @@ pub struct HmacKeysMetadata {
 /// A subscription to receive Google PubSub notifications.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Notification {
-    /// An optional list of additional attributes to attach to each Cloud PubSub message published for this notification subscription.
+    /// An optional list of additional attributes to attach to each Cloud PubSub
+    /// message published for this notification subscription.
     #[serde(rename = "custom_attributes")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_attributes: Option<HashMap<String, String>>,
@@ -696,7 +840,8 @@ pub struct Notification {
     #[serde(rename = "etag")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub etag: Option<String>,
-    /// If present, only send notifications about listed event types. If empty, sent notifications for all event types.
+    /// If present, only send notifications about listed event types. If empty,
+    /// sent notifications for all event types.
     #[serde(rename = "event_types")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_types: Option<Vec<String>>,
@@ -704,11 +849,13 @@ pub struct Notification {
     #[serde(rename = "id")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    /// The kind of item this is. For notifications, this is always storage#notification.
+    /// The kind of item this is. For notifications, this is always
+    /// storage#notification.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
-    /// If present, only apply this notification configuration to object names that begin with this prefix.
+    /// If present, only apply this notification configuration to object names
+    /// that begin with this prefix.
     #[serde(rename = "object_name_prefix")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub object_name_prefix: Option<String>,
@@ -720,7 +867,9 @@ pub struct Notification {
     #[serde(rename = "selfLink")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub self_link: Option<String>,
-    /// The Cloud PubSub topic to which this subscription publishes. Formatted as: '//pubsub.googleapis.com/projects/{project-identifier}/topics/{my-topic}'
+    /// The Cloud PubSub topic to which this subscription publishes. Formatted
+    /// as: '//pubsub.googleapis.com/projects/{project-identifier}/topics/
+    /// {my-topic}'
     #[serde(rename = "topic")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub topic: Option<String>,
@@ -733,13 +882,15 @@ pub struct Notifications {
     #[serde(rename = "items")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Vec<Notification>>,
-    /// The kind of item this is. For lists of notifications, this is always storage#notifications.
+    /// The kind of item this is. For lists of notifications, this is always
+    /// storage#notifications.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
 }
 
-/// Metadata of customer-supplied encryption key, if the object is encrypted by such a key.
+/// Metadata of customer-supplied encryption key, if the object is encrypted by
+/// such a key.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct ObjectCustomerEncryption {
     /// The encryption algorithm.
@@ -776,11 +927,14 @@ pub struct Object {
     #[serde(rename = "bucket")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bucket: Option<String>,
-    /// Cache-Control directive for the object data. If omitted, and the object is accessible to all anonymous users, the default will be public, max-age=3600.
+    /// Cache-Control directive for the object data. If omitted, and the object
+    /// is accessible to all anonymous users, the default will be public,
+    /// max-age=3600.
     #[serde(rename = "cacheControl")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<String>,
-    /// Number of underlying components that make up this object. Components are accumulated by compose operations.
+    /// Number of underlying components that make up this object. Components are
+    /// accumulated by compose operations.
     #[serde(rename = "componentCount")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub component_count: Option<i32>,
@@ -796,19 +950,24 @@ pub struct Object {
     #[serde(rename = "contentLanguage")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content_language: Option<String>,
-    /// Content-Type of the object data. If an object is stored without a Content-Type, it is served as application/octet-stream.
+    /// Content-Type of the object data. If an object is stored without a
+    /// Content-Type, it is served as application/octet-stream.
     #[serde(rename = "contentType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content_type: Option<String>,
-    /// CRC32c checksum, as described in RFC 4960, Appendix B; encoded using base64 in big-endian byte order. For more information about using the CRC32c checksum, see Hashes and ETags: Best Practices.
+    /// CRC32c checksum, as described in RFC 4960, Appendix B; encoded using
+    /// base64 in big-endian byte order. For more information about using the
+    /// CRC32c checksum, see Hashes and ETags: Best Practices.
     #[serde(rename = "crc32c")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crc32c: Option<String>,
-    /// DateTime: A timestamp in RFC 3339 format specified by the user for an object.
+    /// DateTime: A timestamp in RFC 3339 format specified by the user for an
+    /// object.
     #[serde(rename = "customTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_time: Option<DateTime<Utc>>,
-    /// Metadata of customer-supplied encryption key, if the object is encrypted by such a key.
+    /// Metadata of customer-supplied encryption key, if the object is encrypted
+    /// by such a key.
     #[serde(rename = "customerEncryption")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub customer_encryption: Option<ObjectCustomerEncryption>,
@@ -816,7 +975,18 @@ pub struct Object {
     #[serde(rename = "etag")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub etag: Option<String>,
-    /// Whether an object is under event-based hold. Event-based hold is a way to retain objects until an event occurs, which is signified by the hold's release (i.e. this value is set to false). After being released (set to false), such objects will be subject to bucket-level retention (if any). One sample use case of this flag is for banks to hold loan documents for at least 3 years after loan is paid in full. Here, bucket-level retention is 3 years and the event is the loan being paid in full. In this example, these objects will be held intact for any number of years until the event has occurred (event-based hold on the object is released) and then 3 more years after that. That means retention duration of the objects begins from the moment event-based hold transitioned from true to false.
+    /// Whether an object is under event-based hold. Event-based hold is a way
+    /// to retain objects until an event occurs, which is signified by the
+    /// hold's release (i.e. this value is set to false). After being released
+    /// (set to false), such objects will be subject to bucket-level retention
+    /// (if any). One sample use case of this flag is for banks to hold loan
+    /// documents for at least 3 years after loan is paid in full. Here,
+    /// bucket-level retention is 3 years and the event is the loan being paid
+    /// in full. In this example, these objects will be held intact for any
+    /// number of years until the event has occurred (event-based hold on the
+    /// object is released) and then 3 more years after that. That means
+    /// retention duration of the objects begins from the moment event-based
+    /// hold transitioned from true to false.
     #[serde(rename = "eventBasedHold")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_based_hold: Option<bool>,
@@ -824,7 +994,8 @@ pub struct Object {
     #[serde(rename = "generation")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub generation: Option<String>,
-    /// The ID of the object, including the bucket name, object name, and generation number.
+    /// The ID of the object, including the bucket name, object name, and
+    /// generation number.
     #[serde(rename = "id")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
@@ -832,11 +1003,13 @@ pub struct Object {
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
-    /// Not currently supported. Specifying the parameter causes the request to fail with status code 400 - Bad Request.
+    /// Not currently supported. Specifying the parameter causes the request to
+    /// fail with status code 400 - Bad Request.
     #[serde(rename = "kmsKeyName")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kms_key_name: Option<String>,
-    /// MD5 hash of the data; encoded using base64. For more information about using the MD5 hash, see Hashes and ETags: Best Practices.
+    /// MD5 hash of the data; encoded using base64. For more information about
+    /// using the MD5 hash, see Hashes and ETags: Best Practices.
     #[serde(rename = "md5Hash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub md5_hash: Option<String>,
@@ -848,7 +1021,10 @@ pub struct Object {
     #[serde(rename = "metadata")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<HashMap<String, String>>,
-    /// i64: The version of the metadata for this object at this generation. Used for preconditions and for detecting changes in metadata. A metageneration number is only meaningful in the context of a particular generation of a particular object.
+    /// i64: The version of the metadata for this object at this generation.
+    /// Used for preconditions and for detecting changes in metadata. A
+    /// metageneration number is only meaningful in the context of a particular
+    /// generation of a particular object.
     #[serde(rename = "metageneration")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metageneration: Option<String>,
@@ -860,7 +1036,13 @@ pub struct Object {
     #[serde(rename = "owner")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub owner: Option<ObjectOwner>,
-    /// DateTime: A server-determined value that specifies the earliest time that the object's retention period expires. This value is in RFC 3339 format. Note 1: This field is not provided for objects with an active event-based hold, since retention expiration is unknown until the hold is removed. Note 2: This value can be provided even when temporary hold is set (so that the user can reason about policy without having to first unset the temporary hold).
+    /// DateTime: A server-determined value that specifies the earliest time
+    /// that the object's retention period expires. This value is in RFC 3339
+    /// format. Note 1: This field is not provided for objects with an active
+    /// event-based hold, since retention expiration is unknown until the hold
+    /// is removed. Note 2: This value can be provided even when temporary hold
+    /// is set (so that the user can reason about policy without having to first
+    /// unset the temporary hold).
     #[serde(rename = "retentionExpirationTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retention_expiration_time: Option<DateTime<Utc>>,
@@ -876,7 +1058,12 @@ pub struct Object {
     #[serde(rename = "storageClass")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_class: Option<String>,
-    /// Whether an object is under temporary hold. While this flag is set to true, the object is protected against deletion and overwrites. A common use case of this flag is regulatory investigations where objects need to be retained while the investigation is ongoing. Note that unlike event-based hold, temporary hold does not impact retention expiration time of an object.
+    /// Whether an object is under temporary hold. While this flag is set to
+    /// true, the object is protected against deletion and overwrites. A common
+    /// use case of this flag is regulatory investigations where objects need to
+    /// be retained while the investigation is ongoing. Note that unlike
+    /// event-based hold, temporary hold does not impact retention expiration
+    /// time of an object.
     #[serde(rename = "temporaryHold")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temporary_hold: Option<bool>,
@@ -884,15 +1071,18 @@ pub struct Object {
     #[serde(rename = "timeCreated")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub time_created: Option<DateTime<Utc>>,
-    /// DateTime: The deletion time of the object in RFC 3339 format. Will be returned if and only if this version of the object has been deleted.
+    /// DateTime: The deletion time of the object in RFC 3339 format. Will be
+    /// returned if and only if this version of the object has been deleted.
     #[serde(rename = "timeDeleted")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub time_deleted: Option<DateTime<Utc>>,
-    /// DateTime: The time at which the object's storage class was last changed. When the object is initially created, it will be set to timeCreated.
+    /// DateTime: The time at which the object's storage class was last changed.
+    /// When the object is initially created, it will be set to timeCreated.
     #[serde(rename = "timeStorageClassUpdated")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub time_storage_class_updated: Option<DateTime<Utc>>,
-    /// DateTime: The modification time of the object metadata in RFC 3339 format.
+    /// DateTime: The modification time of the object metadata in RFC 3339
+    /// format.
     #[serde(rename = "updated")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub updated: Option<DateTime<Utc>>,
@@ -926,7 +1116,14 @@ pub struct ObjectAccessControl {
     #[serde(rename = "email")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
-    /// The entity holding the permission, in one of the following forms:  - user-userId  - user-email  - group-groupId  - group-email  - domain-domain  - project-team-projectId  - allUsers  - allAuthenticatedUsers Examples:  - The user liz@example.com would be user-liz@example.com.  - The group example@googlegroups.com would be group-example@googlegroups.com.  - To refer to all members of the Google Apps for Business domain example.com, the entity would be domain-example.com.
+    /// The entity holding the permission, in one of the following forms:  -
+    /// user-userId  - user-email  - group-groupId  - group-email  -
+    /// domain-domain  - project-team-projectId  - allUsers  -
+    /// allAuthenticatedUsers Examples:  - The user liz@example.com would be
+    /// user-liz@example.com.  - The group example@googlegroups.com would be
+    /// group-example@googlegroups.com.  - To refer to all members of the Google
+    /// Apps for Business domain example.com, the entity would be
+    /// domain-example.com.
     #[serde(rename = "entity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entity: Option<String>,
@@ -946,7 +1143,8 @@ pub struct ObjectAccessControl {
     #[serde(rename = "id")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    /// The kind of item this is. For object access control entries, this is always storage#objectAccessControl.
+    /// The kind of item this is. For object access control entries, this is
+    /// always storage#objectAccessControl.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
@@ -975,7 +1173,8 @@ pub struct ObjectAccessControls {
     #[serde(rename = "items")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Vec<ObjectAccessControl>>,
-    /// The kind of item this is. For lists of object access control entries, this is always storage#objectAccessControls.
+    /// The kind of item this is. For lists of object access control entries,
+    /// this is always storage#objectAccessControls.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
@@ -988,15 +1187,18 @@ pub struct Objects {
     #[serde(rename = "items")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Vec<Object>>,
-    /// The kind of item this is. For lists of objects, this is always storage#objects.
+    /// The kind of item this is. For lists of objects, this is always
+    /// storage#objects.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
-    /// The continuation token, used to page through large result sets. Provide this value in a subsequent request to return the next page of results.
+    /// The continuation token, used to page through large result sets. Provide
+    /// this value in a subsequent request to return the next page of results.
     #[serde(rename = "nextPageToken")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_page_token: Option<String>,
-    /// The list of prefixes of objects matching-but-not-listed up to and including the requested delimiter.
+    /// The list of prefixes of objects matching-but-not-listed up to and
+    /// including the requested delimiter.
     #[serde(rename = "prefixes")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prefixes: Option<Vec<String>>,
@@ -1008,11 +1210,50 @@ pub struct PolicyBindings {
     #[serde(rename = "condition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<Expr>,
-    /// A collection of identifiers for members who may assume the provided role. Recognized identifiers are as follows:   - allUsers — A special identifier that represents anyone on the internet; with or without a Google account.   - allAuthenticatedUsers — A special identifier that represents anyone who is authenticated with a Google account or a service account.   - user:emailid — An email address that represents a specific account. For example, user:alice@gmail.com or user:joe@example.com.   - serviceAccount:emailid — An email address that represents a service account. For example,  serviceAccount:my-other-app@appspot.gserviceaccount.com .   - group:emailid — An email address that represents a Google group. For example, group:admins@example.com.   - domain:domain — A Google Apps domain name that represents all the users of that domain. For example, domain:google.com or domain:example.com.   - projectOwner:projectid — Owners of the given project. For example, projectOwner:my-example-project   - projectEditor:projectid — Editors of the given project. For example, projectEditor:my-example-project   - projectViewer:projectid — Viewers of the given project. For example, projectViewer:my-example-project
+    /// A collection of identifiers for members who may assume the provided
+    /// role. Recognized identifiers are as follows:   - allUsers — A special
+    /// identifier that represents anyone on the internet; with or without a
+    /// Google account.   - allAuthenticatedUsers — A special identifier that
+    /// represents anyone who is authenticated with a Google account or a
+    /// service account.   - user:emailid — An email address that represents a
+    /// specific account. For example, user:alice@gmail.com or
+    /// user:joe@example.com.   - serviceAccount:emailid — An email address that
+    /// represents a service account. For example,
+    /// serviceAccount:my-other-app@appspot.gserviceaccount.com .   -
+    /// group:emailid — An email address that represents a Google group. For
+    /// example, group:admins@example.com.   - domain:domain — A Google Apps
+    /// domain name that represents all the users of that domain. For example,
+    /// domain:google.com or domain:example.com.   - projectOwner:projectid —
+    /// Owners of the given project. For example,
+    /// projectOwner:my-example-project   - projectEditor:projectid — Editors of
+    /// the given project. For example, projectEditor:my-example-project   -
+    /// projectViewer:projectid — Viewers of the given project. For example,
+    /// projectViewer:my-example-project
     #[serde(rename = "members")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub members: Option<Vec<String>>,
-    /// The role to which members belong. Two types of roles are supported: new IAM roles, which grant permissions that do not map directly to those provided by ACLs, and legacy IAM roles, which do map directly to ACL permissions. All roles are of the format roles/storage.specificRole. The new IAM roles are:   - roles/storage.admin — Full control of Google Cloud Storage resources.   - roles/storage.objectViewer — Read-Only access to Google Cloud Storage objects.   - roles/storage.objectCreator — Access to create objects in Google Cloud Storage.   - roles/storage.objectAdmin — Full control of Google Cloud Storage objects.   The legacy IAM roles are:   - roles/storage.legacyObjectReader — Read-only access to objects without listing. Equivalent to an ACL entry on an object with the READER role.   - roles/storage.legacyObjectOwner — Read/write access to existing objects without listing. Equivalent to an ACL entry on an object with the OWNER role.   - roles/storage.legacyBucketReader — Read access to buckets with object listing. Equivalent to an ACL entry on a bucket with the READER role.   - roles/storage.legacyBucketWriter — Read access to buckets with object listing/creation/deletion. Equivalent to an ACL entry on a bucket with the WRITER role.   - roles/storage.legacyBucketOwner — Read and write access to existing buckets with object listing/creation/deletion. Equivalent to an ACL entry on a bucket with the OWNER role.
+    /// The role to which members belong. Two types of roles are supported: new
+    /// IAM roles, which grant permissions that do not map directly to those
+    /// provided by ACLs, and legacy IAM roles, which do map directly to ACL
+    /// permissions. All roles are of the format roles/storage.specificRole. The
+    /// new IAM roles are:   - roles/storage.admin — Full control of Google
+    /// Cloud Storage resources.   - roles/storage.objectViewer — Read-Only
+    /// access to Google Cloud Storage objects.   - roles/storage.objectCreator
+    /// — Access to create objects in Google Cloud Storage.   -
+    /// roles/storage.objectAdmin — Full control of Google Cloud Storage
+    /// objects.   The legacy IAM roles are:   -
+    /// roles/storage.legacyObjectReader — Read-only access to objects without
+    /// listing. Equivalent to an ACL entry on an object with the READER role.
+    /// - roles/storage.legacyObjectOwner — Read/write access to existing
+    /// objects without listing. Equivalent to an ACL entry on an object with
+    /// the OWNER role.   - roles/storage.legacyBucketReader — Read access to
+    /// buckets with object listing. Equivalent to an ACL entry on a bucket with
+    /// the READER role.   - roles/storage.legacyBucketWriter — Read access to
+    /// buckets with object listing/creation/deletion. Equivalent to an ACL
+    /// entry on a bucket with the WRITER role.   -
+    /// roles/storage.legacyBucketOwner — Read and write access to existing
+    /// buckets with object listing/creation/deletion. Equivalent to an ACL
+    /// entry on a bucket with the OWNER role.
     #[serde(rename = "role")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<String>,
@@ -1021,7 +1262,8 @@ pub struct PolicyBindings {
 /// A bucket/object IAM policy.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Policy {
-    /// An association between a role, which comes with a set of permissions, and members who may assume that role.
+    /// An association between a role, which comes with a set of permissions,
+    /// and members who may assume that role.
     #[serde(rename = "bindings")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bindings: Option<Vec<PolicyBindings>>,
@@ -1029,11 +1271,18 @@ pub struct Policy {
     #[serde(rename = "etag")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub etag: Option<String>,
-    /// The kind of item this is. For policies, this is always storage#policy. This field is ignored on input.
+    /// The kind of item this is. For policies, this is always storage#policy.
+    /// This field is ignored on input.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
-    /// The ID of the resource to which this policy belongs. Will be of the form projects/_/buckets/bucket for buckets, and projects/_/buckets/bucket/objects/object for objects. A specific generation may be specified by appending #generationNumber to the end of the object name, e.g. projects/_/buckets/my-bucket/objects/data.txt#17. The current generation can be denoted with #0. This field is ignored on input.
+    /// The ID of the resource to which this policy belongs. Will be of the form
+    /// projects/_/buckets/bucket for buckets, and
+    /// projects/_/buckets/bucket/objects/object for objects. A specific
+    /// generation may be specified by appending #generationNumber to the end of
+    /// the object name, e.g. projects/_/buckets/my-bucket/objects/data.txt#17.
+    /// The current generation can be denoted with #0. This field is ignored on
+    /// input.
     #[serde(rename = "resourceId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_id: Option<String>,
@@ -1046,7 +1295,8 @@ pub struct Policy {
 /// A rewrite response.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct RewriteResponse {
-    /// true if the copy is finished; otherwise, false if the copy is in progress. This property is always present in the response.
+    /// true if the copy is finished; otherwise, false if the copy is in
+    /// progress. This property is always present in the response.
     #[serde(rename = "done")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub done: Option<bool>,
@@ -1054,18 +1304,22 @@ pub struct RewriteResponse {
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
-    /// i64: The total size of the object being copied in bytes. This property is always present in the response.
+    /// i64: The total size of the object being copied in bytes. This property
+    /// is always present in the response.
     #[serde(rename = "objectSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub object_size: Option<String>,
     #[serde(rename = "resource")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource: Option<Object>,
-    /// A token to use in subsequent requests to continue copying data. This token is present in the response only when there is more data to copy.
+    /// A token to use in subsequent requests to continue copying data. This
+    /// token is present in the response only when there is more data to copy.
     #[serde(rename = "rewriteToken")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rewrite_token: Option<String>,
-    /// i64: The total bytes written so far, which can be used to provide a waiting user with a progress indicator. This property is always present in the response.
+    /// i64: The total bytes written so far, which can be used to provide a
+    /// waiting user with a progress indicator. This property is always present
+    /// in the response.
     #[serde(rename = "totalBytesRewritten")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_bytes_rewritten: Option<String>,
@@ -1078,7 +1332,8 @@ pub struct ServiceAccount {
     #[serde(rename = "email_address")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_address: Option<String>,
-    /// The kind of item this is. For notifications, this is always storage#notification.
+    /// The kind of item this is. For notifications, this is always
+    /// storage#notification.
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
@@ -1091,7 +1346,20 @@ pub struct TestIamPermissionsResponse {
     #[serde(rename = "kind")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
-    /// The permissions held by the caller. Permissions are always of the format storage.resource.capability, where resource is one of buckets or objects. The supported permissions are as follows:   - storage.buckets.delete — Delete bucket.   - storage.buckets.get — Read bucket metadata.   - storage.buckets.getIamPolicy — Read bucket IAM policy.   - storage.buckets.create — Create bucket.   - storage.buckets.list — List buckets.   - storage.buckets.setIamPolicy — Update bucket IAM policy.   - storage.buckets.update — Update bucket metadata.   - storage.objects.delete — Delete object.   - storage.objects.get — Read object data and metadata.   - storage.objects.getIamPolicy — Read object IAM policy.   - storage.objects.create — Create object.   - storage.objects.list — List objects.   - storage.objects.setIamPolicy — Update object IAM policy.   - storage.objects.update — Update object metadata.
+    /// The permissions held by the caller. Permissions are always of the format
+    /// storage.resource.capability, where resource is one of buckets or
+    /// objects. The supported permissions are as follows:   -
+    /// storage.buckets.delete — Delete bucket.   - storage.buckets.get — Read
+    /// bucket metadata.   - storage.buckets.getIamPolicy — Read bucket IAM
+    /// policy.   - storage.buckets.create — Create bucket.   -
+    /// storage.buckets.list — List buckets.   - storage.buckets.setIamPolicy —
+    /// Update bucket IAM policy.   - storage.buckets.update — Update bucket
+    /// metadata.   - storage.objects.delete — Delete object.   -
+    /// storage.objects.get — Read object data and metadata.   -
+    /// storage.objects.getIamPolicy — Read object IAM policy.   -
+    /// storage.objects.create — Create object.   - storage.objects.list — List
+    /// objects.   - storage.objects.setIamPolicy — Update object IAM policy.
+    /// - storage.objects.update — Update object metadata.
     #[serde(rename = "permissions")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub permissions: Option<Vec<String>>,
@@ -1128,7 +1396,8 @@ impl std::fmt::Display for BucketsGetProjection {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum BucketsInsertPredefinedAcl {
     Undefined,
-    /// Project team owners get OWNER access, and allAuthenticatedUsers get READER access.
+    /// Project team owners get OWNER access, and allAuthenticatedUsers get
+    /// READER access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
     /// Project team owners get OWNER access.
@@ -1168,19 +1437,23 @@ impl std::fmt::Display for BucketsInsertPredefinedAcl {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum BucketsInsertPredefinedDefaultObjectAcl {
     Undefined,
-    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER
+    /// access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
-    /// Object owner gets OWNER access, and project team owners get OWNER access.
+    /// Object owner gets OWNER access, and project team owners get OWNER
+    /// access.
     #[serde(rename = "bucketOwnerFullControl")]
     BucketOwnerFullControl,
-    /// Object owner gets OWNER access, and project team owners get READER access.
+    /// Object owner gets OWNER access, and project team owners get READER
+    /// access.
     #[serde(rename = "bucketOwnerRead")]
     BucketOwnerRead,
     /// Object owner gets OWNER access.
     #[serde(rename = "private")]
     Private,
-    /// Object owner gets OWNER access, and project team members get access according to their roles.
+    /// Object owner gets OWNER access, and project team members get access
+    /// according to their roles.
     #[serde(rename = "projectPrivate")]
     ProjectPrivate,
     /// Object owner gets OWNER access, and allUsers get READER access.
@@ -1274,7 +1547,8 @@ impl std::fmt::Display for BucketsListProjection {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum BucketsPatchPredefinedAcl {
     Undefined,
-    /// Project team owners get OWNER access, and allAuthenticatedUsers get READER access.
+    /// Project team owners get OWNER access, and allAuthenticatedUsers get
+    /// READER access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
     /// Project team owners get OWNER access.
@@ -1314,19 +1588,23 @@ impl std::fmt::Display for BucketsPatchPredefinedAcl {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum BucketsPatchPredefinedDefaultObjectAcl {
     Undefined,
-    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER
+    /// access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
-    /// Object owner gets OWNER access, and project team owners get OWNER access.
+    /// Object owner gets OWNER access, and project team owners get OWNER
+    /// access.
     #[serde(rename = "bucketOwnerFullControl")]
     BucketOwnerFullControl,
-    /// Object owner gets OWNER access, and project team owners get READER access.
+    /// Object owner gets OWNER access, and project team owners get READER
+    /// access.
     #[serde(rename = "bucketOwnerRead")]
     BucketOwnerRead,
     /// Object owner gets OWNER access.
     #[serde(rename = "private")]
     Private,
-    /// Object owner gets OWNER access, and project team members get access according to their roles.
+    /// Object owner gets OWNER access, and project team members get access
+    /// according to their roles.
     #[serde(rename = "projectPrivate")]
     ProjectPrivate,
     /// Object owner gets OWNER access, and allUsers get READER access.
@@ -1390,7 +1668,8 @@ impl std::fmt::Display for BucketsPatchProjection {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum BucketsUpdatePredefinedAcl {
     Undefined,
-    /// Project team owners get OWNER access, and allAuthenticatedUsers get READER access.
+    /// Project team owners get OWNER access, and allAuthenticatedUsers get
+    /// READER access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
     /// Project team owners get OWNER access.
@@ -1430,19 +1709,23 @@ impl std::fmt::Display for BucketsUpdatePredefinedAcl {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum BucketsUpdatePredefinedDefaultObjectAcl {
     Undefined,
-    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER
+    /// access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
-    /// Object owner gets OWNER access, and project team owners get OWNER access.
+    /// Object owner gets OWNER access, and project team owners get OWNER
+    /// access.
     #[serde(rename = "bucketOwnerFullControl")]
     BucketOwnerFullControl,
-    /// Object owner gets OWNER access, and project team owners get READER access.
+    /// Object owner gets OWNER access, and project team owners get READER
+    /// access.
     #[serde(rename = "bucketOwnerRead")]
     BucketOwnerRead,
     /// Object owner gets OWNER access.
     #[serde(rename = "private")]
     Private,
-    /// Object owner gets OWNER access, and project team members get access according to their roles.
+    /// Object owner gets OWNER access, and project team members get access
+    /// according to their roles.
     #[serde(rename = "projectPrivate")]
     ProjectPrivate,
     /// Object owner gets OWNER access, and allUsers get READER access.
@@ -1508,19 +1791,23 @@ impl std::fmt::Display for BucketsUpdateProjection {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ObjectsComposeDestinationPredefinedAcl {
     Undefined,
-    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER
+    /// access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
-    /// Object owner gets OWNER access, and project team owners get OWNER access.
+    /// Object owner gets OWNER access, and project team owners get OWNER
+    /// access.
     #[serde(rename = "bucketOwnerFullControl")]
     BucketOwnerFullControl,
-    /// Object owner gets OWNER access, and project team owners get READER access.
+    /// Object owner gets OWNER access, and project team owners get READER
+    /// access.
     #[serde(rename = "bucketOwnerRead")]
     BucketOwnerRead,
     /// Object owner gets OWNER access.
     #[serde(rename = "private")]
     Private,
-    /// Object owner gets OWNER access, and project team members get access according to their roles.
+    /// Object owner gets OWNER access, and project team members get access
+    /// according to their roles.
     #[serde(rename = "projectPrivate")]
     ProjectPrivate,
     /// Object owner gets OWNER access, and allUsers get READER access.
@@ -1556,19 +1843,23 @@ impl std::fmt::Display for ObjectsComposeDestinationPredefinedAcl {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ObjectsCopyDestinationPredefinedAcl {
     Undefined,
-    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER
+    /// access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
-    /// Object owner gets OWNER access, and project team owners get OWNER access.
+    /// Object owner gets OWNER access, and project team owners get OWNER
+    /// access.
     #[serde(rename = "bucketOwnerFullControl")]
     BucketOwnerFullControl,
-    /// Object owner gets OWNER access, and project team owners get READER access.
+    /// Object owner gets OWNER access, and project team owners get READER
+    /// access.
     #[serde(rename = "bucketOwnerRead")]
     BucketOwnerRead,
     /// Object owner gets OWNER access.
     #[serde(rename = "private")]
     Private,
-    /// Object owner gets OWNER access, and project team members get access according to their roles.
+    /// Object owner gets OWNER access, and project team members get access
+    /// according to their roles.
     #[serde(rename = "projectPrivate")]
     ProjectPrivate,
     /// Object owner gets OWNER access, and allUsers get READER access.
@@ -1660,19 +1951,23 @@ impl std::fmt::Display for ObjectsGetProjection {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ObjectsInsertPredefinedAcl {
     Undefined,
-    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER
+    /// access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
-    /// Object owner gets OWNER access, and project team owners get OWNER access.
+    /// Object owner gets OWNER access, and project team owners get OWNER
+    /// access.
     #[serde(rename = "bucketOwnerFullControl")]
     BucketOwnerFullControl,
-    /// Object owner gets OWNER access, and project team owners get READER access.
+    /// Object owner gets OWNER access, and project team owners get READER
+    /// access.
     #[serde(rename = "bucketOwnerRead")]
     BucketOwnerRead,
     /// Object owner gets OWNER access.
     #[serde(rename = "private")]
     Private,
-    /// Object owner gets OWNER access, and project team members get access according to their roles.
+    /// Object owner gets OWNER access, and project team members get access
+    /// according to their roles.
     #[serde(rename = "projectPrivate")]
     ProjectPrivate,
     /// Object owner gets OWNER access, and allUsers get READER access.
@@ -1762,19 +2057,23 @@ impl std::fmt::Display for ObjectsListProjection {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ObjectsPatchPredefinedAcl {
     Undefined,
-    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER
+    /// access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
-    /// Object owner gets OWNER access, and project team owners get OWNER access.
+    /// Object owner gets OWNER access, and project team owners get OWNER
+    /// access.
     #[serde(rename = "bucketOwnerFullControl")]
     BucketOwnerFullControl,
-    /// Object owner gets OWNER access, and project team owners get READER access.
+    /// Object owner gets OWNER access, and project team owners get READER
+    /// access.
     #[serde(rename = "bucketOwnerRead")]
     BucketOwnerRead,
     /// Object owner gets OWNER access.
     #[serde(rename = "private")]
     Private,
-    /// Object owner gets OWNER access, and project team members get access according to their roles.
+    /// Object owner gets OWNER access, and project team members get access
+    /// according to their roles.
     #[serde(rename = "projectPrivate")]
     ProjectPrivate,
     /// Object owner gets OWNER access, and allUsers get READER access.
@@ -1836,19 +2135,23 @@ impl std::fmt::Display for ObjectsPatchProjection {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ObjectsRewriteDestinationPredefinedAcl {
     Undefined,
-    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER
+    /// access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
-    /// Object owner gets OWNER access, and project team owners get OWNER access.
+    /// Object owner gets OWNER access, and project team owners get OWNER
+    /// access.
     #[serde(rename = "bucketOwnerFullControl")]
     BucketOwnerFullControl,
-    /// Object owner gets OWNER access, and project team owners get READER access.
+    /// Object owner gets OWNER access, and project team owners get READER
+    /// access.
     #[serde(rename = "bucketOwnerRead")]
     BucketOwnerRead,
     /// Object owner gets OWNER access.
     #[serde(rename = "private")]
     Private,
-    /// Object owner gets OWNER access, and project team members get access according to their roles.
+    /// Object owner gets OWNER access, and project team members get access
+    /// according to their roles.
     #[serde(rename = "projectPrivate")]
     ProjectPrivate,
     /// Object owner gets OWNER access, and allUsers get READER access.
@@ -1912,19 +2215,23 @@ impl std::fmt::Display for ObjectsRewriteProjection {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ObjectsUpdatePredefinedAcl {
     Undefined,
-    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// Object owner gets OWNER access, and allAuthenticatedUsers get READER
+    /// access.
     #[serde(rename = "authenticatedRead")]
     AuthenticatedRead,
-    /// Object owner gets OWNER access, and project team owners get OWNER access.
+    /// Object owner gets OWNER access, and project team owners get OWNER
+    /// access.
     #[serde(rename = "bucketOwnerFullControl")]
     BucketOwnerFullControl,
-    /// Object owner gets OWNER access, and project team owners get READER access.
+    /// Object owner gets OWNER access, and project team owners get READER
+    /// access.
     #[serde(rename = "bucketOwnerRead")]
     BucketOwnerRead,
     /// Object owner gets OWNER access.
     #[serde(rename = "private")]
     Private,
-    /// Object owner gets OWNER access, and project team members get access according to their roles.
+    /// Object owner gets OWNER access, and project team members get access
+    /// according to their roles.
     #[serde(rename = "projectPrivate")]
     ProjectPrivate,
     /// Object owner gets OWNER access, and allUsers get READER access.
@@ -2047,13 +2354,17 @@ pub struct BucketAccessControlsDeleteParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2087,13 +2398,17 @@ pub struct BucketAccessControlsGetParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2127,10 +2442,12 @@ pub struct BucketAccessControlsInsertParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2164,10 +2481,12 @@ pub struct BucketAccessControlsListParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2201,13 +2520,17 @@ pub struct BucketAccessControlsPatchParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2241,13 +2564,17 @@ pub struct BucketAccessControlsUpdateParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2281,16 +2608,20 @@ pub struct BucketsDeleteParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If set, only deletes the bucket if its metageneration matches this value.
+    /// i64: If set, only deletes the bucket if its metageneration matches this
+    /// value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: If set, only deletes the bucket if its metageneration does not match this value.
+    /// i64: If set, only deletes the bucket if its metageneration does not
+    /// match this value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2338,19 +2669,23 @@ pub struct BucketsGetParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: Makes the return of the bucket metadata conditional on whether the bucket's current metageneration matches the given value.
+    /// i64: Makes the return of the bucket metadata conditional on whether the
+    /// bucket's current metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the return of the bucket metadata conditional on whether the bucket's current metageneration does not match the given value.
+    /// i64: Makes the return of the bucket metadata conditional on whether the
+    /// bucket's current metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
     /// Set of properties to return. Defaults to noAcl.
     #[serde(rename = "projection")]
     pub projection: Option<BucketsGetProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2405,13 +2740,17 @@ pub struct BucketsGetIamPolicyParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The IAM policy format version to be returned. If the optionsRequestedPolicyVersion is for an older version that doesn't support part of the requested IAM policy, the request fails.
+    /// The IAM policy format version to be returned. If the
+    /// optionsRequestedPolicyVersion is for an older version that doesn't
+    /// support part of the requested IAM policy, the request fails.
     #[serde(rename = "optionsRequestedPolicyVersion")]
     pub options_requested_policy_version: Option<i32>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2458,10 +2797,13 @@ pub struct BucketsInsertParams {
     /// A valid API project identifier.
     #[serde(rename = "project")]
     pub project: String,
-    /// Set of properties to return. Defaults to noAcl, unless the bucket resource specifies acl or defaultObjectAcl properties, when it defaults to full.
+    /// Set of properties to return. Defaults to noAcl, unless the bucket
+    /// resource specifies acl or defaultObjectAcl properties, when it defaults
+    /// to full.
     #[serde(rename = "projection")]
     pub projection: Option<BucketsInsertProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
     /// The project to be billed for this request.
@@ -2521,10 +2863,12 @@ pub struct BucketsListParams {
     /// General attributes applying to any API call
     #[serde(flatten)]
     pub storage_params: Option<StorageParams>,
-    /// Maximum number of buckets to return in a single response. The service will use this parameter or 1,000 items, whichever is smaller.
+    /// Maximum number of buckets to return in a single response. The service
+    /// will use this parameter or 1,000 items, whichever is smaller.
     #[serde(rename = "maxResults")]
     pub max_results: Option<u32>,
-    /// A previously-returned page token representing part of the larger set of results to view.
+    /// A previously-returned page token representing part of the larger set of
+    /// results to view.
     #[serde(rename = "pageToken")]
     pub page_token: Option<String>,
     /// Filter results to buckets whose names begin with this prefix.
@@ -2536,7 +2880,8 @@ pub struct BucketsListParams {
     /// Set of properties to return. Defaults to noAcl.
     #[serde(rename = "projection")]
     pub projection: Option<BucketsListProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
     /// The project to be billed for this request.
@@ -2606,13 +2951,16 @@ pub struct BucketsLockRetentionPolicyParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: Makes the operation conditional on whether bucket's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether bucket's current
+    /// metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2655,10 +3003,12 @@ pub struct BucketsPatchParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: Makes the return of the bucket metadata conditional on whether the bucket's current metageneration matches the given value.
+    /// i64: Makes the return of the bucket metadata conditional on whether the
+    /// bucket's current metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the return of the bucket metadata conditional on whether the bucket's current metageneration does not match the given value.
+    /// i64: Makes the return of the bucket metadata conditional on whether the
+    /// bucket's current metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
     /// Apply a predefined set of access controls to this bucket.
@@ -2670,10 +3020,12 @@ pub struct BucketsPatchParams {
     /// Set of properties to return. Defaults to full.
     #[serde(rename = "projection")]
     pub projection: Option<BucketsPatchProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2742,10 +3094,12 @@ pub struct BucketsSetIamPolicyParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2782,10 +3136,12 @@ pub struct BucketsTestIamPermissionsParams {
     /// Permissions to test.
     #[serde(rename = "permissions")]
     pub permissions: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2825,10 +3181,12 @@ pub struct BucketsUpdateParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: Makes the return of the bucket metadata conditional on whether the bucket's current metageneration matches the given value.
+    /// i64: Makes the return of the bucket metadata conditional on whether the
+    /// bucket's current metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the return of the bucket metadata conditional on whether the bucket's current metageneration does not match the given value.
+    /// i64: Makes the return of the bucket metadata conditional on whether the
+    /// bucket's current metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
     /// Apply a predefined set of access controls to this bucket.
@@ -2840,10 +3198,12 @@ pub struct BucketsUpdateParams {
     /// Set of properties to return. Defaults to full.
     #[serde(rename = "projection")]
     pub projection: Option<BucketsUpdateProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2926,13 +3286,17 @@ pub struct DefaultObjectAccessControlsDeleteParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -2966,13 +3330,17 @@ pub struct DefaultObjectAccessControlsGetParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3006,10 +3374,12 @@ pub struct DefaultObjectAccessControlsInsertParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3043,16 +3413,20 @@ pub struct DefaultObjectAccessControlsListParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, only return default ACL listing if the bucket's current metageneration matches this value.
+    /// i64: If present, only return default ACL listing if the bucket's current
+    /// metageneration matches this value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: If present, only return default ACL listing if the bucket's current metageneration does not match the given value.
+    /// i64: If present, only return default ACL listing if the bucket's current
+    /// metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3100,13 +3474,17 @@ pub struct DefaultObjectAccessControlsPatchParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3140,13 +3518,17 @@ pub struct DefaultObjectAccessControlsUpdateParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3183,10 +3565,12 @@ pub struct NotificationsDeleteParams {
     /// ID of the notification to delete.
     #[serde(rename = "notification")]
     pub notification: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3223,10 +3607,12 @@ pub struct NotificationsGetParams {
     /// Notification ID
     #[serde(rename = "notification")]
     pub notification: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3260,10 +3646,12 @@ pub struct NotificationsInsertParams {
     /// The parent bucket of the notification.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3297,10 +3685,12 @@ pub struct NotificationsListParams {
     /// Name of a Google Cloud Storage bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3334,19 +3724,25 @@ pub struct ObjectAccessControlsDeleteParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3387,19 +3783,25 @@ pub struct ObjectAccessControlsGetParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3440,16 +3842,20 @@ pub struct ObjectAccessControlsInsertParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3490,16 +3896,20 @@ pub struct ObjectAccessControlsListParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3540,19 +3950,25 @@ pub struct ObjectAccessControlsPatchParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3593,19 +4009,25 @@ pub struct ObjectAccessControlsUpdateParams {
     /// Name of a bucket.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// The entity holding the permission. Can be user-userId, user-emailAddress, group-groupId, group-emailAddress, allUsers, or allAuthenticatedUsers.
+    /// The entity holding the permission. Can be user-userId,
+    /// user-emailAddress, group-groupId, group-emailAddress, allUsers, or
+    /// allAuthenticatedUsers.
     #[serde(rename = "entity")]
     pub entity: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3643,28 +4065,38 @@ pub struct ObjectsComposeParams {
     /// General attributes applying to any API call
     #[serde(flatten)]
     pub storage_params: Option<StorageParams>,
-    /// Name of the bucket containing the source objects. The destination object is stored in this bucket.
+    /// Name of the bucket containing the source objects. The destination object
+    /// is stored in this bucket.
     #[serde(rename = "destinationBucket")]
     pub destination_bucket: String,
-    /// Name of the new object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the new object. For information about how to URL encode object
+    /// names to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "destinationObject")]
     pub destination_object: String,
     /// Apply a predefined set of access controls to the destination object.
     #[serde(rename = "destinationPredefinedAcl")]
     pub destination_predefined_acl: Option<ObjectsComposeDestinationPredefinedAcl>,
-    /// i64: Makes the operation conditional on whether the object's current generation matches the given value. Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation matches the given value. Setting to 0 makes the operation
+    /// succeed only if there are no live versions of the object.
     #[serde(rename = "ifGenerationMatch")]
     pub if_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// Resource name of the Cloud KMS key, of the form projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key, that will be used to encrypt the object. Overrides the object metadata's kms_key_name value, if any.
+    /// Resource name of the Cloud KMS key, of the form
+    /// projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key,
+    /// that will be used to encrypt the object. Overrides the object metadata's
+    /// kms_key_name value, if any.
     #[serde(rename = "kmsKeyName")]
     pub kms_key_name: Option<String>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3723,58 +4155,81 @@ pub struct ObjectsCopyParams {
     /// General attributes applying to any API call
     #[serde(flatten)]
     pub storage_params: Option<StorageParams>,
-    /// Name of the bucket in which to store the new object. Overrides the provided object metadata's bucket value, if any.For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the bucket in which to store the new object. Overrides the
+    /// provided object metadata's bucket value, if any.For information about
+    /// how to URL encode object names to be path safe, see Encoding URI Path
+    /// Parts.
     #[serde(rename = "destinationBucket")]
     pub destination_bucket: String,
-    /// Resource name of the Cloud KMS key, of the form projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key, that will be used to encrypt the object. Overrides the object metadata's kms_key_name value, if any.
+    /// Resource name of the Cloud KMS key, of the form
+    /// projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key,
+    /// that will be used to encrypt the object. Overrides the object metadata's
+    /// kms_key_name value, if any.
     #[serde(rename = "destinationKmsKeyName")]
     pub destination_kms_key_name: Option<String>,
-    /// Name of the new object. Required when the object metadata is not otherwise provided. Overrides the object metadata's name value, if any.
+    /// Name of the new object. Required when the object metadata is not
+    /// otherwise provided. Overrides the object metadata's name value, if any.
     #[serde(rename = "destinationObject")]
     pub destination_object: String,
     /// Apply a predefined set of access controls to the destination object.
     #[serde(rename = "destinationPredefinedAcl")]
     pub destination_predefined_acl: Option<ObjectsCopyDestinationPredefinedAcl>,
-    /// i64: Makes the operation conditional on whether the destination object's current generation matches the given value. Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    /// i64: Makes the operation conditional on whether the destination object's
+    /// current generation matches the given value. Setting to 0 makes the
+    /// operation succeed only if there are no live versions of the object.
     #[serde(rename = "ifGenerationMatch")]
     pub if_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the destination object's current generation does not match the given value. If no live object exists, the precondition fails. Setting to 0 makes the operation succeed only if there is a live version of the object.
+    /// i64: Makes the operation conditional on whether the destination object's
+    /// current generation does not match the given value. If no live object
+    /// exists, the precondition fails. Setting to 0 makes the operation succeed
+    /// only if there is a live version of the object.
     #[serde(rename = "ifGenerationNotMatch")]
     pub if_generation_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the destination object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the destination object's
+    /// current metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the destination object's current metageneration does not match the given value.
+    /// i64: Makes the operation conditional on whether the destination object's
+    /// current metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the source object's current generation matches the given value.
+    /// i64: Makes the operation conditional on whether the source object's
+    /// current generation matches the given value.
     #[serde(rename = "ifSourceGenerationMatch")]
     pub if_source_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the source object's current generation does not match the given value.
+    /// i64: Makes the operation conditional on whether the source object's
+    /// current generation does not match the given value.
     #[serde(rename = "ifSourceGenerationNotMatch")]
     pub if_source_generation_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the source object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the source object's
+    /// current metageneration matches the given value.
     #[serde(rename = "ifSourceMetagenerationMatch")]
     pub if_source_metageneration_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the source object's current metageneration does not match the given value.
+    /// i64: Makes the operation conditional on whether the source object's
+    /// current metageneration does not match the given value.
     #[serde(rename = "ifSourceMetagenerationNotMatch")]
     pub if_source_metageneration_not_match: Option<String>,
-    /// Set of properties to return. Defaults to noAcl, unless the object resource specifies the acl property, when it defaults to full.
+    /// Set of properties to return. Defaults to noAcl, unless the object
+    /// resource specifies the acl property, when it defaults to full.
     #[serde(rename = "projection")]
     pub projection: Option<ObjectsCopyProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
     /// Name of the bucket in which to find the source object.
     #[serde(rename = "sourceBucket")]
     pub source_bucket: String,
-    /// i64: If present, selects a specific revision of the source object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of the source object (as
+    /// opposed to the latest version, the default).
     #[serde(rename = "sourceGeneration")]
     pub source_generation: Option<String>,
-    /// Name of the source object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the source object. For information about how to URL encode
+    /// object names to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "sourceObject")]
     pub source_object: String,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3892,28 +4347,39 @@ pub struct ObjectsDeleteParams {
     /// Name of the bucket in which the object resides.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, permanently deletes a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, permanently deletes a specific revision of this object
+    /// (as opposed to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation matches the given value. Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation matches the given value. Setting to 0 makes the operation
+    /// succeed only if there are no live versions of the object.
     #[serde(rename = "ifGenerationMatch")]
     pub if_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation does not match the given value. If no live object exists, the precondition fails. Setting to 0 makes the operation succeed only if there is a live version of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation does not match the given value. If no live object exists, the
+    /// precondition fails. Setting to 0 makes the operation succeed only if
+    /// there is a live version of the object.
     #[serde(rename = "ifGenerationNotMatch")]
     pub if_generation_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -3982,31 +4448,42 @@ pub struct ObjectsGetParams {
     /// Name of the bucket in which the object resides.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation matches the given value. Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation matches the given value. Setting to 0 makes the operation
+    /// succeed only if there are no live versions of the object.
     #[serde(rename = "ifGenerationMatch")]
     pub if_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation does not match the given value. If no live object exists, the precondition fails. Setting to 0 makes the operation succeed only if there is a live version of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation does not match the given value. If no live object exists, the
+    /// precondition fails. Setting to 0 makes the operation succeed only if
+    /// there is a live version of the object.
     #[serde(rename = "ifGenerationNotMatch")]
     pub if_generation_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
     /// Set of properties to return. Defaults to noAcl.
     #[serde(rename = "projection")]
     pub projection: Option<ObjectsGetProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -4082,16 +4559,20 @@ pub struct ObjectsGetIamPolicyParams {
     /// Name of the bucket in which the object resides.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -4129,40 +4610,61 @@ pub struct ObjectsInsertParams {
     /// General attributes applying to any API call
     #[serde(flatten)]
     pub storage_params: Option<StorageParams>,
-    /// Name of the bucket in which to store the new object. Overrides the provided object metadata's bucket value, if any.
+    /// Name of the bucket in which to store the new object. Overrides the
+    /// provided object metadata's bucket value, if any.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// If set, sets the contentEncoding property of the final object to this value. Setting this parameter is equivalent to setting the contentEncoding metadata property. This can be useful when uploading an object with uploadType=media to indicate the encoding of the content being uploaded.
+    /// If set, sets the contentEncoding property of the final object to this
+    /// value. Setting this parameter is equivalent to setting the
+    /// contentEncoding metadata property. This can be useful when uploading an
+    /// object with uploadType=media to indicate the encoding of the content
+    /// being uploaded.
     #[serde(rename = "contentEncoding")]
     pub content_encoding: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation matches the given value. Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation matches the given value. Setting to 0 makes the operation
+    /// succeed only if there are no live versions of the object.
     #[serde(rename = "ifGenerationMatch")]
     pub if_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation does not match the given value. If no live object exists, the precondition fails. Setting to 0 makes the operation succeed only if there is a live version of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation does not match the given value. If no live object exists, the
+    /// precondition fails. Setting to 0 makes the operation succeed only if
+    /// there is a live version of the object.
     #[serde(rename = "ifGenerationNotMatch")]
     pub if_generation_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
-    /// Resource name of the Cloud KMS key, of the form projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key, that will be used to encrypt the object. Overrides the object metadata's kms_key_name value, if any.
+    /// Resource name of the Cloud KMS key, of the form
+    /// projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key,
+    /// that will be used to encrypt the object. Overrides the object metadata's
+    /// kms_key_name value, if any.
     #[serde(rename = "kmsKeyName")]
     pub kms_key_name: Option<String>,
-    /// Name of the object. Required when the object metadata is not otherwise provided. Overrides the object metadata's name value, if any. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. Required when the object metadata is not otherwise
+    /// provided. Overrides the object metadata's name value, if any. For
+    /// information about how to URL encode object names to be path safe, see
+    /// Encoding URI Path Parts.
     #[serde(rename = "name")]
     pub name: Option<String>,
     /// Apply a predefined set of access controls to this object.
     #[serde(rename = "predefinedAcl")]
     pub predefined_acl: Option<ObjectsInsertPredefinedAcl>,
-    /// Set of properties to return. Defaults to noAcl, unless the object resource specifies the acl property, when it defaults to full.
+    /// Set of properties to return. Defaults to noAcl, unless the object
+    /// resource specifies the acl property, when it defaults to full.
     #[serde(rename = "projection")]
     pub projection: Option<ObjectsInsertProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -4259,19 +4761,30 @@ pub struct ObjectsListParams {
     /// Name of the bucket in which to look for objects.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// Returns results in a directory-like mode. items will contain only objects whose names, aside from the prefix, do not contain delimiter. Objects whose names, aside from the prefix, contain delimiter will have their name, truncated after the delimiter, returned in prefixes. Duplicate prefixes are omitted.
+    /// Returns results in a directory-like mode. items will contain only
+    /// objects whose names, aside from the prefix, do not contain delimiter.
+    /// Objects whose names, aside from the prefix, contain delimiter will have
+    /// their name, truncated after the delimiter, returned in prefixes.
+    /// Duplicate prefixes are omitted.
     #[serde(rename = "delimiter")]
     pub delimiter: Option<String>,
-    /// Filter results to objects whose names are lexicographically before endOffset. If startOffset is also set, the objects listed will have names between startOffset (inclusive) and endOffset (exclusive).
+    /// Filter results to objects whose names are lexicographically before
+    /// endOffset. If startOffset is also set, the objects listed will have
+    /// names between startOffset (inclusive) and endOffset (exclusive).
     #[serde(rename = "endOffset")]
     pub end_offset: Option<String>,
-    /// If true, objects that end in exactly one instance of delimiter will have their metadata included in items in addition to prefixes.
+    /// If true, objects that end in exactly one instance of delimiter will have
+    /// their metadata included in items in addition to prefixes.
     #[serde(rename = "includeTrailingDelimiter")]
     pub include_trailing_delimiter: Option<bool>,
-    /// Maximum number of items plus prefixes to return in a single page of responses. As duplicate prefixes are omitted, fewer total results may be returned than requested. The service will use this parameter or 1,000 items, whichever is smaller.
+    /// Maximum number of items plus prefixes to return in a single page of
+    /// responses. As duplicate prefixes are omitted, fewer total results may be
+    /// returned than requested. The service will use this parameter or 1,000
+    /// items, whichever is smaller.
     #[serde(rename = "maxResults")]
     pub max_results: Option<u32>,
-    /// A previously-returned page token representing part of the larger set of results to view.
+    /// A previously-returned page token representing part of the larger set of
+    /// results to view.
     #[serde(rename = "pageToken")]
     pub page_token: Option<String>,
     /// Filter results to objects whose names begin with this prefix.
@@ -4280,16 +4793,21 @@ pub struct ObjectsListParams {
     /// Set of properties to return. Defaults to noAcl.
     #[serde(rename = "projection")]
     pub projection: Option<ObjectsListProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// Filter results to objects whose names are lexicographically equal to or after startOffset. If endOffset is also set, the objects listed will have names between startOffset (inclusive) and endOffset (exclusive).
+    /// Filter results to objects whose names are lexicographically equal to or
+    /// after startOffset. If endOffset is also set, the objects listed will
+    /// have names between startOffset (inclusive) and endOffset (exclusive).
     #[serde(rename = "startOffset")]
     pub start_offset: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
-    /// If true, lists all versions of an object as distinct results. The default is false. For more information, see Object Versioning.
+    /// If true, lists all versions of an object as distinct results. The
+    /// default is false. For more information, see Object Versioning.
     #[serde(rename = "versions")]
     pub versions: Option<bool>,
 }
@@ -4386,22 +4904,31 @@ pub struct ObjectsPatchParams {
     /// Name of the bucket in which the object resides.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation matches the given value. Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation matches the given value. Setting to 0 makes the operation
+    /// succeed only if there are no live versions of the object.
     #[serde(rename = "ifGenerationMatch")]
     pub if_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation does not match the given value. If no live object exists, the precondition fails. Setting to 0 makes the operation succeed only if there is a live version of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation does not match the given value. If no live object exists, the
+    /// precondition fails. Setting to 0 makes the operation succeed only if
+    /// there is a live version of the object.
     #[serde(rename = "ifGenerationNotMatch")]
     pub if_generation_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
     /// Apply a predefined set of access controls to this object.
@@ -4410,7 +4937,8 @@ pub struct ObjectsPatchParams {
     /// Set of properties to return. Defaults to full.
     #[serde(rename = "projection")]
     pub projection: Option<ObjectsPatchProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
     /// The project to be billed for this request, for Requester Pays buckets.
@@ -4493,64 +5021,97 @@ pub struct ObjectsRewriteParams {
     /// General attributes applying to any API call
     #[serde(flatten)]
     pub storage_params: Option<StorageParams>,
-    /// Name of the bucket in which to store the new object. Overrides the provided object metadata's bucket value, if any.
+    /// Name of the bucket in which to store the new object. Overrides the
+    /// provided object metadata's bucket value, if any.
     #[serde(rename = "destinationBucket")]
     pub destination_bucket: String,
-    /// Resource name of the Cloud KMS key, of the form projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key, that will be used to encrypt the object. Overrides the object metadata's kms_key_name value, if any.
+    /// Resource name of the Cloud KMS key, of the form
+    /// projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key,
+    /// that will be used to encrypt the object. Overrides the object metadata's
+    /// kms_key_name value, if any.
     #[serde(rename = "destinationKmsKeyName")]
     pub destination_kms_key_name: Option<String>,
-    /// Name of the new object. Required when the object metadata is not otherwise provided. Overrides the object metadata's name value, if any. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the new object. Required when the object metadata is not
+    /// otherwise provided. Overrides the object metadata's name value, if any.
+    /// For information about how to URL encode object names to be path safe,
+    /// see Encoding URI Path Parts.
     #[serde(rename = "destinationObject")]
     pub destination_object: String,
     /// Apply a predefined set of access controls to the destination object.
     #[serde(rename = "destinationPredefinedAcl")]
     pub destination_predefined_acl: Option<ObjectsRewriteDestinationPredefinedAcl>,
-    /// i64: Makes the operation conditional on whether the object's current generation matches the given value. Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation matches the given value. Setting to 0 makes the operation
+    /// succeed only if there are no live versions of the object.
     #[serde(rename = "ifGenerationMatch")]
     pub if_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation does not match the given value. If no live object exists, the precondition fails. Setting to 0 makes the operation succeed only if there is a live version of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation does not match the given value. If no live object exists, the
+    /// precondition fails. Setting to 0 makes the operation succeed only if
+    /// there is a live version of the object.
     #[serde(rename = "ifGenerationNotMatch")]
     pub if_generation_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the destination object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the destination object's
+    /// current metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the destination object's current metageneration does not match the given value.
+    /// i64: Makes the operation conditional on whether the destination object's
+    /// current metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the source object's current generation matches the given value.
+    /// i64: Makes the operation conditional on whether the source object's
+    /// current generation matches the given value.
     #[serde(rename = "ifSourceGenerationMatch")]
     pub if_source_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the source object's current generation does not match the given value.
+    /// i64: Makes the operation conditional on whether the source object's
+    /// current generation does not match the given value.
     #[serde(rename = "ifSourceGenerationNotMatch")]
     pub if_source_generation_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the source object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the source object's
+    /// current metageneration matches the given value.
     #[serde(rename = "ifSourceMetagenerationMatch")]
     pub if_source_metageneration_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the source object's current metageneration does not match the given value.
+    /// i64: Makes the operation conditional on whether the source object's
+    /// current metageneration does not match the given value.
     #[serde(rename = "ifSourceMetagenerationNotMatch")]
     pub if_source_metageneration_not_match: Option<String>,
-    /// i64: The maximum number of bytes that will be rewritten per rewrite request. Most callers shouldn't need to specify this parameter - it is primarily in place to support testing. If specified the value must be an integral multiple of 1 MiB (1048576). Also, this only applies to requests where the source and destination span locations and/or storage classes. Finally, this value must not change across rewrite calls else you'll get an error that the rewriteToken is invalid.
+    /// i64: The maximum number of bytes that will be rewritten per rewrite
+    /// request. Most callers shouldn't need to specify this parameter - it is
+    /// primarily in place to support testing. If specified the value must be an
+    /// integral multiple of 1 MiB (1048576). Also, this only applies to
+    /// requests where the source and destination span locations and/or storage
+    /// classes. Finally, this value must not change across rewrite calls else
+    /// you'll get an error that the rewriteToken is invalid.
     #[serde(rename = "maxBytesRewrittenPerCall")]
     pub max_bytes_rewritten_per_call: Option<String>,
-    /// Set of properties to return. Defaults to noAcl, unless the object resource specifies the acl property, when it defaults to full.
+    /// Set of properties to return. Defaults to noAcl, unless the object
+    /// resource specifies the acl property, when it defaults to full.
     #[serde(rename = "projection")]
     pub projection: Option<ObjectsRewriteProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// Include this field (from the previous rewrite response) on each rewrite request after the first one, until the rewrite response 'done' flag is true. Calls that provide a rewriteToken can omit all other request fields, but if included those fields must match the values provided in the first rewrite request.
+    /// Include this field (from the previous rewrite response) on each rewrite
+    /// request after the first one, until the rewrite response 'done' flag is
+    /// true. Calls that provide a rewriteToken can omit all other request
+    /// fields, but if included those fields must match the values provided in
+    /// the first rewrite request.
     #[serde(rename = "rewriteToken")]
     pub rewrite_token: Option<String>,
     /// Name of the bucket in which to find the source object.
     #[serde(rename = "sourceBucket")]
     pub source_bucket: String,
-    /// i64: If present, selects a specific revision of the source object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of the source object (as
+    /// opposed to the latest version, the default).
     #[serde(rename = "sourceGeneration")]
     pub source_generation: Option<String>,
-    /// Name of the source object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the source object. For information about how to URL encode
+    /// object names to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "sourceObject")]
     pub source_object: String,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -4682,16 +5243,20 @@ pub struct ObjectsSetIamPolicyParams {
     /// Name of the bucket in which the object resides.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -4732,19 +5297,23 @@ pub struct ObjectsTestIamPermissionsParams {
     /// Name of the bucket in which the object resides.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
     /// Permissions to test.
     #[serde(rename = "permissions")]
     pub permissions: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -4791,22 +5360,31 @@ pub struct ObjectsUpdateParams {
     /// Name of the bucket in which the object resides.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// i64: If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    /// i64: If present, selects a specific revision of this object (as opposed
+    /// to the latest version, the default).
     #[serde(rename = "generation")]
     pub generation: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation matches the given value. Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation matches the given value. Setting to 0 makes the operation
+    /// succeed only if there are no live versions of the object.
     #[serde(rename = "ifGenerationMatch")]
     pub if_generation_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current generation does not match the given value. If no live object exists, the precondition fails. Setting to 0 makes the operation succeed only if there is a live version of the object.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// generation does not match the given value. If no live object exists, the
+    /// precondition fails. Setting to 0 makes the operation succeed only if
+    /// there is a live version of the object.
     #[serde(rename = "ifGenerationNotMatch")]
     pub if_generation_not_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration matches the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration matches the given value.
     #[serde(rename = "ifMetagenerationMatch")]
     pub if_metageneration_match: Option<String>,
-    /// i64: Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    /// i64: Makes the operation conditional on whether the object's current
+    /// metageneration does not match the given value.
     #[serde(rename = "ifMetagenerationNotMatch")]
     pub if_metageneration_not_match: Option<String>,
-    /// Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.
+    /// Name of the object. For information about how to URL encode object names
+    /// to be path safe, see Encoding URI Path Parts.
     #[serde(rename = "object")]
     pub object: String,
     /// Apply a predefined set of access controls to this object.
@@ -4815,10 +5393,12 @@ pub struct ObjectsUpdateParams {
     /// Set of properties to return. Defaults to full.
     #[serde(rename = "projection")]
     pub projection: Option<ObjectsUpdateProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
 }
@@ -4901,19 +5481,30 @@ pub struct ObjectsWatchAllParams {
     /// Name of the bucket in which to look for objects.
     #[serde(rename = "bucket")]
     pub bucket: String,
-    /// Returns results in a directory-like mode. items will contain only objects whose names, aside from the prefix, do not contain delimiter. Objects whose names, aside from the prefix, contain delimiter will have their name, truncated after the delimiter, returned in prefixes. Duplicate prefixes are omitted.
+    /// Returns results in a directory-like mode. items will contain only
+    /// objects whose names, aside from the prefix, do not contain delimiter.
+    /// Objects whose names, aside from the prefix, contain delimiter will have
+    /// their name, truncated after the delimiter, returned in prefixes.
+    /// Duplicate prefixes are omitted.
     #[serde(rename = "delimiter")]
     pub delimiter: Option<String>,
-    /// Filter results to objects whose names are lexicographically before endOffset. If startOffset is also set, the objects listed will have names between startOffset (inclusive) and endOffset (exclusive).
+    /// Filter results to objects whose names are lexicographically before
+    /// endOffset. If startOffset is also set, the objects listed will have
+    /// names between startOffset (inclusive) and endOffset (exclusive).
     #[serde(rename = "endOffset")]
     pub end_offset: Option<String>,
-    /// If true, objects that end in exactly one instance of delimiter will have their metadata included in items in addition to prefixes.
+    /// If true, objects that end in exactly one instance of delimiter will have
+    /// their metadata included in items in addition to prefixes.
     #[serde(rename = "includeTrailingDelimiter")]
     pub include_trailing_delimiter: Option<bool>,
-    /// Maximum number of items plus prefixes to return in a single page of responses. As duplicate prefixes are omitted, fewer total results may be returned than requested. The service will use this parameter or 1,000 items, whichever is smaller.
+    /// Maximum number of items plus prefixes to return in a single page of
+    /// responses. As duplicate prefixes are omitted, fewer total results may be
+    /// returned than requested. The service will use this parameter or 1,000
+    /// items, whichever is smaller.
     #[serde(rename = "maxResults")]
     pub max_results: Option<u32>,
-    /// A previously-returned page token representing part of the larger set of results to view.
+    /// A previously-returned page token representing part of the larger set of
+    /// results to view.
     #[serde(rename = "pageToken")]
     pub page_token: Option<String>,
     /// Filter results to objects whose names begin with this prefix.
@@ -4922,16 +5513,21 @@ pub struct ObjectsWatchAllParams {
     /// Set of properties to return. Defaults to noAcl.
     #[serde(rename = "projection")]
     pub projection: Option<ObjectsWatchAllProjection>,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
-    /// Filter results to objects whose names are lexicographically equal to or after startOffset. If endOffset is also set, the objects listed will have names between startOffset (inclusive) and endOffset (exclusive).
+    /// Filter results to objects whose names are lexicographically equal to or
+    /// after startOffset. If endOffset is also set, the objects listed will
+    /// have names between startOffset (inclusive) and endOffset (exclusive).
     #[serde(rename = "startOffset")]
     pub start_offset: Option<String>,
-    /// The project to be billed for this request. Required for Requester Pays buckets.
+    /// The project to be billed for this request. Required for Requester Pays
+    /// buckets.
     #[serde(rename = "userProject")]
     pub user_project: Option<String>,
-    /// If true, lists all versions of an object as distinct results. The default is false. For more information, see Object Versioning.
+    /// If true, lists all versions of an object as distinct results. The
+    /// default is false. For more information, see Object Versioning.
     #[serde(rename = "versions")]
     pub versions: Option<bool>,
 }
@@ -5124,10 +5720,16 @@ pub struct ProjectsHmacKeysListParams {
     /// General attributes applying to any API call
     #[serde(flatten)]
     pub storage_params: Option<StorageParams>,
-    /// Maximum number of items to return in a single page of responses. The service uses this parameter or 250 items, whichever is smaller. The max number of items per page will also be limited by the number of distinct service accounts in the response. If the number of service accounts in a single response is too high, the page will truncated and a next page token will be returned.
+    /// Maximum number of items to return in a single page of responses. The
+    /// service uses this parameter or 250 items, whichever is smaller. The max
+    /// number of items per page will also be limited by the number of distinct
+    /// service accounts in the response. If the number of service accounts in a
+    /// single response is too high, the page will truncated and a next page
+    /// token will be returned.
     #[serde(rename = "maxResults")]
     pub max_results: Option<u32>,
-    /// A previously-returned page token representing part of the larger set of results to view.
+    /// A previously-returned page token representing part of the larger set of
+    /// results to view.
     #[serde(rename = "pageToken")]
     pub page_token: Option<String>,
     /// Name of the project in which to look for HMAC keys.
@@ -5224,7 +5826,8 @@ pub struct ProjectsServiceAccountGetParams {
     /// Project ID
     #[serde(rename = "projectId")]
     pub project_id: String,
-    /// The project to be billed for this request if the target bucket is requester-pays bucket.
+    /// The project to be billed for this request if the target bucket is
+    /// requester-pays bucket.
     #[serde(rename = "provisionalUserProject")]
     pub provisional_user_project: Option<String>,
     /// The project to be billed for this request.
@@ -5263,7 +5866,9 @@ pub struct StorageParams {
     #[serde(rename = "fields")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<String>,
-    /// API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.
+    /// API key. Your API key identifies your project and provides you with API
+    /// access, quota, and reports. Required unless you provide an OAuth 2.0
+    /// token.
     #[serde(rename = "key")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key: Option<String>,
@@ -5275,7 +5880,8 @@ pub struct StorageParams {
     #[serde(rename = "prettyPrint")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pretty_print: Option<bool>,
-    /// An opaque string that represents a user for quota purposes. Must not exceed 40 characters.
+    /// An opaque string that represents a user for quota purposes. Must not
+    /// exceed 40 characters.
     #[serde(rename = "quotaUser")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quota_user: Option<String>,
@@ -5340,7 +5946,8 @@ impl std::fmt::Display for StorageParams {
     }
 }
 
-/// The Storage BucketAccessControls service represents the BucketAccessControls resource.
+/// The Storage BucketAccessControls service represents the BucketAccessControls
+/// resource.
 pub struct BucketAccessControlsService {
     client: TlsClient,
     authenticator: Box<dyn 'static + DerefAuth>,
@@ -5351,12 +5958,13 @@ pub struct BucketAccessControlsService {
 }
 
 impl BucketAccessControlsService {
-    /// Create a new BucketAccessControlsService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new BucketAccessControlsService object. The easiest way to call
+    /// this is wrapping the Authenticator into an `Rc`:
+    /// `new(client.clone(), Rc::new(authenticator))`. This way, one
+    /// authenticator can be shared among several services.
     pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> BucketAccessControlsService {
         BucketAccessControlsService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -5364,14 +5972,16 @@ impl BucketAccessControlsService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -5388,17 +5998,19 @@ impl BucketAccessControlsService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -5407,7 +6019,8 @@ impl BucketAccessControlsService {
             .collect();
     }
 
-    /// Permanently deletes the ACL entry for the specified entity on the specified bucket.
+    /// Permanently deletes the ACL entry for the specified entity on the
+    /// specified bucket.
     pub async fn delete(&self, params: &BucketAccessControlsDeleteParams) -> Result<()> {
         let rel_path = format!(
             "b/{bucket}/acl/{entity}",
@@ -5633,12 +6246,13 @@ pub struct BucketsService {
 }
 
 impl BucketsService {
-    /// Create a new BucketsService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new BucketsService object. The easiest way to call this is
+    /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
+    /// Rc::new(authenticator))`. This way, one authenticator can be shared
+    /// among several services.
     pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> BucketsService {
         BucketsService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -5646,14 +6260,16 @@ impl BucketsService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -5670,17 +6286,19 @@ impl BucketsService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -5879,7 +6497,8 @@ impl BucketsService {
         do_request(&self.client, &full_uri, &headers, "POST", opt_request).await
     }
 
-    /// Patches a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate.
+    /// Patches a bucket. Changes to the bucket will be readable immediately
+    /// after writing, but configuration changes may take time to propagate.
     pub async fn patch(&self, params: &BucketsPatchParams, req: &Bucket) -> Result<Bucket> {
         let rel_path = format!(
             "b/{bucket}",
@@ -5949,7 +6568,8 @@ impl BucketsService {
         do_request(&self.client, &full_uri, &headers, "PUT", opt_request).await
     }
 
-    /// Tests a set of permissions on the given bucket to see which, if any, are held by the caller.
+    /// Tests a set of permissions on the given bucket to see which, if any, are
+    /// held by the caller.
     pub async fn test_iam_permissions(
         &self,
         params: &BucketsTestIamPermissionsParams,
@@ -5984,7 +6604,8 @@ impl BucketsService {
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
     }
 
-    /// Updates a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate.
+    /// Updates a bucket. Changes to the bucket will be readable immediately
+    /// after writing, but configuration changes may take time to propagate.
     pub async fn update(&self, params: &BucketsUpdateParams, req: &Bucket) -> Result<Bucket> {
         let rel_path = format!(
             "b/{bucket}",
@@ -6029,12 +6650,13 @@ pub struct ChannelsService {
 }
 
 impl ChannelsService {
-    /// Create a new ChannelsService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new ChannelsService object. The easiest way to call this is
+    /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
+    /// Rc::new(authenticator))`. This way, one authenticator can be shared
+    /// among several services.
     pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> ChannelsService {
         ChannelsService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -6042,14 +6664,16 @@ impl ChannelsService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -6066,17 +6690,19 @@ impl ChannelsService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -6116,7 +6742,8 @@ impl ChannelsService {
     }
 }
 
-/// The Storage DefaultObjectAccessControls service represents the DefaultObjectAccessControls resource.
+/// The Storage DefaultObjectAccessControls service represents the
+/// DefaultObjectAccessControls resource.
 pub struct DefaultObjectAccessControlsService {
     client: TlsClient,
     authenticator: Box<dyn 'static + DerefAuth>,
@@ -6127,15 +6754,16 @@ pub struct DefaultObjectAccessControlsService {
 }
 
 impl DefaultObjectAccessControlsService {
-    /// Create a new DefaultObjectAccessControlsService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new DefaultObjectAccessControlsService object. The easiest way
+    /// to call this is wrapping the Authenticator into an `Rc`:
+    /// `new(client.clone(), Rc::new(authenticator))`. This way, one
+    /// authenticator can be shared among several services.
     pub fn new<A: 'static + DerefAuth>(
         client: TlsClient,
         auth: A,
     ) -> DefaultObjectAccessControlsService {
         DefaultObjectAccessControlsService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -6143,14 +6771,16 @@ impl DefaultObjectAccessControlsService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -6167,17 +6797,19 @@ impl DefaultObjectAccessControlsService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -6186,7 +6818,8 @@ impl DefaultObjectAccessControlsService {
             .collect();
     }
 
-    /// Permanently deletes the default object ACL entry for the specified entity on the specified bucket.
+    /// Permanently deletes the default object ACL entry for the specified
+    /// entity on the specified bucket.
     pub async fn delete(&self, params: &DefaultObjectAccessControlsDeleteParams) -> Result<()> {
         let rel_path = format!(
             "b/{bucket}/defaultObjectAcl/{entity}",
@@ -6219,7 +6852,8 @@ impl DefaultObjectAccessControlsService {
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
     }
 
-    /// Returns the default object ACL entry for the specified entity on the specified bucket.
+    /// Returns the default object ACL entry for the specified entity on the
+    /// specified bucket.
     pub async fn get(
         &self,
         params: &DefaultObjectAccessControlsGetParams,
@@ -6415,12 +7049,13 @@ pub struct NotificationsService {
 }
 
 impl NotificationsService {
-    /// Create a new NotificationsService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new NotificationsService object. The easiest way to call this
+    /// is wrapping the Authenticator into an `Rc`: `new(client.clone(),
+    /// Rc::new(authenticator))`. This way, one authenticator can be shared
+    /// among several services.
     pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> NotificationsService {
         NotificationsService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -6428,14 +7063,16 @@ impl NotificationsService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -6452,17 +7089,19 @@ impl NotificationsService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -6613,7 +7252,8 @@ impl NotificationsService {
     }
 }
 
-/// The Storage ObjectAccessControls service represents the ObjectAccessControls resource.
+/// The Storage ObjectAccessControls service represents the ObjectAccessControls
+/// resource.
 pub struct ObjectAccessControlsService {
     client: TlsClient,
     authenticator: Box<dyn 'static + DerefAuth>,
@@ -6624,12 +7264,13 @@ pub struct ObjectAccessControlsService {
 }
 
 impl ObjectAccessControlsService {
-    /// Create a new ObjectAccessControlsService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new ObjectAccessControlsService object. The easiest way to call
+    /// this is wrapping the Authenticator into an `Rc`:
+    /// `new(client.clone(), Rc::new(authenticator))`. This way, one
+    /// authenticator can be shared among several services.
     pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> ObjectAccessControlsService {
         ObjectAccessControlsService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -6637,14 +7278,16 @@ impl ObjectAccessControlsService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -6661,17 +7304,19 @@ impl ObjectAccessControlsService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -6680,7 +7325,8 @@ impl ObjectAccessControlsService {
             .collect();
     }
 
-    /// Permanently deletes the ACL entry for the specified entity on the specified object.
+    /// Permanently deletes the ACL entry for the specified entity on the
+    /// specified object.
     pub async fn delete(&self, params: &ObjectAccessControlsDeleteParams) -> Result<()> {
         let rel_path = format!(
             "b/{bucket}/o/{object}/acl/{entity}",
@@ -6912,12 +7558,13 @@ pub struct ObjectsService {
 }
 
 impl ObjectsService {
-    /// Create a new ObjectsService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new ObjectsService object. The easiest way to call this is
+    /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
+    /// Rc::new(authenticator))`. This way, one authenticator can be shared
+    /// among several services.
     pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> ObjectsService {
         ObjectsService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -6925,14 +7572,16 @@ impl ObjectsService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -6949,17 +7598,19 @@ impl ObjectsService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -6968,7 +7619,8 @@ impl ObjectsService {
             .collect();
     }
 
-    /// Concatenates a list of existing objects into a new object in the same bucket.
+    /// Concatenates a list of existing objects into a new object in the same
+    /// bucket.
     pub async fn compose(
         &self,
         params: &ObjectsComposeParams,
@@ -7012,7 +7664,8 @@ impl ObjectsService {
         do_request(&self.client, &full_uri, &headers, "POST", opt_request).await
     }
 
-    /// Copies a source object to a destination object. Optionally overrides metadata.
+    /// Copies a source object to a destination object. Optionally overrides
+    /// metadata.
     pub async fn copy(&self, params: &ObjectsCopyParams, req: &Object) -> Result<Object> {
         let rel_path = format!(
             "b/{sourceBucket}/o/{sourceObject}/copyTo/b/{destinationBucket}/o/{destinationObject}",
@@ -7060,7 +7713,9 @@ impl ObjectsService {
         do_request(&self.client, &full_uri, &headers, "POST", opt_request).await
     }
 
-    /// Deletes an object and its metadata. Deletions are permanent if versioning is not enabled for the bucket, or if the generation parameter is used.
+    /// Deletes an object and its metadata. Deletions are permanent if
+    /// versioning is not enabled for the bucket, or if the generation parameter
+    /// is used.
     pub async fn delete(&self, params: &ObjectsDeleteParams) -> Result<()> {
         let rel_path = format!(
             "b/{bucket}/o/{object}",
@@ -7199,7 +7854,8 @@ impl ObjectsService {
 
     /// Stores a new object and metadata.
     ///
-    /// This method is a variant of `insert()`, taking data for upload. It performs a multipart upload.
+    /// This method is a variant of `insert()`, taking data for upload. It
+    /// performs a multipart upload.
     pub async fn insert_upload(
         &self,
         params: &ObjectsInsertParams,
@@ -7241,9 +7897,10 @@ impl ObjectsService {
     /// Stores a new object and metadata.
     ///
     /// This method is a variant of `insert()`, taking data for upload.
-    /// It returns a `ResumableUpload` upload manager which you can use to stream larger amounts
-    /// of data to the API. The result of this call will be returned by the `ResumableUpload` method
-    /// you choose for the upload.
+    /// It returns a `ResumableUpload` upload manager which you can use to
+    /// stream larger amounts of data to the API. The result of this call
+    /// will be returned by the `ResumableUpload` method you choose for the
+    /// upload.
     pub async fn insert_resumable_upload<'client>(
         &'client self,
         params: &ObjectsInsertParams,
@@ -7361,13 +8018,33 @@ impl ObjectsService {
         do_request(&self.client, &full_uri, &headers, "PATCH", opt_request).await
     }
 
-    /// Rewrites a source object to a destination object. Optionally overrides metadata.
+    /// Rewrites a source object to a destination object. Optionally overrides
+    /// metadata.
     pub async fn rewrite(
         &self,
         params: &ObjectsRewriteParams,
         req: &Object,
     ) -> Result<RewriteResponse> {
-        let rel_path = format!("b/{sourceBucket}/o/{sourceObject}/rewriteTo/b/{destinationBucket}/o/{destinationObject}", sourceBucket=percent_encode(format!("{}", params.source_bucket).as_bytes(), NON_ALPHANUMERIC),sourceObject=percent_encode(format!("{}", params.source_object).as_bytes(), NON_ALPHANUMERIC),destinationBucket=percent_encode(format!("{}", params.destination_bucket).as_bytes(), NON_ALPHANUMERIC),destinationObject=percent_encode(format!("{}", params.destination_object).as_bytes(), NON_ALPHANUMERIC));
+        let rel_path = format!(
+            "b/{sourceBucket}/o/{sourceObject}/rewriteTo/b/{destinationBucket}/o/\
+             {destinationObject}",
+            sourceBucket = percent_encode(
+                format!("{}", params.source_bucket).as_bytes(),
+                NON_ALPHANUMERIC
+            ),
+            sourceObject = percent_encode(
+                format!("{}", params.source_object).as_bytes(),
+                NON_ALPHANUMERIC
+            ),
+            destinationBucket = percent_encode(
+                format!("{}", params.destination_bucket).as_bytes(),
+                NON_ALPHANUMERIC
+            ),
+            destinationObject = percent_encode(
+                format!("{}", params.destination_object).as_bytes(),
+                NON_ALPHANUMERIC
+            )
+        );
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -7433,7 +8110,8 @@ impl ObjectsService {
         do_request(&self.client, &full_uri, &headers, "PUT", opt_request).await
     }
 
-    /// Tests a set of permissions on the given object to see which, if any, are held by the caller.
+    /// Tests a set of permissions on the given object to see which, if any, are
+    /// held by the caller.
     pub async fn test_iam_permissions(
         &self,
         params: &ObjectsTestIamPermissionsParams,
@@ -7552,12 +8230,13 @@ pub struct ProjectsService {
 }
 
 impl ProjectsService {
-    /// Create a new ProjectsService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new ProjectsService object. The easiest way to call this is
+    /// wrapping the Authenticator into an `Rc`: `new(client.clone(),
+    /// Rc::new(authenticator))`. This way, one authenticator can be shared
+    /// among several services.
     pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> ProjectsService {
         ProjectsService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -7565,14 +8244,16 @@ impl ProjectsService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -7589,17 +8270,19 @@ impl ProjectsService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -7609,7 +8292,8 @@ impl ProjectsService {
     }
 }
 
-/// The Storage ProjectsHmacKeys service represents the ProjectsHmacKeys resource.
+/// The Storage ProjectsHmacKeys service represents the ProjectsHmacKeys
+/// resource.
 pub struct ProjectsHmacKeysService {
     client: TlsClient,
     authenticator: Box<dyn 'static + DerefAuth>,
@@ -7620,12 +8304,13 @@ pub struct ProjectsHmacKeysService {
 }
 
 impl ProjectsHmacKeysService {
-    /// Create a new ProjectsHmacKeysService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new ProjectsHmacKeysService object. The easiest way to call
+    /// this is wrapping the Authenticator into an `Rc`:
+    /// `new(client.clone(), Rc::new(authenticator))`. This way, one
+    /// authenticator can be shared among several services.
     pub fn new<A: 'static + DerefAuth>(client: TlsClient, auth: A) -> ProjectsHmacKeysService {
         ProjectsHmacKeysService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -7633,14 +8318,16 @@ impl ProjectsHmacKeysService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -7657,17 +8344,19 @@ impl ProjectsHmacKeysService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -7818,7 +8507,8 @@ impl ProjectsHmacKeysService {
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
     }
 
-    /// Updates the state of an HMAC key. See the HMAC Key resource descriptor for valid states.
+    /// Updates the state of an HMAC key. See the HMAC Key resource descriptor
+    /// for valid states.
     pub async fn update(
         &self,
         params: &ProjectsHmacKeysUpdateParams,
@@ -7860,7 +8550,8 @@ impl ProjectsHmacKeysService {
     }
 }
 
-/// The Storage ProjectsServiceAccount service represents the ProjectsServiceAccount resource.
+/// The Storage ProjectsServiceAccount service represents the
+/// ProjectsServiceAccount resource.
 pub struct ProjectsServiceAccountService {
     client: TlsClient,
     authenticator: Box<dyn 'static + DerefAuth>,
@@ -7871,15 +8562,16 @@ pub struct ProjectsServiceAccountService {
 }
 
 impl ProjectsServiceAccountService {
-    /// Create a new ProjectsServiceAccountService object. The easiest way to call this is wrapping the Authenticator
-    /// into an `Rc`: `new(client.clone(), Rc::new(authenticator))`.
-    /// This way, one authenticator can be shared among several services.
+    /// Create a new ProjectsServiceAccountService object. The easiest way to
+    /// call this is wrapping the Authenticator into an `Rc`:
+    /// `new(client.clone(), Rc::new(authenticator))`. This way, one
+    /// authenticator can be shared among several services.
     pub fn new<A: 'static + DerefAuth>(
         client: TlsClient,
         auth: A,
     ) -> ProjectsServiceAccountService {
         ProjectsServiceAccountService {
-            client: client,
+            client,
             authenticator: Box::new(auth),
             scopes: vec![],
             base_url: "https://storage.googleapis.com/storage/v1/".into(),
@@ -7887,14 +8579,16 @@ impl ProjectsServiceAccountService {
         }
     }
 
-    /// Provide the base URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the base URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn base_url(&self) -> String {
         if self.base_url.ends_with("/") {
             return self.base_url.clone();
         }
         return self.base_url.clone() + "/";
     }
-    /// Provide the root URL of this API. The returned URL is guaranteed to end with a '/'.
+    /// Provide the root URL of this API. The returned URL is guaranteed to end
+    /// with a '/'.
     fn root_url(&self) -> String {
         if self.root_url.ends_with("/") {
             return self.root_url.clone();
@@ -7911,17 +8605,19 @@ impl ProjectsServiceAccountService {
     }
 
     #[cfg(test)]
-    /// Override API URLs. `base` is the base path relative to which (relative) method paths are interpreted,
-    /// whereas `root` is the URL relative to which absolute paths are interpreted.
+    /// Override API URLs. `base` is the base path relative to which (relative)
+    /// method paths are interpreted, whereas `root` is the URL relative to
+    /// which absolute paths are interpreted.
     pub fn set_urls(&mut self, base: String, root: String) {
         self.base_url = base;
         self.root_url = root;
     }
 
-    /// Explicitly select which scopes should be requested for authorization. Otherwise,
-    /// a possibly too large scope will be requested.
+    /// Explicitly select which scopes should be requested for authorization.
+    /// Otherwise, a possibly too large scope will be requested.
     ///
-    /// It is most convenient to supply a vec or slice of StorageScopes enum values.
+    /// It is most convenient to supply a vec or slice of StorageScopes enum
+    /// values.
     pub fn set_scopes<S: AsRef<str>, T: AsRef<[S]>>(&mut self, scopes: T) {
         self.scopes = scopes
             .as_ref()
@@ -7930,7 +8626,8 @@ impl ProjectsServiceAccountService {
             .collect();
     }
 
-    /// Get the email address of this project's Google Cloud Storage service account.
+    /// Get the email address of this project's Google Cloud Storage service
+    /// account.
     pub async fn get(&self, params: &ProjectsServiceAccountGetParams) -> Result<ServiceAccount> {
         let rel_path = format!(
             "projects/{projectId}/serviceAccount",

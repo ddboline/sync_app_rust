@@ -1,25 +1,24 @@
 use anyhow::{format_err, Error};
-use std::path::Path;
-use log::debug;
-use std::sync::Arc;
-use std::fmt::{self, Debug};
 use async_google_apis_common as common;
 use common::{
     yup_oauth2::{self, InstalledFlowAuthenticator},
     DownloadResult, TlsClient,
 };
-use tokio::{fs::{self, create_dir_all}};
 use lazy_static::lazy_static;
+use log::debug;
 use parking_lot::{Mutex, MutexGuard};
 use stack_string::StackString;
+use std::{
+    fmt::{self, Debug},
+    path::Path,
+    sync::Arc,
+};
+use tokio::fs::{self, create_dir_all};
 
 use crate::storage_v1_types::{
-    ObjectsService, ObjectsListParams,
-    Object, StorageParams, ObjectsGetParams,
-    StorageParamsAlt, ObjectsInsertParams,
-    ObjectsCopyParams, ObjectsDeleteParams,
-    BucketsListParams, BucketsService,
-    Bucket,
+    Bucket, BucketsListParams, BucketsService, Object, ObjectsCopyParams, ObjectsDeleteParams,
+    ObjectsGetParams, ObjectsInsertParams, ObjectsListParams, ObjectsService, StorageParams,
+    StorageParamsAlt,
 };
 use url::Url;
 
@@ -76,7 +75,7 @@ impl GcsInstance {
         let buckets = Arc::new(BucketsService::new(https.clone(), auth.clone()));
         let objects = Arc::new(ObjectsService::new(https, auth));
 
-        Ok(Self{buckets, objects})
+        Ok(Self { buckets, objects })
     }
 
     pub fn get_instance_lock() -> MutexGuard<'static, ()> {
@@ -192,9 +191,12 @@ impl GcsInstance {
         };
         let obj = Object::default();
         let f = fs::File::open(fname).await?;
-        self.objects.insert_resumable_upload(&params, &obj).await?
+        self.objects
+            .insert_resumable_upload(&params, &obj)
+            .await?
             .set_max_chunksize(1024 * 1024 * 5)?
-            .upload_file(f).await?;
+            .upload_file(f)
+            .await?;
         Ok(())
     }
 
@@ -248,6 +250,6 @@ impl GcsInstance {
                 break;
             }
         }
-        Ok(output)       
+        Ok(output)
     }
 }

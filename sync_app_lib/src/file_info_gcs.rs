@@ -3,8 +3,7 @@ use chrono::DateTime;
 use std::path::Path;
 use url::Url;
 
-use gdrive_lib::storage_v1_types::Object;
-use gdrive_lib::gcs_instance::GcsInstance;
+use gdrive_lib::{gcs_instance::GcsInstance, storage_v1_types::Object};
 
 use crate::{
     file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum},
@@ -81,11 +80,11 @@ impl FileInfoGCS {
             .into_owned()
             .into();
         let md5sum = item.md5_hash.and_then(|m| m.trim_matches('"').parse().ok());
-        let st_mtime = 
-            item.updated
-                .as_ref()
-                .ok_or_else(|| format_err!("No last modified"))?
-        .timestamp();
+        let st_mtime = item
+            .updated
+            .as_ref()
+            .ok_or_else(|| format_err!("No last modified"))?
+            .timestamp();
         let size = item.size.ok_or_else(|| format_err!("No file size"))?;
         let st_size = size.parse()?;
         let fileurl: Url = format!("gs://{}/{}", bucket, key).parse()?;

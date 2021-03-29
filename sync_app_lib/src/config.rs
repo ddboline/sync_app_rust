@@ -15,9 +15,11 @@ use stack_string::StackString;
 #[derive(Default, Debug, Deserialize)]
 pub struct ConfigInner {
     pub database_url: StackString,
+    #[serde(default = "default_gcs_project")]
+    pub gcs_project: StackString,
     #[serde(default = "default_gcs_secret")]
     pub gcs_secret_file: PathBuf,
-    #[serde(default="default_gcs_token_path")]
+    #[serde(default = "default_gcs_token_path")]
     pub gcs_token_path: PathBuf,
     #[serde(default = "default_gdrive_secret")]
     pub gdrive_secret_file: PathBuf,
@@ -55,7 +57,9 @@ fn default_gdrive_secret() -> PathBuf {
         .join("client_secrets.json")
 }
 fn default_gcs_secret() -> PathBuf {
-    config_dir().join("sync_app_rust").join("gcs_client_secrets.json")
+    config_dir()
+        .join("sync_app_rust")
+        .join("gcs_client_secrets.json")
 }
 fn default_gdrive_token_path() -> PathBuf {
     home_dir().join(".gdrive")
@@ -68,6 +72,9 @@ fn default_aws_region_name() -> StackString {
 }
 fn default_port() -> u32 {
     3084
+}
+fn default_gcs_project() -> StackString {
+    "fake-project".into()
 }
 fn default_domain() -> StackString {
     "localhost".into()

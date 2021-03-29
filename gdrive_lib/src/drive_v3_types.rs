@@ -5851,7 +5851,8 @@ impl FilesService {
         params: &FilesUpdateParams,
         req: &'a File,
     ) -> Result<ResumableUpload<'client, File>>
-    where 'client: 'a,
+    where
+        'client: 'a,
     {
         let rel_path = format!(
             "/resumable/upload/drive/v3/files/{fileId}",

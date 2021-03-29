@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
-use checksums::{hash_file, Algorithm};
 use async_trait::async_trait;
+use checksums::{hash_file, Algorithm};
 use log::debug;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{
@@ -64,7 +64,8 @@ impl FileListGCS {
                 pool.clone(),
             );
             let config = config.clone();
-            let gcs = GcsInstance::new(&config.gcs_token_path, &config.gcs_secret_file, bucket).await?;
+            let gcs =
+                GcsInstance::new(&config.gcs_token_path, &config.gcs_secret_file, bucket).await?;
 
             Ok(Self { flist, gcs })
         } else {
@@ -166,7 +167,9 @@ impl FileListTrait for FileListGCS {
                 remove_file(&local_file)?;
             }
             self.gcs.download(&bucket, &key, &local_file).await?;
-            let md5sum: StackString = hash_file(Path::new(&local_file), Algorithm::MD5).to_lowercase().into();
+            let md5sum: StackString = hash_file(Path::new(&local_file), Algorithm::MD5)
+                .to_lowercase()
+                .into();
             if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
                 debug!(
                     "Multipart upload? {} {}",
@@ -267,8 +270,13 @@ mod tests {
         let _guard = GcsInstance::get_instance_lock();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
-        let gcs = GcsInstance::new(&config.gcs_token_path, &config.gcs_secret_file, "diary-backup-ddboline").await?;
-        let blist = gcs.get_list_of_buckets("api-project-222981693822").await?;
+        let gcs = GcsInstance::new(
+            &config.gcs_token_path,
+            &config.gcs_secret_file,
+            "diary-backup-ddboline",
+        )
+        .await?;
+        let blist = gcs.get_list_of_buckets(&config.gcs_project).await?;
         let bucket = blist
             .get(0)
             .and_then(|b| b.name.clone())
@@ -299,8 +307,15 @@ mod tests {
     async fn test_list_buckets() -> Result<(), Error> {
         let _guard = GcsInstance::get_instance_lock();
         let config = Config::init_config()?;
-        let gcs_instance = GcsInstance::new(&config.gcs_token_path, &config.gcs_secret_file, "diary-backup-ddboline").await?;
-        let blist = gcs_instance.get_list_of_buckets("api-project-222981693822").await?;
+        let gcs_instance = GcsInstance::new(
+            &config.gcs_token_path,
+            &config.gcs_secret_file,
+            "diary-backup-ddboline",
+        )
+        .await?;
+        let blist = gcs_instance
+            .get_list_of_buckets(&config.gcs_project)
+            .await?;
         let bucket = blist
             .get(0)
             .and_then(|b| b.name.clone())
