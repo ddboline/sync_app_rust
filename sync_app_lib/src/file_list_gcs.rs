@@ -307,6 +307,7 @@ mod tests {
     async fn test_list_buckets() -> Result<(), Error> {
         let _guard = GcsInstance::get_instance_lock();
         let config = Config::init_config()?;
+        println!("{:?} {:?}", config.gcs_token_path, config.gcs_secret_file);
         let gcs_instance = GcsInstance::new(
             &config.gcs_token_path,
             &config.gcs_secret_file,

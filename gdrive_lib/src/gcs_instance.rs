@@ -1,7 +1,7 @@
 use anyhow::{format_err, Error};
 use async_google_apis_common as common;
 use common::{
-    yup_oauth2::{self, InstalledFlowAuthenticator},
+    yup_oauth2::{self, ServiceAccountAuthenticator},
     DownloadResult, TlsClient,
 };
 use lazy_static::lazy_static;
@@ -51,7 +51,7 @@ impl GcsInstance {
     ) -> Result<Self, Error> {
         debug!("{:?}", gcs_secret_file);
         let https = https_client();
-        let sec = yup_oauth2::read_application_secret(gcs_secret_file).await?;
+        let sec = yup_oauth2::read_service_account_key(gcs_secret_file).await?;
 
         let token_file = gcs_token_path.join(format!("{}.json", session_name));
 
@@ -62,10 +62,7 @@ impl GcsInstance {
         }
 
         debug!("{:?}", token_file);
-        let auth = InstalledFlowAuthenticator::builder(
-            sec,
-            common::yup_oauth2::InstalledFlowReturnMethod::HTTPRedirect,
-        )
+        let auth = ServiceAccountAuthenticator::builder(sec)
         .persist_tokens_to_disk(token_file)
         .hyper_client(https.clone())
         .build()
