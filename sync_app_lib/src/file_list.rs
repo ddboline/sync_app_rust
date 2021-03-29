@@ -24,6 +24,7 @@ use stack_string::StackString;
 use crate::{
     config::Config,
     file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession},
+    file_list_gcs::FileListGcs,
     file_list_gdrive::FileListGDrive,
     file_list_local::FileListLocal,
     file_list_s3::FileListS3,
@@ -82,6 +83,10 @@ impl FileList {
             }
             "file" => {
                 let flist = FileListLocal::from_url(url, config, pool)?;
+                Ok(Box::new(flist))
+            }
+            "gcs" => {
+                let flist = FileListGcs::from_url(url, config, pool).await?;
                 Ok(Box::new(flist))
             }
             "s3" => {

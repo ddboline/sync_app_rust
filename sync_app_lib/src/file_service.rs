@@ -5,6 +5,7 @@ use std::{fmt, str::FromStr};
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum FileService {
     Local,
+    GCS,
     GDrive,
     OneDrive,
     S3,
@@ -26,6 +27,7 @@ impl FromStr for FileService {
             "gdrive" => Ok(Self::GDrive),
             "onedrive" => Ok(Self::OneDrive),
             "s3" => Ok(Self::S3),
+            "gs" => Ok(Self::GCS),
             "ssh" => Ok(Self::SSH),
             _ => Err(format_err!("Failed to parse FileService")),
         }
@@ -39,6 +41,7 @@ impl fmt::Display for FileService {
             Self::GDrive => write!(f, "gdrive"),
             Self::OneDrive => write!(f, "onedrive"),
             Self::S3 => write!(f, "s3"),
+            Self::GCS => write!(f, "gs"),
             Self::SSH => write!(f, "ssh"),
         }
     }

@@ -10,6 +10,7 @@
 #![allow(clippy::shadow_unrelated)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::used_underscore_binding)]
+#![allow(clippy::upper_case_acronyms)]
 
 #[macro_use]
 extern crate diesel;
@@ -17,11 +18,13 @@ extern crate diesel;
 pub mod calendar_sync;
 pub mod config;
 pub mod file_info;
+pub mod file_info_gcs;
 pub mod file_info_gdrive;
 pub mod file_info_local;
 pub mod file_info_s3;
 pub mod file_info_ssh;
 pub mod file_list;
+pub mod file_list_gcs;
 pub mod file_list_gdrive;
 pub mod file_list_local;
 pub mod file_list_s3;

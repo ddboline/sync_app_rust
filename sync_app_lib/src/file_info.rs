@@ -16,6 +16,7 @@ use url::Url;
 use stack_string::StackString;
 
 use crate::{
+    file_info_gcs::FileInfoGcs,
     file_info_gdrive::FileInfoGDrive,
     file_info_local::FileInfoLocal,
     file_info_s3::FileInfoS3,
@@ -214,6 +215,7 @@ impl FileInfo {
         match url.scheme() {
             "file" => FileInfoLocal::from_url(url).map(FileInfoTrait::into_finfo),
             "s3" => FileInfoS3::from_url(url).map(FileInfoTrait::into_finfo),
+            "gcs" => FileInfoGcs::from_url(url).map(FileInfoTrait::into_finfo),
             "gdrive" => FileInfoGDrive::from_url(url).map(FileInfoTrait::into_finfo),
             "ssh" => FileInfoSSH::from_url(url).map(FileInfoTrait::into_finfo),
             _ => Err(format_err!("Bad scheme")),
@@ -315,7 +317,7 @@ pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, 
     };
     let conn = pool.get()?;
 
-    if let Some(finfo) = file_info_cache
+    file_info_cache
         .filter(filename.eq(&finfo.filename))
         .filter(filepath.eq(&finfo.filename))
         .filter(urlname.eq(finfo.urlname.as_str()))
@@ -324,20 +326,23 @@ pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, 
         .filter(servicesession.eq(&finfo.servicesession.0))
         .get_result::<FileInfoCache>(&conn)
         .optional()?
-    {
-        let null: Option<DateTime<Utc>> = None;
-        diesel::update(file_info_cache.filter(id.eq(finfo.id)))
-            .set(deleted_at.eq(null))
-            .execute(&conn)
-            .map_err(Into::into)
-            .map(|_| finfo)
-    } else {
-        let finfo_cache: InsertFileInfoCache = finfo.into();
-        diesel::insert_into(crate::schema::file_info_cache::table)
-            .values(&finfo_cache)
-            .get_result(&conn)
-            .map_err(Into::into)
-    }
+        .map_or_else(
+            || {
+                let finfo_cache: InsertFileInfoCache = finfo.into();
+                diesel::insert_into(crate::schema::file_info_cache::table)
+                    .values(&finfo_cache)
+                    .get_result(&conn)
+                    .map_err(Into::into)
+            },
+            |finfo| {
+                let null: Option<DateTime<Utc>> = None;
+                diesel::update(file_info_cache.filter(id.eq(finfo.id)))
+                    .set(deleted_at.eq(null))
+                    .execute(&conn)
+                    .map_err(Into::into)
+                    .map(|_| finfo)
+            },
+        )
 }
 
 #[cfg(test)]

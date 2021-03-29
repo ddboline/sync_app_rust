@@ -116,15 +116,14 @@ impl FileSync {
         let list_a_not_b: Vec<_> = flist0
             .get_filemap()
             .par_iter()
-            .filter_map(|(k, finfo0)| match flist1.get_filemap().get(k) {
-                Some(finfo1) => {
+            .filter_map(|(k, finfo0)| {
+                if let Some(finfo1) = flist1.get_filemap().get(k) {
                     if Self::compare_objects(finfo0, finfo1) {
                         Some((finfo0.clone(), finfo1.clone()))
                     } else {
                         None
                     }
-                }
-                None => {
+                } else {
                     let path0 = &finfo0.filepath;
                     let url0 = &finfo0.urlname;
                     let baseurl0 = flist0.get_baseurl();
@@ -155,9 +154,10 @@ impl FileSync {
         let list_b_not_a: Vec<_> = flist1
             .get_filemap()
             .par_iter()
-            .filter_map(|(k, finfo1)| match flist0.get_filemap().get(k) {
-                Some(_) => None,
-                None => {
+            .filter_map(|(k, finfo1)| {
+                if flist0.get_filemap().contains_key(k) {
+                    None
+                } else {
                     let path1 = &finfo1.filepath;
                     let url1 = &finfo1.urlname;
                     let baseurl0 = flist0.get_baseurl();

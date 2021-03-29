@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.7.4"
+version = "0.7.5"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -26,5 +26,5 @@ async-trait = "0.1"
 log = "0.4"
 dirs = "3.0"
 itertools = "0.10"
-stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", tag="0.2.0", features=["diesel_types"] }
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.4.0"}
+stack-string = { version="0.2", features=["diesel_types"] }
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.4.7"}
