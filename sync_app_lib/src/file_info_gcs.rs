@@ -11,9 +11,9 @@ use crate::{
 };
 
 #[derive(Debug, Default, Clone)]
-pub struct FileInfoGCS(FileInfo);
+pub struct FileInfoGcs(FileInfo);
 
-impl FileInfoGCS {
+impl FileInfoGcs {
     pub fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "gs" {
             return Err(format_err!("Invalid URL"));
@@ -46,7 +46,7 @@ impl FileInfoGCS {
     }
 }
 
-impl FileInfoTrait for FileInfoGCS {
+impl FileInfoTrait for FileInfoGcs {
     fn get_finfo(&self) -> &FileInfo {
         &self.0
     }
@@ -68,7 +68,7 @@ impl FileInfoTrait for FileInfoGCS {
     }
 }
 
-impl FileInfoGCS {
+impl FileInfoGcs {
     pub fn from_object(bucket: &str, item: Object) -> Result<Self, Error> {
         let key = item.name.as_ref().ok_or_else(|| format_err!("No key"))?;
         let filepath = Path::new(&key);
@@ -115,7 +115,7 @@ impl FileInfoGCS {
 mod tests {
     use gdrive_lib::storage_v1_types::{Object, ObjectOwner};
 
-    use crate::{file_info::FileInfoTrait, file_info_gcs::FileInfoGCS};
+    use crate::{file_info::FileInfoTrait, file_info_gcs::FileInfoGcs};
 
     #[test]
     fn test_file_info_gcs() {
@@ -133,7 +133,7 @@ mod tests {
             ..Object::default()
         };
 
-        let finfo = FileInfoGCS::from_object("test_bucket", test_object).unwrap();
+        let finfo = FileInfoGcs::from_object("test_bucket", test_object).unwrap();
 
         assert_eq!(
             finfo.get_finfo().urlname.as_str(),

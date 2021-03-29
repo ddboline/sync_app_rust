@@ -857,13 +857,13 @@ impl GDriveInfo {
         });
         let urlname = format!("gdrive://{}/", gdrive.session_name);
         let urlname = Url::parse(&urlname)?;
-        let urlname = export_path.iter().fold(urlname, |u, e| {
+        let urlname = export_path.iter().try_fold(urlname, |u, e| {
             if e.contains('#') {
-                u.join(&e.replace("#", "%35")).unwrap()
+                u.join(&e.replace("#", "%35"))
             } else {
-                u.join(e).unwrap()
+                u.join(e)
             }
-        });
+        })?;
 
         let finfo = Self {
             filename: filename.into(),

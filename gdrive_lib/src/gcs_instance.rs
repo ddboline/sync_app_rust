@@ -63,10 +63,10 @@ impl GcsInstance {
 
         debug!("{:?}", token_file);
         let auth = ServiceAccountAuthenticator::builder(sec)
-        .persist_tokens_to_disk(token_file)
-        .hyper_client(https.clone())
-        .build()
-        .await?;
+            .persist_tokens_to_disk(token_file)
+            .hyper_client(https.clone())
+            .build()
+            .await?;
         let auth = Arc::new(auth);
 
         let buckets = Arc::new(BucketsService::new(https.clone(), auth.clone()));

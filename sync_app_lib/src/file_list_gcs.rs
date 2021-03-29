@@ -19,19 +19,19 @@ use gdrive_lib::gcs_instance::GcsInstance;
 use crate::{
     config::Config,
     file_info::{FileInfo, FileInfoTrait, ServiceSession},
-    file_info_gcs::FileInfoGCS,
+    file_info_gcs::FileInfoGcs,
     file_list::{FileList, FileListTrait},
     file_service::FileService,
     pgpool::PgPool,
 };
 
 #[derive(Debug, Clone)]
-pub struct FileListGCS {
+pub struct FileListGcs {
     pub flist: FileList,
     pub gcs: GcsInstance,
 }
 
-impl FileListGCS {
+impl FileListGcs {
     pub async fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         let baseurl: Url = format!("gs://{}", bucket).parse()?;
         let basepath = Path::new("");
@@ -75,7 +75,7 @@ impl FileListGCS {
 }
 
 #[async_trait]
-impl FileListTrait for FileListGCS {
+impl FileListTrait for FileListGcs {
     fn get_baseurl(&self) -> &Url {
         self.flist.get_baseurl()
     }
@@ -118,7 +118,7 @@ impl FileListTrait for FileListGCS {
             .get_list_of_keys(bucket, Some(prefix))
             .await?
             .into_par_iter()
-            .map(|f| FileInfoGCS::from_object(bucket, f).map(FileInfoTrait::into_finfo))
+            .map(|f| FileInfoGcs::from_object(bucket, f).map(FileInfoTrait::into_finfo))
             .collect()
     }
 
@@ -260,7 +260,7 @@ mod tests {
     use gdrive_lib::gcs_instance::GcsInstance;
 
     use crate::{
-        config::Config, file_list::FileListTrait, file_list_gcs::FileListGCS, pgpool::PgPool,
+        config::Config, file_list::FileListTrait, file_list_gcs::FileListGcs, pgpool::PgPool,
     };
 
     #[tokio::test]
@@ -282,7 +282,7 @@ mod tests {
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
 
-        let mut flist = FileListGCS::new(&bucket, &config, &pool).await?;
+        let mut flist = FileListGcs::new(&bucket, &config, &pool).await?;
 
         let new_flist = flist.fill_file_list().await?;
 

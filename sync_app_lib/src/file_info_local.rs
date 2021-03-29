@@ -68,7 +68,7 @@ impl FileInfoTrait for FileInfoLocal {
     }
 
     fn get_stat(&self) -> FileStat {
-        _get_stat(&self.0.filepath).unwrap_or(FileStat::default())
+        _get_stat(&self.0.filepath).unwrap_or_default()
     }
 }
 
