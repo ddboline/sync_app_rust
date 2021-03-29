@@ -85,7 +85,7 @@ impl FileList {
                 let flist = FileListLocal::from_url(url, config, pool)?;
                 Ok(Box::new(flist))
             }
-            "gcs" => {
+            "gs" => {
                 let flist = FileListGcs::from_url(url, config, pool).await?;
                 Ok(Box::new(flist))
             }

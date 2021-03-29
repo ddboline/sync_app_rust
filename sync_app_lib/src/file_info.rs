@@ -215,7 +215,7 @@ impl FileInfo {
         match url.scheme() {
             "file" => FileInfoLocal::from_url(url).map(FileInfoTrait::into_finfo),
             "s3" => FileInfoS3::from_url(url).map(FileInfoTrait::into_finfo),
-            "gcs" => FileInfoGcs::from_url(url).map(FileInfoTrait::into_finfo),
+            "gs" => FileInfoGcs::from_url(url).map(FileInfoTrait::into_finfo),
             "gdrive" => FileInfoGDrive::from_url(url).map(FileInfoTrait::into_finfo),
             "ssh" => FileInfoSSH::from_url(url).map(FileInfoTrait::into_finfo),
             _ => Err(format_err!("Bad scheme")),
