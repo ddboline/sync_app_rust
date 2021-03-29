@@ -5434,7 +5434,7 @@ impl BucketAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -5467,7 +5467,7 @@ impl BucketAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5503,7 +5503,7 @@ impl BucketAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5539,7 +5539,7 @@ impl BucketAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5576,7 +5576,7 @@ impl BucketAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5614,7 +5614,7 @@ impl BucketAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5715,7 +5715,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -5747,7 +5747,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5779,7 +5779,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5808,7 +5808,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5838,7 +5838,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5873,7 +5873,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "POST", opt_request).await
@@ -5905,7 +5905,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5942,7 +5942,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5978,7 +5978,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6010,7 +6010,7 @@ impl BucketsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6108,7 +6108,7 @@ impl ChannelsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6213,7 +6213,7 @@ impl DefaultObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6249,7 +6249,7 @@ impl DefaultObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6285,7 +6285,7 @@ impl DefaultObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6321,7 +6321,7 @@ impl DefaultObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6358,7 +6358,7 @@ impl DefaultObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6396,7 +6396,7 @@ impl DefaultObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6501,7 +6501,7 @@ impl NotificationsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6537,7 +6537,7 @@ impl NotificationsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6573,7 +6573,7 @@ impl NotificationsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6606,7 +6606,7 @@ impl NotificationsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6708,7 +6708,7 @@ impl ObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6742,7 +6742,7 @@ impl ObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6779,7 +6779,7 @@ impl ObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6816,7 +6816,7 @@ impl ObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6854,7 +6854,7 @@ impl ObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6893,7 +6893,7 @@ impl ObjectAccessControlsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7005,7 +7005,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7053,7 +7053,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7087,7 +7087,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -7125,7 +7125,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
         let opt_request: Option<&EmptyRequest> = None;
 
         do_download(&self.client, &full_uri, headers, "GET".into(), opt_request).await
@@ -7158,7 +7158,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7190,7 +7190,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7231,7 +7231,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
 
@@ -7273,7 +7273,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7321,7 +7321,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7354,7 +7354,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7388,7 +7388,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7426,7 +7426,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7463,7 +7463,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7496,7 +7496,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7533,7 +7533,7 @@ impl ObjectsService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7705,7 +7705,7 @@ impl ProjectsHmacKeysService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "POST", opt_request).await
@@ -7741,7 +7741,7 @@ impl ProjectsHmacKeysService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -7777,7 +7777,7 @@ impl ProjectsHmacKeysService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7812,7 +7812,7 @@ impl ProjectsHmacKeysService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7852,7 +7852,7 @@ impl ProjectsHmacKeysService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7959,7 +7959,7 @@ impl ProjectsServiceAccountService {
             url_params.push_str(&format!("{}", api_params));
         }
 
-        let full_uri = path + &url_params;
+        let full_uri = format!("{}{}", path, url_params);
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await

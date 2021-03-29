@@ -5846,11 +5846,13 @@ impl FilesService {
     /// stream larger amounts of data to the API. The result of this call
     /// will be returned by the `ResumableUpload` method you choose for the
     /// upload.
-    pub async fn update_resumable_upload<'client>(
+    pub async fn update_resumable_upload<'client, 'a>(
         &'client self,
         params: &FilesUpdateParams,
-        req: &File,
-    ) -> Result<ResumableUpload<'client, File>> {
+        req: &'a File,
+    ) -> Result<ResumableUpload<'client, File>>
+    where 'client: 'a,
+    {
         let rel_path = format!(
             "/resumable/upload/drive/v3/files/{fileId}",
             fileId = percent_encode(format!("{}", params.file_id).as_bytes(), NON_ALPHANUMERIC)
