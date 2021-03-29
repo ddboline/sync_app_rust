@@ -15,10 +15,14 @@ use std::{
 };
 use tokio::fs::{self, create_dir_all};
 
-use crate::storage_v1_types::{
-    Bucket, BucketsListParams, BucketsService, Object, ObjectsCopyParams, ObjectsDeleteParams,
-    ObjectsGetParams, ObjectsInsertParams, ObjectsListParams, ObjectsService, StorageParams,
-    StorageParamsAlt,
+use crate::{
+    exponential_retry,
+    rate_limiter::RateLimiter,
+    storage_v1_types::{
+        Bucket, BucketsListParams, BucketsService, Object, ObjectsCopyParams, ObjectsDeleteParams,
+        ObjectsGetParams, ObjectsInsertParams, ObjectsListParams, ObjectsService, StorageParams,
+        StorageParamsAlt,
+    },
 };
 use url::Url;
 
@@ -35,6 +39,7 @@ fn https_client() -> TlsClient {
 pub struct GcsInstance {
     buckets: Arc<BucketsService>,
     objects: Arc<ObjectsService>,
+    rate_limit: RateLimiter,
 }
 
 impl Debug for GcsInstance {
@@ -72,7 +77,13 @@ impl GcsInstance {
         let buckets = Arc::new(BucketsService::new(https.clone(), auth.clone()));
         let objects = Arc::new(ObjectsService::new(https, auth));
 
-        Ok(Self { buckets, objects })
+        let rate_limit = RateLimiter::new(1000, 10000);
+
+        Ok(Self {
+            buckets,
+            objects,
+            rate_limit,
+        })
     }
 
     pub fn get_instance_lock() -> MutexGuard<'static, ()> {
@@ -97,7 +108,11 @@ impl GcsInstance {
         let mut output = Vec::new();
         loop {
             params.page_token = npt.take();
-            let result = self.objects.list(&params).await?;
+            let result = exponential_retry(|| async {
+                self.rate_limit.acquire().await;
+                self.objects.list(&params).await
+            })
+            .await?;
             if let Some(items) = result.items.as_ref() {
                 output.extend_from_slice(items);
             } else {
@@ -133,7 +148,11 @@ impl GcsInstance {
         let mut npt = None;
         loop {
             params.page_token = npt.take();
-            let result = self.objects.list(&params).await?;
+            let result = exponential_retry(|| async {
+                self.rate_limit.acquire().await;
+                self.objects.list(&params).await
+            })
+            .await?;
             if let Some(items) = result.items.as_ref() {
                 for item in items {
                     callback(item)?;
@@ -166,13 +185,17 @@ impl GcsInstance {
             object: key_name.into(),
             ..ObjectsGetParams::default()
         };
-        let mut f = fs::File::create(fname).await?;
-        let mut download = self.objects.get(&params).await?;
-        if let DownloadResult::Downloaded = download.do_it(Some(&mut f)).await? {
-            Ok(())
-        } else {
-            Err(format_err!("Failed to download file"))
-        }
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            let mut f = fs::File::create(fname).await?;
+            let mut download = self.objects.get(&params).await?;
+            if let DownloadResult::Downloaded = download.do_it(Some(&mut f)).await? {
+                Ok(())
+            } else {
+                Err(format_err!("Failed to download file"))
+            }
+        })
+        .await
     }
 
     pub async fn upload(
@@ -187,13 +210,17 @@ impl GcsInstance {
             ..ObjectsInsertParams::default()
         };
         let obj = Object::default();
-        let f = fs::File::open(fname).await?;
-        self.objects
-            .insert_resumable_upload(&params, &obj)
-            .await?
-            .set_max_chunksize(1024 * 1024 * 5)?
-            .upload_file(f)
-            .await?;
+        exponential_retry(|| async {
+            let f = fs::File::open(fname).await?;
+            self.rate_limit.acquire().await;
+            self.objects
+                .insert_resumable_upload(&params, &obj)
+                .await?
+                .set_max_chunksize(1024 * 1024 * 5)?
+                .upload_file(f)
+                .await
+        })
+        .await?;
         Ok(())
     }
 
@@ -204,7 +231,7 @@ impl GcsInstance {
         key_to: &str,
     ) -> Result<Option<String>, Error> {
         let source_bucket = source.host_str().ok_or_else(|| format_err!("Bad source"))?;
-        let source_key = &source.path()[1..];
+        let source_key = source.path().trim_start_matches('/');
         let params = ObjectsCopyParams {
             source_bucket: source_bucket.into(),
             source_object: source_key.into(),
@@ -212,9 +239,13 @@ impl GcsInstance {
             destination_object: key_to.into(),
             ..ObjectsCopyParams::default()
         };
-        let obj = Object::default();
-        let result = self.objects.copy(&params, &obj).await?;
-        Ok(result.md5_hash)
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            let obj = Object::default();
+            let result = self.objects.copy(&params, &obj).await?;
+            Ok(result.md5_hash)
+        })
+        .await
     }
 
     pub async fn delete_key(&self, bucket_name: &str, key_name: &str) -> Result<(), Error> {
@@ -223,7 +254,11 @@ impl GcsInstance {
             object: key_name.into(),
             ..ObjectsDeleteParams::default()
         };
-        self.objects.delete(&params).await.map_err(Into::into)
+        exponential_retry(|| async {
+            self.rate_limit.acquire().await;
+            self.objects.delete(&params).await.map_err(Into::into)
+        })
+        .await
     }
 
     pub async fn get_list_of_buckets(&self, project: &str) -> Result<Vec<Bucket>, Error> {
@@ -235,7 +270,11 @@ impl GcsInstance {
         let mut output = Vec::new();
         loop {
             params.page_token = npt.take();
-            let result = self.buckets.list(&params).await?;
+            let result = exponential_retry(|| async {
+                self.rate_limit.acquire().await;
+                self.buckets.list(&params).await
+            })
+            .await?;
             if let Some(items) = result.items.as_ref() {
                 output.extend_from_slice(items);
             } else {
