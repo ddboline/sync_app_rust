@@ -2,7 +2,6 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use checksums::{hash_file, Algorithm};
 use log::debug;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{
     collections::HashMap,
     fs::{create_dir_all, remove_file},
@@ -117,7 +116,7 @@ impl FileListTrait for FileListGcs {
         self.gcs
             .get_list_of_keys(bucket, Some(prefix))
             .await?
-            .into_par_iter()
+            .into_iter()
             .map(|f| FileInfoGcs::from_object(bucket, f).map(FileInfoTrait::into_finfo))
             .collect()
     }
