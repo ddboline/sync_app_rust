@@ -2,8 +2,11 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
-use log::debug;
 use itertools::Itertools;
+use log::debug;
+use rayon::iter::{
+    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
+};
 use std::{
     collections::HashMap,
     convert::TryInto,
@@ -15,9 +18,6 @@ use std::{
 };
 use tokio::task::spawn_blocking;
 use url::Url;
-use rayon::iter::{
-    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
-};
 
 use gdrive_lib::{directory_info::DirectoryInfo, gdrive_instance::GDriveInstance};
 use stack_string::StackString;
