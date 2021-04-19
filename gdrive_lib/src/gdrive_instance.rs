@@ -14,7 +14,6 @@ use maplit::{hashmap, hashset};
 use mime::Mime;
 use parking_lot::Mutex;
 use percent_encoding::percent_decode;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use stack_string::StackString;
 use std::{
     cmp,
@@ -138,7 +137,7 @@ impl GDriveInstance {
         Ok(Self {
             files: Arc::new(files),
             changes: Arc::new(changes),
-            page_size: 1000,
+            page_size: 400,
             max_keys: None,
             session_name: session_name.into(),
             start_page_token: Arc::new(AtomicCell::new(start_page_token)),
@@ -189,6 +188,7 @@ impl GDriveInstance {
             fields: Some(fields),
             ..DriveParams::default()
         };
+        debug!("page_size {}", self.page_size);
         let mut params = FilesListParams {
             drive_params: Some(p),
             corpora: Some("user".into()),
@@ -199,9 +199,9 @@ impl GDriveInstance {
         };
         let mut query_chain: Vec<StackString> = Vec::new();
         if get_folders {
-            query_chain.push(r#"mimeType = "application/vnd.google-apps.folder""#.into());
+            query_chain.push(r#"mimeType = 'application/vnd.google-apps.folder'"#.into());
         } else {
-            query_chain.push(r#"mimeType != "application/vnd.google-apps.folder""#.into());
+            query_chain.push(r#"mimeType != 'application/vnd.google-apps.folder'"#.into());
         }
         if let Some(ref p) = parents {
             let q = p
@@ -213,6 +213,7 @@ impl GDriveInstance {
         }
         query_chain.push("trashed = false".into());
         let query = query_chain.join(" and ");
+        debug!("query {}", query);
         params.q = Some(query);
 
         exponential_retry(|| async {
@@ -229,10 +230,12 @@ impl GDriveInstance {
             let filelist = self.get_filelist(&page_token, get_folders, &None).await?;
 
             if let Some(files) = filelist.files {
+                debug!("got files {}", files.len());
                 all_files.extend(files);
             }
 
             page_token = filelist.next_page_token.map(Into::into);
+            debug!("page_token {} {:?}", get_folders, page_token);
             if page_token.is_none() {
                 break;
             }
