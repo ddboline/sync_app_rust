@@ -212,81 +212,73 @@ pub trait FileListTrait: Send + Sync + Debug {
             .collect();
 
         // Delete entries from current_cache not in filemap
-        let results: Result<(), Error> = current_cache
-            .iter()
-            .map(|(k, _)| {
-                if flist_cache_map.contains_key(&k) {
-                    Ok(())
-                } else {
+        let res: Result<(), Error> = current_cache.iter().try_for_each(|(k, _)| {
+            if flist_cache_map.contains_key(&k) {
+                Ok(())
+            } else {
+                use crate::schema::file_info_cache::dsl::{
+                    deleted_at, file_info_cache, filename, filepath, serviceid, servicesession,
+                    urlname,
+                };
+
+                let conn = pool.get()?;
+
+                debug!("remove {:?}", k);
+
+                diesel::update(
+                    file_info_cache
+                        .filter(filename.eq(&k.filename))
+                        .filter(filepath.eq(&k.filepath))
+                        .filter(serviceid.eq(&k.serviceid))
+                        .filter(servicesession.eq(&k.servicesession))
+                        .filter(urlname.eq(&k.urlname))
+                        .filter(deleted_at.is_null()),
+                )
+                .set(deleted_at.eq(Some(Utc::now())))
+                .execute(&conn)?;
+                Ok(())
+            }
+        });
+        res?;
+
+        flist_cache_map.iter().try_for_each(|(k, v)| {
+            if let Some(item) = current_cache.get(&k) {
+                if v.md5sum != item.md5sum
+                    || v.sha1sum != item.sha1sum
+                    || v.filestat_st_mtime != item.filestat_st_mtime
+                    || v.filestat_st_size != item.filestat_st_size
+                {
                     use crate::schema::file_info_cache::dsl::{
-                        deleted_at, file_info_cache, filename, filepath, serviceid, servicesession,
-                        urlname,
+                        file_info_cache, filename, filepath, filestat_st_mtime, filestat_st_size,
+                        id, md5sum, serviceid, servicesession, sha1sum, urlname,
                     };
 
                     let conn = pool.get()?;
 
-                    debug!("remove {:?}", k);
-
-                    diesel::update(
-                        file_info_cache
-                            .filter(filename.eq(&k.filename))
-                            .filter(filepath.eq(&k.filepath))
-                            .filter(serviceid.eq(&k.serviceid))
-                            .filter(servicesession.eq(&k.servicesession))
-                            .filter(urlname.eq(&k.urlname))
-                            .filter(deleted_at.is_null()),
-                    )
-                    .set(deleted_at.eq(Some(Utc::now())))
-                    .execute(&conn)?;
-                    Ok(())
-                }
-            })
-            .collect();
-        results?;
-
-        let results: Result<(), Error> = flist_cache_map
-            .iter()
-            .map(|(k, v)| {
-                if let Some(item) = current_cache.get(&k) {
-                    if v.md5sum != item.md5sum
-                        || v.sha1sum != item.sha1sum
-                        || v.filestat_st_mtime != item.filestat_st_mtime
-                        || v.filestat_st_size != item.filestat_st_size
-                    {
-                        use crate::schema::file_info_cache::dsl::{
-                            file_info_cache, filename, filepath, filestat_st_mtime,
-                            filestat_st_size, id, md5sum, serviceid, servicesession, sha1sum,
-                            urlname,
-                        };
-
-                        let conn = pool.get()?;
-
-                        let cache = file_info_cache
-                            .filter(filename.eq(&v.filename))
-                            .filter(filepath.eq(&v.filepath))
-                            .filter(urlname.eq(&v.urlname))
-                            .filter(serviceid.eq(&v.serviceid))
-                            .filter(servicesession.eq(&v.servicesession))
-                            .load::<FileInfoCache>(&conn)?;
-                        if cache.len() != 1 {
-                            return Err(format_err!("There should only be one entry"));
-                        }
-                        let id_ = cache[0].id;
-
-                        diesel::update(file_info_cache.filter(id.eq(id_)))
-                            .set((
-                                md5sum.eq(&v.md5sum),
-                                sha1sum.eq(&v.sha1sum),
-                                filestat_st_mtime.eq(v.filestat_st_mtime),
-                                filestat_st_size.eq(v.filestat_st_size),
-                            ))
-                            .execute(&conn)?;
+                    let cache = file_info_cache
+                        .filter(filename.eq(&v.filename))
+                        .filter(filepath.eq(&v.filepath))
+                        .filter(urlname.eq(&v.urlname))
+                        .filter(serviceid.eq(&v.serviceid))
+                        .filter(servicesession.eq(&v.servicesession))
+                        .load::<FileInfoCache>(&conn)?;
+                    if cache.len() != 1 {
+                        return Err(format_err!("There should only be one entry"));
                     }
+                    let id_ = cache[0].id;
+
+                    diesel::update(file_info_cache.filter(id.eq(id_)))
+                        .set((
+                            md5sum.eq(&v.md5sum),
+                            sha1sum.eq(&v.sha1sum),
+                            filestat_st_mtime.eq(v.filestat_st_mtime),
+                            filestat_st_size.eq(v.filestat_st_size),
+                        ))
+                        .execute(&conn)?;
                 }
-                Ok(())
-            })
-            .collect();
-        results?;
+            }
+            Ok(())
+        })?;
 
         let results: Result<Vec<_>, Error> = flist_cache_map
             .into_iter()
