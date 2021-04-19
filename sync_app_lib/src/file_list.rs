@@ -3,9 +3,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use log::debug;
-use rayon::iter::{
-    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
-};
+use itertools::Itertools;
 use std::{
     collections::HashMap,
     convert::TryInto,
@@ -17,6 +15,9 @@ use std::{
 };
 use tokio::task::spawn_blocking;
 use url::Url;
+use rayon::iter::{
+    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
+};
 
 use gdrive_lib::{directory_info::DirectoryInfo, gdrive_instance::GDriveInstance};
 use stack_string::StackString;
@@ -191,7 +192,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         // Load existing file_list, create hashmap
         let current_cache: HashMap<_, _> = self
             .load_file_list()?
-            .into_par_iter()
+            .into_iter()
             .filter_map(|item| {
                 let key = item.get_key();
                 key.map(|k| (k, item))
@@ -201,7 +202,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         // Load and convert current filemap
         let flist_cache_map: HashMap<_, _> = self
             .get_filemap()
-            .par_iter()
+            .iter()
             .filter_map(|(_, f)| {
                 let item: InsertFileInfoCache = f.into();
 
@@ -212,7 +213,7 @@ pub trait FileListTrait: Send + Sync + Debug {
 
         // Delete entries from current_cache not in filemap
         let results: Result<(), Error> = current_cache
-            .par_iter()
+            .iter()
             .map(|(k, _)| {
                 if flist_cache_map.contains_key(&k) {
                     Ok(())
@@ -244,7 +245,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         results?;
 
         let results: Result<(), Error> = flist_cache_map
-            .par_iter()
+            .iter()
             .map(|(k, v)| {
                 if let Some(item) = current_cache.get(&k) {
                     if v.md5sum != item.md5sum
@@ -288,7 +289,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         results?;
 
         let results: Result<Vec<_>, Error> = flist_cache_map
-            .into_par_iter()
+            .into_iter()
             .filter_map(|(k, v)| {
                 if current_cache.get(&k).is_none() {
                     Some(v)
@@ -297,7 +298,6 @@ pub trait FileListTrait: Send + Sync + Debug {
                 }
             })
             .collect::<Vec<_>>()
-            .into_par_iter()
             .chunks(1000)
             .map(|v| {
                 diesel::insert_into(file_info_cache::table)
@@ -312,7 +312,9 @@ pub trait FileListTrait: Send + Sync + Debug {
     }
 
     fn load_file_list(&self) -> Result<Vec<FileInfoCache>, Error> {
-        use crate::schema::file_info_cache::dsl::{file_info_cache, servicesession, servicetype};
+        use crate::schema::file_info_cache::dsl::{
+            deleted_at, file_info_cache, servicesession, servicetype,
+        };
 
         let pool = self.get_pool();
         let conn = pool.get()?;
@@ -322,6 +324,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         file_info_cache
             .filter(servicesession.eq(session.0.to_string()))
             .filter(servicetype.eq(stype.to_string()))
+            .filter(deleted_at.is_null())
             .load::<FileInfoCache>(&conn)
             .map_err(Into::into)
     }
@@ -332,7 +335,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         key_type: FileInfoKeyType,
     ) -> HashMap<StackString, FileInfo> {
         file_list
-            .par_iter()
+            .iter()
             .filter_map(|entry| match key_type {
                 FileInfoKeyType::FileName => entry
                     .try_into()
@@ -391,7 +394,7 @@ pub trait FileListTrait: Send + Sync + Debug {
             }
         });
         let dmap: HashMap<_, _> = directory_list
-            .into_par_iter()
+            .into_iter()
             .map(|d| {
                 let dinfo = d.into_directory_info();
                 (dinfo.directory_id.clone(), dinfo)
@@ -439,7 +442,9 @@ pub trait FileListTrait: Send + Sync + Debug {
     }
 
     fn clear_file_list(&self) -> Result<usize, Error> {
-        use crate::schema::file_info_cache::dsl::{file_info_cache, servicesession, servicetype};
+        use crate::schema::file_info_cache::dsl::{
+            deleted_at, file_info_cache, servicesession, servicetype,
+        };
 
         let pool = self.get_pool();
 
@@ -447,11 +452,12 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        diesel::delete(
+        diesel::update(
             file_info_cache
                 .filter(servicesession.eq(session.0.to_string()))
                 .filter(servicetype.eq(stype.to_string())),
         )
+        .set(deleted_at.eq(Some(Utc::now())))
         .execute(&conn)
         .map_err(Into::into)
     }
@@ -529,7 +535,7 @@ impl FileListTrait for FileList {
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
         let filemap = filelist
-            .into_par_iter()
+            .into_iter()
             .map(|f| {
                 let path = f.filepath.to_string_lossy();
                 let key = remove_basepath(&path, &self.get_basepath().to_string_lossy());
