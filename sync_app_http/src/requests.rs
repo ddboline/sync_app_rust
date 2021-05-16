@@ -1,4 +1,5 @@
 use lazy_static::lazy_static;
+use rweb::Schema;
 use serde::{Deserialize, Serialize};
 use std::{
     io::{BufRead, BufReader},
@@ -6,7 +7,6 @@ use std::{
     time::Instant,
 };
 use tokio::{process::Command, sync::Mutex, task::spawn_blocking};
-use rweb::Schema;
 
 use stack_string::StackString;
 

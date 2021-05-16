@@ -1,8 +1,8 @@
 use anyhow::Error;
 use chrono::Duration;
+use rweb::Filter;
 use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, time::interval};
-use rweb::Filter;
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, garmin_sync::GarminSync, movie_sync::MovieSync,
@@ -95,22 +95,19 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     let sync_podcasts_path = sync_podcasts(app.clone()).boxed();
     let sync_security_path = sync_security(app.clone()).boxed();
     let user_path = user().boxed();
-    let sync_path = rweb::path("sync")
-        .and(
-            sync_frontpage_path
-                .or(sync_all_path)
-                .or(proc_all_path)
-                .or(process_cache_entry_path)
-                .or(remove_path)
-                .or(list_sync_cache_path)
-                .or(delete_cache_entry_path)
-                .or(sync_garmin_path)
-                .or(sync_movie_path)
-                .or(sync_calendar_path)
-                .or(sync_podcasts_path)
-                .or(sync_security_path)
-                .or(user_path),
-        )
+    let sync_path = sync_frontpage_path
+        .or(sync_all_path)
+        .or(proc_all_path)
+        .or(process_cache_entry_path)
+        .or(remove_path)
+        .or(list_sync_cache_path)
+        .or(delete_cache_entry_path)
+        .or(sync_garmin_path)
+        .or(sync_movie_path)
+        .or(sync_calendar_path)
+        .or(sync_podcasts_path)
+        .or(sync_security_path)
+        .or(user_path)
         .boxed();
 
     let routes = sync_path.recover(error_response);

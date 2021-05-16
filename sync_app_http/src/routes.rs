@@ -1,9 +1,6 @@
 use itertools::Itertools;
+use rweb::{get, post, Json, Query, Rejection, Reply};
 use serde::Serialize;
-use rweb::{
-    Rejection, Reply,
-    get, post, Query, Json,
-};
 
 use sync_app_lib::file_sync::FileSyncAction;
 
@@ -22,7 +19,10 @@ pub type WarpResult<T> = Result<T, Rejection>;
 pub type HttpResult<T> = Result<T, Error>;
 
 #[get("/sync/index.html")]
-pub async fn sync_frontpage(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -> WarpResult<impl Reply> {
+pub async fn sync_frontpage(
+    #[cookie = "jwt"] _: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<impl Reply> {
     let body = ListSyncCacheRequest {}
         .handle(&data.db)
         .await?
@@ -46,7 +46,10 @@ pub async fn sync_frontpage(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppSt
 }
 
 #[get("/sync/sync")]
-pub async fn sync_all(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -> WarpResult<impl Reply> {
+pub async fn sync_all(
+    #[cookie = "jwt"] _: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<impl Reply> {
     let req = SyncRequest {
         action: FileSyncAction::Sync,
     };
@@ -55,7 +58,10 @@ pub async fn sync_all(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -
 }
 
 #[get("/sync/proc_all")]
-pub async fn proc_all(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -> WarpResult<impl Reply> {
+pub async fn proc_all(
+    #[cookie = "jwt"] _: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<impl Reply> {
     let req = SyncRequest {
         action: FileSyncAction::Process,
     };
@@ -64,7 +70,10 @@ pub async fn proc_all(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -
 }
 
 #[get("/sync/list_sync_cache")]
-pub async fn list_sync_cache(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -> WarpResult<impl Reply> {
+pub async fn list_sync_cache(
+    #[cookie = "jwt"] _: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<impl Reply> {
     let body = ListSyncCacheRequest {}
         .handle(&data.db)
         .await?
@@ -80,7 +89,10 @@ pub async fn process_cache_entry(
     #[cookie = "jwt"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<impl Reply> {
-    query.into_inner().handle(&data.locks, &data.db, &data.config).await?;
+    query
+        .into_inner()
+        .handle(&data.locks, &data.db, &data.config)
+        .await?;
     Ok(rweb::reply::html("finished"))
 }
 
@@ -95,19 +107,28 @@ pub async fn delete_cache_entry(
 }
 
 #[get("/sync/sync_garmin")]
-pub async fn sync_garmin(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -> WarpResult<impl Reply> {
+pub async fn sync_garmin(
+    #[cookie = "jwt"] _: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<impl Reply> {
     let body = GarminSyncRequest {}.handle(&data.locks).await?;
     Ok(rweb::reply::html(body.join("<br>")))
 }
 
 #[get("/sync/sync_movie")]
-pub async fn sync_movie(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -> WarpResult<impl Reply> {
+pub async fn sync_movie(
+    #[cookie = "jwt"] _: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<impl Reply> {
     let body = MovieSyncRequest {}.handle(&data.locks).await?;
     Ok(rweb::reply::html(body.join("<br>")))
 }
 
 #[get("/sync/sync_calendar")]
-pub async fn sync_calendar(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -> WarpResult<impl Reply> {
+pub async fn sync_calendar(
+    #[cookie = "jwt"] _: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<impl Reply> {
     let body = CalendarSyncRequest {}.handle(&data.locks).await?;
     Ok(rweb::reply::html(body.join("<br>")))
 }
@@ -118,12 +139,18 @@ pub async fn remove(
     #[cookie = "jwt"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<impl Reply> {
-    let lines = query.into_inner().handle(&data.locks, &data.config, &data.db).await?;
+    let lines = query
+        .into_inner()
+        .handle(&data.locks, &data.config, &data.db)
+        .await?;
     Ok(rweb::reply::html(lines.join("\n")))
 }
 
 #[get("/sync/sync_podcasts")]
-pub async fn sync_podcasts(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -> WarpResult<impl Reply> {
+pub async fn sync_podcasts(
+    #[cookie = "jwt"] _: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<impl Reply> {
     let results = SyncPodcastsRequest {}.handle(&data.locks).await?;
     let body = format!(
         r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
@@ -138,7 +165,10 @@ pub async fn user(#[cookie = "jwt"] user: LoggedUser) -> WarpResult<impl Reply> 
 }
 
 #[get("/sync/sync_security")]
-pub async fn sync_security(#[cookie = "jwt"] _: LoggedUser, #[data] data: AppState) -> WarpResult<impl Reply> {
+pub async fn sync_security(
+    #[cookie = "jwt"] _: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<impl Reply> {
     let results = SyncSecurityRequest {}.handle(&data.locks).await?;
     let body = format!(
         r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,

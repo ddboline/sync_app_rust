@@ -33,7 +33,10 @@ impl From<AuthorizedUser> for LoggedUser {
 
 impl From<LoggedUser> for AuthorizedUser {
     fn from(user: LoggedUser) -> Self {
-        Self { email: user.email, session: None }
+        Self {
+            email: user.email,
+            session: None,
+        }
     }
 }
 
