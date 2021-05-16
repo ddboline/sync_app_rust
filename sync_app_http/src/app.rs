@@ -2,7 +2,7 @@ use anyhow::Error;
 use chrono::Duration;
 use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, time::interval};
-use warp::Filter;
+use rweb::Filter;
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, garmin_sync::GarminSync, movie_sync::MovieSync,
@@ -76,108 +76,26 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     let port = config.port;
     let locks = Arc::new(AccessLocks::new(&config));
 
-    let data = AppState {
+    let app = AppState {
         config,
         db: pool,
         locks,
     };
 
-    let data = warp::any().map(move || data.clone());
-
-    let sync_frontpage_path = warp::path("index.html")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(sync_frontpage)
-        .boxed();
-    let sync_all_path = warp::path("sync")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(sync_all)
-        .boxed();
-    let proc_all_path = warp::path("proc_all")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(proc_all)
-        .boxed();
-    let process_cache_entry_path = warp::path("proc")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::query())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(process_cache_entry)
-        .boxed();
-    let remove_path = warp::path("remove")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::query())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(remove)
-        .boxed();
-    let list_sync_cache_path = warp::path("list_sync_cache")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(list_sync_cache)
-        .boxed();
-    let delete_cache_entry_path = warp::path("delete_cache_entry")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::query())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(delete_cache_entry)
-        .boxed();
-    let sync_garmin_path = warp::path("sync_garmin")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(sync_garmin)
-        .boxed();
-    let sync_movie_path = warp::path("sync_movie")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(sync_movie)
-        .boxed();
-    let sync_calendar_path = warp::path("sync_calendar")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(sync_calendar)
-        .boxed();
-    let sync_podcasts_path = warp::path("sync_podcasts")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(sync_podcasts)
-        .boxed();
-    let sync_security_path = warp::path("sync_security")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and(data.clone())
-        .and_then(sync_security)
-        .boxed();
-    let user_path = warp::path("user")
-        .and(warp::path::end())
-        .and(warp::get())
-        .and(warp::cookie("jwt"))
-        .and_then(user)
-        .boxed();
-    let sync_path = warp::path("sync")
+    let sync_frontpage_path = sync_frontpage(app.clone()).boxed();
+    let sync_all_path = sync_all(app.clone()).boxed();
+    let proc_all_path = proc_all(app.clone()).boxed();
+    let process_cache_entry_path = process_cache_entry(app.clone()).boxed();
+    let remove_path = remove(app.clone()).boxed();
+    let list_sync_cache_path = list_sync_cache(app.clone()).boxed();
+    let delete_cache_entry_path = delete_cache_entry(app.clone()).boxed();
+    let sync_garmin_path = sync_garmin(app.clone()).boxed();
+    let sync_movie_path = sync_movie(app.clone()).boxed();
+    let sync_calendar_path = sync_calendar(app.clone()).boxed();
+    let sync_podcasts_path = sync_podcasts(app.clone()).boxed();
+    let sync_security_path = sync_security(app.clone()).boxed();
+    let user_path = user().boxed();
+    let sync_path = rweb::path("sync")
         .and(
             sync_frontpage_path
                 .or(sync_all_path)
@@ -197,6 +115,6 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
 
     let routes = sync_path.recover(error_response);
     let addr: SocketAddr = format!("127.0.0.1:{}", port).parse()?;
-    warp::serve(routes).bind(addr).await;
+    rweb::serve(routes).bind(addr).await;
     Ok(())
 }

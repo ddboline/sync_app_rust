@@ -6,6 +6,7 @@ use std::{
     time::Instant,
 };
 use tokio::{process::Command, sync::Mutex, task::spawn_blocking};
+use rweb::Schema;
 
 use stack_string::StackString;
 
@@ -46,7 +47,7 @@ impl ListSyncCacheRequest {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Schema)]
 pub struct SyncEntryDeleteRequest {
     pub id: i32,
 }
@@ -100,7 +101,7 @@ impl CalendarSyncRequest {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Schema)]
 pub struct SyncRemoveRequest {
     pub url: StackString,
 }
@@ -121,7 +122,7 @@ impl SyncRemoveRequest {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Schema)]
 pub struct SyncEntryProcessRequest {
     pub id: i32,
 }
