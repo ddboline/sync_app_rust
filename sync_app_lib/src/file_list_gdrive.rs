@@ -273,6 +273,8 @@ impl FileListTrait for FileListGDrive {
         self.set_directory_map(false).await?;
         let directory_map = self.directory_map.load().clone();
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
+
+        #[allow(clippy::manual_map)]
         let parents =
             if let Ok(Some(p)) = GDriveInstance::get_parent_id(&self.get_baseurl(), &dnamemap) {
                 Some(vec![p])
