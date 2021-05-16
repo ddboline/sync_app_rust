@@ -121,7 +121,7 @@ impl SyncOpts {
 
                     FileSyncConfig::get_url_list(&pool).await?
                 } else {
-                    self.urls.to_vec()
+                    self.urls.clone()
                 };
                 let futures = urls.into_iter().map(|url| {
                     let blacklist = blacklist.clone();
