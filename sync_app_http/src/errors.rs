@@ -1,17 +1,18 @@
 use anyhow::Error as AnyhowError;
 use http::StatusCode;
+use indexmap::IndexMap;
 use log::error;
-use serde::Serialize;
-use std::{convert::Infallible, fmt::Debug, io::Error as IoError, string::FromUtf8Error};
-use thiserror::Error;
-use url::ParseError;
 use rweb::{
+    openapi::{Entity, Response, ResponseEntity, Responses, Schema},
     reject::{InvalidHeader, MissingCookie, Reject},
     Rejection, Reply,
-    openapi::{Entity, ResponseEntity, Schema, Responses, Response},
 };
-use indexmap::IndexMap;
-use std::borrow::Cow;
+use serde::Serialize;
+use std::{
+    borrow::Cow, convert::Infallible, fmt::Debug, io::Error as IoError, string::FromUtf8Error,
+};
+use thiserror::Error;
+use url::ParseError;
 
 use stack_string::StackString;
 

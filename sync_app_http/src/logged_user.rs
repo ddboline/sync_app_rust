@@ -7,6 +7,7 @@ use futures::{
     future::{ready, Ready},
 };
 use log::debug;
+use rweb::Schema;
 use serde::{Deserialize, Serialize};
 use stack_string::StackString;
 use std::{
@@ -20,7 +21,7 @@ use sync_app_lib::{models::AuthorizedUsers, pgpool::PgPool};
 
 use crate::errors::ServiceError as Error;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Schema)]
 pub struct LoggedUser {
     pub email: StackString,
 }
@@ -33,7 +34,10 @@ impl From<AuthorizedUser> for LoggedUser {
 
 impl From<LoggedUser> for AuthorizedUser {
     fn from(user: LoggedUser) -> Self {
-        Self { email: user.email, session: None }
+        Self {
+            email: user.email,
+            session: None,
+        }
     }
 }
 

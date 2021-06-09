@@ -1,8 +1,13 @@
 use anyhow::Error;
 use chrono::Duration;
+use rweb::{
+    filters::BoxedFilter,
+    http::header::CONTENT_TYPE,
+    openapi::{self, Info},
+    Filter, Reply,
+};
 use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, time::interval};
-use rweb::Filter;
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, garmin_sync::GarminSync, movie_sync::MovieSync,
@@ -72,16 +77,7 @@ pub async fn start_app() -> Result<(), Error> {
     run_app(config, pool).await
 }
 
-pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
-    let port = config.port;
-    let locks = Arc::new(AccessLocks::new(&config));
-
-    let app = AppState {
-        config,
-        db: pool,
-        locks,
-    };
-
+fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
     let sync_frontpage_path = sync_frontpage(app.clone()).boxed();
     let sync_all_path = sync_all(app.clone()).boxed();
     let proc_all_path = proc_all(app.clone()).boxed();
@@ -95,7 +91,7 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     let sync_podcasts_path = sync_podcasts(app.clone()).boxed();
     let sync_security_path = sync_security(app.clone()).boxed();
     let user_path = user().boxed();
-    let sync_path = rweb::path("sync")
+    rweb::path("sync")
         .and(
             sync_frontpage_path
                 .or(sync_all_path)
@@ -111,9 +107,47 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
                 .or(sync_security_path)
                 .or(user_path),
         )
-        .boxed();
+        .boxed()
+}
 
-    let routes = sync_path.recover(error_response);
+pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
+    let port = config.port;
+    let locks = Arc::new(AccessLocks::new(&config));
+
+    let app = AppState {
+        config,
+        db: pool,
+        locks,
+    };
+
+    let (spec, sync_path) = openapi::spec()
+        .info(Info {
+            title: "Movie Queue WebApp".into(),
+            description: "Web Frontend for Movie Queue".into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+            ..Info::default()
+        })
+        .build(|| get_sync_path(&app));
+    let spec = Arc::new(spec);
+    let spec_json_path = rweb::path!("sync" / "openapi" / "json")
+        .and(rweb::path::end())
+        .map({
+            let spec = spec.clone();
+            move || rweb::reply::json(spec.as_ref())
+        });
+
+    let spec_yaml = serde_yaml::to_string(spec.as_ref())?;
+    let spec_yaml_path = rweb::path!("sync" / "openapi" / "yaml")
+        .and(rweb::path::end())
+        .map(move || {
+            let reply = rweb::reply::html(spec_yaml.clone());
+            rweb::reply::with_header(reply, CONTENT_TYPE, "text/yaml")
+        });
+
+    let routes = sync_path
+        .or(spec_json_path)
+        .or(spec_yaml_path)
+        .recover(error_response);
     let addr: SocketAddr = format!("127.0.0.1:{}", port).parse()?;
     rweb::serve(routes).bind(addr).await;
     Ok(())
