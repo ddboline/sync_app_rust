@@ -1,11 +1,15 @@
 use anyhow::Error;
 use chrono::Duration;
+<<<<<<< HEAD
 use rweb::{
     filters::BoxedFilter,
     http::header::CONTENT_TYPE,
     openapi::{self, Info},
     Filter, Reply,
 };
+=======
+use rweb::Filter;
+>>>>>>> bc4d9e1a56534d7dec1148f018eff93fc0b6d927
 use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, time::interval};
 
@@ -91,23 +95,19 @@ fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
     let sync_podcasts_path = sync_podcasts(app.clone()).boxed();
     let sync_security_path = sync_security(app.clone()).boxed();
     let user_path = user().boxed();
-    rweb::path("sync")
-        .and(
-            sync_frontpage_path
-                .or(sync_all_path)
-                .or(proc_all_path)
-                .or(process_cache_entry_path)
-                .or(remove_path)
-                .or(list_sync_cache_path)
-                .or(delete_cache_entry_path)
-                .or(sync_garmin_path)
-                .or(sync_movie_path)
-                .or(sync_calendar_path)
-                .or(sync_podcasts_path)
-                .or(sync_security_path)
-                .or(user_path),
-        )
-        .boxed()
+    sync_frontpage_path
+        .or(sync_all_path)
+        .or(proc_all_path)
+        .or(process_cache_entry_path)
+        .or(remove_path)
+        .or(list_sync_cache_path)
+        .or(delete_cache_entry_path)
+        .or(sync_garmin_path)
+        .or(sync_movie_path)
+        .or(sync_calendar_path)
+        .or(sync_podcasts_path)
+        .or(sync_security_path)
+        .or(user_path).boxed()
 }
 
 pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
