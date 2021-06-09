@@ -3,7 +3,7 @@ openapi: 3.0.1
 info:
   title: Movie Queue WebApp
   description: Web Frontend for Movie Queue
-  version: 0.7.9
+  version: 0.7.10
 paths:
   /sync/index.html:
     get:

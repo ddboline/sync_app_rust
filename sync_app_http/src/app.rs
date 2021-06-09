@@ -1,15 +1,11 @@
 use anyhow::Error;
 use chrono::Duration;
-<<<<<<< HEAD
 use rweb::{
     filters::BoxedFilter,
     http::header::CONTENT_TYPE,
     openapi::{self, Info},
     Filter, Reply,
 };
-=======
-use rweb::Filter;
->>>>>>> bc4d9e1a56534d7dec1148f018eff93fc0b6d927
 use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, time::interval};
 
