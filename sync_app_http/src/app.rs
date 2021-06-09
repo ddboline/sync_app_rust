@@ -118,8 +118,8 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
 
     let (spec, sync_path) = openapi::spec()
         .info(Info {
-            title: "Movie Queue WebApp".into(),
-            description: "Web Frontend for Movie Queue".into(),
+            title: "File Sync WebApp".into(),
+            description: "Web Frontend for File Sync Service".into(),
             version: env!("CARGO_PKG_VERSION").into(),
             ..Info::default()
         })
