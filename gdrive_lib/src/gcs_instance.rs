@@ -7,7 +7,6 @@ use common::{
 use lazy_static::lazy_static;
 use log::debug;
 use parking_lot::{Mutex, MutexGuard};
-use stack_string::StackString;
 use std::{
     fmt::{self, Debug},
     path::Path,

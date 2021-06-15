@@ -1,10 +1,9 @@
-use anyhow::Error;
-use chrono::Utc;
-use deadqueue::limited::Queue;
-use log::debug;
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 use tokio::{
-    sync::Mutex,
+    sync::Notify,
     task::{spawn, JoinHandle},
     time::{sleep, Duration},
 };
@@ -29,14 +28,23 @@ impl RateLimiter {
     }
 
     pub async fn acquire(&self) {
-        self.inner.rate_queue.pop().await;
+        self.inner.acquire().await
+    }
+}
+
+fn gtzero(x: usize) -> Option<usize> {
+    if x > 0 {
+        Some(x - 1)
+    } else {
+        None
     }
 }
 
 struct RateLimiterInner {
     max_per_unit_time: usize,
     unit_time_ms: usize,
-    rate_queue: Queue<()>,
+    remaining: AtomicUsize,
+    notify: Notify,
 }
 
 impl RateLimiterInner {
@@ -44,17 +52,31 @@ impl RateLimiterInner {
         Self {
             max_per_unit_time,
             unit_time_ms,
-            rate_queue: Queue::new(max_per_unit_time),
+            remaining: AtomicUsize::new(max_per_unit_time),
+            notify: Notify::new(),
+        }
+    }
+
+    fn decrement_remaining(&self) -> Result<usize, usize> {
+        self.remaining
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, gtzero)
+    }
+
+    async fn acquire(&self) {
+        loop {
+            if self.decrement_remaining().is_ok() {
+                return;
+            } else {
+                self.notify.notified().await;
+            }
         }
     }
 
     async fn check_reset(&self) {
         loop {
-            for _ in 0..self.max_per_unit_time {
-                if self.rate_queue.try_push(()).is_err() {
-                    break;
-                }
-            }
+            self.remaining
+                .fetch_max(self.max_per_unit_time, Ordering::SeqCst);
+            self.notify.notify_waiters();
             sleep(Duration::from_millis(self.unit_time_ms as u64)).await;
         }
     }
@@ -80,10 +102,10 @@ mod tests {
     async fn test_rate_limiter() -> Result<(), Error> {
         env_logger::init();
 
+        let start = Utc::now();
+
         let rate_limiter = RateLimiter::new(1000, 100);
         let test_count = Arc::new(AtomicUsize::new(0));
-
-        let start = Utc::now();
 
         let tasks: Vec<_> = (0..10_000)
             .map(|_| {
@@ -109,8 +131,12 @@ mod tests {
 
         let elapsed = Utc::now() - start;
 
-        debug!("{}", elapsed);
-        assert!(elapsed.num_milliseconds() >= 900);
+        println!(
+            "{} {}",
+            elapsed.num_milliseconds(),
+            test_count.load(Ordering::SeqCst)
+        );
+        assert!(elapsed.num_milliseconds() >= 950);
         assert_eq!(test_count.load(Ordering::SeqCst), 10_000);
         Ok(())
     }

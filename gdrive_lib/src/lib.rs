@@ -1,4 +1,3 @@
-#![allow(unused_imports)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::module_name_repetitions)]
@@ -18,17 +17,12 @@ pub mod gdrive_instance;
 pub mod rate_limiter;
 pub mod storage_v1_types;
 
-use anyhow::{format_err, Error};
-use log::error;
+use anyhow::Error;
 use rand::{
-    distributions::{Alphanumeric, Distribution, Uniform},
+    distributions::{Distribution, Uniform},
     thread_rng,
 };
-use retry::{
-    delay::{jitter, Exponential},
-    retry,
-};
-use std::{future::Future, str::FromStr};
+use std::future::Future;
 use tokio::time::{sleep, Duration};
 
 pub async fn exponential_retry<T, U, F>(f: T) -> Result<U, Error>

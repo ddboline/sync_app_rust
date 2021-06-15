@@ -103,7 +103,8 @@ fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
         .or(sync_calendar_path)
         .or(sync_podcasts_path)
         .or(sync_security_path)
-        .or(user_path).boxed()
+        .or(user_path)
+        .boxed()
 }
 
 pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {

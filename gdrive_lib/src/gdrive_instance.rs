@@ -1,6 +1,5 @@
 use anyhow::{format_err, Error};
 use async_google_apis_common as common;
-use chrono::DateTime;
 use common::{
     yup_oauth2::{self, InstalledFlowAuthenticator},
     DownloadResult, TlsClient,
@@ -12,11 +11,9 @@ use lazy_static::lazy_static;
 use log::debug;
 use maplit::{hashmap, hashset};
 use mime::Mime;
-use parking_lot::Mutex;
 use percent_encoding::percent_decode;
 use stack_string::StackString;
 use std::{
-    cmp,
     collections::{HashMap, HashSet},
     ffi::OsStr,
     fmt::{self, Debug, Formatter},
