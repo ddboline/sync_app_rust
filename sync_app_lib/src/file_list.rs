@@ -241,7 +241,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         });
         res?;
 
-        flist_cache_map.iter().try_for_each(|(k, v)| {
+        for (k, v) in &flist_cache_map {
             if let Some(item) = current_cache.get(&k) {
                 if v.md5sum != item.md5sum
                     || v.sha1sum != item.sha1sum
@@ -262,8 +262,11 @@ pub trait FileListTrait: Send + Sync + Debug {
                         .filter(serviceid.eq(&v.serviceid))
                         .filter(servicesession.eq(&v.servicesession))
                         .load::<FileInfoCache>(&conn)?;
-                    if cache.len() != 1 {
-                        return Err(format_err!("There should only be one entry"));
+                    assert!(!cache.is_empty());
+                    if cache.len() > 1 {
+                        for c in &cache[1..] {
+                            diesel::delete(file_info_cache.filter(id.eq(c.id))).execute(&conn)?;
+                        }
                     }
                     let id_ = cache[0].id;
 
@@ -277,8 +280,7 @@ pub trait FileListTrait: Send + Sync + Debug {
                         .execute(&conn)?;
                 }
             }
-            Ok(())
-        })?;
+        }
 
         let results: Result<Vec<_>, Error> = flist_cache_map
             .into_iter()
