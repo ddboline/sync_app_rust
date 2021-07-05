@@ -171,12 +171,11 @@ impl SyncOpts {
                     if finfo1.servicetype == FileService::Local {
                         let flist = FileList::from_url(&self.urls[0], &config, &pool).await?;
                         FileSync::copy_object(&(*flist), &finfo0, &finfo1).await?;
-                        Ok(output)
                     } else {
                         let flist = FileList::from_url(&self.urls[1], &config, &pool).await?;
                         FileSync::copy_object(&(*flist), &finfo0, &finfo1).await?;
-                        Ok(output)
                     }
+                    Ok(output)
                 }
             }
             FileSyncAction::List => {

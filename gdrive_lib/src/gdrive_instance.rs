@@ -257,7 +257,7 @@ impl GDriveInstance {
             .await
     }
 
-    #[allow(clippy::filter_map)]
+    #[allow(clippy::manual_filter_map)]
     pub async fn convert_file_list_to_gdrive_info(
         &self,
         flist: &[File],
@@ -446,7 +446,7 @@ impl GDriveInstance {
         let export_type: Option<&'static str> = mime_type
             .as_ref()
             .and_then(|t| MIME_TYPES.get::<str>(t.as_ref()))
-            .cloned();
+            .copied();
 
         if let Some(t) = export_type {
             self.export(gdriveid, &local, t).await

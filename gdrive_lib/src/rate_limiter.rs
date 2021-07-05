@@ -66,9 +66,8 @@ impl RateLimiterInner {
         loop {
             if self.decrement_remaining().is_ok() {
                 return;
-            } else {
-                self.notify.notified().await;
             }
+            self.notify.notified().await;
         }
     }
 

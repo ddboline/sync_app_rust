@@ -80,7 +80,12 @@ impl ReqwestSessionInner {
         for (k, v) in &self.headers {
             headers.insert(k, v.into());
         }
-        self.client.delete(url).headers(headers).send().await.map_err(Into::into)
+        self.client
+            .delete(url)
+            .headers(headers)
+            .send()
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -156,8 +161,12 @@ impl ReqwestSession {
 
     pub async fn delete(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
         Self::exponential_retry(|| async move {
-            self.client.load().delete(url.clone(), headers.clone()).await
-        }).await
+            self.client
+                .load()
+                .delete(url.clone(), headers.clone())
+                .await
+        })
+        .await
     }
 
     pub async fn set_default_headers(&self, headers: HashMap<&str, &str>) -> Result<(), Error> {
