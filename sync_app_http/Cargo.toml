@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.7.13"
+version = "0.7.14"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -30,4 +30,4 @@ indexmap = "1.6"
 serde_yaml = "0.8"
 rweb_helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.2.2" }
 stack-string = { version="0.2", features=["diesel_types", "rweb-openapi"] }
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.5.4"}
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.5.9"}

@@ -84,6 +84,17 @@ impl SyncClient {
         Ok(())
     }
 
+    pub async fn shutdown(&self) -> Result<(), Error> {
+        let from_url = self.get_url()?;
+
+        let url = from_url.join("api/auth")?;
+        self.remote_session
+            .delete(&url, &HeaderMap::new())
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+
     pub async fn get_remote<T: DeserializeOwned>(&self, url: &Url) -> Result<Vec<T>, Error> {
         let resp = self.remote_session.get(&url, &HeaderMap::new()).await?;
         resp.json().await.map_err(Into::into)

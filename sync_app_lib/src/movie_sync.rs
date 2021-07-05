@@ -100,6 +100,8 @@ impl MovieSync {
         sync_single_table!("movie_collection", "collection", MovieCollectionRow);
         // sync_single_table!("movie_queue", "queue", MovieQueueRow);
 
+        self.client.shutdown().await?;
+
         Ok(output)
     }
 

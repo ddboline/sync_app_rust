@@ -204,6 +204,8 @@ impl GarminSync {
             .await?;
         output.extend_from_slice(&results);
 
+        self.client.shutdown().await?;
+
         Ok(output)
     }
 
