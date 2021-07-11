@@ -8,9 +8,9 @@ edition = "2018"
 
 [dependencies]
 gdrive_lib = {path="../gdrive_lib"}
-rusoto_core = {version = "0.46", default_features = false, features=["rustls"]}
-rusoto_s3 = {version = "0.46", default_features = false, features=["rustls"]}
-s3-ext = "0.2"
+rusoto_core = {version = "0.47", default_features = false, features=["rustls"]}
+rusoto_s3 = {version = "0.47", default_features = false, features=["rustls"]}
+s3-ext = "0.3"
 sts_profile_auth = "0.6"
 url = "2.2"
 dotenv = "0.15"
@@ -36,7 +36,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 dirs = "3.0"
 derive_more = "0.99"
-tokio = {version="1.5", features=["full"]}
+tokio = {version="1.8", features=["full"]}
 async-trait = "0.1"
 futures = "0.3"
 itertools = "0.10"
