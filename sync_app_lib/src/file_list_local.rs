@@ -114,6 +114,12 @@ impl FileListTrait for FileListLocal {
 
             let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
+            if !flist_dict.is_empty() && entries.is_empty() {
+                return Err(format_err!(
+                    "No local files found, check that disk is mounted"
+                ));
+            }
+
             let flist = entries
                 .into_par_iter()
                 .filter_map(|entry| {
@@ -149,7 +155,6 @@ impl FileListTrait for FileListLocal {
                     .map(|x| x.0)
                 })
                 .collect();
-
             Ok(flist)
         })
         .await?
