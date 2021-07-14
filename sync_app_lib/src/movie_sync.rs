@@ -56,6 +56,21 @@ pub struct MovieQueueRow {
     pub show: StackString,
 }
 
+#[derive(FromSqlRow, Default, Debug, Serialize, Deserialize, Schema)]
+pub struct PlexEvent {
+    pub event: StackString,
+    pub account: StackString,
+    pub server: StackString,
+    pub player_title: StackString,
+    pub player_address: StackString,
+    pub title: Option<StackString>,
+    pub parent_title: Option<StackString>,
+    pub grandparent_title: Option<StackString>,
+    pub added_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
+    pub created_at: Option<DateTime<Utc>>,
+}
+
 pub struct MovieSync {
     client: SyncClient,
 }
@@ -99,6 +114,7 @@ impl MovieSync {
         sync_single_table!("imdb_episodes", "episodes", ImdbEpisodes);
         sync_single_table!("movie_collection", "collection", MovieCollectionRow);
         // sync_single_table!("movie_queue", "queue", MovieQueueRow);
+        sync_single_table!("plex_event", "events", PlexEvent);
 
         self.client.shutdown().await?;
 
