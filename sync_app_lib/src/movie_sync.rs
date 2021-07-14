@@ -56,7 +56,7 @@ pub struct MovieQueueRow {
     pub show: StackString,
 }
 
-#[derive(FromSqlRow, Default, Debug, Serialize, Deserialize, Schema)]
+#[derive(FromSqlRow, Default, Debug, Serialize, Deserialize)]
 pub struct PlexEvent {
     pub event: StackString,
     pub account: StackString,
