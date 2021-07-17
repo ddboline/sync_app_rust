@@ -114,7 +114,7 @@ impl MovieSync {
         sync_single_table!("imdb_ratings", "shows", ImdbRatings);
         sync_single_table!("imdb_episodes", "episodes", ImdbEpisodes);
         sync_single_table!("movie_collection", "collection", MovieCollectionRow);
-        // sync_single_table!("movie_queue", "queue", MovieQueueRow);
+        sync_single_table!("movie_queue", "queue", MovieQueueRow);
         sync_single_table!("plex_event", "events", PlexEvent);
 
         self.client.shutdown().await?;
