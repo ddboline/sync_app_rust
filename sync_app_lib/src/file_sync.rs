@@ -115,7 +115,7 @@ impl FileSync {
     ) -> Result<(), Error> {
         let list_a_not_b: Vec<_> = flist0
             .get_filemap()
-            .par_iter()
+            .iter()
             .filter_map(|(k, finfo0)| {
                 if let Some(finfo1) = flist1.get_filemap().get(k) {
                     if Self::compare_objects(finfo0, finfo1) {
@@ -153,7 +153,7 @@ impl FileSync {
             .collect();
         let list_b_not_a: Vec<_> = flist1
             .get_filemap()
-            .par_iter()
+            .iter()
             .filter_map(|(k, finfo1)| {
                 if flist0.get_filemap().contains_key(k) {
                     None
@@ -328,7 +328,7 @@ impl FileSync {
             let proc_list: Result<Vec<SmallVec<[Url; 2]>>, Error> =
                 FileSyncCache::get_cache_list(pool)
                     .await?
-                    .into_par_iter()
+                    .into_iter()
                     .map(|v| {
                         let u0: Url = v.src_url.parse()?;
                         let u1: Url = v.dst_url.parse()?;
