@@ -546,7 +546,7 @@ impl FileListTrait for FileList {
         let self_ = self.clone();
         spawn_blocking(move || match self_.load_file_list() {
             Ok(v) => {
-                let result: Result<Vec<_>, Error> = v.par_iter().map(TryInto::try_into).collect();
+                let result: Result<Vec<_>, Error> = v.iter().map(TryInto::try_into).collect();
                 result
             }
             Err(e) => Err(e),

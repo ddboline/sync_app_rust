@@ -1,7 +1,7 @@
 use anyhow::{format_err, Error};
 use futures::future::try_join_all;
 use itertools::Itertools;
-use log::debug;
+use log::{debug, error};
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };

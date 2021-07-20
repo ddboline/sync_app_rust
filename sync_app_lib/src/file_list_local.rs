@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
+use log::error;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{
     collections::HashMap,
@@ -124,7 +125,15 @@ impl FileListTrait for FileListLocal {
                 .into_iter()
                 .filter(|entry| !entry.file_type().is_dir())
                 .map(|entry| {
-                    let filepath = entry.path().canonicalize()?.to_string_lossy().to_string();
+                    let filepath = entry
+                        .path()
+                        .canonicalize()
+                        .map_err(|e| {
+                            error!("entry {:?}", entry);
+                            e
+                        })?
+                        .to_string_lossy()
+                        .to_string();
                     let metadata = entry.metadata()?;
                     let modified = metadata
                         .modified()?
