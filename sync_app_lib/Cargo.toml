@@ -44,5 +44,5 @@ envy = "0.4"
 tempfile = "3.1"
 smallvec = "1.6"
 arc-swap = "1.2"
-env_logger = "0.8"
+env_logger = "0.9"
 stack-string = { version="0.2", features=["diesel_types"] }

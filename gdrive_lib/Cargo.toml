@@ -28,7 +28,7 @@ futures = "0.3"
 mime = "0.3"
 crossbeam = "0.8"
 deadqueue = "0.2"
-env_logger = "0.8"
+env_logger = "0.9"
 async-google-apis-common = "0.3"
 tokio = {version="1.8", features=["full"]}
 stack-string = { version="0.2", features=["diesel_types"] }
