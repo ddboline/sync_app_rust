@@ -7,6 +7,7 @@ use rayon::iter::{
 };
 use std::sync::Arc;
 use structopt::StructOpt;
+use tokio::task::spawn_blocking;
 use url::Url;
 
 use stack_string::StackString;
@@ -102,8 +103,7 @@ impl SyncOpts {
                             list
                         };
                         flist.with_list(list);
-                        flist.cache_file_list()?;
-                        Ok(flist)
+                        spawn_blocking(move || flist.cache_file_list().map(|_| flist)).await?
                     }
                 });
                 let result: Result<Vec<_>, Error> = try_join_all(futures).await;
@@ -130,15 +130,14 @@ impl SyncOpts {
                         let mut flist = FileList::from_url(&url, &config, &pool).await?;
                         let list = flist.fill_file_list().await?;
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
-                            list.into_par_iter()
+                            list.into_iter()
                                 .filter(|entry| !blacklist.is_in_blacklist(&entry.urlname))
                                 .collect()
                         } else {
                             list
                         };
                         flist.with_list(list);
-                        flist.cache_file_list()?;
-                        Ok(flist)
+                        spawn_blocking(move || flist.cache_file_list().map(|_| flist)).await?
                     }
                 });
                 let flists: Result<Vec<_>, Error> = try_join_all(futures).await;
