@@ -408,13 +408,13 @@ impl BlackList {
 
     pub fn is_in_blacklist(&self, url: &Url) -> bool {
         self.blacklist
-            .par_iter()
+            .iter()
             .any(|item| url.as_str().contains(item.blacklist_url.as_str()))
     }
 
     pub fn could_be_in_blacklist(&self, url: &Url) -> bool {
         self.blacklist
-            .par_iter()
+            .iter()
             .any(|item| item.blacklist_url.contains(url.as_str()))
     }
 }
