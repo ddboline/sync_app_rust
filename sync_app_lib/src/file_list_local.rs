@@ -120,30 +120,20 @@ impl FileListTrait for FileListLocal {
                 ));
             }
 
-            let flist = entries
-                .into_par_iter()
-                .filter_map(|entry| {
-                    let filepath = entry
-                        .path()
-                        .canonicalize()
-                        .ok()
-                        .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
-                    let (modified, size) = entry.metadata().ok().map_or_else(
-                        || (0, 0),
-                        |metadata| {
-                            let modified = metadata
-                                .modified()
-                                .unwrap()
-                                .duration_since(SystemTime::UNIX_EPOCH)
-                                .unwrap()
-                                .as_secs() as u32;
-                            let size = metadata.len() as u32;
-                            (modified, size)
-                        },
-                    );
+            entries
+                .into_iter()
+                .filter(|entry| !entry.file_type().is_dir())
+                .map(|entry| {
+                    let filepath = entry.path().canonicalize()?.to_string_lossy().to_string();
+                    let metadata = entry.metadata()?;
+                    let modified = metadata
+                        .modified()?
+                        .duration_since(SystemTime::UNIX_EPOCH)?
+                        .as_secs() as u32;
+                    let size = metadata.len() as u32;
                     if let Some(finfo) = flist_dict.get(filepath.as_str()) {
                         if finfo.filestat.st_mtime >= modified && finfo.filestat.st_size == size {
-                            return Some(finfo.clone());
+                            return Ok(finfo.clone());
                         }
                     };
                     FileInfoLocal::from_direntry(
@@ -151,11 +141,9 @@ impl FileListTrait for FileListLocal {
                         Some(servicesession.0.clone().into()),
                         Some(servicesession.clone()),
                     )
-                    .ok()
                     .map(|x| x.0)
                 })
-                .collect();
-            Ok(flist)
+                .collect()
         })
         .await?
     }
