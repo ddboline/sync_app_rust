@@ -5,7 +5,6 @@ use log::debug;
 use std::{
     collections::HashMap,
     fs::{create_dir_all, remove_file},
-    io::{stdout, Write},
     path::Path,
 };
 use stdout_channel::StdoutChannel;

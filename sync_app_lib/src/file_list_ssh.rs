@@ -6,7 +6,6 @@ use std::{
     collections::HashMap,
     convert::TryInto,
     fs::create_dir_all,
-    io::{stdout, Write},
     path::Path,
     sync::Arc,
 };
