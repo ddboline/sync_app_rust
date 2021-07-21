@@ -4,7 +4,6 @@ use log::error;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{
     collections::HashMap,
-    io::{stdout, Write},
     path::Path,
     string::ToString,
     time::SystemTime,

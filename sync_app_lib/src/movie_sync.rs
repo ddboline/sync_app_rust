@@ -70,6 +70,7 @@ pub struct PlexEvent {
     pub updated_at: Option<DateTime<Utc>>,
     pub created_at: Option<DateTime<Utc>>,
     pub last_modified: Option<DateTime<Utc>>,
+    pub metadata_type: Option<StackString>,
 }
 
 pub struct MovieSync {

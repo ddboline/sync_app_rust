@@ -5,7 +5,6 @@ use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::{collections::HashMap, fs::create_dir_all, path::Path, sync::Arc};
 use stdout_channel::StdoutChannel;
-use tokio::io::{stdout, AsyncWriteExt};
 use url::Url;
 
 use gdrive_lib::{
