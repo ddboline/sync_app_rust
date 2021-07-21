@@ -1,4 +1,5 @@
 use lazy_static::lazy_static;
+use log::debug;
 use rweb::Schema;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -6,6 +7,7 @@ use std::{
     path::Path,
     time::Instant,
 };
+use stdout_channel::{MockStdout, StdoutChannel};
 use tokio::{process::Command, sync::Mutex, task::spawn_blocking};
 
 use stack_string::StackString;
@@ -31,9 +33,16 @@ impl SyncRequest {
     ) -> Result<Vec<StackString>, Error> {
         let _guard = locks.sync.lock().await;
         let opts = SyncOpts::new(self.action, &[]);
-        opts.process_sync_opts(&config, pool)
-            .await
-            .map_err(Into::into)
+        let mock_stdout = MockStdout::new();
+        let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
+        opts.process_sync_opts(&config, pool, &stdout).await?;
+        stdout.close().await?;
+        let mut output = Vec::new();
+        while let Some(line) = mock_stdout.lock().await.pop() {
+            output.push(line);
+        }
+        output.reverse();
+        Ok(output)
     }
 }
 
@@ -116,9 +125,16 @@ impl SyncRemoveRequest {
         let _guard = locks.sync.lock().await;
         let url = self.url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
-        sync.process_sync_opts(&config, pool)
-            .await
-            .map_err(Into::into)
+        let mock_stdout = MockStdout::new();
+        let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
+        sync.process_sync_opts(&config, pool, &stdout).await?;
+        stdout.close().await?;
+        let mut output = Vec::new();
+        while let Some(line) = mock_stdout.lock().await.pop() {
+            output.push(line);
+        }
+        output.reverse();
+        Ok(output)
     }
 }
 
@@ -135,12 +151,15 @@ impl SyncEntryProcessRequest {
         config: &Config,
     ) -> Result<(), Error> {
         let _guard = locks.sync.lock().await;
-
         let entry = FileSyncCache::get_by_id(pool, self.id).await?;
         let src_url = entry.src_url.parse()?;
         let dst_url = entry.dst_url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Copy, &[src_url, dst_url]);
-        sync.process_sync_opts(&config, pool).await?;
+        let mock_stdout = MockStdout::new();
+        let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
+        sync.process_sync_opts(&config, pool, &stdout).await?;
+        stdout.close().await?;
+        debug!("{}", mock_stdout.lock().await.join("\n"));
         entry.delete_cache_entry(pool).await?;
         Ok(())
     }

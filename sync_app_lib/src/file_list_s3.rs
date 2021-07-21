@@ -8,6 +8,7 @@ use std::{
     io::{stdout, Write},
     path::Path,
 };
+use stdout_channel::StdoutChannel;
 use tokio::task::spawn_blocking;
 use url::Url;
 
@@ -124,7 +125,7 @@ impl FileListTrait for FileListS3 {
             .collect()
     }
 
-    async fn print_list(&self) -> Result<(), Error> {
+    async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
         let bucket = self
             .get_baseurl()
             .host_str()
@@ -133,12 +134,11 @@ impl FileListTrait for FileListS3 {
 
         self.s3
             .process_list_of_keys(bucket, Some(prefix), |i| {
-                writeln!(
-                    stdout().lock(),
+                stdout.send(format!(
                     "s3://{}/{}",
                     bucket,
                     i.key.as_ref().map_or_else(|| "", String::as_str)
-                )?;
+                ));
                 Ok(())
             })
             .await

@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::{collections::HashMap, fs::create_dir_all, path::Path, sync::Arc};
+use stdout_channel::StdoutChannel;
 use tokio::io::{stdout, AsyncWriteExt};
 use url::Url;
 
@@ -269,7 +270,7 @@ impl FileListTrait for FileListGDrive {
         Ok(flist)
     }
 
-    async fn print_list(&self) -> Result<(), Error> {
+    async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
         self.set_directory_map(false).await?;
         let directory_map = self.directory_map.load().clone();
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
@@ -296,9 +297,7 @@ impl FileListTrait for FileListGDrive {
                             .await
                             .and_then(FileInfoGDrive::from_gdriveinfo)
                         {
-                            stdout()
-                                .write_all(format!("{}\n", finfo.get_finfo().urlname).as_bytes())
-                                .await?;
+                            stdout.send(format!("{}\n", finfo.get_finfo().urlname));
                         }
                         Ok(())
                     }
