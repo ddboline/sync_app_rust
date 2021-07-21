@@ -9,6 +9,7 @@ use std::{
     string::ToString,
     time::SystemTime,
 };
+use stdout_channel::StdoutChannel;
 use tokio::{
     fs::{copy, create_dir_all, remove_file, rename},
     task::spawn_blocking,
@@ -157,8 +158,9 @@ impl FileListTrait for FileListLocal {
         .await?
     }
 
-    async fn print_list(&self) -> Result<(), Error> {
+    async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
         let local_list = self.clone();
+        let stdout = stdout.clone();
         spawn_blocking(move || {
             let basedir = local_list.get_baseurl().path();
 
@@ -174,7 +176,7 @@ impl FileListTrait for FileListLocal {
                         .canonicalize()
                         .ok()
                         .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
-                    writeln!(stdout().lock(), "{}", filepath)?;
+                    stdout.send(format!("{}", filepath));
                     Ok(())
                 })
                 .collect()

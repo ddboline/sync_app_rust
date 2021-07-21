@@ -5,12 +5,12 @@ use log::{debug, error};
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
+use stack_string::StackString;
 use std::sync::Arc;
+use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
 use tokio::task::spawn_blocking;
 use url::Url;
-
-use stack_string::StackString;
 
 use crate::{
     calendar_sync::CalendarSync,
@@ -46,29 +46,27 @@ impl SyncOpts {
         }
     }
 
-    pub async fn process_args() -> Result<Vec<StackString>, Error> {
+    pub async fn process_args() -> Result<StdoutChannel<StackString>, Error> {
+        let stdout = StdoutChannel::new();
         let opts = Self::from_args();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
         if opts.action == FileSyncAction::SyncAll {
-            let mut output = Vec::new();
             for action in &[
                 FileSyncAction::Sync,
                 FileSyncAction::SyncGarmin,
                 FileSyncAction::SyncMovie,
                 FileSyncAction::SyncCalendar,
             ] {
-                output.extend_from_slice(
-                    &Self::new(*action, &[])
-                        .process_sync_opts(&config, &pool)
-                        .await?,
-                );
+                Self::new(*action, &[])
+                    .process_sync_opts(&config, &pool, &stdout)
+                    .await?;
             }
-            Ok(output)
         } else {
-            opts.process_sync_opts(&config, &pool).await
+            opts.process_sync_opts(&config, &pool, &stdout).await?;
         }
+        Ok(stdout)
     }
 
     #[allow(clippy::cognitive_complexity)]
@@ -77,10 +75,9 @@ impl SyncOpts {
         &self,
         config: &Config,
         pool: &PgPool,
-    ) -> Result<Vec<StackString>, Error> {
-        let mut output = Vec::new();
+        stdout: &StdoutChannel<StackString>,
+    ) -> Result<(), Error> {
         let blacklist = Arc::new(BlackList::new(pool).await?);
-
         match self.action {
             FileSyncAction::Index => {
                 let urls = if self.urls.is_empty() {
@@ -108,7 +105,7 @@ impl SyncOpts {
                 });
                 let result: Result<Vec<_>, Error> = try_join_all(futures).await;
                 result?;
-                Ok(output)
+                Ok(())
             }
             FileSyncAction::Sync => {
                 let urls = if self.urls.is_empty() {
@@ -152,13 +149,10 @@ impl SyncOpts {
                 let results: Result<Vec<_>, Error> = try_join_all(futures).await;
                 results?;
 
-                let results: Vec<_> = FileSyncCache::get_cache_list(&pool)
-                    .await?
-                    .into_iter()
-                    .map(|entry| format!("{} {}", entry.src_url, entry.dst_url).into())
-                    .collect();
-                output.extend_from_slice(&results);
-                Ok(output)
+                for entry in FileSyncCache::get_cache_list(&pool).await? {
+                    stdout.send(format!("{} {}", entry.src_url, entry.dst_url));
+                }
+                Ok(())
             }
             FileSyncAction::Copy => {
                 if self.urls.len() < 2 {
@@ -174,7 +168,7 @@ impl SyncOpts {
                         let flist = FileList::from_url(&self.urls[1], &config, &pool).await?;
                         FileSync::copy_object(&(*flist), &finfo0, &finfo1).await?;
                     }
-                    Ok(output)
+                    Ok(())
                 }
             }
             FileSyncAction::List => {
@@ -185,16 +179,16 @@ impl SyncOpts {
                         let mut flist = FileList::from_url(&urls[0], &config, &pool).await?;
                         for url in urls {
                             flist.set_baseurl(url.clone());
-                            flist.print_list().await?;
+                            flist.print_list(stdout).await?;
                         }
                     }
-                    Ok(output)
+                    Ok(())
                 }
             }
             FileSyncAction::Process => {
                 let fsync = FileSync::new(config.clone());
                 fsync.process_sync_cache(&pool).await?;
-                Ok(output)
+                Ok(())
             }
             FileSyncAction::Delete => {
                 if self.urls.is_empty() {
@@ -202,7 +196,7 @@ impl SyncOpts {
                 } else {
                     let fsync = FileSync::new(config.clone());
                     fsync.delete_files(&self.urls, &pool).await?;
-                    Ok(output)
+                    Ok(())
                 }
             }
             FileSyncAction::Move => {
@@ -213,7 +207,7 @@ impl SyncOpts {
                     if finfo0.servicetype == finfo1.servicetype {
                         let flist = FileList::from_url(&self.urls[0], &config, &pool).await?;
                         flist.move_file(&finfo0, &finfo1).await?;
-                        Ok(output)
+                        Ok(())
                     } else {
                         Err(format_err!("Can only move within servicetype"))
                     }
@@ -227,19 +221,23 @@ impl SyncOpts {
                 } else {
                     let futures = self.urls.iter().map(|url| async move {
                         let pool = pool.clone();
+                        let stdout = stdout.clone();
                         let mut flist = FileList::from_url(&url, &config, &pool).await?;
                         flist.with_list(flist.fill_file_list().await?);
                         let results: Result<Vec<_>, Error> = flist
                             .get_filemap()
                             .values()
-                            .map(|finfo| serde_json::to_string(finfo.inner()).map_err(Into::into))
+                            .map(|finfo| {
+                                let line = serde_json::to_string(finfo.inner())?;
+                                stdout.send(line);
+                                Ok(())
+                            })
                             .collect();
                         results
                     });
                     let results: Result<Vec<_>, Error> = try_join_all(futures).await;
-                    let results: Vec<_> = results?.into_iter().flatten().map(Into::into).collect();
-                    output.extend_from_slice(&results);
-                    Ok(output)
+                    results?;
+                    Ok(())
                 }
             }
             FileSyncAction::AddConfig => {
@@ -251,7 +249,7 @@ impl SyncOpts {
                     )
                     .await
                     .map(|_| ())?;
-                    Ok(output)
+                    Ok(())
                 } else {
                     Err(format_err!("Need exactly 2 Urls"))
                 }
@@ -261,37 +259,41 @@ impl SyncOpts {
                     .await?
                     .into_iter()
                     .map(|v| format!("{} {}", v.src_url, v.dst_url))
-                    .join("\n")
-                    .into();
-                output.push(clist);
-                Ok(output)
+                    .join("\n");
+                stdout.send(clist);
+                Ok(())
             }
             FileSyncAction::ShowCache => {
                 let clist = FileSyncCache::get_cache_list(&pool)
                     .await?
                     .into_iter()
                     .map(|v| format!("{} {}", v.src_url, v.dst_url))
-                    .join("\n")
-                    .into();
-                output.push(clist);
-                Ok(output)
+                    .join("\n");
+                stdout.send(clist);
+                Ok(())
             }
             FileSyncAction::SyncGarmin => {
                 let sync = GarminSync::new(config.clone());
-                output.extend_from_slice(&sync.run_sync().await?);
-                Ok(output)
+                for line in sync.run_sync().await? {
+                    stdout.send(line);
+                }
+                Ok(())
             }
             FileSyncAction::SyncMovie => {
                 let sync = MovieSync::new(config.clone());
-                output.extend_from_slice(&sync.run_sync().await?);
-                Ok(output)
+                for line in sync.run_sync().await? {
+                    stdout.send(line);
+                }
+                Ok(())
             }
             FileSyncAction::SyncCalendar => {
                 let sync = CalendarSync::new(config.clone());
-                output.extend_from_slice(&sync.run_sync().await?);
-                Ok(output)
+                for line in sync.run_sync().await? {
+                    stdout.send(line);
+                }
+                Ok(())
             }
-            FileSyncAction::SyncAll => Ok(output),
+            FileSyncAction::SyncAll => Ok(()),
         }
     }
 }

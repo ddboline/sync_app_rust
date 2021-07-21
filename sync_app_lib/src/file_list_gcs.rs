@@ -8,6 +8,7 @@ use std::{
     io::{stdout, Write},
     path::Path,
 };
+use stdout_channel::StdoutChannel;
 use tokio::task::spawn_blocking;
 use url::Url;
 
@@ -121,7 +122,7 @@ impl FileListTrait for FileListGcs {
             .collect()
     }
 
-    async fn print_list(&self) -> Result<(), Error> {
+    async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
         let bucket = self
             .get_baseurl()
             .host_str()
@@ -130,12 +131,11 @@ impl FileListTrait for FileListGcs {
 
         self.gcs
             .process_list_of_keys(bucket, Some(prefix), |i| {
-                writeln!(
-                    stdout().lock(),
+                stdout.send(format!(
                     "gs://{}/{}",
                     bucket,
                     i.name.as_ref().map_or_else(|| "", String::as_str)
-                )?;
+                ));
                 Ok(())
             })
             .await

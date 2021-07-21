@@ -16,6 +16,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
+use stdout_channel::StdoutChannel;
 use tokio::task::spawn_blocking;
 use url::Url;
 
@@ -159,7 +160,7 @@ pub trait FileListTrait: Send + Sync + Debug {
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error>;
 
-    async fn print_list(&self) -> Result<(), Error> {
+    async fn print_list(&self, _: &StdoutChannel<StackString>) -> Result<(), Error> {
         unimplemented!()
     }
 
