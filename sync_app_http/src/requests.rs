@@ -1,4 +1,5 @@
 use lazy_static::lazy_static;
+use log::debug;
 use rweb::Schema;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +9,6 @@ use std::{
 };
 use stdout_channel::{MockStdout, StdoutChannel};
 use tokio::{process::Command, sync::Mutex, task::spawn_blocking};
-use log::debug;
 
 use stack_string::StackString;
 

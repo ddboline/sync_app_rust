@@ -176,7 +176,7 @@ impl FileListTrait for FileListLocal {
                         .canonicalize()
                         .ok()
                         .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
-                    stdout.send(format!("{}", filepath));
+                    stdout.send(filepath);
                     Ok(())
                 })
                 .collect()

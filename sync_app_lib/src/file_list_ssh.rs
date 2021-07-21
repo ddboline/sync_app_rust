@@ -249,7 +249,7 @@ impl FileListTrait for FileListSSH {
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
         let path = self.get_basepath().to_string_lossy();
         let command = format!("sync-app-rust ls -u file://{}", path);
-        stdout.send(format!("{}", command));
+        stdout.send(&command);
         self.ssh.run_command_print_stdout(&command).await
     }
 }
