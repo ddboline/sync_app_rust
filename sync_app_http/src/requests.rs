@@ -8,6 +8,7 @@ use std::{
 };
 use stdout_channel::{MockStdout, StdoutChannel};
 use tokio::{process::Command, sync::Mutex, task::spawn_blocking};
+use log::debug;
 
 use stack_string::StackString;
 
@@ -40,6 +41,7 @@ impl SyncRequest {
         while let Some(line) = mock_stdout.lock().await.pop() {
             output.push(line);
         }
+        output.reverse();
         Ok(output)
     }
 }
@@ -123,7 +125,6 @@ impl SyncRemoveRequest {
         let _guard = locks.sync.lock().await;
         let url = self.url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
-
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
         sync.process_sync_opts(&config, pool, &stdout).await?;
@@ -132,6 +133,7 @@ impl SyncRemoveRequest {
         while let Some(line) = mock_stdout.lock().await.pop() {
             output.push(line);
         }
+        output.reverse();
         Ok(output)
     }
 }
@@ -149,16 +151,15 @@ impl SyncEntryProcessRequest {
         config: &Config,
     ) -> Result<(), Error> {
         let _guard = locks.sync.lock().await;
-
         let entry = FileSyncCache::get_by_id(pool, self.id).await?;
         let src_url = entry.src_url.parse()?;
         let dst_url = entry.dst_url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Copy, &[src_url, dst_url]);
-
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
         sync.process_sync_opts(&config, pool, &stdout).await?;
         stdout.close().await?;
+        debug!("{}", mock_stdout.lock().await.join("\n"));
         entry.delete_cache_entry(pool).await?;
         Ok(())
     }
