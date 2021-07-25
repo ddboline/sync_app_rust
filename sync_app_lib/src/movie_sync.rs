@@ -76,6 +76,12 @@ pub struct PlexEvent {
     pub metadata_key: Option<StackString>,
 }
 
+#[derive(FromSqlRow, Default, Debug, Serialize, Deserialize)]
+pub struct PlexFilename {
+    pub metadata_key: StackString,
+    pub filename: StackString,
+}
+
 pub struct MovieSync {
     client: SyncClient,
 }
@@ -120,6 +126,7 @@ impl MovieSync {
         sync_single_table!("movie_collection", "collection", MovieCollectionRow);
         sync_single_table!("movie_queue", "queue", MovieQueueRow);
         sync_single_table!("plex_event", "events", PlexEvent);
+        sync_single_table!("plex_filename", "filenames", PlexFilename);
 
         self.client.shutdown().await?;
 
