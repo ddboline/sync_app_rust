@@ -73,6 +73,7 @@ pub struct PlexEvent {
     pub metadata_type: Option<StackString>,
     pub section_type: Option<StackString>,
     pub section_title: Option<StackString>,
+    pub metadata_key: Option<StackString>,
 }
 
 pub struct MovieSync {
