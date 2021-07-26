@@ -2,12 +2,7 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use log::error;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::{
-    collections::HashMap,
-    path::Path,
-    string::ToString,
-    time::SystemTime,
-};
+use std::{collections::HashMap, path::Path, string::ToString, time::SystemTime};
 use stdout_channel::StdoutChannel;
 use tokio::{
     fs::{copy, create_dir_all, remove_file, rename},

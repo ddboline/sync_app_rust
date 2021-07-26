@@ -121,8 +121,8 @@ impl CalendarSync {
         let measurements2 = Self::combine_maps(&measurements0, &measurements1);
         let measurements3 = Self::combine_maps(&measurements1, &measurements0);
 
-        output.extend(Self::get_debug(&measurements2));
-        output.extend(Self::get_debug(&measurements3));
+        output.extend(Self::get_debug(table, &measurements2));
+        output.extend(Self::get_debug(table, &measurements3));
 
         let url = from_url.join(path)?;
         self.client.put_local(table, &measurements2, None).await?;
@@ -133,14 +133,14 @@ impl CalendarSync {
         Ok(output)
     }
 
-    fn get_debug<T: Debug>(items: &[T]) -> Vec<StackString> {
+    fn get_debug<T: Debug>(label: &str, items: &[T]) -> Vec<StackString> {
         if items.len() < 10 {
             items
                 .iter()
-                .map(|item| format!("{:?}", item).into())
+                .map(|item| format!("{} {:?}", label, item).into())
                 .collect()
         } else {
-            vec![format!("items {}", items.len()).into()]
+            vec![format!("{} items {}", label, items.len()).into()]
         }
     }
 
@@ -182,8 +182,8 @@ impl CalendarSync {
         let events2 = Self::combine_maps(&events0, &events1);
         let events3 = Self::combine_maps(&events1, &events0);
 
-        output.extend(Self::get_debug(&events2));
-        output.extend(Self::get_debug(&events3));
+        output.extend(Self::get_debug(table, &events2));
+        output.extend(Self::get_debug(table, &events3));
 
         let url = from_url.join(path)?;
         self.client.put_local(table, &events2, None).await?;

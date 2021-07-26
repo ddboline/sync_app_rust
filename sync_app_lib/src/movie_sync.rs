@@ -203,6 +203,7 @@ impl MovieSync {
         let path = format!("list/{}", table);
         let url = endpoint.join(&path)?;
         self.client.put_remote(&url, &local_data, js_prefix).await?;
+        output.push(format!("{} {}", table, local_data.len()).into());
 
         Ok(output)
     }

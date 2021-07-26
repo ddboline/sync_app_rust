@@ -2,13 +2,7 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use log::debug;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    convert::TryInto,
-    fs::create_dir_all,
-    path::Path,
-    sync::Arc,
-};
+use std::{collections::HashMap, convert::TryInto, fs::create_dir_all, path::Path, sync::Arc};
 use stdout_channel::StdoutChannel;
 use tokio::task::spawn_blocking;
 use url::Url;

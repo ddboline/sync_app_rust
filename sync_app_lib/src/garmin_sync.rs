@@ -229,8 +229,8 @@ impl GarminSync {
         let measurements2 = Self::combine_measurements(&measurements0, &measurements1);
         let measurements3 = Self::combine_measurements(&measurements1, &measurements0);
 
-        output.extend(Self::get_debug(&measurements2));
-        output.extend(Self::get_debug(&measurements3));
+        output.extend(Self::get_debug(table, &measurements2));
+        output.extend(Self::get_debug(table, &measurements3));
 
         let url = from_url.join(path)?;
         self.client.put_local(table, &measurements2, None).await?;
@@ -241,14 +241,14 @@ impl GarminSync {
         Ok(output)
     }
 
-    fn get_debug<T: Debug>(items: &[T]) -> Vec<StackString> {
+    fn get_debug<T: Debug>(label: &str, items: &[T]) -> Vec<StackString> {
         if items.len() < 10 {
             items
                 .iter()
-                .map(|item| format!("{:?}", item).into())
+                .map(|item| format!("{} {:?}", label, item).into())
                 .collect()
         } else {
-            vec![format!("items {}", items.len()).into()]
+            vec![format!("{} items {}", label, items.len()).into()]
         }
     }
 
@@ -290,8 +290,8 @@ impl GarminSync {
         let activities2 = Self::combine_activities(&activities0, &activities1);
         let activities3 = Self::combine_activities(&activities1, &activities0);
 
-        output.extend(Self::get_debug(&activities2));
-        output.extend(Self::get_debug(&activities3));
+        output.extend(Self::get_debug(table, &activities2));
+        output.extend(Self::get_debug(table, &activities3));
 
         let url = from_url.join(path)?;
         self.client.put_local(table, &activities2, None).await?;
@@ -371,8 +371,8 @@ impl GarminSync {
             let activities1 = transform_personal(&activities1);
             let activities2 = Self::combine_personal_race_results(&activities0, &activities1);
             let activities3 = Self::combine_personal_race_results(&activities1, &activities0);
-            output.extend(Self::get_debug(&activities2));
-            output.extend(Self::get_debug(&activities3));
+            output.extend(Self::get_debug(table, &activities2));
+            output.extend(Self::get_debug(table, &activities3));
 
             let url = from_url.join(path)?;
             self.client.put_local(table, &activities2, None).await?;
@@ -386,8 +386,8 @@ impl GarminSync {
             let activities1 = transform_world_record(&activities1, race_type);
             let activities2 = Self::combine_activities(&activities0, &activities1);
             let activities3 = Self::combine_activities(&activities1, &activities0);
-            output.extend(Self::get_debug(&activities2));
-            output.extend(Self::get_debug(&activities3));
+            output.extend(Self::get_debug(race_type, &activities2));
+            output.extend(Self::get_debug(race_type, &activities3));
 
             let url = from_url.join(path)?;
             self.client.put_local(table, &activities2, None).await?;
