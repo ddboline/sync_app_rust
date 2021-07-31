@@ -28,7 +28,6 @@ struct ScaleMeasurement {
 pub struct StravaActivity {
     pub id: i64,
     pub name: StackString,
-    #[serde(with = "iso_8601_datetime")]
     pub start_date: DateTime<Utc>,
     pub distance: Option<f64>,
     pub moving_time: Option<i64>,
@@ -36,52 +35,37 @@ pub struct StravaActivity {
     pub total_elevation_gain: Option<f64>,
     pub elev_high: Option<f64>,
     pub elev_low: Option<f64>,
-    #[serde(rename = "type")]
     pub activity_type: StackString,
     pub timezone: StackString,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, FromSqlRow)]
 pub struct FitbitActivityEntry {
-    #[serde(rename = "logId")]
     log_id: i64,
-    #[serde(rename = "logType")]
     log_type: StackString,
-    #[serde(rename = "startTime")]
     start_time: DateTime<Utc>,
-    #[serde(rename = "tcxLink")]
     tcx_link: Option<StackString>,
-    #[serde(rename = "activityTypeId")]
     activity_type_id: Option<i64>,
-    #[serde(rename = "activityName")]
     activity_name: Option<StackString>,
     duration: i64,
     distance: Option<f64>,
-    #[serde(rename = "distanceUnit")]
     distance_unit: Option<StackString>,
     steps: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, FromSqlRow, Clone)]
 pub struct GarminConnectActivity {
-    #[serde(rename = "activityId")]
     pub activity_id: i64,
-    #[serde(rename = "activityName")]
     pub activity_name: Option<StackString>,
     pub description: Option<StackString>,
-    #[serde(rename = "startTimeGMT")]
     pub start_time_gmt: DateTime<Utc>,
     pub distance: Option<f64>,
     pub duration: f64,
-    #[serde(rename = "elapsedDuration")]
     pub elapsed_duration: Option<f64>,
-    #[serde(rename = "movingDuration")]
     pub moving_duration: Option<f64>,
     pub steps: Option<i64>,
     pub calories: Option<f64>,
-    #[serde(rename = "averageHR")]
     pub average_hr: Option<f64>,
-    #[serde(rename = "maxHR")]
     pub max_hr: Option<f64>,
 }
 
