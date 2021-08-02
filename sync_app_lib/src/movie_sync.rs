@@ -56,20 +56,19 @@ pub struct MovieQueueRow {
     pub show: StackString,
 }
 
-#[derive(FromSqlRow, Default, Debug, Serialize, Deserialize)]
+#[derive(FromSqlRow, Debug, Serialize, Deserialize)]
 pub struct PlexEvent {
     pub event: StackString,
     pub account: StackString,
     pub server: StackString,
     pub player_title: StackString,
     pub player_address: StackString,
-    pub title: Option<StackString>,
+    pub title: StackString,
     pub parent_title: Option<StackString>,
     pub grandparent_title: Option<StackString>,
-    pub added_at: Option<DateTime<Utc>>,
+    pub added_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
-    pub created_at: Option<DateTime<Utc>>,
-    pub last_modified: Option<DateTime<Utc>>,
+    pub last_modified: DateTime<Utc>,
     pub metadata_type: Option<StackString>,
     pub section_type: Option<StackString>,
     pub section_title: Option<StackString>,
