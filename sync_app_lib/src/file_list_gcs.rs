@@ -103,7 +103,7 @@ impl FileListTrait for FileListGcs {
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.flist.with_list(filelist)
+        self.flist.with_list(filelist);
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
@@ -164,7 +164,7 @@ impl FileListTrait for FileListGcs {
             if Path::new(&local_file).exists() {
                 remove_file(&local_file)?;
             }
-            self.gcs.download(&bucket, &key, &local_file).await?;
+            self.gcs.download(bucket, key, &local_file).await?;
             let md5sum: StackString = hash_file(Path::new(&local_file), Algorithm::MD5)
                 .to_lowercase()
                 .into();
@@ -203,7 +203,7 @@ impl FileListTrait for FileListGcs {
                 .host_str()
                 .ok_or_else(|| format_err!("No bucket"))?;
             let key = remote_url.path().trim_start_matches('/');
-            self.gcs.upload(&local_file, &bucket, &key).await
+            self.gcs.upload(&local_file, bucket, key).await
         } else {
             Err(format_err!(
                 "Invalid types {} {}",
@@ -230,9 +230,9 @@ impl FileListTrait for FileListGcs {
         let url1 = &finfo1.urlname;
         let bucket1 = url1.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let key1 = url1.path().trim_start_matches('/');
-        let new_tag = self.gcs.copy_key(url0, &bucket1, &key1).await?;
+        let new_tag = self.gcs.copy_key(url0, bucket1, key1).await?;
         if new_tag.is_some() {
-            self.gcs.delete_key(bucket0, &key0).await?;
+            self.gcs.delete_key(bucket0, key0).await?;
         }
         Ok(())
     }
@@ -243,7 +243,7 @@ impl FileListTrait for FileListGcs {
             let url = &finfo.urlname;
             let bucket = url.host_str().ok_or_else(|| format_err!("No bucket"))?;
             let key = url.path().trim_start_matches('/');
-            self.gcs.delete_key(&bucket, &key).await
+            self.gcs.delete_key(bucket, key).await
         } else {
             Err(format_err!("Wrong service type"))
         }

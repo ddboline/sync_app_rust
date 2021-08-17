@@ -35,7 +35,7 @@ impl SyncRequest {
         let opts = SyncOpts::new(self.action, &[]);
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
-        opts.process_sync_opts(&config, pool, &stdout).await?;
+        opts.process_sync_opts(config, pool, &stdout).await?;
         stdout.close().await?;
         let mut output = Vec::new();
         while let Some(line) = mock_stdout.lock().await.pop() {
@@ -127,7 +127,7 @@ impl SyncRemoveRequest {
         let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
-        sync.process_sync_opts(&config, pool, &stdout).await?;
+        sync.process_sync_opts(config, pool, &stdout).await?;
         stdout.close().await?;
         let mut output = Vec::new();
         while let Some(line) = mock_stdout.lock().await.pop() {
@@ -157,7 +157,7 @@ impl SyncEntryProcessRequest {
         let sync = SyncOpts::new(FileSyncAction::Copy, &[src_url, dst_url]);
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
-        sync.process_sync_opts(&config, pool, &stdout).await?;
+        sync.process_sync_opts(config, pool, &stdout).await?;
         stdout.close().await?;
         debug!("{}", mock_stdout.lock().await.join("\n"));
         entry.delete_cache_entry(pool).await?;

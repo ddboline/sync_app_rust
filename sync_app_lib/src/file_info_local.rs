@@ -161,7 +161,7 @@ impl FileInfoLocal {
             return Err(format_err!("Is a directory, skipping"));
         }
         let metadata = path.metadata().ok();
-        Self::from_path_and_metadata(&path, metadata, serviceid, servicesession)
+        Self::from_path_and_metadata(path, metadata, serviceid, servicesession)
     }
 
     pub fn from_direntry(
@@ -174,6 +174,6 @@ impl FileInfoLocal {
         }
         let path = item.path();
         let metadata = item.metadata().ok();
-        Self::from_path_and_metadata(&path, metadata, serviceid, servicesession)
+        Self::from_path_and_metadata(path, metadata, serviceid, servicesession)
     }
 }

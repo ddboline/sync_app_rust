@@ -214,7 +214,7 @@ pub trait FileListTrait: Send + Sync + Debug {
 
         // Delete entries from current_cache not in filemap
         let res: Result<(), Error> = current_cache.iter().try_for_each(|(k, _)| {
-            if flist_cache_map.contains_key(&k) {
+            if flist_cache_map.contains_key(k) {
                 Ok(())
             } else {
                 use crate::schema::file_info_cache::dsl::{
@@ -243,7 +243,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         res?;
 
         for (k, v) in &flist_cache_map {
-            if let Some(item) = current_cache.get(&k) {
+            if let Some(item) = current_cache.get(k) {
                 if v.md5sum != item.md5sum
                     || v.sha1sum != item.sha1sum
                     || v.filestat_st_mtime != item.filestat_st_mtime
@@ -564,7 +564,7 @@ pub fn remove_baseurl(urlname: &Url, baseurl: &Url) -> StackString {
 pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<Url, Error> {
     let baseurl1 = baseurl1.as_str().trim_end_matches('/');
 
-    let urlstr = format!("{}/{}", baseurl1, remove_baseurl(&urlname, baseurl0));
+    let urlstr = format!("{}/{}", baseurl1, remove_baseurl(urlname, baseurl0));
     Url::parse(&urlstr).map_err(Into::into)
 }
 

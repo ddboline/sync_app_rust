@@ -87,7 +87,7 @@ impl FileListTrait for FileListSSH {
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.flist.with_list(filelist)
+        self.flist.with_list(filelist);
     }
 
     // Copy operation where the origin (finfo0) has the same servicetype as self

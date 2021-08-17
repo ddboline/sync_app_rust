@@ -128,9 +128,9 @@ impl FileSync {
                     let url0 = &finfo0.urlname;
                     let baseurl0 = flist0.get_baseurl();
                     let baseurl1 = flist1.get_baseurl();
-                    let url1 = replace_baseurl(&url0, baseurl0, baseurl1).ok()?;
+                    let url1 = replace_baseurl(url0, baseurl0, baseurl1).ok()?;
                     let path1 =
-                        replace_basepath(&path0, &flist0.get_basepath(), &flist1.get_basepath());
+                        replace_basepath(path0, flist0.get_basepath(), flist1.get_basepath());
                     if url1.as_str().contains(baseurl1.as_str()) {
                         let finfo1 = FileInfo::new(
                             k.clone(),
@@ -291,15 +291,15 @@ impl FileSync {
                     let u0 = u0.clone();
                     async move {
                         if let Some(vals) = proc_map.get(&key) {
-                            let flist0 = FileList::from_url(&u0, &self.config, &pool).await?;
+                            let flist0 = FileList::from_url(&u0, &self.config, pool).await?;
                             for val in vals {
-                                let finfo0 = match FileInfo::from_database(&pool, &key)? {
+                                let finfo0 = match FileInfo::from_database(pool, &key)? {
                                     Some(f) => f,
                                     None => FileInfo::from_url(&key)?,
                                 };
-                                let finfo1 = match FileInfo::from_database(&pool, &val)? {
+                                let finfo1 = match FileInfo::from_database(pool, val)? {
                                     Some(f) => f,
-                                    None => FileInfo::from_url(&val)?,
+                                    None => FileInfo::from_url(val)?,
                                 };
                                 debug!("copy {} {}", key, val);
                                 if finfo1.servicetype == FileService::Local {
@@ -307,7 +307,7 @@ impl FileSync {
                                     flist0.cleanup()?;
                                 } else {
                                     let flist1 =
-                                        FileList::from_url(&val, &self.config, &pool).await?;
+                                        FileList::from_url(val, &self.config, pool).await?;
                                     Self::copy_object(&(*flist1), &finfo0, &finfo1).await?;
                                     flist1.cleanup()?;
                                 }
@@ -341,7 +341,7 @@ impl FileSync {
         };
 
         for urls in group_urls(&all_urls).values() {
-            let flist = Arc::new(FileList::from_url(&urls[0], &self.config, &pool).await?);
+            let flist = Arc::new(FileList::from_url(&urls[0], &self.config, pool).await?);
             let fdict = Arc::new(
                 flist.get_file_list_dict(&flist.load_file_list()?, FileInfoKeyType::UrlName),
             );
@@ -353,7 +353,7 @@ impl FileSync {
                     let finfo = if let Some(f) = fdict.get(url.as_str()) {
                         f.clone()
                     } else {
-                        FileInfo::from_url(&url)?
+                        FileInfo::from_url(url)?
                     };
 
                     debug!("delete {:?}", finfo);

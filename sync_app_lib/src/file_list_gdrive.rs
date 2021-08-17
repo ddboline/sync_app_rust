@@ -219,7 +219,7 @@ impl FileListTrait for FileListGDrive {
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.flist.with_list(filelist)
+        self.flist.with_list(filelist);
     }
 
     #[allow(clippy::similar_names)]
@@ -276,7 +276,7 @@ impl FileListTrait for FileListGDrive {
 
         #[allow(clippy::manual_map)]
         let parents =
-            if let Ok(Some(p)) = GDriveInstance::get_parent_id(&self.get_baseurl(), &dnamemap) {
+            if let Ok(Some(p)) = GDriveInstance::get_parent_id(self.get_baseurl(), &dnamemap) {
                 Some(vec![p])
             } else if let Some(root_dir) = self.root_directory.load().clone().as_ref() {
                 Some(vec![root_dir.clone()])
@@ -333,7 +333,7 @@ impl FileListTrait for FileListGDrive {
                 return Ok(());
             }
             self.gdrive
-                .download(&gdriveid, &local_path, &gfile.mime_type)
+                .download(&gdriveid, local_path, &gfile.mime_type)
                 .await
         } else {
             Err(format_err!(
@@ -389,7 +389,7 @@ impl FileListTrait for FileListGDrive {
         let url = finfo1.urlname.as_ref();
         let directory_map = self.directory_map.load().clone();
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
-        let parentid = GDriveInstance::get_parent_id(&url, &dnamemap)?
+        let parentid = GDriveInstance::get_parent_id(url, &dnamemap)?
             .ok_or_else(|| format_err!("No parentid"))?;
         self.gdrive
             .move_to(gdriveid, &parentid, &finfo1.filename)

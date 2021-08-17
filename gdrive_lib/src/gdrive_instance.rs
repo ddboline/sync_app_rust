@@ -281,7 +281,7 @@ impl GDriveInstance {
                 }
                 true
             })
-            .map(|f| GDriveInfo::from_object(f, &self, directory_map));
+            .map(|f| GDriveInfo::from_object(f, self, directory_map));
         try_join_all(futures).await
     }
 
@@ -449,7 +449,7 @@ impl GDriveInstance {
             .copied();
 
         if let Some(t) = export_type {
-            self.export(gdriveid, &local, t).await
+            self.export(gdriveid, local, t).await
         } else {
             let p = DriveParams {
                 alt: Some(DriveParamsAlt::Media),
@@ -696,7 +696,7 @@ impl GDriveInstance {
                             break;
                         }
                         if parent.parentid.is_some() && parent.parentid == previous_parent_id {
-                            matching_directory = Some(parent.directory_id.clone())
+                            matching_directory = Some(parent.directory_id.clone());
                         }
                     }
                 }
@@ -850,7 +850,7 @@ impl GDriveInfo {
         let serviceid = item.id.as_ref().ok_or_else(|| format_err!("No ID"))?.into();
         let servicesession = gdrive.session_name.parse()?;
 
-        let export_path = gdrive.get_export_path(&item, &directory_map).await?;
+        let export_path = gdrive.get_export_path(item, directory_map).await?;
         let filepath = export_path.iter().fold(PathBuf::new(), |mut p, e| {
             p.push(e.as_str());
             p

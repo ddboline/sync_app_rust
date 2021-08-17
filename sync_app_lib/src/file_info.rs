@@ -225,7 +225,7 @@ impl FileInfo {
 
 impl FileInfoTrait for FileInfo {
     fn get_finfo(&self) -> &Self {
-        &self
+        self
     }
 
     fn into_finfo(self) -> Self {

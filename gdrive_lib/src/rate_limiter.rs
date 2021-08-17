@@ -28,7 +28,7 @@ impl RateLimiter {
     }
 
     pub async fn acquire(&self) {
-        self.inner.acquire().await
+        self.inner.acquire().await;
     }
 }
 

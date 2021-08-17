@@ -33,7 +33,7 @@ impl LocalSession {
         let start_timestamp = start_timestamp.map(|t| t.to_rfc3339());
         if let Some(start_timestamp) = start_timestamp.as_ref() {
             args.push("-s");
-            args.push(&start_timestamp);
+            args.push(start_timestamp);
         }
         let output = Command::new(&self.exe_path)
             .env_remove("DATABASE_URL")
@@ -63,7 +63,7 @@ impl LocalSession {
         let start_timestamp = start_timestamp.map(|t| t.to_rfc3339());
         if let Some(start_timestamp) = start_timestamp.as_ref() {
             args.push("-s");
-            args.push(&start_timestamp);
+            args.push(start_timestamp);
         }
         let mut child = Command::new(&self.exe_path)
             .env_remove("DATABASE_URL")

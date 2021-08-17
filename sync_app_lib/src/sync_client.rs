@@ -96,7 +96,7 @@ impl SyncClient {
     }
 
     pub async fn get_remote<T: DeserializeOwned>(&self, url: &Url) -> Result<Vec<T>, Error> {
-        let resp = self.remote_session.get(&url, &HeaderMap::new()).await?;
+        let resp = self.remote_session.get(url, &HeaderMap::new()).await?;
         resp.json().await.map_err(Into::into)
     }
 
@@ -112,7 +112,7 @@ impl SyncClient {
                     js_prefix => data,
                 };
                 self.remote_session
-                    .post(&url, &HeaderMap::new(), &data)
+                    .post(url, &HeaderMap::new(), &data)
                     .await?
                     .error_for_status()?;
             }

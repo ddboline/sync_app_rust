@@ -95,7 +95,7 @@ impl FileListTrait for FileListLocal {
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.0.with_list(filelist)
+        self.0.with_list(filelist);
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
@@ -106,7 +106,7 @@ impl FileListTrait for FileListLocal {
             let file_list = local_list.load_file_list()?;
             let flist_dict = local_list.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
 
-            let wdir = WalkDir::new(&basedir).same_file_system(true);
+            let wdir = WalkDir::new(basedir).same_file_system(true);
 
             let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 

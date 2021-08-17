@@ -58,10 +58,10 @@ async fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
                 }
                 let serviceid = &item.serviceid;
                 let gdriveid = serviceid;
-                if let Ok(gfile) = gdrive.get_file_metadata(&gdriveid).await {
+                if let Ok(gfile) = gdrive.get_file_metadata(gdriveid).await {
                     if gfile.mime_type.as_deref() == Some("application/vnd.google-apps.document") {
                         if !outpath.exists() {
-                            gdrive.export(&gdriveid, &outpath, "text/plain").await?;
+                            gdrive.export(gdriveid, &outpath, "text/plain").await?;
                         }
                         return Ok(Some(item.filename));
                     }
@@ -120,7 +120,7 @@ fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
                 Ok(_) => (),
             };
             let linestr = line.trim_matches('\u{feff}');
-            if let Ok(date) = NaiveDate::parse_from_str(&linestr.trim(), "%B%d%Y") {
+            if let Ok(date) = NaiveDate::parse_from_str(linestr.trim(), "%B%d%Y") {
                 println!("date {}", date);
                 let new_filename = outdir.join(date.to_string()).with_extension("txt");
                 let new_file = File::create(&new_filename)?;

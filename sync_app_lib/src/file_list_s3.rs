@@ -167,7 +167,7 @@ impl FileListTrait for FileListS3 {
             if Path::new(&local_file).exists() {
                 remove_file(&local_file)?;
             }
-            let md5sum = self.s3.download(&bucket, &key, &local_file).await?;
+            let md5sum = self.s3.download(bucket, key, &local_file).await?;
             if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
                 debug!(
                     "Multipart upload? {} {}",
@@ -203,7 +203,7 @@ impl FileListTrait for FileListS3 {
                 .host_str()
                 .ok_or_else(|| format_err!("No bucket"))?;
             let key = remote_url.path().trim_start_matches('/');
-            self.s3.upload(&local_file, &bucket, &key).await
+            self.s3.upload(&local_file, bucket, key).await
         } else {
             Err(format_err!(
                 "Invalid types {} {}",
@@ -230,7 +230,7 @@ impl FileListTrait for FileListS3 {
         let url1 = &finfo1.urlname;
         let bucket1 = url1.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let key1 = url1.path();
-        let new_tag = self.s3.copy_key(url0, &bucket1, &key1).await?;
+        let new_tag = self.s3.copy_key(url0, bucket1, key1).await?;
         if new_tag.is_some() {
             self.s3.delete_key(bucket0, key0).await?;
         }
@@ -243,7 +243,7 @@ impl FileListTrait for FileListS3 {
             let url = &finfo.urlname;
             let bucket = url.host_str().ok_or_else(|| format_err!("No bucket"))?;
             let key = url.path();
-            self.s3.delete_key(&bucket, &key).await
+            self.s3.delete_key(bucket, key).await
         } else {
             Err(format_err!("Wrong service type"))
         }
