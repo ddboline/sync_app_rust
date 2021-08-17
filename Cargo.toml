@@ -24,7 +24,7 @@ dirs = "3.0"
 walkdir = "2.3"
 chrono = "0.4"
 futures = "0.3"
-stack-string = { version="0.2", features=["diesel_types"] }
+stack-string = { version="0.3", features=["diesel_types"] }
 
 [workspace]
 members = [

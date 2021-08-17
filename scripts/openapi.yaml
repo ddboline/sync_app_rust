@@ -1,95 +1,57 @@
 ---
 openapi: 3.0.1
 info:
-  title: Movie Queue WebApp
-  description: Web Frontend for Movie Queue
-  version: 0.7.10
+  title: Weather App
+  description: Web App to disply weather from openweatherapi
+  version: 0.5.7
 paths:
-  /sync/index.html:
-    get:
-      responses:
-        "200":
-          description: Main Page
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/sync:
-    get:
-      responses:
-        "200":
-          description: Sync
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/proc_all:
-    get:
-      responses:
-        "200":
-          description: Process All
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/proc:
+  /weather/index.html:
     get:
       parameters:
-        - name: id
+        - name: zip
           in: query
+          required: false
           schema:
+            nullable: true
             type: integer
-      responses:
-        "200":
-          description: Process Entry
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/remove:
-    get:
-      parameters:
-        - name: url
+            minimum: 0
+        - name: country_code
           in: query
+          required: false
           schema:
+            nullable: true
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
+        - name: lat
+          in: query
+          required: false
+          schema:
+            format: latitude
+            nullable: true
+            type: number
+        - name: lon
+          in: query
+          required: false
+          schema:
+            format: longitude
+            nullable: true
+            type: number
+        - name: APPID
+          in: query
+          required: false
+          schema:
+            nullable: true
             type: string
       responses:
         "200":
-          description: Remove Sync Entry
+          description: Display Current Weather and Forecast
           content:
-            text/plain:
+            text/html:
               schema:
                 type: string
         "400":
@@ -100,35 +62,53 @@ paths:
           description: Method not allowed
         "500":
           description: Internal Server Error
-  /sync/list_sync_cache:
-    get:
-      responses:
-        "200":
-          description: List Sync Cache
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/delete_cache_entry:
+  /weather/plot.html:
     get:
       parameters:
-        - name: id
+        - name: zip
           in: query
+          required: false
           schema:
+            nullable: true
             type: integer
+            minimum: 0
+        - name: country_code
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
+        - name: lat
+          in: query
+          required: false
+          schema:
+            format: latitude
+            nullable: true
+            type: number
+        - name: lon
+          in: query
+          required: false
+          schema:
+            format: longitude
+            nullable: true
+            type: number
+        - name: APPID
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
       responses:
         "200":
-          description: Delete Cache Entry
+          description: Show Plot of Current Weather and Forecast
           content:
-            text/plain:
+            text/html:
               schema:
                 type: string
         "400":
@@ -139,105 +119,181 @@ paths:
           description: Method not allowed
         "500":
           description: Internal Server Error
-  /sync/sync_garmin:
+  /weather/weather:
     get:
+      parameters:
+        - name: zip
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: integer
+            minimum: 0
+        - name: country_code
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
+        - name: lat
+          in: query
+          required: false
+          schema:
+            format: latitude
+            nullable: true
+            type: number
+        - name: lon
+          in: query
+          required: false
+          schema:
+            format: longitude
+            nullable: true
+            type: number
+        - name: APPID
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
       responses:
         "200":
-          description: Sync Garmin DB
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/sync_movie:
-    get:
-      responses:
-        "200":
-          description: Sync Movie DB
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/sync_calendar:
-    get:
-      responses:
-        "200":
-          description: Sync Calendar DB
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/sync_podcasts:
-    get:
-      responses:
-        "200":
-          description: Sync Podcasts
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/sync_security:
-    get:
-      responses:
-        "200":
-          description: Sync Security Logs
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "405":
-          description: Method not allowed
-        "500":
-          description: Internal Server Error
-  /sync/user:
-    get:
-      responses:
-        "200":
-          description: Logged in User
+          description: Get WeatherData Api Json
           content:
             application/json:
               schema:
                 properties:
-                  email:
+                  coord:
+                    description: Coordinates
+                    properties:
+                      lon:
+                        description: Longitude
+                        type: number
+                      lat:
+                        description: Latitude
+                        type: number
+                    type: object
+                    required:
+                      - lon
+                      - lat
+                  weather:
+                    description: Weather Conditions
+                    items:
+                      properties:
+                        main:
+                          type: string
+                        description:
+                          type: string
+                      type: object
+                      required:
+                        - main
+                        - description
+                    type: array
+                  base:
+                    type: string
+                  main:
+                    properties:
+                      temp:
+                        description: Temperature (K)
+                        type: number
+                      feels_like:
+                        description: Feels Like Temperature (K)
+                        type: number
+                      temp_min:
+                        description: Minimum Temperature (K)
+                        type: number
+                      temp_max:
+                        description: Maximum Temperature (K)
+                        type: number
+                      pressure:
+                        description: "Atmospheric Pressure (hPa, h=10^2)"
+                        type: number
+                      humidity:
+                        description: Humidity %
+                        type: integer
+                    type: object
+                    required:
+                      - temp
+                      - feels_like
+                      - temp_min
+                      - temp_max
+                      - pressure
+                      - humidity
+                  visibility:
+                    description: Visibility (m)
+                    nullable: true
+                    type: number
+                  wind:
+                    properties:
+                      speed:
+                        description: Speed (m/s)
+                        type: number
+                      deg:
+                        description: Direction (degrees)
+                        nullable: true
+                        type: number
+                    type: object
+                    required:
+                      - speed
+                  rain:
+                    properties:
+                      three_hour:
+                        description: Rain (mm over previous 3 hours)
+                        nullable: true
+                        type: number
+                    nullable: true
+                    type: object
+                  snow:
+                    properties:
+                      three_hour:
+                        description: Snow (mm over previous 3 hours)
+                        nullable: true
+                        type: number
+                    nullable: true
+                    type: object
+                  dt:
+                    description: Current Datetime (Unix Timestamp)
+                    format: date-time
+                    type: string
+                  sys:
+                    properties:
+                      country:
+                        nullable: true
+                        type: string
+                      sunrise:
+                        description: Sunrise (Unix Timestamp)
+                        format: date-time
+                        type: string
+                      sunset:
+                        description: Sunset (Unix Timestamp)
+                        format: date-time
+                        type: string
+                    type: object
+                    required:
+                      - sunrise
+                      - sunset
+                  timezone:
+                    description: Timezone (seconds offset from UTC)
+                    type: integer
+                  name:
+                    description: Location Name
                     type: string
                 type: object
                 required:
-                  - email
+                  - coord
+                  - weather
+                  - base
+                  - main
+                  - wind
+                  - dt
+                  - sys
+                  - timezone
+                  - name
         "400":
           description: Bad Request
         "404":
@@ -246,3 +302,184 @@ paths:
           description: Method not allowed
         "500":
           description: Internal Server Error
+  /weather/forecast:
+    get:
+      parameters:
+        - name: zip
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: integer
+            minimum: 0
+        - name: country_code
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
+        - name: lat
+          in: query
+          required: false
+          schema:
+            format: latitude
+            nullable: true
+            type: number
+        - name: lon
+          in: query
+          required: false
+          schema:
+            format: longitude
+            nullable: true
+            type: number
+        - name: APPID
+          in: query
+          required: false
+          schema:
+            nullable: true
+            type: string
+      responses:
+        "200":
+          description: Get WeatherForecast Api Json
+          content:
+            application/json:
+              schema:
+                properties:
+                  list:
+                    description: Main Forecast Entries
+                    items:
+                      properties:
+                        dt:
+                          description: Forecasted DateTime (Unix Timestamp)
+                          format: date-time
+                          type: string
+                        main:
+                          properties:
+                            temp:
+                              description: Temperature (K)
+                              type: number
+                            feels_like:
+                              description: Feels Like Temperature (K)
+                              type: number
+                            temp_min:
+                              description: Minimum Temperature (K)
+                              type: number
+                            temp_max:
+                              description: Maximum Temperature (K)
+                              type: number
+                            pressure:
+                              description: "Atmospheric Pressure (hPa, h=10^2)"
+                              type: number
+                            sea_level:
+                              description: "Pressure at Sea Level (hPa, h=10^2)"
+                              type: number
+                            grnd_level:
+                              description: "Pressure at Ground Level (hPa, h=10^2)"
+                              type: number
+                            humidity:
+                              description: Humidity %
+                              type: integer
+                          type: object
+                          required:
+                            - temp
+                            - feels_like
+                            - temp_min
+                            - temp_max
+                            - pressure
+                            - sea_level
+                            - grnd_level
+                            - humidity
+                        rain:
+                          properties:
+                            three_hour:
+                              description: Rain (mm over previous 3 hours)
+                              nullable: true
+                              type: number
+                          nullable: true
+                          type: object
+                        snow:
+                          properties:
+                            three_hour:
+                              description: Snow (mm over previous 3 hours)
+                              nullable: true
+                              type: number
+                          nullable: true
+                          type: object
+                      type: object
+                      required:
+                        - dt
+                        - main
+                    type: array
+                  city:
+                    description: City Information
+                    properties:
+                      timezone:
+                        description: Timezone (seconds offset from UTC)
+                        type: integer
+                      sunrise:
+                        description: Sunrise (Unix Timestamp)
+                        format: date-time
+                        type: string
+                      sunset:
+                        description: Sunset (Unix Timestamp)
+                        format: date-time
+                        type: string
+                    type: object
+                    required:
+                      - timezone
+                      - sunrise
+                      - sunset
+                type: object
+                required:
+                  - list
+                  - city
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "405":
+          description: Method not allowed
+        "500":
+          description: Internal Server Error
+  /weather/statistics:
+    get:
+      responses:
+        "200":
+          description: Get Cache Statistics
+          content:
+            application/json:
+              schema:
+                properties:
+                  data_cache_hits:
+                    type: integer
+                    minimum: 0
+                  data_cache_misses:
+                    type: integer
+                    minimum: 0
+                  forecast_cache_hits:
+                    type: integer
+                    minimum: 0
+                  forecast_cache_misses:
+                    type: integer
+                    minimum: 0
+                type: object
+                required:
+                  - data_cache_hits
+                  - data_cache_misses
+                  - forecast_cache_hits
+                  - forecast_cache_misses
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "405":
+          description: Method not allowed
+        "500":
+          description: Internal Server Error
+components: {}

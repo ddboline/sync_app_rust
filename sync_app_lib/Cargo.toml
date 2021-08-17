@@ -46,4 +46,4 @@ smallvec = "1.6"
 arc-swap = "1.2"
 env_logger = "0.9"
 stdout-channel = "0.4"
-stack-string = { version="0.2", features=["diesel_types"] }
+stack-string = { version="0.3", features=["diesel_types"] }

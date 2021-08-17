@@ -3,7 +3,10 @@ use http::StatusCode;
 use indexmap::IndexMap;
 use log::error;
 use rweb::{
-    openapi::{Entity, Response, ResponseEntity, Responses, Schema},
+    openapi::{
+        Entity, Response, ResponseEntity, Responses,
+        ComponentDescriptor, ComponentOrInlineSchema,
+    },
     reject::{InvalidHeader, MissingCookie, Reject},
     Rejection, Reply,
 };
@@ -109,13 +112,16 @@ fn login_html() -> impl Reply {
 }
 
 impl Entity for ServiceError {
-    fn describe() -> Schema {
-        rweb::http::Error::describe()
+    fn type_name() -> Cow<'static, str> {
+        rweb::http::Error::type_name()
+    }
+    fn describe(comp_d: &mut ComponentDescriptor) -> ComponentOrInlineSchema {
+        rweb::http::Error::describe(comp_d)
     }
 }
 
 impl ResponseEntity for ServiceError {
-    fn describe_responses() -> Responses {
+    fn describe_responses(_: &mut ComponentDescriptor) -> Responses {
         let mut map = IndexMap::new();
 
         let error_responses = [
