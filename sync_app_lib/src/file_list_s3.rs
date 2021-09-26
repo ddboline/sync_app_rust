@@ -106,7 +106,7 @@ impl FileListTrait for FileListS3 {
     }
 
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.flist.with_list(filelist)
+        self.flist.with_list(filelist);
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {

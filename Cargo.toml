@@ -20,7 +20,7 @@ sync_app_http = {path = "sync_app_http"}
 gdrive_lib = {path="gdrive_lib"}
 tokio = {version="1.9", features=["full"]}
 anyhow = "1.0"
-dirs = "3.0"
+dirs = "4.0"
 walkdir = "2.3"
 chrono = "0.4"
 futures = "0.3"
