@@ -27,7 +27,7 @@ struct IndexResponse(HtmlBase<String, Error>);
 
 #[get("/sync/index.html")]
 pub async fn sync_frontpage(
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<IndexResponse> {
     let body = ListSyncCacheRequest {}
@@ -58,7 +58,7 @@ struct SyncResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync")]
 pub async fn sync_all(
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncResponse> {
     let req = SyncRequest {
@@ -74,7 +74,7 @@ struct ProcAllResponse(HtmlBase<String, Error>);
 
 #[get("/sync/proc_all")]
 pub async fn proc_all(
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<ProcAllResponse> {
     let req = SyncRequest {
@@ -90,7 +90,7 @@ struct ListSyncCacheResponse(HtmlBase<String, Error>);
 
 #[get("/sync/list_sync_cache")]
 pub async fn list_sync_cache(
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<ListSyncCacheResponse> {
     let body = ListSyncCacheRequest {}
@@ -109,7 +109,7 @@ struct ProcessEntryResponse(HtmlBase<&'static str, Error>);
 #[get("/sync/proc")]
 pub async fn process_cache_entry(
     query: Query<SyncEntryProcessRequest>,
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<ProcessEntryResponse> {
     query
@@ -126,7 +126,7 @@ struct DeleteEntryResponse(HtmlBase<&'static str, Error>);
 #[get("/sync/delete_cache_entry")]
 pub async fn delete_cache_entry(
     query: Query<SyncEntryDeleteRequest>,
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<DeleteEntryResponse> {
     query.into_inner().handle(&data.db).await?;
@@ -139,7 +139,7 @@ struct SyncGarminResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_garmin")]
 pub async fn sync_garmin(
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncGarminResponse> {
     let body = GarminSyncRequest {}.handle(&data.locks).await?;
@@ -152,7 +152,7 @@ struct SyncMovieResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_movie")]
 pub async fn sync_movie(
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncMovieResponse> {
     let body = MovieSyncRequest {}.handle(&data.locks).await?;
@@ -165,7 +165,7 @@ struct SyncCalendarResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_calendar")]
 pub async fn sync_calendar(
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncCalendarResponse> {
     let body = CalendarSyncRequest {}.handle(&data.locks).await?;
@@ -179,7 +179,7 @@ struct SyncRemoveResponse(HtmlBase<String, Error>);
 #[get("/sync/remove")]
 pub async fn remove(
     query: Query<SyncRemoveRequest>,
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncRemoveResponse> {
     let lines = query
@@ -195,7 +195,7 @@ struct SyncPodcastsResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_podcasts")]
 pub async fn sync_podcasts(
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncPodcastsResponse> {
     let results = SyncPodcastsRequest {}.handle(&data.locks).await?;
@@ -211,7 +211,7 @@ pub async fn sync_podcasts(
 struct UserResponse(JsonBase<LoggedUser, Error>);
 
 #[get("/sync/user")]
-pub async fn user(#[cookie = "jwt"] user: LoggedUser) -> WarpResult<UserResponse> {
+pub async fn user(#[filter = "LoggedUser::filter"] user: LoggedUser) -> WarpResult<UserResponse> {
     Ok(JsonBase::new(user).into())
 }
 
@@ -221,7 +221,7 @@ struct SyncSecurityLogsResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_security")]
 pub async fn sync_security(
-    #[cookie = "jwt"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncSecurityLogsResponse> {
     let results = SyncSecurityRequest {}.handle(&data.locks).await?;
