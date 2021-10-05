@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rweb = {version="0.14", features=["openapi"]}
+rweb = {version="0.14", features=["openapi", "uuid"]}
 http = "0.2"
 chrono = "0.4"
 lazy_static = "1.4"
@@ -29,6 +29,7 @@ itertools = "0.10"
 indexmap = "1.6"
 serde_yaml = "0.8"
 stdout-channel = "0.4"
+uuid = "0.8"
 rweb_helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.3.4" }
 stack-string = { version="0.3", features=["diesel_types", "rweb-openapi"] }
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.7.2"}
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.7.4"}
