@@ -7,9 +7,7 @@ use futures::{
     future::{ready, Ready},
 };
 use log::debug;
-use rweb::{
-    Schema, Filter, Rejection, filters::cookie::cookie,
-};
+use rweb::{filters::cookie::cookie, Filter, Rejection, Schema};
 use serde::{Deserialize, Serialize};
 use stack_string::StackString;
 use std::{
@@ -54,7 +52,10 @@ impl LoggedUser {
 
 impl From<AuthorizedUser> for LoggedUser {
     fn from(user: AuthorizedUser) -> Self {
-        Self { email: user.email, session: user.session }
+        Self {
+            email: user.email,
+            session: user.session,
+        }
     }
 }
 
