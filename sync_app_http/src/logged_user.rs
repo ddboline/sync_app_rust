@@ -108,17 +108,19 @@ impl LoggedUser {
         self,
         key: SyncKey,
         data: AppState,
-    ) -> Result<Option<SyncSession>, Error> {
+    ) -> Result<Option<Vec<StackString>>, Error> {
         if let Some(session) = self
             .get_session(&data.client, &data.config, key.to_str())
             .await
             .map_err(Into::<Error>::into)?
         {
-            Ok(Some(session))
+            if let Some(result) = session.result {
+                return Ok(Some(result))
+            }
         } else {
             data.queue.push(SyncMesg { user: self, key });
-            Ok(None)
         }
+        Ok(None)
     }
 }
 
@@ -175,14 +177,14 @@ pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SyncSession {
     pub created_at: DateTime<Utc>,
-    pub result: Vec<StackString>,
+    pub result: Option<Vec<StackString>>,
 }
 
 impl Default for SyncSession {
     fn default() -> Self {
         Self {
             created_at: Utc::now(),
-            result: Vec::new(),
+            result: None,
         }
     }
 }
@@ -191,7 +193,7 @@ impl SyncSession {
     pub fn from_lines(lines: Vec<StackString>) -> Self {
         Self {
             created_at: Utc::now(),
-            result: lines,
+            result: Some(lines),
         }
     }
 }
