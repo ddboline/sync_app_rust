@@ -4,11 +4,12 @@ use rweb_helper::{
     html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase, RwebResponse,
 };
 use serde::Serialize;
+use stack_string::StackString;
 
 use sync_app_lib::file_sync::FileSyncAction;
 
 use super::{
-    app::AppState,
+    app::{AppState, SyncKey, SyncMesg},
     errors::ServiceError as Error,
     logged_user::LoggedUser,
     requests::{
@@ -58,14 +59,13 @@ struct SyncResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync")]
 pub async fn sync_all(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncResponse> {
-    let req = SyncRequest {
-        action: FileSyncAction::Sync,
-    };
-    let lines = req.handle(&data.db, &data.config, &data.locks).await?;
-    Ok(HtmlBase::new(lines.join("\n")).into())
+    match user.push_session(SyncKey::Sync, data).await? {
+        Some(result) => Ok(HtmlBase::new(result.join("\n")).into()),
+        None => Ok(HtmlBase::new("running".into()).into()),
+    }
 }
 
 #[derive(RwebResponse)]
@@ -139,11 +139,13 @@ struct SyncGarminResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_garmin")]
 pub async fn sync_garmin(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncGarminResponse> {
-    let body = GarminSyncRequest {}.handle(&data.locks).await?;
-    Ok(HtmlBase::new(body.join("<br>")).into())
+    match user.push_session(SyncKey::SyncGarmin, data).await? {
+        Some(result) => Ok(HtmlBase::new(result.join("\n")).into()),
+        None => Ok(HtmlBase::new("running".into()).into()),
+    }
 }
 
 #[derive(RwebResponse)]
@@ -152,11 +154,13 @@ struct SyncMovieResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_movie")]
 pub async fn sync_movie(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncMovieResponse> {
-    let body = MovieSyncRequest {}.handle(&data.locks).await?;
-    Ok(HtmlBase::new(body.join("<br>")).into())
+    match user.push_session(SyncKey::SyncMovie, data).await? {
+        Some(result) => Ok(HtmlBase::new(result.join("\n")).into()),
+        None => Ok(HtmlBase::new("running".into()).into()),
+    }
 }
 
 #[derive(RwebResponse)]
@@ -165,11 +169,13 @@ struct SyncCalendarResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_calendar")]
 pub async fn sync_calendar(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncCalendarResponse> {
-    let body = CalendarSyncRequest {}.handle(&data.locks).await?;
-    Ok(HtmlBase::new(body.join("<br>")).into())
+    match user.push_session(SyncKey::SyncCalendar, data).await? {
+        Some(result) => Ok(HtmlBase::new(result.join("\n")).into()),
+        None => Ok(HtmlBase::new("running".into()).into()),
+    }
 }
 
 #[derive(RwebResponse)]
@@ -195,15 +201,19 @@ struct SyncPodcastsResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_podcasts")]
 pub async fn sync_podcasts(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncPodcastsResponse> {
-    let results = SyncPodcastsRequest {}.handle(&data.locks).await?;
-    let body = format!(
-        r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
-        results.join("\n")
-    );
-    Ok(HtmlBase::new(body).into())
+    match user.push_session(SyncKey::SyncPodcast, data).await? {
+        Some(result) => {
+            let body = format!(
+                r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
+                result.join("\n")
+            );
+            Ok(HtmlBase::new(body).into())
+        }
+        None => Ok(HtmlBase::new("running".into()).into()),
+    }
 }
 
 #[derive(RwebResponse)]
@@ -221,13 +231,17 @@ struct SyncSecurityLogsResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync_security")]
 pub async fn sync_security(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
+    #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncSecurityLogsResponse> {
-    let results = SyncSecurityRequest {}.handle(&data.locks).await?;
-    let body = format!(
-        r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
-        results.join("\n")
-    );
-    Ok(HtmlBase::new(body).into())
+    match user.push_session(SyncKey::SyncSecurity, data).await? {
+        Some(result) => {
+            let body = format!(
+                r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
+                result.join("\n")
+            );
+            Ok(HtmlBase::new(body).into())
+        }
+        None => Ok(HtmlBase::new("running".into()).into()),
+    }
 }
