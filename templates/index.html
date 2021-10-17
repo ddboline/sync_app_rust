@@ -55,16 +55,16 @@ footer {
 </head>
 <body>
 
-<form action="javascript:searchDiary();">
-    <input type="button" name="sync_button" value="Sync" onclick="syncAll();"/>
-    <input type="button" name="proc_button" value="Process" onclick="processAll();"/>
-    <input type="button" name="sync_garmin" value="Scale Sync" onclick="heartrateSync();"/>
-    <input type="button" name="sync_movie" value="Movie Sync" onclick="movieSync();"/>
-    <input type="button" name="sync_calendar" value="Calendar Sync" onclick="calendarSync();"/>
-    <input type="button" name="sync_podcasts" value="Podcast Sync" onclick="podcastSync();"/>
-    <input type="button" name="sync_security" value="Security Sync" onclick="securitySync();"/>
+<h3>
+    <button type="submit" name="sync_button" onclick="syncAll();">Sync</button>
+    <button type="submit" name="proc_button" onclick="processAll();">Process</button>
+    <button type="submit" name="sync_garmin" onclick="heartrateSync();">Scale Sync</button>
+    <button type="submit" name="sync_movie" onclick="movieSync();">Movie Sync</button>
+    <button type="submit" name="sync_calendar" onclick="calendarSync();">Calendar Sync</button>
+    <button type="submit" name="sync_podcasts" onclick="podcastSync();">Podcast Sync</button>
+    <button type="submit" name="sync_security" onclick="securitySync();">Security Sync</button>
     <button name="garminconnectoutput" id="garminconnectoutput"> &nbsp; </button>
-</form>
+</h3>
 
 <article id="main_article">
 DISPLAY_TEXT
