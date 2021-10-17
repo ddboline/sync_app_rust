@@ -1,27 +1,61 @@
 use anyhow::Error;
 use chrono::Duration;
+use deadqueue::unlimited::Queue;
+use log::error;
+use reqwest::{Client, ClientBuilder};
 use rweb::{
     filters::BoxedFilter,
     http::header::CONTENT_TYPE,
     openapi::{self, Info},
     Filter, Reply,
 };
+use stack_string::StackString;
 use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, time::interval};
+use uuid::Uuid;
 
 use sync_app_lib::{
-    calendar_sync::CalendarSync, config::Config, garmin_sync::GarminSync, movie_sync::MovieSync,
-    pgpool::PgPool,
+    calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
+    garmin_sync::GarminSync, movie_sync::MovieSync, pgpool::PgPool,
 };
+
+use crate::logged_user::{LoggedUser, SyncSession};
 
 use super::{
     errors::error_response,
     logged_user::{fill_from_db, get_secrets, SECRET_KEY, TRIGGER_DB_UPDATE},
+    requests::{
+        CalendarSyncRequest, GarminSyncRequest, MovieSyncRequest, SyncPodcastsRequest, SyncRequest,
+        SyncSecurityRequest,
+    },
     routes::{
         delete_cache_entry, list_sync_cache, proc_all, process_cache_entry, remove, sync_all,
         sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
     },
 };
+
+#[derive(Clone, Copy)]
+pub enum SyncKey {
+    Sync,
+    SyncGarmin,
+    SyncMovie,
+    SyncCalendar,
+    SyncPodcast,
+    SyncSecurity,
+}
+
+impl SyncKey {
+    pub fn to_str(self) -> &'static str {
+        match self {
+            Self::Sync => "sync",
+            Self::SyncGarmin => "sync_garmin",
+            Self::SyncMovie => "sync_movie",
+            Self::SyncCalendar => "sync_calendar",
+            Self::SyncPodcast => "sync_podcast",
+            Self::SyncSecurity => "sync_security",
+        }
+    }
+}
 
 pub struct AccessLocks {
     pub sync: Mutex<()>,
@@ -51,11 +85,18 @@ impl Default for AccessLocks {
     }
 }
 
+pub struct SyncMesg {
+    pub user: LoggedUser,
+    pub key: SyncKey,
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub config: Config,
     pub db: PgPool,
     pub locks: Arc<AccessLocks>,
+    pub client: Arc<Client>,
+    pub queue: Arc<Queue<SyncMesg>>,
 }
 
 pub async fn start_app() -> Result<(), Error> {
@@ -108,14 +149,82 @@ fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
 }
 
 pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
+    async fn _run_queue(app: AppState) {
+        loop {
+            let SyncMesg { user, key } = app.queue.pop().await;
+            let lines = match key {
+                SyncKey::Sync => {
+                    let req = SyncRequest {
+                        action: FileSyncAction::Sync,
+                    };
+                    match req.handle(&app.db, &app.config, &app.locks).await {
+                        Ok(lines) => lines,
+                        Err(e) => {
+                            error!("Failed to run sync job {:?}", e);
+                            continue;
+                        }
+                    }
+                }
+                SyncKey::SyncGarmin => match (GarminSyncRequest {}).handle(&app.locks).await {
+                    Ok(lines) => lines,
+                    Err(e) => {
+                        error!("Failed to run sync job {:?}", e);
+                        continue;
+                    }
+                },
+                SyncKey::SyncMovie => match (MovieSyncRequest {}).handle(&app.locks).await {
+                    Ok(lines) => lines,
+                    Err(e) => {
+                        error!("Failed to run sync job {:?}", e);
+                        continue;
+                    }
+                },
+                SyncKey::SyncCalendar => match (CalendarSyncRequest {}).handle(&app.locks).await {
+                    Ok(lines) => lines,
+                    Err(e) => {
+                        error!("Failed to run sync job {:?}", e);
+                        continue;
+                    }
+                },
+                SyncKey::SyncPodcast => match (SyncPodcastsRequest {}).handle(&app.locks).await {
+                    Ok(lines) => lines,
+                    Err(e) => {
+                        error!("Failed to run sync job {:?}", e);
+                        continue;
+                    }
+                },
+                SyncKey::SyncSecurity => match (SyncSecurityRequest {}).handle(&app.locks).await {
+                    Ok(lines) => lines,
+                    Err(e) => {
+                        error!("Failed to run sync job {:?}", e);
+                        continue;
+                    }
+                },
+            };
+            let value = SyncSession::from_lines(lines);
+            if let Err(e) = user
+                .set_session(&app.client, &app.config, key.to_str(), value)
+                .await
+            {
+                error!("Failed to set session {:?}", e);
+            }
+        }
+    }
+
     let port = config.port;
     let locks = Arc::new(AccessLocks::new(&config));
+    let client = Arc::new(ClientBuilder::new().build()?);
+    let queue = Arc::new(Queue::new());
 
     let app = AppState {
         config,
         db: pool,
         locks,
+        client,
+        queue,
     };
+
+    tokio::task::spawn(_run_queue(app.clone()));
 
     let (spec, sync_path) = openapi::spec()
         .info(Info {
