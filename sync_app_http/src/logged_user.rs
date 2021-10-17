@@ -76,7 +76,7 @@ impl LoggedUser {
             .await?;
         debug!("Got session {:?}", session);
         if let Some(session) = session {
-            if session.created_at > (Utc::now() - Duration::minutes(5)) {
+            if session.created_at > (Utc::now() - Duration::minutes(10)) {
                 return Ok(Some(session));
             }
         }
@@ -115,6 +115,7 @@ impl LoggedUser {
             .map_err(Into::<Error>::into)?
         {
             if let Some(result) = session.result {
+                self.set_session(&data.client, &data.config, key.to_str(), SyncSession::default()).await?;
                 return Ok(Some(result));
             }
         } else {
