@@ -115,7 +115,7 @@ impl LoggedUser {
             .map_err(Into::<Error>::into)?
         {
             if let Some(result) = session.result {
-                return Ok(Some(result))
+                return Ok(Some(result));
             }
         } else {
             data.queue.push(SyncMesg { user: self, key });
