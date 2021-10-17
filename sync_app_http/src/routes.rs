@@ -143,7 +143,7 @@ pub async fn sync_garmin(
     #[data] data: AppState,
 ) -> WarpResult<SyncGarminResponse> {
     match user.push_session(SyncKey::SyncGarmin, data).await? {
-        Some(result) => Ok(HtmlBase::new(result.join("\n")).into()),
+        Some(result) => Ok(HtmlBase::new(result.join("<br>")).into()),
         None => Ok(HtmlBase::new("running".into()).into()),
     }
 }
@@ -158,7 +158,7 @@ pub async fn sync_movie(
     #[data] data: AppState,
 ) -> WarpResult<SyncMovieResponse> {
     match user.push_session(SyncKey::SyncMovie, data).await? {
-        Some(result) => Ok(HtmlBase::new(result.join("\n")).into()),
+        Some(result) => Ok(HtmlBase::new(result.join("<br>")).into()),
         None => Ok(HtmlBase::new("running".into()).into()),
     }
 }
@@ -173,7 +173,7 @@ pub async fn sync_calendar(
     #[data] data: AppState,
 ) -> WarpResult<SyncCalendarResponse> {
     match user.push_session(SyncKey::SyncCalendar, data).await? {
-        Some(result) => Ok(HtmlBase::new(result.join("\n")).into()),
+        Some(result) => Ok(HtmlBase::new(result.join("<br>")).into()),
         None => Ok(HtmlBase::new("running".into()).into()),
     }
 }
