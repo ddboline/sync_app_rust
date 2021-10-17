@@ -2,11 +2,13 @@ pub use authorized_users::{
     get_random_key, get_secrets, token::Token, AuthorizedUser, AUTHORIZED_USERS, JWT_SECRET,
     KEY_LENGTH, SECRET_KEY, TRIGGER_DB_UPDATE,
 };
+use chrono::{DateTime, Duration, Utc};
 use futures::{
     executor::block_on,
     future::{ready, Ready},
 };
 use log::debug;
+use reqwest::{header::HeaderValue, Client};
 use rweb::{filters::cookie::cookie, Filter, Rejection, Schema};
 use serde::{Deserialize, Serialize};
 use stack_string::StackString;
@@ -18,9 +20,12 @@ use std::{
 };
 use uuid::Uuid;
 
-use sync_app_lib::{models::AuthorizedUsers, pgpool::PgPool};
+use sync_app_lib::{config::Config, models::AuthorizedUsers, pgpool::PgPool};
 
-use crate::errors::ServiceError as Error;
+use crate::{
+    app::{AppState, SyncKey, SyncMesg},
+    errors::ServiceError as Error,
+};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Schema)]
 pub struct LoggedUser {
@@ -28,6 +33,8 @@ pub struct LoggedUser {
     pub email: StackString,
     #[schema(description = "Session UUID")]
     pub session: Uuid,
+    #[schema(description = "Secret Key")]
+    pub secret_key: StackString,
 }
 
 impl LoggedUser {
@@ -48,6 +55,71 @@ impl LoggedUser {
                     .map_err(rweb::reject::custom)
             })
     }
+
+    pub async fn get_session(
+        &self,
+        client: &Client,
+        config: &Config,
+        session_key: &str,
+    ) -> Result<Option<SyncSession>, anyhow::Error> {
+        let url = format!("https://{}/api/session/{}", config.domain, session_key);
+        let value = HeaderValue::from_str(&self.session.to_string())?;
+        let key = HeaderValue::from_str(&self.secret_key)?;
+        let session: Option<SyncSession> = client
+            .get(url)
+            .header("session", value)
+            .header("secret-key", key)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        debug!("Got session {:?}", session);
+        if let Some(session) = session {
+            if session.created_at > (Utc::now() - Duration::minutes(5)) {
+                return Ok(Some(session));
+            }
+        }
+        Ok(None)
+    }
+
+    pub async fn set_session(
+        &self,
+        client: &Client,
+        config: &Config,
+        session_key: &str,
+        session_value: SyncSession,
+    ) -> Result<(), anyhow::Error> {
+        let url = format!("https://{}/api/session/{}", config.domain, session_key);
+        let value = HeaderValue::from_str(&self.session.to_string())?;
+        let key = HeaderValue::from_str(&self.secret_key)?;
+        client
+            .post(url)
+            .header("session", value)
+            .header("secret-key", key)
+            .json(&session_value)
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+
+    pub async fn push_session(
+        self,
+        key: SyncKey,
+        data: AppState,
+    ) -> Result<Option<SyncSession>, Error> {
+        if let Some(session) = self
+            .get_session(&data.client, &data.config, key.to_str())
+            .await
+            .map_err(Into::<Error>::into)?
+        {
+            Ok(Some(session))
+        } else {
+            data.queue.push(SyncMesg { user: self, key });
+            Ok(None)
+        }
+    }
 }
 
 impl From<AuthorizedUser> for LoggedUser {
@@ -55,6 +127,7 @@ impl From<AuthorizedUser> for LoggedUser {
         Self {
             email: user.email,
             session: user.session,
+            secret_key: user.secret_key,
         }
     }
 }
@@ -97,4 +170,28 @@ pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
     AUTHORIZED_USERS.merge_users(&users)?;
     debug!("{:?}", *AUTHORIZED_USERS);
     Ok(())
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SyncSession {
+    pub created_at: DateTime<Utc>,
+    pub result: Vec<StackString>,
+}
+
+impl Default for SyncSession {
+    fn default() -> Self {
+        Self {
+            created_at: Utc::now(),
+            result: Vec::new(),
+        }
+    }
+}
+
+impl SyncSession {
+    pub fn from_lines(lines: Vec<StackString>) -> Self {
+        Self {
+            created_at: Utc::now(),
+            result: lines,
+        }
+    }
 }
