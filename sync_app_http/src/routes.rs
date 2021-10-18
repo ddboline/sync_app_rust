@@ -9,9 +9,9 @@ use stack_string::StackString;
 use sync_app_lib::file_sync::FileSyncAction;
 
 use super::{
-    app::{AppState, SyncKey, SyncMesg},
+    app::{AppState, SyncMesg},
     errors::ServiceError as Error,
-    logged_user::LoggedUser,
+    logged_user::{LoggedUser, SyncKey},
     requests::{
         CalendarSyncRequest, GarminSyncRequest, ListSyncCacheRequest, MovieSyncRequest,
         SyncEntryDeleteRequest, SyncEntryProcessRequest, SyncPodcastsRequest, SyncRemoveRequest,

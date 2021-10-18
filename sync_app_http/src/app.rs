@@ -19,7 +19,7 @@ use sync_app_lib::{
     garmin_sync::GarminSync, movie_sync::MovieSync, pgpool::PgPool,
 };
 
-use crate::logged_user::{LoggedUser, SyncSession};
+use crate::logged_user::{LoggedUser, SyncKey, SyncSession};
 
 use super::{
     errors::error_response,
@@ -33,29 +33,6 @@ use super::{
         sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
     },
 };
-
-#[derive(Clone, Copy)]
-pub enum SyncKey {
-    Sync,
-    SyncGarmin,
-    SyncMovie,
-    SyncCalendar,
-    SyncPodcast,
-    SyncSecurity,
-}
-
-impl SyncKey {
-    pub fn to_str(self) -> &'static str {
-        match self {
-            Self::Sync => "sync",
-            Self::SyncGarmin => "sync_garmin",
-            Self::SyncMovie => "sync_movie",
-            Self::SyncCalendar => "sync_calendar",
-            Self::SyncPodcast => "sync_podcast",
-            Self::SyncSecurity => "sync_security",
-        }
-    }
-}
 
 pub struct AccessLocks {
     pub sync: Mutex<()>,
@@ -152,55 +129,37 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     async fn _run_queue(app: AppState) {
         loop {
             let SyncMesg { user, key } = app.queue.pop().await;
-            let lines = match key {
+            println!("start {} for {} {}", key.to_str(), user.email, user.session);
+            let result = match key {
                 SyncKey::Sync => {
                     let req = SyncRequest {
                         action: FileSyncAction::Sync,
                     };
-                    match req.handle(&app.db, &app.config, &app.locks).await {
-                        Ok(lines) => lines,
-                        Err(e) => {
-                            error!("Failed to run sync job {:?}", e);
-                            continue;
-                        }
-                    }
+                    req.handle(&app.db, &app.config, &app.locks).await
                 }
-                SyncKey::SyncGarmin => match (GarminSyncRequest {}).handle(&app.locks).await {
-                    Ok(lines) => lines,
-                    Err(e) => {
-                        error!("Failed to run sync job {:?}", e);
-                        continue;
-                    }
-                },
-                SyncKey::SyncMovie => match (MovieSyncRequest {}).handle(&app.locks).await {
-                    Ok(lines) => lines,
-                    Err(e) => {
-                        error!("Failed to run sync job {:?}", e);
-                        continue;
-                    }
-                },
-                SyncKey::SyncCalendar => match (CalendarSyncRequest {}).handle(&app.locks).await {
-                    Ok(lines) => lines,
-                    Err(e) => {
-                        error!("Failed to run sync job {:?}", e);
-                        continue;
-                    }
-                },
-                SyncKey::SyncPodcast => match (SyncPodcastsRequest {}).handle(&app.locks).await {
-                    Ok(lines) => lines,
-                    Err(e) => {
-                        error!("Failed to run sync job {:?}", e);
-                        continue;
-                    }
-                },
-                SyncKey::SyncSecurity => match (SyncSecurityRequest {}).handle(&app.locks).await {
-                    Ok(lines) => lines,
-                    Err(e) => {
-                        error!("Failed to run sync job {:?}", e);
-                        continue;
-                    }
-                },
+                SyncKey::SyncGarmin => (GarminSyncRequest {}).handle(&app.locks).await,
+                SyncKey::SyncMovie => (MovieSyncRequest {}).handle(&app.locks).await,
+                SyncKey::SyncCalendar => (CalendarSyncRequest {}).handle(&app.locks).await,
+                SyncKey::SyncPodcast => (SyncPodcastsRequest {}).handle(&app.locks).await,
+                SyncKey::SyncSecurity => (SyncSecurityRequest {}).handle(&app.locks).await,
             };
+            let lines = match result {
+                Ok(lines) => lines,
+                Err(e) => {
+                    error!("Failed to run sync job {:?}", e);
+                    if let Err(e) = user.rm_session(&app.client, &app.config, key.to_str()).await {
+                        error!("Failed to delete session {:?}", e);
+                    }
+                    continue;
+                }
+            };
+            println!(
+                "finished {} for {} {}, {} lines",
+                key.to_str(),
+                user.email,
+                user.session,
+                lines.len()
+            );
             let value = SyncSession::from_lines(lines);
             if let Err(e) = user
                 .set_session(&app.client, &app.config, key.to_str(), value)

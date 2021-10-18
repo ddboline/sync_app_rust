@@ -23,7 +23,7 @@ use uuid::Uuid;
 use sync_app_lib::{config::Config, models::AuthorizedUsers, pgpool::PgPool};
 
 use crate::{
-    app::{AppState, SyncKey, SyncMesg},
+    app::{AppState, SyncMesg},
     errors::ServiceError as Error,
 };
 
@@ -74,7 +74,7 @@ impl LoggedUser {
             .error_for_status()?
             .json()
             .await?;
-        debug!("Got session {:?}", session);
+        println!("Got session {:?}", session);
         if let Some(session) = session {
             if session.created_at > (Utc::now() - Duration::minutes(10)) {
                 return Ok(Some(session));
@@ -104,6 +104,22 @@ impl LoggedUser {
         Ok(())
     }
 
+    pub async fn rm_session(
+        &self, client: &Client, config: &Config, session_key: &str
+    ) -> Result<(), anyhow::Error> {
+        let url = format!("https://{}/api/session/{}", config.domain, session_key);
+        let value = HeaderValue::from_str(&self.session.to_string())?;
+        let key = HeaderValue::from_str(&self.secret_key)?;
+        client
+            .delete(url)
+            .header("session", value)
+            .header("secret-key", key)
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+
     pub async fn push_session(
         self,
         key: SyncKey,
@@ -115,13 +131,35 @@ impl LoggedUser {
             .map_err(Into::<Error>::into)?
         {
             if let Some(result) = session.result {
-                self.set_session(&data.client, &data.config, key.to_str(), SyncSession::default()).await?;
+                self.rm_session(&data.client, &data.config, key.to_str()).await?;
                 return Ok(Some(result));
             }
+            println!("session exists and is presumably running {:?}", session);
         } else {
+            println!("push job to queue {}", key.to_str());
+            self.set_session(
+                &data.client,
+                &data.config,
+                key.to_str(),
+                SyncSession::default(),
+            )
+            .await?;
             data.queue.push(SyncMesg { user: self, key });
         }
         Ok(None)
+    }
+
+    pub async fn clear_sessions(&self, data: AppState) -> Result<(), Error> {
+        for key in SyncKey::all_keys() {
+            self.set_session(
+                &data.client,
+                &data.config,
+                key.to_str(),
+                SyncSession::default(),
+            )
+            .await?;
+        }
+        Ok(())
     }
 }
 
@@ -196,5 +234,39 @@ impl SyncSession {
             created_at: Utc::now(),
             result: Some(lines),
         }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum SyncKey {
+    Sync,
+    SyncGarmin,
+    SyncMovie,
+    SyncCalendar,
+    SyncPodcast,
+    SyncSecurity,
+}
+
+impl SyncKey {
+    pub fn to_str(self) -> &'static str {
+        match self {
+            Self::Sync => "sync",
+            Self::SyncGarmin => "sync_garmin",
+            Self::SyncMovie => "sync_movie",
+            Self::SyncCalendar => "sync_calendar",
+            Self::SyncPodcast => "sync_podcast",
+            Self::SyncSecurity => "sync_security",
+        }
+    }
+
+    pub fn all_keys() -> [Self; 6] {
+        [
+            Self::Sync,
+            Self::SyncGarmin,
+            Self::SyncMovie,
+            Self::SyncCalendar,
+            Self::SyncPodcast,
+            Self::SyncSecurity,
+        ]
     }
 }
