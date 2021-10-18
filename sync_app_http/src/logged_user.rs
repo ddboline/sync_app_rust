@@ -105,7 +105,10 @@ impl LoggedUser {
     }
 
     pub async fn rm_session(
-        &self, client: &Client, config: &Config, session_key: &str
+        &self,
+        client: &Client,
+        config: &Config,
+        session_key: &str,
     ) -> Result<(), anyhow::Error> {
         let url = format!("https://{}/api/session/{}", config.domain, session_key);
         let value = HeaderValue::from_str(&self.session.to_string())?;
@@ -131,7 +134,8 @@ impl LoggedUser {
             .map_err(Into::<Error>::into)?
         {
             if let Some(result) = session.result {
-                self.rm_session(&data.client, &data.config, key.to_str()).await?;
+                self.rm_session(&data.client, &data.config, key.to_str())
+                    .await?;
                 return Ok(Some(result));
             }
             debug!("session exists and is presumably running {:?}", session);

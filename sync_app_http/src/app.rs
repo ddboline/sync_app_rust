@@ -1,7 +1,7 @@
 use anyhow::Error;
 use chrono::Duration;
 use deadqueue::unlimited::Queue;
-use log::error;
+use log::{debug, error};
 use reqwest::{Client, ClientBuilder};
 use rweb::{
     filters::BoxedFilter,
@@ -13,7 +13,6 @@ use stack_string::StackString;
 use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, time::interval};
 use uuid::Uuid;
-use log::debug;
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
@@ -148,7 +147,10 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
                 Ok(lines) => lines,
                 Err(e) => {
                     error!("Failed to run sync job {:?}", e);
-                    if let Err(e) = user.rm_session(&app.client, &app.config, key.to_str()).await {
+                    if let Err(e) = user
+                        .rm_session(&app.client, &app.config, key.to_str())
+                        .await
+                    {
                         error!("Failed to delete session {:?}", e);
                     }
                     continue;
