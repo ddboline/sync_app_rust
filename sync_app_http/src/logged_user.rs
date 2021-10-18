@@ -74,7 +74,7 @@ impl LoggedUser {
             .error_for_status()?
             .json()
             .await?;
-        println!("Got session {:?}", session);
+        debug!("Got session {:?}", session);
         if let Some(session) = session {
             if session.created_at > (Utc::now() - Duration::minutes(10)) {
                 return Ok(Some(session));
@@ -134,9 +134,9 @@ impl LoggedUser {
                 self.rm_session(&data.client, &data.config, key.to_str()).await?;
                 return Ok(Some(result));
             }
-            println!("session exists and is presumably running {:?}", session);
+            debug!("session exists and is presumably running {:?}", session);
         } else {
-            println!("push job to queue {}", key.to_str());
+            debug!("push job to queue {}", key.to_str());
             self.set_session(
                 &data.client,
                 &data.config,
