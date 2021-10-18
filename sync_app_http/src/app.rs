@@ -13,6 +13,7 @@ use stack_string::StackString;
 use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, time::interval};
 use uuid::Uuid;
+use log::debug;
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
@@ -129,7 +130,7 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     async fn _run_queue(app: AppState) {
         loop {
             let SyncMesg { user, key } = app.queue.pop().await;
-            println!("start {} for {} {}", key.to_str(), user.email, user.session);
+            debug!("start {} for {} {}", key.to_str(), user.email, user.session);
             let result = match key {
                 SyncKey::Sync => {
                     let req = SyncRequest {
@@ -153,7 +154,7 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
                     continue;
                 }
             };
-            println!(
+            debug!(
                 "finished {} for {} {}, {} lines",
                 key.to_str(),
                 user.email,
