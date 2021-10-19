@@ -5,6 +5,8 @@ use rweb_helper::{
 };
 use serde::Serialize;
 use stack_string::StackString;
+use tokio::time::sleep;
+use std::time::Duration;
 
 use sync_app_lib::file_sync::FileSyncAction;
 
@@ -59,13 +61,14 @@ struct SyncResponse(HtmlBase<String, Error>);
 
 #[get("/sync/sync")]
 pub async fn sync_all(
-    #[filter = "LoggedUser::filter"] user: LoggedUser,
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<SyncResponse> {
-    match user.push_session(SyncKey::Sync, data).await? {
-        Some(result) => Ok(HtmlBase::new(result.join("\n")).into()),
-        None => Ok(HtmlBase::new("running".into()).into()),
-    }
+    let req = SyncRequest {
+        action: FileSyncAction::Sync,
+    };
+    let result = req.handle(&data.db, &data.config, &data.locks).await?;
+    Ok(HtmlBase::new(result.join("\n")).into())
 }
 
 #[derive(RwebResponse)]

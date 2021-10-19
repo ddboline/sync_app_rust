@@ -131,12 +131,6 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
             let SyncMesg { user, key } = app.queue.pop().await;
             debug!("start {} for {} {}", key.to_str(), user.email, user.session);
             let result = match key {
-                SyncKey::Sync => {
-                    let req = SyncRequest {
-                        action: FileSyncAction::Sync,
-                    };
-                    req.handle(&app.db, &app.config, &app.locks).await
-                }
                 SyncKey::SyncGarmin => (GarminSyncRequest {}).handle(&app.locks).await,
                 SyncKey::SyncMovie => (MovieSyncRequest {}).handle(&app.locks).await,
                 SyncKey::SyncCalendar => (CalendarSyncRequest {}).handle(&app.locks).await,

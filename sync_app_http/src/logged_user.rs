@@ -243,7 +243,6 @@ impl SyncSession {
 
 #[derive(Clone, Copy)]
 pub enum SyncKey {
-    Sync,
     SyncGarmin,
     SyncMovie,
     SyncCalendar,
@@ -254,7 +253,6 @@ pub enum SyncKey {
 impl SyncKey {
     pub fn to_str(self) -> &'static str {
         match self {
-            Self::Sync => "sync",
             Self::SyncGarmin => "sync_garmin",
             Self::SyncMovie => "sync_movie",
             Self::SyncCalendar => "sync_calendar",
@@ -263,9 +261,8 @@ impl SyncKey {
         }
     }
 
-    pub fn all_keys() -> [Self; 6] {
+    pub fn all_keys() -> [Self; 5] {
         [
-            Self::Sync,
             Self::SyncGarmin,
             Self::SyncMovie,
             Self::SyncCalendar,
