@@ -1,7 +1,6 @@
 use anyhow::{format_err, Error};
 use chrono::{DateTime, NaiveDate, Utc};
 use core::hash::Hash;
-use log::debug;
 use maplit::hashmap;
 use reqwest::{header::HeaderMap, Response, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
