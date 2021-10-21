@@ -18,14 +18,12 @@ use std::{
     env::var,
     str::FromStr,
 };
+use tokio::task::{spawn, JoinHandle};
 use uuid::Uuid;
 
 use sync_app_lib::{config::Config, models::AuthorizedUsers, pgpool::PgPool};
 
-use crate::{
-    app::{AppState, SyncMesg},
-    errors::ServiceError as Error,
-};
+use crate::{app::AppState, errors::ServiceError as Error};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Schema)]
 pub struct LoggedUser {
@@ -148,7 +146,14 @@ impl LoggedUser {
                 SyncSession::default(),
             )
             .await?;
-            data.queue.push(SyncMesg { user: self, key });
+            let mesg = SyncMesg::new(self, key);
+            data.queue.push((
+                mesg.clone(),
+                spawn({
+                    let data = data.clone();
+                    async move { mesg.process_mesg(&data).await.map_err(Into::into) }
+                }),
+            ));
         }
         Ok(None)
     }
@@ -269,5 +274,51 @@ impl SyncKey {
             Self::SyncPodcast,
             Self::SyncSecurity,
         ]
+    }
+}
+
+#[derive(Clone)]
+pub struct SyncMesg {
+    pub user: LoggedUser,
+    pub key: SyncKey,
+}
+
+use crate::requests::{
+    CalendarSyncRequest, GarminSyncRequest, MovieSyncRequest, SyncPodcastsRequest,
+    SyncSecurityRequest,
+};
+use log::error;
+
+impl SyncMesg {
+    pub fn new(user: LoggedUser, key: SyncKey) -> Self {
+        Self { user, key }
+    }
+
+    async fn process_mesg(self, app: &AppState) -> Result<(), Error> {
+        debug!(
+            "start {} for {} {}",
+            self.key.to_str(),
+            self.user.email,
+            self.user.session
+        );
+        let lines = match self.key {
+            SyncKey::SyncGarmin => (GarminSyncRequest {}).handle(&app.locks).await,
+            SyncKey::SyncMovie => (MovieSyncRequest {}).handle(&app.locks).await,
+            SyncKey::SyncCalendar => (CalendarSyncRequest {}).handle(&app.locks).await,
+            SyncKey::SyncPodcast => (SyncPodcastsRequest {}).handle(&app.locks).await,
+            SyncKey::SyncSecurity => (SyncSecurityRequest {}).handle(&app.locks).await,
+        }?;
+        debug!(
+            "finished {} for {} {}, {} lines",
+            self.key.to_str(),
+            self.user.email,
+            self.user.session,
+            lines.len()
+        );
+        let value = SyncSession::from_lines(lines);
+        self.user
+            .set_session(&app.client, &app.config, self.key.to_str(), value)
+            .await
+            .map_err(Into::into)
     }
 }
