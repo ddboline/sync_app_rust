@@ -11,7 +11,7 @@ use rweb::{
 };
 use stack_string::StackString;
 use std::{net::SocketAddr, sync::Arc, time};
-use tokio::{sync::Mutex, time::interval};
+use tokio::{sync::Mutex, task::JoinHandle, time::interval};
 use uuid::Uuid;
 
 use sync_app_lib::{
@@ -23,7 +23,7 @@ use crate::logged_user::{LoggedUser, SyncKey, SyncSession};
 
 use super::{
     errors::error_response,
-    logged_user::{fill_from_db, get_secrets, SECRET_KEY, TRIGGER_DB_UPDATE},
+    logged_user::{fill_from_db, get_secrets, SyncMesg, SECRET_KEY, TRIGGER_DB_UPDATE},
     requests::{
         CalendarSyncRequest, GarminSyncRequest, MovieSyncRequest, SyncPodcastsRequest, SyncRequest,
         SyncSecurityRequest,
@@ -62,18 +62,13 @@ impl Default for AccessLocks {
     }
 }
 
-pub struct SyncMesg {
-    pub user: LoggedUser,
-    pub key: SyncKey,
-}
-
 #[derive(Clone)]
 pub struct AppState {
     pub config: Config,
     pub db: PgPool,
     pub locks: Arc<AccessLocks>,
     pub client: Arc<Client>,
-    pub queue: Arc<Queue<SyncMesg>>,
+    pub queue: Arc<Queue<(SyncMesg, JoinHandle<Result<(), Error>>)>>,
 }
 
 pub async fn start_app() -> Result<(), Error> {
@@ -128,41 +123,19 @@ fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
 pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     async fn _run_queue(app: AppState) {
         loop {
-            let SyncMesg { user, key } = app.queue.pop().await;
-            debug!("start {} for {} {}", key.to_str(), user.email, user.session);
-            let result = match key {
-                SyncKey::SyncGarmin => (GarminSyncRequest {}).handle(&app.locks).await,
-                SyncKey::SyncMovie => (MovieSyncRequest {}).handle(&app.locks).await,
-                SyncKey::SyncCalendar => (CalendarSyncRequest {}).handle(&app.locks).await,
-                SyncKey::SyncPodcast => (SyncPodcastsRequest {}).handle(&app.locks).await,
-                SyncKey::SyncSecurity => (SyncSecurityRequest {}).handle(&app.locks).await,
-            };
-            let lines = match result {
-                Ok(lines) => lines,
-                Err(e) => {
-                    error!("Failed to run sync job {:?}", e);
+            let (SyncMesg { user, key }, task) = app.queue.pop().await;
+            match task.await {
+                Ok(Err(e)) => {
+                    error!("Failure running job {}", e);
                     if let Err(e) = user
                         .rm_session(&app.client, &app.config, key.to_str())
                         .await
                     {
-                        error!("Failed to delete session {:?}", e);
+                        error!("Failed to delete session {}", e);
                     }
-                    continue;
                 }
-            };
-            debug!(
-                "finished {} for {} {}, {} lines",
-                key.to_str(),
-                user.email,
-                user.session,
-                lines.len()
-            );
-            let value = SyncSession::from_lines(lines);
-            if let Err(e) = user
-                .set_session(&app.client, &app.config, key.to_str(), value)
-                .await
-            {
-                error!("Failed to set session {:?}", e);
+                Err(e) => error!("join error {}", e),
+                _ => {}
             }
         }
     }

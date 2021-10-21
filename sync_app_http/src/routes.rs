@@ -11,9 +11,9 @@ use tokio::time::sleep;
 use sync_app_lib::file_sync::FileSyncAction;
 
 use super::{
-    app::{AppState, SyncMesg},
+    app::AppState,
     errors::ServiceError as Error,
-    logged_user::{LoggedUser, SyncKey},
+    logged_user::{LoggedUser, SyncKey, SyncMesg},
     requests::{
         CalendarSyncRequest, GarminSyncRequest, ListSyncCacheRequest, MovieSyncRequest,
         SyncEntryDeleteRequest, SyncEntryProcessRequest, SyncPodcastsRequest, SyncRemoveRequest,
