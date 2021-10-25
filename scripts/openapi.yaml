@@ -3,7 +3,7 @@ openapi: 3.0.1
 info:
   title: File Sync WebApp
   description: Web Frontend for File Sync Service
-  version: 0.7.32
+  version: 0.7.34
 paths:
   /sync/index.html:
     get:
