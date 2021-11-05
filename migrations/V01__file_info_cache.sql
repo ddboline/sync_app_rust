@@ -1,5 +1,5 @@
 -- Your SQL goes here
-CREATE TABLE file_info_cache_backup (
+CREATE TABLE file_info_cache (
     id SERIAL PRIMARY KEY,
     filename VARCHAR NOT NULL,
     filepath TEXT NOT NULL,
