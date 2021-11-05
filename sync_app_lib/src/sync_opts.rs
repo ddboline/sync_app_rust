@@ -81,7 +81,7 @@ impl SyncOpts {
         pool: &PgPool,
         stdout: &StdoutChannel<StackString>,
     ) -> Result<(), Error> {
-        let blacklist = Arc::new(BlackList::new(pool).await?);
+        let blacklist = Arc::new(BlackList::new(pool).await.unwrap_or_default());
         match self.action {
             FileSyncAction::Index => {
                 let urls = if self.urls.is_empty() {
