@@ -19,7 +19,7 @@ use crate::{
     file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, FileStat},
     file_list::{group_urls, replace_basepath, replace_baseurl, FileList, FileListTrait},
     file_service::FileService,
-    models::{FileSyncCache},
+    models::FileSyncCache,
     pgpool::PgPool,
 };
 
@@ -197,12 +197,8 @@ impl FileSync {
                 .map(|(f0, f1)| {
                     let pool = pool.clone();
                     async move {
-                        FileSyncCache::cache_sync(
-                            &pool,
-                            f0.urlname.as_str(),
-                            f1.urlname.as_str(),
-                        )
-                        .await?;
+                        FileSyncCache::cache_sync(&pool, f0.urlname.as_str(), f1.urlname.as_str())
+                            .await?;
                         Ok(())
                     }
                 });

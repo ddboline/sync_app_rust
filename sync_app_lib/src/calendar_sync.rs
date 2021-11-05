@@ -2,10 +2,10 @@ use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
 use log::debug;
 use maplit::hashmap;
+use postgres_query::FromSqlRow;
 use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
-use postgres_query::FromSqlRow;
 
 use stack_string::StackString;
 

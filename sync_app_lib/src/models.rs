@@ -1,18 +1,16 @@
 use anyhow::Error;
 use chrono::{DateTime, Utc};
 use futures::TryFutureExt;
+use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use tokio::task::spawn_blocking;
 use url::Url;
-use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
 
 use gdrive_lib::directory_info::DirectoryInfo;
 
 use stack_string::StackString;
 
-use crate::{
-    pgpool::{PgPool, PgTransaction},
-};
+use crate::pgpool::{PgPool, PgTransaction};
 
 #[derive(FromSqlRow, Clone, Debug)]
 pub struct FileInfoCache {
@@ -42,6 +40,7 @@ pub struct FileInfoKey {
 
 impl FileInfoKey {
     pub async fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
+        println!("delete_cache_entry");
         let query = query!(
             r#"
                 UPDATE file_info_cache SET deleted_at=now()
@@ -51,21 +50,24 @@ impl FileInfoKey {
                   AND servicesession=$servicesession
                   AND urlname=$urlname
             "#,
-            filename=self.filename,
-            filepath=self.filepath,
-            serviceid=self.serviceid,
-            servicesession=self.servicesession,
-            urlname=self.urlname,
+            filename = self.filename,
+            filepath = self.filepath,
+            serviceid = self.serviceid,
+            servicesession = self.servicesession,
+            urlname = self.urlname,
         );
         let conn = pool.get().await?;
         query.execute(&conn).await?;
         Ok(())
     }
-
 }
 
 impl FileInfoCache {
-    pub async fn get_all_cached(servicesession: &str, servicetype: &str, pool: &PgPool) -> Result<Vec<Self>, Error> {
+    pub async fn get_all_cached(
+        servicesession: &str,
+        servicetype: &str,
+        pool: &PgPool,
+    ) -> Result<Vec<Self>, Error> {
         let query = query!(
             r#"
                 SELECT * FROM file_info_cache
@@ -73,8 +75,22 @@ impl FileInfoCache {
                   AND servicetype=$servicetype
                   AND deleted_at IS NULL
             "#,
-            servicesession=servicesession,
-            servicetype=servicetype,
+            servicesession = servicesession,
+            servicetype = servicetype,
+        );
+        let conn = pool.get().await?;
+        query.fetch(&conn).await.map_err(Into::into)
+    }
+
+    pub async fn get_by_urlname(url: &Url, pool: &PgPool) -> Result<Vec<Self>, Error> {
+        let urlname = url.as_str();
+        let query = query!(
+            r#"
+                SELECT * FROM file_info_cache
+                WHERE urlname=$urlname
+                  AND deleted_at IS NULL
+            "#,
+            urlname = urlname,
         );
         let conn = pool.get().await?;
         query.fetch(&conn).await.map_err(Into::into)
@@ -109,31 +125,18 @@ impl FileInfoCache {
                   AND servicesession = $servicesession
             "#,
             filename = self.filename,
-            filepath=self.filepath,
-            urlname=self.urlname,
-            serviceid=self.serviceid,
-            servicetype=self.servicetype,
-            servicesession=self.servicesession,
+            filepath = self.filepath,
+            urlname = self.urlname,
+            serviceid = self.serviceid,
+            servicetype = self.servicetype,
+            servicesession = self.servicesession,
         );
         let conn = pool.get().await?;
         query.fetch_opt(&conn).await.map_err(Into::into)
     }
 
-    pub async fn update(&self, pool: &PgPool) -> Result<(), Error> {
-        let query = query!(
-            r#"
-                UPDATE file_info_cache
-                SET deleted_at=null
-                WHERE id=$id
-            "#,
-            id=self.id,
-        );
-        let conn = pool.get().await?;
-        query.execute(&conn).await?;
-        Ok(())
-    }
-
     pub async fn insert(&self, pool: &PgPool) -> Result<(), Error> {
+        println!("FileInfoCache.insert");
         let query = query!(
             r#"
                  INSERT INTO file_info_cache (
@@ -144,22 +147,89 @@ impl FileInfoCache {
                     $filename, $filepath, $urlname, $md5sum, $sha1sum, $filestat_st_mtime,
                     $filestat_st_size, $serviceid, $servicetype, $servicesession, now(),
                     null
-                 )
+                 ) ON CONFLICT (
+                     filename,filepath,urlname,serviceid,servicetype,servicesession
+                ) DO UPDATE SET 
+                    md5sum=EXCLUDED.md5sum,
+                    sha1sum=EXCLUDED.sha1sum,
+                    filestat_st_mtime=EXCLUDED.filestat_st_mtime,
+                    filestat_st_size=EXCLUDED.filestat_st_size,
+                    deleted_at=null
             "#,
-            filename=self.filename, 
-            filepath=self.filepath,
-            urlname=self.urlname,
-            md5sum=self.md5sum,
-            sha1sum=self.sha1sum,
-            filestat_st_mtime=self.filestat_st_mtime,
-            filestat_st_size=self.filestat_st_size,
-            serviceid=self.serviceid,
-            servicetype=self.servicetype,
-            servicesession=self.servicesession,
+            filename = self.filename,
+            filepath = self.filepath,
+            urlname = self.urlname,
+            md5sum = self.md5sum,
+            sha1sum = self.sha1sum,
+            filestat_st_mtime = self.filestat_st_mtime,
+            filestat_st_size = self.filestat_st_size,
+            serviceid = self.serviceid,
+            servicetype = self.servicetype,
+            servicesession = self.servicesession,
         );
         let conn = pool.get().await?;
         query.execute(&conn).await?;
         Ok(())
+    }
+
+    pub async fn delete_all(
+        servicesession: &str,
+        servicetype: &str,
+        pool: &PgPool,
+    ) -> Result<usize, Error> {
+        let query = query!(
+            r#"
+                UPDATE file_info_cache SET deleted_at = now()
+                WHERE servicesession=$servicesession
+                  AND servicetype=$servicetype
+            "#,
+            servicesession = servicesession,
+            servicetype = servicetype,
+        );
+        let conn = pool.get().await?;
+        let n = query.execute(&conn).await?;
+        Ok(n as usize)
+    }
+
+    pub async fn delete_by_id(
+        gdriveid: &str,
+        servicesession: &str,
+        servicetype: &str,
+        pool: &PgPool,
+    ) -> Result<usize, Error> {
+        let query = query!(
+            r#"
+                UPDATE file_info_cache SET deleted_at = now()
+                WHERE servicesession=$servicesession
+                  AND servicetype=$servicetype
+                  AND serviceid=$gdriveid
+            "#,
+            servicesession = servicesession,
+            servicetype = servicetype,
+            gdriveid = gdriveid,
+        );
+        let conn = pool.get().await?;
+        let n = query.execute(&conn).await?;
+        Ok(n as usize)
+    }
+
+    pub async fn clear_all(
+        servicesession: &str,
+        servicetype: &str,
+        pool: &PgPool,
+    ) -> Result<usize, Error> {
+        let query = query!(
+            r#"
+                DELETE FROM file_info_cache
+                WHERE servicesession=$servicesession
+                  AND servicetype=$servicetype
+            "#,
+            servicesession = servicesession,
+            servicetype = servicetype,
+        );
+        let conn = pool.get().await?;
+        let n = query.execute(&conn).await?;
+        Ok(n as usize)
     }
 }
 
@@ -183,15 +253,19 @@ impl DirectoryInfoCache {
         }
     }
 
-    pub async fn get_all(servicesession: &str, servicetype: &str, pool: &PgPool) -> Result<Vec<Self>, Error> {
+    pub async fn get_all(
+        servicesession: &str,
+        servicetype: &str,
+        pool: &PgPool,
+    ) -> Result<Vec<Self>, Error> {
         let query = query!(
             r#"
                 SELECT * FROM directory_info_cache
                 WHERE servicesession=$servicesession
                   AND servicetype=$servicetype
             "#,
-            servicesession=servicesession,
-            servicetype=servicetype,
+            servicesession = servicesession,
+            servicetype = servicetype,
         );
         let conn = pool.get().await?;
         query.fetch(&conn).await.map_err(Into::into)
@@ -206,59 +280,53 @@ impl DirectoryInfoCache {
                     $directory_id,$directory_name,$parent_id,$is_root,$servicetype,$servicesession
                 )
             "#,
-            directory_id=self.directory_id,
-            directory_name=self.directory_name,
-            parent_id=self.parent_id,
-            is_root=self.is_root,
-            servicetype=self.servicetype,
-            servicesession=self.servicesession,
+            directory_id = self.directory_id,
+            directory_name = self.directory_name,
+            parent_id = self.parent_id,
+            is_root = self.is_root,
+            servicetype = self.servicetype,
+            servicesession = self.servicesession,
         );
         let conn = pool.get().await?;
         query.execute(&conn).await?;
         Ok(())
     }
 
-    pub async fn delete_all(servicesession: &str, servicetype: &str, pool: &PgPool) -> Result<usize, Error> {
-        let query = query!(
-            r#"
-                UPDATE directory_info_cache SET deleted_at = now()
-                WHERE servicesession=$servicesession
-                  AND servicetype=$servicetype
-            "#,
-            servicesession=servicesession,
-            servicetype=servicetype,
-        );
-        let conn = pool.get().await?;
-        let n = query.execute(&conn).await?;
-        Ok(n as usize)
-    }
-
-    pub async fn delete_by_id(gdriveid: &str, servicesession: &str, servicetype: &str, pool: &PgPool) -> Result<usize, Error> {
-        let query = query!(
-            r#"
-                UPDATE directory_info_cache SET deleted_at = now()
-                WHERE servicesession=$servicesession
-                  AND servicetype=$servicetype
-                  AND serviceid=$gdriveid
-            "#,
-            servicesession=servicesession,
-            servicetype=servicetype,
-            gdriveid=gdriveid,
-        );
-        let conn = pool.get().await?;
-        let n = query.execute(&conn).await?;
-        Ok(n as usize)
-    }
-
-    pub async fn clear_all(servicesession: &str, servicetype: &str, pool: &PgPool) -> Result<usize, Error> {
+    pub async fn delete_all(
+        servicesession: &str,
+        servicetype: &str,
+        pool: &PgPool,
+    ) -> Result<usize, Error> {
         let query = query!(
             r#"
                 DELETE FROM directory_info_cache
                 WHERE servicesession=$servicesession
                   AND servicetype=$servicetype
             "#,
-            servicesession=servicesession,
-            servicetype=servicetype,
+            servicesession = servicesession,
+            servicetype = servicetype,
+        );
+        let conn = pool.get().await?;
+        let n = query.execute(&conn).await?;
+        Ok(n as usize)
+    }
+
+    pub async fn delete_by_id(
+        gdriveid: &str,
+        servicesession: &str,
+        servicetype: &str,
+        pool: &PgPool,
+    ) -> Result<usize, Error> {
+        let query = query!(
+            r#"
+                DELETE FROM directory_info_cache
+                WHERE servicesession=$servicesession
+                  AND servicetype=$servicetype
+                  AND serviceid=$gdriveid
+            "#,
+            servicesession = servicesession,
+            servicetype = servicetype,
+            gdriveid = gdriveid,
         );
         let conn = pool.get().await?;
         let n = query.execute(&conn).await?;
@@ -282,13 +350,13 @@ impl FileSyncCache {
     }
 
     pub async fn get_by_id(pool: &PgPool, id: i32) -> Result<Option<Self>, Error> {
-        let query = query!("SELECT * FROM file_sync_cache WHERE id=$id", id=id);
+        let query = query!("SELECT * FROM file_sync_cache WHERE id=$id", id = id);
         let conn = pool.get().await?;
         query.fetch_opt(&conn).await.map_err(Into::into)
     }
 
     pub async fn delete_by_id(pool: &PgPool, id: i32) -> Result<(), Error> {
-        let query = query!("DELETE FROM file_sync_cache WHERE id=$id", id=id);
+        let query = query!("DELETE FROM file_sync_cache WHERE id=$id", id = id);
         let conn = pool.get().await?;
         query.execute(&conn).await?;
         Ok(())
@@ -312,11 +380,7 @@ impl FileSyncCache {
         Ok(())
     }
 
-    pub async fn cache_sync(
-        pool: &PgPool,
-        src_url: &str,
-        dst_url: &str,
-    ) -> Result<(), Error> {
+    pub async fn cache_sync(pool: &PgPool, src_url: &str, dst_url: &str) -> Result<(), Error> {
         let src_url: Url = src_url.parse()?;
         let dst_url: Url = dst_url.parse()?;
         let value = Self {
@@ -346,12 +410,15 @@ impl FileSyncConfig {
     }
 
     pub async fn get_url_list(pool: &PgPool) -> Result<Vec<Url>, Error> {
-        let proc_list: Result<Vec<_>, Error> = Self::get_config_list(pool).await?
-            .into_iter().map(|v| {
+        let proc_list: Result<Vec<_>, Error> = Self::get_config_list(pool)
+            .await?
+            .into_iter()
+            .map(|v| {
                 let u0: Url = v.src_url.parse()?;
                 let u1: Url = v.dst_url.parse()?;
                 Ok(vec![u0, u1])
-            }).collect();
+            })
+            .collect();
         Ok(proc_list?.into_iter().flatten().collect())
     }
 
@@ -404,7 +471,9 @@ pub struct BlackList {
 
 impl BlackList {
     pub async fn new(pool: &PgPool) -> Result<Self, Error> {
-        FileSyncBlacklist::get_blacklist(pool).await.map(|blacklist| Self {blacklist})
+        FileSyncBlacklist::get_blacklist(pool)
+            .await
+            .map(|blacklist| Self { blacklist })
     }
 
     pub fn is_in_blacklist(&self, url: &Url) -> bool {

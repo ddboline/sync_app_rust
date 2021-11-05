@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use log::debug;
+use postgres_query::query;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
@@ -18,7 +19,6 @@ use std::{
 use stdout_channel::StdoutChannel;
 use tokio::task::spawn_blocking;
 use url::Url;
-use postgres_query::query;
 
 use gdrive_lib::{directory_info::DirectoryInfo, gdrive_instance::GDriveInstance};
 use stack_string::StackString;
@@ -191,7 +191,8 @@ pub trait FileListTrait: Send + Sync + Debug {
 
         // Load existing file_list, create hashmap
         let current_cache: HashMap<_, _> = self
-            .load_file_list().await?
+            .load_file_list()
+            .await?
             .into_iter()
             .filter_map(|item| {
                 let key = item.get_key();
@@ -214,9 +215,9 @@ pub trait FileListTrait: Send + Sync + Debug {
         // Delete entries from current_cache not in filemap
         for k in current_cache.keys() {
             if flist_cache_map.contains_key(k) {
-                continue
+                continue;
             }
-            debug!("remove {:?}", k);
+            println!("remove {:?}", k);
             k.delete_cache_entry(pool).await?;
         }
 
@@ -227,7 +228,10 @@ pub trait FileListTrait: Send + Sync + Debug {
                     || v.filestat_st_mtime != item.filestat_st_mtime
                     || v.filestat_st_size != item.filestat_st_size
                 {
-                    let mut cache = v.get_cache(pool).await?.ok_or_else(|| format_err!("Cache doesn't exist"))?;
+                    let mut cache = v
+                        .get_cache(pool)
+                        .await?
+                        .ok_or_else(|| format_err!("Cache doesn't exist"))?;
                     if let Some(md5sum) = &v.md5sum {
                         cache.md5sum = Some(md5sum.clone());
                     }
@@ -237,7 +241,8 @@ pub trait FileListTrait: Send + Sync + Debug {
                     cache.filestat_st_mtime = v.filestat_st_mtime;
                     cache.filestat_st_size = v.filestat_st_size;
 
-                    cache.update(pool).await?;
+                    println!("GOT HERE {:?}", cache);
+                    cache.insert(pool).await?;
                 }
             }
         }
@@ -257,8 +262,10 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
         let pool = self.get_pool();
-
-        FileInfoCache::get_all_cached(&session.0, stype.to_str(), pool).await.map_err(Into::into)
+        println!("get_all_cached {} {}", session.0, stype.to_str());
+        FileInfoCache::get_all_cached(&session.0, stype.to_str(), pool)
+            .await
+            .map_err(Into::into)
     }
 
     fn get_file_list_dict(
@@ -302,7 +309,9 @@ pub trait FileListTrait: Send + Sync + Debug {
         let stype = self.get_servicetype();
         let pool = self.get_pool();
 
-        DirectoryInfoCache::get_all(&session.0, stype.to_str(), pool).await.map_err(Into::into)
+        DirectoryInfoCache::get_all(&session.0, stype.to_str(), pool)
+            .await
+            .map_err(Into::into)
     }
 
     fn get_directory_map_cache(
@@ -359,7 +368,9 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        DirectoryInfoCache::delete_all(&session.0, stype.to_str(), pool).await.map_err(Into::into)
+        FileInfoCache::delete_all(&session.0, stype.to_str(), pool)
+            .await
+            .map_err(Into::into)
     }
 
     async fn remove_by_id(&self, gdriveid: &str) -> Result<usize, Error> {
@@ -367,7 +378,9 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        DirectoryInfoCache::delete_by_id(gdriveid, &session.0, stype.to_str(), pool).await.map_err(Into::into)
+        FileInfoCache::delete_by_id(gdriveid, &session.0, stype.to_str(), pool)
+            .await
+            .map_err(Into::into)
     }
 
     async fn clear_directory_list(&self) -> Result<usize, Error> {
@@ -375,7 +388,9 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        DirectoryInfoCache::clear_all(&session.0, stype.to_str(), pool).await.map_err(Into::into)
+        DirectoryInfoCache::delete_all(&session.0, stype.to_str(), pool)
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -424,7 +439,11 @@ impl FileListTrait for FileList {
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        self.load_file_list().await?.into_iter().map(TryInto::try_into).collect()
+        self.load_file_list()
+            .await?
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect()
     }
 }
 

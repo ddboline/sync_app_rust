@@ -151,7 +151,9 @@ impl SyncEntryProcessRequest {
         config: &Config,
     ) -> Result<(), Error> {
         let _guard = locks.sync.lock().await;
-        let entry = FileSyncCache::get_by_id(pool, self.id).await?.ok_or_else(|| Error::BadRequest("No entry".into()))?;
+        let entry = FileSyncCache::get_by_id(pool, self.id)
+            .await?
+            .ok_or_else(|| Error::BadRequest("No entry".into()))?;
         let src_url = entry.src_url.parse()?;
         let dst_url = entry.dst_url.parse()?;
         let sync = SyncOpts::new(FileSyncAction::Copy, &[src_url, dst_url]);

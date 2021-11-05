@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
+use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{Into, TryFrom, TryInto},
@@ -11,21 +12,13 @@ use std::{
     sync::Arc,
 };
 use url::Url;
-use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
 
 use stack_string::StackString;
 
 use crate::{
-    file_info_gcs::FileInfoGcs,
-    file_info_gdrive::FileInfoGDrive,
-    file_info_local::FileInfoLocal,
-    file_info_s3::FileInfoS3,
-    file_info_ssh::FileInfoSSH,
-    file_service::FileService,
-    map_parse,
-    models::{FileInfoCache},
-    path_buf_wrapper::PathBufWrapper,
-    pgpool::PgPool,
+    file_info_gcs::FileInfoGcs, file_info_gdrive::FileInfoGDrive, file_info_local::FileInfoLocal,
+    file_info_s3::FileInfoS3, file_info_ssh::FileInfoSSH, file_service::FileService, map_parse,
+    models::FileInfoCache, path_buf_wrapper::PathBufWrapper, pgpool::PgPool,
     url_wrapper::UrlWrapper,
 };
 
@@ -288,15 +281,11 @@ impl TryFrom<FileInfoCache> for FileInfo {
 
 impl FileInfo {
     pub async fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
-        let urlname = url.as_str();
-        let query = query!("SELECT * FROM file_info_cache WHERE urlname=$urlname AND deleted_at IS NULL", urlname=urlname);
-        let conn = pool.get().await?;
-        let result: Option<FileInfoCache> = query.fetch_opt(&conn).await?;
-        let result = match result {
-            Some(f) => Some(f.try_into()?),
-            None => None,
-        };
-        Ok(result)
+        FileInfoCache::get_by_urlname(url, pool)
+            .await?
+            .pop()
+            .map(TryInto::try_into)
+            .transpose()
     }
 }
 
@@ -328,13 +317,13 @@ impl From<FileInfo> for FileInfoCache {
 
 pub async fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, Error> {
     let finfo_cache: FileInfoCache = finfo.into();
-    
-    if let Some(cache) = finfo_cache.get_cache(pool).await? {
-        cache.update(pool).await?;
-    } else {
-        finfo_cache.insert(pool).await?;
-    }
-    let cache = finfo_cache.get_cache(pool).await?.ok_or_else(|| format_err!("Insert failed"))?;
+
+    finfo_cache.insert(pool).await?;
+
+    let cache = finfo_cache
+        .get_cache(pool)
+        .await?
+        .ok_or_else(|| format_err!("Insert failed"))?;
     Ok(cache)
 }
 

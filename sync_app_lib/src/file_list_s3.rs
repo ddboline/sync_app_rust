@@ -278,7 +278,7 @@ mod tests {
 
         let new_flist = flist.fill_file_list().await?;
 
-        debug!("{} {:?}", bucket, new_flist.get(0));
+        println!("{} {:?}", bucket, new_flist.get(0));
         assert!(new_flist.len() > 0);
 
         flist.with_list(new_flist);

@@ -1,18 +1,18 @@
 use anyhow::{format_err, Error};
+use chrono::Utc;
 use futures::future::try_join_all;
 use itertools::Itertools;
 use log::{debug, error};
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
+use refinery::embed_migrations;
 use stack_string::StackString;
 use std::sync::Arc;
 use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
 use tokio::task::spawn_blocking;
 use url::Url;
-use chrono::Utc;
-use refinery::embed_migrations;
 
 use crate::{
     calendar_sync::CalendarSync,
@@ -248,11 +248,13 @@ impl SyncOpts {
             }
             FileSyncAction::AddConfig => {
                 if self.urls.len() == 2 {
-                    let conf = FileSyncConfig {id: -1, src_url: self.urls[0].as_str().into(), dst_url: self.urls[1].as_str().into(), last_run: Utc::now()};
-                    conf.insert_config(
-                        pool,
-                    )
-                    .await?;
+                    let conf = FileSyncConfig {
+                        id: -1,
+                        src_url: self.urls[0].as_str().into(),
+                        dst_url: self.urls[1].as_str().into(),
+                        last_run: Utc::now(),
+                    };
+                    conf.insert_config(pool).await?;
                     Ok(())
                 } else {
                     Err(format_err!("Need exactly 2 Urls"))
