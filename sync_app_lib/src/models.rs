@@ -325,7 +325,7 @@ impl FileSyncCache {
             dst_url: dst_url.as_str().into(),
             created_at: Utc::now(),
         };
-        value.cache_sync_sync(&pool).await?;
+        value.cache_sync_sync(pool).await?;
         Ok(())
     }
 }

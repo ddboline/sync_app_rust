@@ -62,13 +62,15 @@ impl Default for AccessLocks {
     }
 }
 
+type SyncJob = (SyncMesg, JoinHandle<Result<(), Error>>);
+
 #[derive(Clone)]
 pub struct AppState {
     pub config: Config,
     pub db: PgPool,
     pub locks: Arc<AccessLocks>,
     pub client: Arc<Client>,
-    pub queue: Arc<Queue<(SyncMesg, JoinHandle<Result<(), Error>>)>>,
+    pub queue: Arc<Queue<SyncJob>>,
 }
 
 pub async fn start_app() -> Result<(), Error> {
