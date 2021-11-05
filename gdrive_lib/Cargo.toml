@@ -1,6 +1,6 @@
 [package]
 name = "gdrive_lib"
-version = "0.7.34"
+version = "0.7.35"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -31,4 +31,4 @@ deadqueue = "0.2"
 env_logger = "0.9"
 async-google-apis-common = "0.3"
 tokio = {version="1.9", features=["full"]}
-stack-string = { version="0.3", features=["diesel_types"] }
+stack-string = { version="0.3", features=["postgres_types"] }

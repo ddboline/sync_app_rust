@@ -1,7 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use itertools::Itertools;
 use log::debug;
 use rayon::iter::{
@@ -19,6 +18,7 @@ use std::{
 use stdout_channel::StdoutChannel;
 use tokio::task::spawn_blocking;
 use url::Url;
+use postgres_query::query;
 
 use gdrive_lib::{directory_info::DirectoryInfo, gdrive_instance::GDriveInstance};
 use stack_string::StackString;
@@ -32,7 +32,7 @@ use crate::{
     file_list_s3::FileListS3,
     file_list_ssh::FileListSSH,
     file_service::FileService,
-    models::{DirectoryInfoCache, FileInfoCache, InsertDirectoryInfoCache, InsertFileInfoCache},
+    models::{DirectoryInfoCache, FileInfoCache},
     pgpool::PgPool,
 };
 
@@ -186,13 +186,12 @@ pub trait FileListTrait: Send + Sync + Debug {
         }
     }
 
-    fn cache_file_list(&self) -> Result<usize, Error> {
-        use crate::schema::file_info_cache;
+    async fn cache_file_list(&self) -> Result<usize, Error> {
         let pool = self.get_pool();
 
         // Load existing file_list, create hashmap
         let current_cache: HashMap<_, _> = self
-            .load_file_list()?
+            .load_file_list().await?
             .into_iter()
             .filter_map(|item| {
                 let key = item.get_key();
@@ -205,7 +204,7 @@ pub trait FileListTrait: Send + Sync + Debug {
             .get_filemap()
             .iter()
             .filter_map(|(_, f)| {
-                let item: InsertFileInfoCache = f.into();
+                let item: FileInfoCache = f.into();
 
                 let key = item.get_key();
                 key.map(|k| (k, item))
@@ -213,34 +212,14 @@ pub trait FileListTrait: Send + Sync + Debug {
             .collect();
 
         // Delete entries from current_cache not in filemap
-        let res: Result<(), Error> = current_cache.iter().try_for_each(|(k, _)| {
+        for (k, _) in &current_cache {
             if flist_cache_map.contains_key(k) {
-                Ok(())
+                continue
             } else {
-                use crate::schema::file_info_cache::dsl::{
-                    deleted_at, file_info_cache, filename, filepath, serviceid, servicesession,
-                    urlname,
-                };
-
-                let conn = pool.get()?;
-
                 debug!("remove {:?}", k);
-
-                diesel::update(
-                    file_info_cache
-                        .filter(filename.eq(&k.filename))
-                        .filter(filepath.eq(&k.filepath))
-                        .filter(serviceid.eq(&k.serviceid))
-                        .filter(servicesession.eq(&k.servicesession))
-                        .filter(urlname.eq(&k.urlname))
-                        .filter(deleted_at.is_null()),
-                )
-                .set(deleted_at.eq(Some(Utc::now())))
-                .execute(&conn)?;
-                Ok(())
+                k.delete_cache_entry(&pool).await?;
             }
-        });
-        res?;
+        }
 
         for (k, v) in &flist_cache_map {
             if let Some(item) = current_cache.get(k) {
@@ -249,79 +228,38 @@ pub trait FileListTrait: Send + Sync + Debug {
                     || v.filestat_st_mtime != item.filestat_st_mtime
                     || v.filestat_st_size != item.filestat_st_size
                 {
-                    use crate::schema::file_info_cache::dsl::{
-                        file_info_cache, filename, filepath, filestat_st_mtime, filestat_st_size,
-                        id, md5sum, serviceid, servicesession, sha1sum, urlname,
-                    };
-
-                    let conn = pool.get()?;
-
-                    let cache = file_info_cache
-                        .filter(filename.eq(&v.filename))
-                        .filter(filepath.eq(&v.filepath))
-                        .filter(urlname.eq(&v.urlname))
-                        .filter(serviceid.eq(&v.serviceid))
-                        .filter(servicesession.eq(&v.servicesession))
-                        .load::<FileInfoCache>(&conn)?;
-                    assert!(!cache.is_empty());
-                    if cache.len() > 1 {
-                        for c in &cache[1..] {
-                            diesel::delete(file_info_cache.filter(id.eq(c.id))).execute(&conn)?;
-                        }
+                    let mut cache = v.get_cache(pool).await?.ok_or_else(|| format_err!("Cache doesn't exist"))?;
+                    if let Some(md5sum) = &v.md5sum {
+                        cache.md5sum = Some(md5sum.clone());
                     }
-                    let id_ = cache[0].id;
+                    if let Some(sha1sum) = &v.sha1sum {
+                        cache.sha1sum = Some(sha1sum.clone());
+                    }
+                    cache.filestat_st_mtime = v.filestat_st_mtime;
+                    cache.filestat_st_size = v.filestat_st_size;
 
-                    diesel::update(file_info_cache.filter(id.eq(id_)))
-                        .set((
-                            md5sum.eq(&v.md5sum),
-                            sha1sum.eq(&v.sha1sum),
-                            filestat_st_mtime.eq(v.filestat_st_mtime),
-                            filestat_st_size.eq(v.filestat_st_size),
-                        ))
-                        .execute(&conn)?;
+                    cache.update(pool).await?;
                 }
             }
         }
 
-        let results: Result<Vec<_>, Error> = flist_cache_map
-            .into_iter()
-            .filter_map(|(k, v)| {
-                if current_cache.get(&k).is_none() {
-                    Some(v)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>()
-            .chunks(1000)
-            .map(|v| {
-                diesel::insert_into(file_info_cache::table)
-                    .values(v)
-                    .execute(&pool.get()?)
-                    .map_err(Into::into)
-            })
-            .collect();
-
-        let result: usize = results?.iter().sum();
-        Ok(result)
+        let mut inserted = 0;
+        for (k, v) in flist_cache_map {
+            if current_cache.contains_key(&k) {
+                continue;
+            }
+            v.insert(pool).await?;
+            inserted += 1;
+        }
+        Ok(inserted)
     }
 
-    fn load_file_list(&self) -> Result<Vec<FileInfoCache>, Error> {
-        use crate::schema::file_info_cache::dsl::{
-            deleted_at, file_info_cache, servicesession, servicetype,
-        };
-
-        let pool = self.get_pool();
-        let conn = pool.get()?;
+    async fn load_file_list(&self) -> Result<Vec<FileInfoCache>, Error> {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
+        let pool = self.get_pool();
 
-        file_info_cache
-            .filter(servicesession.eq(session.0.to_string()))
-            .filter(servicetype.eq(stype.to_string()))
-            .filter(deleted_at.is_null())
-            .load::<FileInfoCache>(&conn)
-            .map_err(Into::into)
+        FileInfoCache::get_all_cached(&session.0, stype.to_str(), pool).await.map_err(Into::into)
     }
 
     fn get_file_list_dict(
@@ -360,21 +298,12 @@ pub trait FileListTrait: Send + Sync + Debug {
             .collect()
     }
 
-    fn load_directory_info_cache(&self) -> Result<Vec<DirectoryInfoCache>, Error> {
-        use crate::schema::directory_info_cache::dsl::{
-            directory_info_cache, servicesession, servicetype,
-        };
-
-        let pool = self.get_pool();
-        let conn = pool.get()?;
+    async fn load_directory_info_cache(&self) -> Result<Vec<DirectoryInfoCache>, Error> {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
+        let pool = self.get_pool();
 
-        directory_info_cache
-            .filter(servicesession.eq(session.0.to_string()))
-            .filter(servicetype.eq(stype.to_string()))
-            .load::<DirectoryInfoCache>(&conn)
-            .map_err(Into::into)
+        DirectoryInfoCache::get_all(&session.0, stype.to_str(), pool).await.map_err(Into::into)
     }
 
     fn get_directory_map_cache(
@@ -398,104 +327,56 @@ pub trait FileListTrait: Send + Sync + Debug {
         (dmap, root_id)
     }
 
-    fn cache_directory_map(
+    async fn cache_directory_map(
         &self,
         directory_map: &HashMap<StackString, DirectoryInfo>,
         root_id: &Option<StackString>,
     ) -> Result<usize, Error> {
-        use crate::schema::directory_info_cache;
-
         let pool = self.get_pool();
 
-        let dmap_cache_insert: Vec<InsertDirectoryInfoCache> = directory_map
-            .values()
-            .map(|d| {
-                let is_root = root_id.as_ref().map_or(false, |rid| rid == &d.directory_id);
+        let mut inserted = 0;
+        for d in directory_map.values() {
+            let is_root = root_id.as_ref().map_or(false, |rid| rid == &d.directory_id);
 
-                InsertDirectoryInfoCache {
-                    directory_id: d.directory_id.as_str().into(),
-                    directory_name: d.directory_name.as_str().into(),
-                    parent_id: d.parentid.clone(),
-                    is_root,
-                    servicetype: self.get_servicetype().to_string().into(),
-                    servicesession: self.get_servicesession().0.as_str().into(),
-                }
-            })
-            .collect();
+            let cache = DirectoryInfoCache {
+                id: -1,
+                directory_id: d.directory_id.as_str().into(),
+                directory_name: d.directory_name.as_str().into(),
+                parent_id: d.parentid.clone(),
+                is_root,
+                servicetype: self.get_servicetype().to_string().into(),
+                servicesession: self.get_servicesession().0.as_str().into(),
+            };
 
-        let results: Result<Vec<_>, Error> = dmap_cache_insert
-            .chunks(1000)
-            .map(|v| {
-                diesel::insert_into(directory_info_cache::table)
-                    .values(v)
-                    .execute(&pool.get()?)
-                    .map_err(Into::into)
-            })
-            .collect();
-        let result: usize = results?.iter().sum();
-        Ok(result)
+            cache.insert(pool).await?;
+            inserted += 1;
+        }
+        Ok(inserted)
     }
 
-    fn clear_file_list(&self) -> Result<usize, Error> {
-        use crate::schema::file_info_cache::dsl::{
-            deleted_at, file_info_cache, servicesession, servicetype,
-        };
-
+    async fn clear_file_list(&self) -> Result<usize, Error> {
         let pool = self.get_pool();
 
-        let conn = pool.get()?;
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        diesel::update(
-            file_info_cache
-                .filter(servicesession.eq(session.0.to_string()))
-                .filter(servicetype.eq(stype.to_string())),
-        )
-        .set(deleted_at.eq(Some(Utc::now())))
-        .execute(&conn)
-        .map_err(Into::into)
+        DirectoryInfoCache::delete_all(&session.0, stype.to_str(), pool).await.map_err(Into::into)
     }
 
-    fn remove_by_id(&self, gdriveid: &str) -> Result<usize, Error> {
-        use crate::schema::file_info_cache::dsl::{
-            deleted_at, file_info_cache, serviceid, servicesession, servicetype,
-        };
-
+    async fn remove_by_id(&self, gdriveid: &str) -> Result<usize, Error> {
         let pool = self.get_pool();
-        let conn = pool.get()?;
-        let session = self.get_servicesession();
-        let stype = self.get_servicetype();
-        let null: Option<DateTime<Utc>> = None;
-
-        diesel::update(
-            file_info_cache
-                .filter(servicesession.eq(session.0.to_string()))
-                .filter(servicetype.eq(stype.to_string()))
-                .filter(serviceid.eq(gdriveid)),
-        )
-        .set(deleted_at.eq(null))
-        .execute(&conn)
-        .map_err(Into::into)
-    }
-
-    fn clear_directory_list(&self) -> Result<usize, Error> {
-        use crate::schema::directory_info_cache::dsl::{
-            directory_info_cache, servicesession, servicetype,
-        };
-
-        let pool = self.get_pool();
-        let conn = pool.get()?;
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        diesel::delete(
-            directory_info_cache
-                .filter(servicesession.eq(session.0.to_string()))
-                .filter(servicetype.eq(stype.to_string())),
-        )
-        .execute(&conn)
-        .map_err(Into::into)
+        DirectoryInfoCache::delete_by_id(gdriveid, &session.0, stype.to_str(), pool).await.map_err(Into::into)
+    }
+
+    async fn clear_directory_list(&self) -> Result<usize, Error> {
+        let pool = self.get_pool();
+        let session = self.get_servicesession();
+        let stype = self.get_servicetype();
+
+        DirectoryInfoCache::clear_all(&session.0, stype.to_str(), pool).await.map_err(Into::into)
     }
 }
 
@@ -544,15 +425,7 @@ impl FileListTrait for FileList {
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let self_ = self.clone();
-        spawn_blocking(move || match self_.load_file_list() {
-            Ok(v) => {
-                let result: Result<Vec<_>, Error> = v.iter().map(TryInto::try_into).collect();
-                result
-            }
-            Err(e) => Err(e),
-        })
-        .await?
+        self.load_file_list().await?.into_iter().map(TryInto::try_into).collect()
     }
 }
 

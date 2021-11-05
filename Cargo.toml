@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_rust"
-version = "0.7.34"
+version = "0.7.35"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -24,7 +24,7 @@ dirs = "4.0"
 walkdir = "2.3"
 chrono = "0.4"
 futures = "0.3"
-stack-string = { version="0.3", features=["diesel_types"] }
+stack-string = { version="0.3", features=["postgres_types"] }
 
 [workspace]
 members = [

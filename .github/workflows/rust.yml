@@ -23,12 +23,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Install deps
-      run: |
-        sudo apt-get update && \
-        sudo apt-get install libpq-dev && \
-        rustup update && \
-        cargo install diesel_cli
 
     - name: Clippy
       run: cargo clippy -- -W clippy::pedantic
@@ -37,7 +31,7 @@ jobs:
 
     - name: Run tests
       run: |
-        diesel database setup && \
+        ./target/debug/sync-app-rust run-migrations && \
         cargo test --verbose --all && \
         cargo install cargo-tarpaulin && \
         cargo tarpaulin --verbose --all-features --workspace --out Xml

@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_lib"
-version = "0.7.34"
+version = "0.7.35"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -14,8 +14,6 @@ s3-ext = "0.3"
 sts_profile_auth = "0.6"
 url = "2.2"
 dotenv = "0.15"
-r2d2 = "0.8"
-diesel = {version="1.4", features=["postgres", "r2d2", "chrono"]}
 walkdir = "2.3"
 rayon = "1.5"
 checksums = "0.9"
@@ -45,5 +43,12 @@ tempfile = "3.1"
 smallvec = "1.6"
 arc-swap = "1.2"
 env_logger = "0.9"
+refinery = {version="0.7", features=["tokio-postgres"]}
+deadpool = { version = "0.9", features=["serde", "rt_tokio_1"] }
+deadpool-postgres = { version = "0.10", features=["serde"] }
+tokio-postgres = {version = "0.7", features = ["with-chrono-0_4", "with-uuid-0_8", "with-serde_json-1"]}
+postgres-types = "0.2"
+postgres_query = {git = "https://github.com/ddboline/rust-postgres-query", tag = "0.3.4", features=["deadpool"]}
+
 stdout-channel = "0.4"
-stack-string = { version="0.3", features=["diesel_types"] }
+stack-string = { version="0.3", features=["postgres_types"] }

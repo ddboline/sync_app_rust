@@ -46,7 +46,7 @@ async fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
         create_dir_all(&outdir)?;
     }
 
-    let futures = flist.load_file_list()?.into_iter().map(|item| {
+    let futures = flist.load_file_list().await?.into_iter().map(|item| {
         let outdir = outdir.clone();
         let gdrive = gdrive.clone();
         async move {

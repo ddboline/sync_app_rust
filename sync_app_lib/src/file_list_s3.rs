@@ -283,13 +283,13 @@ mod tests {
 
         flist.with_list(new_flist);
 
-        flist.cache_file_list()?;
+        flist.cache_file_list().await?;
 
-        let new_flist = flist.load_file_list()?;
+        let new_flist = flist.load_file_list().await?;
 
         assert_eq!(flist.flist.get_filemap().len(), new_flist.len());
 
-        flist.clear_file_list()?;
+        flist.clear_file_list().await?;
         Ok(())
     }
 

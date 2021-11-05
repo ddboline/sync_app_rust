@@ -11,6 +11,8 @@ use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
 use tokio::task::spawn_blocking;
 use url::Url;
+use chrono::Utc;
+use refinery::embed_migrations;
 
 use crate::{
     calendar_sync::CalendarSync,
@@ -20,10 +22,12 @@ use crate::{
     file_service::FileService,
     file_sync::{FileSync, FileSyncAction},
     garmin_sync::GarminSync,
-    models::{BlackList, FileSyncCache, FileSyncConfig, InsertFileSyncConfig},
+    models::{BlackList, FileSyncCache, FileSyncConfig},
     movie_sync::MovieSync,
     pgpool::PgPool,
 };
+
+embed_migrations!("../migrations");
 
 #[derive(StructOpt, Debug)]
 pub struct SyncOpts {
@@ -32,7 +36,7 @@ pub struct SyncOpts {
     /// "list" or "ls", "delete" or "rm", "move" or "mv", "ser" or
     /// "serialize", "add" or "add_config", "show", "show_cache"
     /// "sync_garmin", "sync_movie", "sync_calendar", "show_config",
-    /// "sync_all"
+    /// "sync_all", "run-migrations"
     pub action: FileSyncAction,
     #[structopt(short = "u", long = "urls", parse(try_from_str))]
     pub urls: Vec<Url>,
@@ -100,7 +104,8 @@ impl SyncOpts {
                             list
                         };
                         flist.with_list(list);
-                        spawn_blocking(move || flist.cache_file_list().map(|_| flist)).await?
+                        flist.cache_file_list().await?;
+                        Ok(flist)
                     }
                 });
                 let result: Result<Vec<_>, Error> = try_join_all(futures).await;
@@ -134,7 +139,8 @@ impl SyncOpts {
                             list
                         };
                         flist.with_list(list);
-                        spawn_blocking(move || flist.cache_file_list().map(|_| flist)).await?
+                        flist.cache_file_list().await?;
+                        Ok(flist)
                     }
                 });
                 let flists: Result<Vec<_>, Error> = try_join_all(futures).await;
@@ -242,13 +248,11 @@ impl SyncOpts {
             }
             FileSyncAction::AddConfig => {
                 if self.urls.len() == 2 {
-                    InsertFileSyncConfig::insert_config(
+                    let conf = FileSyncConfig {id: -1, src_url: self.urls[0].as_str().into(), dst_url: self.urls[1].as_str().into(), last_run: Utc::now()};
+                    conf.insert_config(
                         pool,
-                        self.urls[0].as_str(),
-                        self.urls[1].as_str(),
                     )
-                    .await
-                    .map(|_| ())?;
+                    .await?;
                     Ok(())
                 } else {
                     Err(format_err!("Need exactly 2 Urls"))
@@ -294,6 +298,11 @@ impl SyncOpts {
                 Ok(())
             }
             FileSyncAction::SyncAll => Ok(()),
+            FileSyncAction::RunMigrations => {
+                let mut client = pool.get().await?;
+                migrations::runner().run_async(&mut **client).await?;
+                Ok(())
+            }
         }
     }
 }
