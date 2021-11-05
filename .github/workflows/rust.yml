@@ -32,7 +32,6 @@ jobs:
     - name: Run tests
       run: |
         ./target/debug/sync-app-rust run-migrations && \
-        psql $DATABASE_URL -c "\dt" &&
         cargo test --verbose --all && \
         cargo install cargo-tarpaulin && \
         cargo tarpaulin --verbose --all-features --workspace --out Xml
