@@ -99,57 +99,53 @@ impl FileListTrait for FileListLocal {
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let local_list = self.clone();
-        spawn_blocking(move || {
-            let servicesession = local_list.get_servicesession();
-            let basedir = local_list.get_baseurl().path();
-            let file_list = local_list.load_file_list()?;
-            let flist_dict = local_list.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
+        let servicesession = self.get_servicesession();
+        let basedir = self.get_baseurl().path();
+        let file_list = self.load_file_list().await?;
+        let flist_dict = self.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
 
-            let wdir = WalkDir::new(basedir).same_file_system(true);
+        let wdir = WalkDir::new(basedir).same_file_system(true);
 
-            let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
+        let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 
-            if !flist_dict.is_empty() && entries.is_empty() {
-                return Err(format_err!(
-                    "No local files found, check that disk is mounted"
-                ));
-            }
+        if !flist_dict.is_empty() && entries.is_empty() {
+            return Err(format_err!(
+                "No local files found, check that disk is mounted"
+            ));
+        }
 
-            entries
-                .into_iter()
-                .filter(|entry| !entry.file_type().is_dir())
-                .map(|entry| {
-                    let filepath = entry
-                        .path()
-                        .canonicalize()
-                        .map_err(|e| {
-                            error!("entry {:?}", entry);
-                            e
-                        })?
-                        .to_string_lossy()
-                        .to_string();
-                    let metadata = entry.metadata()?;
-                    let modified = metadata
-                        .modified()?
-                        .duration_since(SystemTime::UNIX_EPOCH)?
-                        .as_secs() as u32;
-                    let size = metadata.len() as u32;
-                    if let Some(finfo) = flist_dict.get(filepath.as_str()) {
-                        if finfo.filestat.st_mtime >= modified && finfo.filestat.st_size == size {
-                            return Ok(finfo.clone());
-                        }
-                    };
-                    FileInfoLocal::from_direntry(
-                        &entry,
-                        Some(servicesession.0.clone().into()),
-                        Some(servicesession.clone()),
-                    )
-                    .map(|x| x.0)
-                })
-                .collect()
-        })
-        .await?
+        entries
+            .into_iter()
+            .filter(|entry| !entry.file_type().is_dir())
+            .map(|entry| {
+                let filepath = entry
+                    .path()
+                    .canonicalize()
+                    .map_err(|e| {
+                        error!("entry {:?}", entry);
+                        e
+                    })?
+                    .to_string_lossy()
+                    .to_string();
+                let metadata = entry.metadata()?;
+                let modified = metadata
+                    .modified()?
+                    .duration_since(SystemTime::UNIX_EPOCH)?
+                    .as_secs() as u32;
+                let size = metadata.len() as u32;
+                if let Some(finfo) = flist_dict.get(filepath.as_str()) {
+                    if finfo.filestat.st_mtime >= modified && finfo.filestat.st_size == size {
+                        return Ok(finfo.clone());
+                    }
+                };
+                FileInfoLocal::from_direntry(
+                    &entry,
+                    Some(servicesession.0.clone().into()),
+                    Some(servicesession.clone()),
+                )
+                .map(|x| x.0)
+            })
+            .collect()
     }
 
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
@@ -259,7 +255,7 @@ mod tests {
         file_list::FileList,
         file_list_local::{FileListLocal, FileListTrait},
         file_service::FileService,
-        models::{FileInfoCache, InsertFileInfoCache},
+        models::{FileInfoCache},
         pgpool::PgPool,
     };
 
@@ -307,14 +303,14 @@ mod tests {
         assert!(result.filepath.ends_with("file_list_local.rs"));
         assert!(result.urlname.as_str().ends_with("file_list_local.rs"));
 
-        let cache_info: InsertFileInfoCache = result.into();
+        let mut cache_info: FileInfoCache = result.into();
         debug!("{:?}", cache_info);
         assert_eq!(
             &result.md5sum.as_ref().unwrap().0,
             cache_info.md5sum.as_ref().unwrap()
         );
+        cache_info.id = 5;
 
-        let cache_info = &FileInfoCache::from_insert(cache_info, 5);
         let test_result: FileInfo = cache_info.try_into()?;
         assert_eq!(*result, test_result);
 
@@ -328,12 +324,12 @@ mod tests {
 
         debug!("2 {}", flist.get_filemap().len());
 
-        let result = flist.cache_file_list()?;
+        let result = flist.cache_file_list().await?;
         debug!("wrote {}", result);
 
         debug!("{:?}", flist.get_servicesession());
 
-        let new_flist = flist.load_file_list()?;
+        let new_flist = flist.load_file_list().await?;
 
         assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
@@ -347,9 +343,9 @@ mod tests {
         debug!("{}", new_flist.len());
         assert!(new_flist.len() != 0);
 
-        flist.clear_file_list()?;
+        flist.clear_file_list().await?;
 
-        let new_flist = flist.load_file_list()?;
+        let new_flist = flist.load_file_list().await?;
 
         assert_eq!(new_flist.len(), 0);
         Ok(())

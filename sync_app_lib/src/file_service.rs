@@ -34,15 +34,21 @@ impl FromStr for FileService {
     }
 }
 
+impl FileService {
+    pub fn to_str(self) -> &'static str {
+        match self {
+            Self::Local => "local",
+            Self::GDrive => "gdrive",
+            Self::OneDrive => "onedrive",
+            Self::S3 => "s3",
+            Self::GCS => "gs",
+            Self::SSH => "ssh",
+        }
+    }
+}
+
 impl fmt::Display for FileService {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Local => write!(f, "local"),
-            Self::GDrive => write!(f, "gdrive"),
-            Self::OneDrive => write!(f, "onedrive"),
-            Self::S3 => write!(f, "s3"),
-            Self::GCS => write!(f, "gs"),
-            Self::SSH => write!(f, "ssh"),
-        }
+        write!(f, "{}", self.to_str())
     }
 }

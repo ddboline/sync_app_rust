@@ -1,6 +1,5 @@
 use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
-use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{Into, TryFrom, TryInto},
@@ -12,6 +11,7 @@ use std::{
     sync::Arc,
 };
 use url::Url;
+use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
 
 use stack_string::StackString;
 
@@ -23,10 +23,9 @@ use crate::{
     file_info_ssh::FileInfoSSH,
     file_service::FileService,
     map_parse,
-    models::{FileInfoCache, InsertFileInfoCache},
+    models::{FileInfoCache},
     path_buf_wrapper::PathBufWrapper,
     pgpool::PgPool,
-    schema::file_info_cache,
     url_wrapper::UrlWrapper,
 };
 
@@ -266,29 +265,45 @@ impl TryFrom<&FileInfoCache> for FileInfo {
     }
 }
 
+impl TryFrom<FileInfoCache> for FileInfo {
+    type Error = Error;
+    fn try_from(item: FileInfoCache) -> Result<Self, Self::Error> {
+        let inner = FileInfoInner {
+            filename: item.filename,
+            filepath: item.filepath.as_str().into(),
+            urlname: item.urlname.parse()?,
+            md5sum: map_parse(&item.md5sum)?,
+            sha1sum: map_parse(&item.sha1sum)?,
+            filestat: FileStat {
+                st_mtime: item.filestat_st_mtime as u32,
+                st_size: item.filestat_st_size as u32,
+            },
+            serviceid: item.serviceid.as_str().into(),
+            servicetype: item.servicetype.parse()?,
+            servicesession: item.servicesession.parse()?,
+        };
+        Ok(Self(Arc::new(inner)))
+    }
+}
+
 impl FileInfo {
-    pub fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
-        use crate::schema::file_info_cache::dsl::{deleted_at, file_info_cache, urlname};
-
-        let conn = pool.get()?;
-
-        let result = match file_info_cache
-            .filter(urlname.eq(url.as_str().to_string()))
-            .filter(deleted_at.is_null())
-            .load::<FileInfoCache>(&conn)?
-            .get(0)
-        {
+    pub async fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
+        let urlname = url.as_str();
+        let query = query!("SELECT * FROM file_info_cache WHERE urlname=$urlname AND deleted_at IS NULL", urlname=urlname);
+        let conn = pool.get().await?;
+        let result: Option<FileInfoCache> = query.fetch_opt(&conn).await?;
+        let result = match result {
             Some(f) => Some(f.try_into()?),
             None => None,
         };
-
         Ok(result)
     }
 }
 
-impl From<&FileInfo> for InsertFileInfoCache {
+impl From<&FileInfo> for FileInfoCache {
     fn from(item: &FileInfo) -> Self {
         Self {
+            id: -1,
             filename: item.filename.clone(),
             filepath: item.filepath.to_string_lossy().as_ref().into(),
             urlname: item.urlname.as_str().into(),
@@ -300,49 +315,27 @@ impl From<&FileInfo> for InsertFileInfoCache {
             servicetype: item.servicetype.to_string().into(),
             servicesession: item.servicesession.0.clone(),
             created_at: Utc::now(),
+            deleted_at: None,
         }
     }
 }
 
-impl From<FileInfo> for InsertFileInfoCache {
+impl From<FileInfo> for FileInfoCache {
     fn from(item: FileInfo) -> Self {
         Self::from(&item)
     }
 }
 
-pub fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, Error> {
-    use crate::schema::file_info_cache::dsl::{
-        deleted_at, file_info_cache, filename, filepath, id, serviceid, servicesession,
-        servicetype, urlname,
-    };
-    let conn = pool.get()?;
-
-    file_info_cache
-        .filter(filename.eq(&finfo.filename))
-        .filter(filepath.eq(&finfo.filename))
-        .filter(urlname.eq(finfo.urlname.as_str()))
-        .filter(serviceid.eq(&finfo.serviceid.0))
-        .filter(servicetype.eq(&finfo.servicetype.to_string()))
-        .filter(servicesession.eq(&finfo.servicesession.0))
-        .get_result::<FileInfoCache>(&conn)
-        .optional()?
-        .map_or_else(
-            || {
-                let finfo_cache: InsertFileInfoCache = finfo.into();
-                diesel::insert_into(crate::schema::file_info_cache::table)
-                    .values(&finfo_cache)
-                    .get_result(&conn)
-                    .map_err(Into::into)
-            },
-            |finfo| {
-                let null: Option<DateTime<Utc>> = None;
-                diesel::update(file_info_cache.filter(id.eq(finfo.id)))
-                    .set(deleted_at.eq(null))
-                    .execute(&conn)
-                    .map_err(Into::into)
-                    .map(|_| finfo)
-            },
-        )
+pub async fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, Error> {
+    let finfo_cache: FileInfoCache = finfo.into();
+    
+    if let Some(cache) = finfo_cache.get_cache(pool).await? {
+        cache.update(pool).await?;
+    } else {
+        finfo_cache.insert(pool).await?;
+    }
+    let cache = finfo_cache.get_cache(pool).await?.ok_or_else(|| format_err!("Insert failed"))?;
+    Ok(cache)
 }
 
 #[cfg(test)]

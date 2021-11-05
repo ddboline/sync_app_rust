@@ -19,7 +19,7 @@ use crate::{
     file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, FileStat},
     file_list::{group_urls, replace_basepath, replace_baseurl, FileList, FileListTrait},
     file_service::FileService,
-    models::{FileSyncCache, InsertFileSyncCache},
+    models::{FileSyncCache},
     pgpool::PgPool,
 };
 
@@ -40,6 +40,7 @@ pub enum FileSyncAction {
     SyncMovie,
     SyncCalendar,
     SyncAll,
+    RunMigrations,
 }
 
 impl FromStr for FileSyncAction {
@@ -62,6 +63,7 @@ impl FromStr for FileSyncAction {
             "sync_movie" => Ok(Self::SyncMovie),
             "sync_calendar" => Ok(Self::SyncCalendar),
             "sync_all" => Ok(Self::SyncAll),
+            "run-migrations" => Ok(Self::RunMigrations),
             _ => Err(format_err!("Parse failure")),
         }
     }
@@ -195,7 +197,7 @@ impl FileSync {
                 .map(|(f0, f1)| {
                     let pool = pool.clone();
                     async move {
-                        InsertFileSyncCache::cache_sync(
+                        FileSyncCache::cache_sync(
                             &pool,
                             f0.urlname.as_str(),
                             f1.urlname.as_str(),
@@ -293,11 +295,11 @@ impl FileSync {
                         if let Some(vals) = proc_map.get(&key) {
                             let flist0 = FileList::from_url(&u0, &self.config, pool).await?;
                             for val in vals {
-                                let finfo0 = match FileInfo::from_database(pool, &key)? {
+                                let finfo0 = match FileInfo::from_database(pool, &key).await? {
                                     Some(f) => f,
                                     None => FileInfo::from_url(&key)?,
                                 };
-                                let finfo1 = match FileInfo::from_database(pool, val)? {
+                                let finfo1 = match FileInfo::from_database(pool, val).await? {
                                     Some(f) => f,
                                     None => FileInfo::from_url(val)?,
                                 };
@@ -343,7 +345,7 @@ impl FileSync {
         for urls in group_urls(&all_urls).values() {
             let flist = Arc::new(FileList::from_url(&urls[0], &self.config, pool).await?);
             let fdict = Arc::new(
-                flist.get_file_list_dict(&flist.load_file_list()?, FileInfoKeyType::UrlName),
+                flist.get_file_list_dict(&flist.load_file_list().await?, FileInfoKeyType::UrlName),
             );
 
             let futures = urls.iter().map(|url| {

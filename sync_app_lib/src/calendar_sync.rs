@@ -5,6 +5,7 @@ use maplit::hashmap;
 use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
+use postgres_query::FromSqlRow;
 
 use stack_string::StackString;
 
@@ -12,7 +13,7 @@ use crate::{
     config::Config, iso_8601_datetime, reqwest_session::ReqwestSession, sync_client::SyncClient,
 };
 
-#[derive(Queryable, Clone, Debug, Serialize, Deserialize)]
+#[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarList {
     pub id: i32,
     pub calendar_name: StackString,
@@ -27,7 +28,7 @@ pub struct CalendarList {
     pub display: bool,
 }
 
-#[derive(Queryable, Clone, Debug, Serialize, Deserialize)]
+#[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarCache {
     pub id: i32,
     pub gcal_id: StackString,

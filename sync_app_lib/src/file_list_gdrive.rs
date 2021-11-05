@@ -111,14 +111,14 @@ impl FileListGDrive {
 
     pub async fn set_directory_map(&self, use_cache: bool) -> Result<(), Error> {
         let (dmap, root_dir) = if use_cache {
-            let dlist = self.load_directory_info_cache()?;
+            let dlist = self.load_directory_info_cache().await?;
             self.get_directory_map_cache(dlist)
         } else {
             self.gdrive.get_directory_map().await?
         };
         if !use_cache {
-            self.clear_directory_list()?;
-            self.cache_directory_map(&dmap, &root_dir)?;
+            self.clear_directory_list().await?;
+            self.cache_directory_map(&dmap, &root_dir).await?;
         }
         self.directory_map.store(Arc::new(dmap));
         self.root_directory.store(Arc::new(root_dir));
@@ -226,13 +226,13 @@ impl FileListTrait for FileListGDrive {
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         self.set_directory_map(false).await?;
         let start_page_token = self.gdrive.get_start_page_token().await?;
-        let file_list = self.flist.load_file_list()?;
+        let file_list = self.flist.load_file_list().await?;
 
         let (dlist, flist) = if self.gdrive.start_page_token.load().is_some() {
             self.get_all_changes().await?
         } else {
             {
-                self.clear_file_list()?;
+                self.clear_file_list().await?;
                 (Vec::new(), self.get_all_files().await?)
             }
         };
@@ -328,7 +328,7 @@ impl FileListTrait for FileListGDrive {
             debug!("{:?}", gfile.mime_type);
             if GDriveInstance::is_unexportable(&gfile.mime_type) {
                 debug!("unexportable");
-                self.remove_by_id(&gdriveid)?;
+                self.remove_by_id(&gdriveid).await?;
                 debug!("removed from database");
                 return Ok(());
             }
@@ -476,18 +476,18 @@ mod tests {
 
         assert!(new_flist.len() > 0);
 
-        flist.clear_file_list()?;
+        flist.clear_file_list().await?;
 
         flist.with_list(new_flist);
 
-        let result = flist.cache_file_list()?;
+        let result = flist.cache_file_list().await?;
         debug!("wrote {}", result);
 
-        let new_flist = flist.load_file_list()?;
+        let new_flist = flist.load_file_list().await?;
 
         assert_eq!(flist.flist.get_filemap().len(), new_flist.len());
 
-        flist.clear_file_list()?;
+        flist.clear_file_list().await?;
 
         debug!("dmap {}", flist.directory_map.load().len());
         let directory_map = flist.directory_map.load().clone();
@@ -515,7 +515,7 @@ mod tests {
         let new_flist = flist.fill_file_list().await?;
         assert!(new_flist.len() > 0);
         flist.with_list(new_flist);
-        let result = flist.cache_file_list()?;
+        let result = flist.cache_file_list().await?;
         debug!("wrote {}", result);
         flist.cleanup()?;
 

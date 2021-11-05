@@ -1,33 +1,57 @@
 use anyhow::Error;
-use diesel::{pg::PgConnection, r2d2::ConnectionManager};
-use r2d2::{Pool, PooledConnection};
-use std::fmt;
+use deadpool_postgres::{Client, Config, Pool};
+use derive_more::Deref;
+use std::{fmt, sync::Arc};
+use tokio_postgres::{Config as PgConfig, NoTls};
 
-#[derive(Clone)]
+pub use tokio_postgres::Transaction as PgTransaction;
+
+use stack_string::StackString;
+
+#[derive(Clone, Deref)]
 pub struct PgPool {
-    pgurl: String,
-    pool: Pool<ConnectionManager<PgConnection>>,
+    pgurl: Arc<StackString>,
+    #[deref]
+    pool: Pool,
 }
 
 impl fmt::Debug for PgPool {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "PgPool {}", self.pgurl)
+        write!(f, "PgPool {}", &self.pgurl)
     }
 }
 
 impl PgPool {
+    #[allow(clippy::missing_panics_doc)]
     pub fn new(pgurl: &str) -> Self {
-        let manager = ConnectionManager::new(pgurl);
+        let pgconf: PgConfig = pgurl.parse().expect("Failed to parse Url");
+
+        let mut config = Config::default();
+
+        if let tokio_postgres::config::Host::Tcp(s) = &pgconf.get_hosts()[0] {
+            config.host.replace(s.to_string());
+        }
+        if let Some(u) = pgconf.get_user() {
+            config.user.replace(u.to_string());
+        }
+        if let Some(p) = pgconf.get_password() {
+            config
+                .password
+                .replace(String::from_utf8_lossy(p).to_string());
+        }
+        if let Some(db) = pgconf.get_dbname() {
+            config.dbname.replace(db.to_string());
+        }
+
         Self {
-            pgurl: pgurl.to_string(),
-            pool: Pool::builder()
-                .min_idle(Some(2))
-                .build(manager)
-                .expect("Failed to open DB connection"),
+            pgurl: Arc::new(pgurl.into()),
+            pool: config
+                .create_pool(None, NoTls)
+                .unwrap_or_else(|_| panic!("Failed to create pool {}", pgurl)),
         }
     }
 
-    pub fn get(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>, Error> {
-        self.pool.get().map_err(Into::into)
+    pub async fn get(&self) -> Result<Client, Error> {
+        self.pool.get().await.map_err(Into::into)
     }
 }

@@ -5,6 +5,7 @@ use maplit::hashmap;
 use reqwest::{header::HeaderMap, Response, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future};
+use postgres_query::FromSqlRow;
 
 use stack_string::StackString;
 
