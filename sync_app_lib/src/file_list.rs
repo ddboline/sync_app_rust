@@ -262,7 +262,6 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
         let pool = self.get_pool();
-        println!("get_all_cached {} {}", session.0, stype.to_str());
         FileInfoCache::get_all_cached(&session.0, stype.to_str(), pool)
             .await
             .map_err(Into::into)
