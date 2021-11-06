@@ -213,13 +213,17 @@ pub trait FileListTrait: Send + Sync + Debug {
             .collect();
 
         // Delete entries from current_cache not in filemap
+        let mut deleted_entries = 0;
         for k in current_cache.keys() {
             if flist_cache_map.contains_key(k) {
                 continue;
             }
             info!("remove {:?}", k);
             k.delete_cache_entry(pool).await?;
+            deleted_entries += 1;
         }
+
+        info!("flist_cache_map {} {} {} {}", self.get_servicetype(), flist_cache_map.len(), current_cache.len(), deleted_entries);
 
         for (k, v) in &flist_cache_map {
             if let Some(item) = current_cache.get(k) {
