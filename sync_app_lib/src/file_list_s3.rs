@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
-use log::debug;
+use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{
     collections::HashMap,
@@ -169,7 +169,7 @@ impl FileListTrait for FileListS3 {
             }
             let md5sum = self.s3.download(bucket, key, &local_file).await?;
             if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
-                debug!(
+                info!(
                     "Multipart upload? {} {}",
                     finfo1.urlname.as_str(),
                     finfo0.urlname.as_str(),
@@ -253,7 +253,7 @@ impl FileListTrait for FileListS3 {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
-    use log::debug;
+    use log::info;
 
     use crate::{
         config::Config, file_list::FileListTrait, file_list_s3::FileListS3, pgpool::PgPool,
@@ -278,7 +278,7 @@ mod tests {
 
         let new_flist = flist.fill_file_list().await?;
 
-        println!("{} {:?}", bucket, new_flist.get(0));
+        info!("{} {:?}", bucket, new_flist.get(0));
         assert!(new_flist.len() > 0);
 
         flist.with_list(new_flist);
@@ -305,7 +305,7 @@ mod tests {
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
         let klist = s3_instance.get_list_of_keys(&bucket, None).await?;
-        debug!("{} {}", bucket, klist.len());
+        info!("{} {}", bucket, klist.len());
         assert!(klist.len() > 0);
         Ok(())
     }

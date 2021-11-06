@@ -245,7 +245,7 @@ impl FileListTrait for FileListLocal {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
-    use log::debug;
+    use log::{debug, info};
     use std::{collections::HashMap, convert::TryInto, path::PathBuf};
     use url::Url;
 
@@ -287,7 +287,7 @@ mod tests {
 
         let new_flist = flist.fill_file_list().await?;
 
-        println!("0 {}", new_flist.len());
+        info!("0 {}", new_flist.len());
 
         let fset: HashMap<_, _> = new_flist
             .iter()
@@ -298,13 +298,13 @@ mod tests {
 
         let result = fset.get("file_list_local.rs").unwrap();
 
-        println!("{:?}", result);
+        info!("{:?}", result);
 
         assert!(result.filepath.ends_with("file_list_local.rs"));
         assert!(result.urlname.as_str().ends_with("file_list_local.rs"));
 
         let mut cache_info: FileInfoCache = result.into();
-        println!("{:?}", cache_info);
+        info!("{:?}", cache_info);
         assert_eq!(
             &result.md5sum.as_ref().unwrap().0,
             cache_info.md5sum.as_ref().unwrap()
@@ -317,30 +317,30 @@ mod tests {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
-        println!("1 {}", new_flist.len());
+        info!("1 {}", new_flist.len());
 
         let mut flist = FileListLocal::new(&basepath, &config, &pool)?;
         flist.with_list(new_flist);
 
-        println!("2 {}", flist.get_filemap().len());
+        info!("2 {}", flist.get_filemap().len());
 
         let result = flist.cache_file_list().await?;
-        println!("wrote {}", result);
+        info!("wrote {}", result);
 
-        println!("{:?}", flist.get_servicesession());
+        info!("{:?}", flist.get_servicesession());
 
         let new_flist = flist.load_file_list().await?;
 
         assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
-        println!("{}", new_flist.len());
+        info!("{}", new_flist.len());
         assert!(new_flist.len() != 0);
 
         let new_flist = flist.fill_file_list().await?;
 
         assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
-        println!("{}", new_flist.len());
+        info!("{}", new_flist.len());
         assert!(new_flist.len() != 0);
 
         flist.clear_file_list().await?;

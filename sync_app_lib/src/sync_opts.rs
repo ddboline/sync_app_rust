@@ -2,7 +2,7 @@ use anyhow::{format_err, Error};
 use chrono::Utc;
 use futures::future::try_join_all;
 use itertools::Itertools;
-use log::{debug, error};
+use log::{info, error};
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
@@ -89,7 +89,7 @@ impl SyncOpts {
                 } else {
                     self.urls.clone()
                 };
-                debug!("urls: {:?}", urls);
+                info!("urls: {:?}", urls);
                 let futures = urls.into_iter().map(|url| {
                     let blacklist = Arc::clone(&blacklist);
                     let pool = pool.clone();
@@ -125,6 +125,7 @@ impl SyncOpts {
                 } else {
                     self.urls.clone()
                 };
+                info!("Check 0");
                 let futures = urls.into_iter().map(|url| {
                     let blacklist = blacklist.clone();
                     let pool = pool.clone();
@@ -145,7 +146,7 @@ impl SyncOpts {
                 });
                 let flists: Result<Vec<_>, Error> = try_join_all(futures).await;
                 let flists = flists?;
-
+                info!("Check 1");
                 let futures = flists.chunks(2).map(|f| async move {
                     if f.len() == 2 {
                         FileSync::compare_lists(&(*f[0]), &(*f[1]), pool).await?;
@@ -154,7 +155,7 @@ impl SyncOpts {
                 });
                 let results: Result<Vec<_>, Error> = try_join_all(futures).await;
                 results?;
-
+                info!("Check 2");
                 for entry in FileSyncCache::get_cache_list(pool).await? {
                     stdout.send(format!("{} {}", entry.src_url, entry.dst_url));
                 }

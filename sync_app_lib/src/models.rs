@@ -5,6 +5,7 @@ use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use tokio::task::spawn_blocking;
 use url::Url;
+use log::info;
 
 use gdrive_lib::directory_info::DirectoryInfo;
 
@@ -40,7 +41,7 @@ pub struct FileInfoKey {
 
 impl FileInfoKey {
     pub async fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
-        println!("delete_cache_entry");
+        info!("delete_cache_entry");
         let query = query!(
             r#"
                 UPDATE file_info_cache SET deleted_at=now()
@@ -136,7 +137,7 @@ impl FileInfoCache {
     }
 
     pub async fn insert(&self, pool: &PgPool) -> Result<(), Error> {
-        println!("FileInfoCache.insert");
+        info!("FileInfoCache.insert");
         let query = query!(
             r#"
                  INSERT INTO file_info_cache (

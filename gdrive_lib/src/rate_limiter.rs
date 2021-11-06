@@ -85,7 +85,7 @@ impl RateLimiterInner {
 mod tests {
     use anyhow::Error;
     use chrono::Utc;
-    use log::debug;
+    use log::info;
     use std::sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
@@ -121,7 +121,7 @@ mod tests {
 
         for _ in 0..5 {
             let count = test_count.load(Ordering::SeqCst);
-            debug!("{}", count);
+            info!("{}", count);
             sleep(Duration::from_millis(100)).await;
         }
         for t in tasks {
@@ -130,7 +130,7 @@ mod tests {
 
         let elapsed = Utc::now() - start;
 
-        println!(
+        info!(
             "{} {}",
             elapsed.num_milliseconds(),
             test_count.load(Ordering::SeqCst)

@@ -1,7 +1,7 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use checksums::{hash_file, Algorithm};
-use log::debug;
+use log::info;
 use std::{
     collections::HashMap,
     fs::{create_dir_all, remove_file},
@@ -169,7 +169,7 @@ impl FileListTrait for FileListGcs {
                 .to_lowercase()
                 .into();
             if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
-                debug!(
+                info!(
                     "Multipart upload? {} {}",
                     finfo1.urlname.as_str(),
                     finfo0.urlname.as_str(),
@@ -253,7 +253,7 @@ impl FileListTrait for FileListGcs {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
-    use log::debug;
+    use log::info;
 
     use gdrive_lib::gcs_instance::GcsInstance;
 
@@ -284,7 +284,7 @@ mod tests {
 
         let new_flist = flist.fill_file_list().await?;
 
-        debug!("{} {:?}", bucket, new_flist.get(0));
+        info!("{} {:?}", bucket, new_flist.get(0));
         assert!(new_flist.len() > 0);
 
         flist.with_list(new_flist);
@@ -305,7 +305,7 @@ mod tests {
     async fn test_list_buckets() -> Result<(), Error> {
         let _guard = GcsInstance::get_instance_lock();
         let config = Config::init_config()?;
-        println!("{:?} {:?}", config.gcs_token_path, config.gcs_secret_file);
+        info!("{:?} {:?}", config.gcs_token_path, config.gcs_secret_file);
         let gcs_instance = GcsInstance::new(
             &config.gcs_token_path,
             &config.gcs_secret_file,
@@ -320,7 +320,7 @@ mod tests {
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
         let klist = gcs_instance.get_list_of_keys(&bucket, None).await?;
-        debug!("{} {}", bucket, klist.len());
+        info!("{} {}", bucket, klist.len());
         assert!(klist.len() > 0);
         Ok(())
     }

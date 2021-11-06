@@ -2,7 +2,7 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
-use log::debug;
+use log::info;
 use postgres_query::query;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
@@ -175,7 +175,7 @@ pub trait FileListTrait: Send + Sync + Debug {
                 .ok_or_else(|| format_err!("No extension"))?
                 .to_string_lossy();
             let start_page_path = fname.with_extension(format!("{}.new", ext));
-            debug!("{:?} {:?}", start_page_path, fname);
+            info!("{:?} {:?}", start_page_path, fname);
             if start_page_path.exists() {
                 rename(&start_page_path, &fname).map_err(Into::into)
             } else {
@@ -217,7 +217,7 @@ pub trait FileListTrait: Send + Sync + Debug {
             if flist_cache_map.contains_key(k) {
                 continue;
             }
-            println!("remove {:?}", k);
+            info!("remove {:?}", k);
             k.delete_cache_entry(pool).await?;
         }
 
@@ -241,7 +241,7 @@ pub trait FileListTrait: Send + Sync + Debug {
                     cache.filestat_st_mtime = v.filestat_st_mtime;
                     cache.filestat_st_size = v.filestat_st_size;
 
-                    println!("GOT HERE {:?}", cache);
+                    info!("GOT HERE {:?}", cache);
                     cache.insert(pool).await?;
                 }
             }
