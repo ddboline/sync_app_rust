@@ -1,11 +1,11 @@
 use anyhow::Error;
 use chrono::{DateTime, Utc};
 use futures::TryFutureExt;
+use log::info;
 use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use tokio::task::spawn_blocking;
 use url::Url;
-use log::info;
 
 use gdrive_lib::directory_info::DirectoryInfo;
 

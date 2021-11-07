@@ -2,7 +2,7 @@ use anyhow::{format_err, Error};
 use chrono::Utc;
 use futures::future::try_join_all;
 use itertools::Itertools;
-use log::{info, error};
+use log::{error, info};
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
@@ -220,6 +220,23 @@ impl SyncOpts {
                     }
                 } else {
                     Err(format_err!("Need 2 Urls"))
+                }
+            }
+            FileSyncAction::Count => {
+                if self.urls.is_empty() {
+                    Err(format_err!("Need at least 1 Url"))
+                } else {
+                    let futures = self.urls.iter().map(|url| async move {
+                        let pool = pool.clone();
+                        let stdout = stdout.clone();
+                        let mut flist = FileList::from_url(url, config, &pool).await?;
+                        flist.with_list(flist.fill_file_list().await?);
+                        stdout.send(format!("{}\t{}", url, flist.get_filemap().len()));
+                        Ok(())
+                    });
+                    let results: Result<Vec<_>, Error> = try_join_all(futures).await;
+                    results?;
+                    Ok(())
                 }
             }
             FileSyncAction::Serialize => {
