@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
 use lazy_static::lazy_static;
-use log::debug;
+use log::{debug, info};
 use smallvec::{smallvec, SmallVec};
 use std::{collections::HashMap, process::Stdio};
 use tokio::{
@@ -69,7 +69,7 @@ impl SSHInstance {
     pub async fn run_command_stream_stdout(&self, cmd: &str) -> Result<String, Error> {
         if let Some(host_lock) = LOCK_CACHE.read().await.get(&self.host) {
             let _guard = host_lock.lock().await;
-            debug!("cmd {}", cmd);
+            info!("cmd {}", cmd);
             let user_host = self.get_ssh_username_host()?;
             let mut args: SmallVec<[&str; 4]> = user_host.iter().map(String::as_str).collect();
             args.push(cmd);

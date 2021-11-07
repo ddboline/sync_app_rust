@@ -208,38 +208,47 @@ impl FileListTrait for FileListSSH {
             .iter()
             .last()
             .ok_or_else(|| format_err!("No hostname"))?;
-        let command = format!("sync-app-rust index -u file://{}", path);
-        self.ssh.run_command_ssh(&command).await?;
 
-        let command = format!("sync-app-rust count -u file://{}", path);
-        let expected_count: usize = self
-            .ssh
-            .run_command_stream_stdout(&command)
-            .await?
+        let command = format!(
+            r#"
+                sync-app-rust index -u file://{path} &&
+                sync-app-rust count -u file://{path} &&
+                sync-app-rust ser -u file://{path}
+            "#,
+            path = path,
+        );
+        let output = self.ssh.run_command_stream_stdout(&command).await?;
+        let output = output.trim();
+
+        let url_prefix = format!("ssh://{}", user_host);
+        let baseurl = self.get_baseurl().clone();
+
+        let expected_count: usize = output
+            .split('\n')
+            .nth(0)
+            .unwrap_or("")
             .split('\t')
             .nth(1)
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
 
-        let command = format!("sync-app-rust ser -u file://{}", path);
+        let count = output.split('\n').skip(1).count();
 
-        let url_prefix = format!("ssh://{}", user_host);
-        let baseurl = self.get_baseurl().clone();
-        let output = self.ssh.run_command_stream_stdout(&command).await?;
-        let output = output.trim();
-        if output.is_empty() {
+        if count == 0 {
             Ok(Vec::new())
         } else {
-            let count = output.split('\n').count();
             if count != expected_count {
                 return Err(format_err!(
-                    "Expected {} doesn't match actual count {}",
+                    "{} {} Expected {} doesn't match actual count {}",
+                    self.get_servicetype(),
+                    self.get_servicesession().0,
                     expected_count,
                     count
                 ));
             }
             output
                 .split('\n')
+                .skip(1)
                 .map(|line| {
                     let baseurl = baseurl.as_str();
                     let mut finfo: FileInfoInner = serde_json::from_str(line)?;
