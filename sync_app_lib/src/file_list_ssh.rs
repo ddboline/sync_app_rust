@@ -211,6 +211,17 @@ impl FileListTrait for FileListSSH {
         let command = format!("sync-app-rust index -u file://{}", path);
         self.ssh.run_command_ssh(&command).await?;
 
+        let command = format!("sync-app-rust count -u file://{}", path);
+        let expected_count: usize = self
+            .ssh
+            .run_command_stream_stdout(&command)
+            .await?
+            .split('\t')
+            .skip(1)
+            .next()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
+
         let command = format!("sync-app-rust ser -u file://{}", path);
 
         let url_prefix = format!("ssh://{}", user_host);
@@ -220,6 +231,14 @@ impl FileListTrait for FileListSSH {
         if output.is_empty() {
             Ok(Vec::new())
         } else {
+            let count = output.split('\n').count();
+            if count != expected_count {
+                return Err(format_err!(
+                    "Expected {} doesn't match actual count {}",
+                    expected_count,
+                    count
+                ));
+            }
             output
                 .split('\n')
                 .map(|line| {
