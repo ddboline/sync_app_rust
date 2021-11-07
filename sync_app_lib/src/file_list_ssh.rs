@@ -217,8 +217,7 @@ impl FileListTrait for FileListSSH {
             .run_command_stream_stdout(&command)
             .await?
             .split('\t')
-            .skip(1)
-            .next()
+            .nth(1)
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
 
