@@ -223,7 +223,7 @@ pub trait FileListTrait: Send + Sync + Debug {
             deleted_entries += 1;
         }
 
-        info!("flist_cache_map {} {} {} {}", self.get_servicetype(), flist_cache_map.len(), current_cache.len(), deleted_entries);
+        info!("flist_cache_map {} {} {} {} {}", self.get_servicesession().0, self.get_servicetype(), flist_cache_map.len(), current_cache.len(), deleted_entries);
 
         for (k, v) in &flist_cache_map {
             if let Some(item) = current_cache.get(k) {
