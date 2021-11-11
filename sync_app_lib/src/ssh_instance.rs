@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
 use lazy_static::lazy_static;
-use log::{debug, info};
+use log::{debug, info, error};
 use smallvec::{smallvec, SmallVec};
 use std::{collections::HashMap, process::Stdio};
 use tokio::{
@@ -10,15 +10,17 @@ use tokio::{
     task::spawn,
 };
 use url::Url;
+use stack_string::StackString;
+use std::fmt::Write;
 
 lazy_static! {
-    static ref LOCK_CACHE: RwLock<HashMap<String, Mutex<()>>> = RwLock::new(HashMap::new());
+    static ref LOCK_CACHE: RwLock<HashMap<StackString, Mutex<()>>> = RwLock::new(HashMap::new());
 }
 
 #[derive(Debug, Clone)]
 pub struct SSHInstance {
-    pub user: String,
-    pub host: String,
+    pub user: StackString,
+    pub host: StackString,
     pub port: u16,
 }
 
@@ -27,10 +29,10 @@ impl SSHInstance {
         LOCK_CACHE
             .write()
             .await
-            .insert(host.to_string(), Mutex::new(()));
+            .insert(host.into(), Mutex::new(()));
         Self {
-            user: user.to_string(),
-            host: host.to_string(),
+            user: user.into(),
+            host: host.into(),
             port,
         }
     }
@@ -42,39 +44,53 @@ impl SSHInstance {
         Ok(Self::new(user, host, port).await)
     }
 
-    pub fn get_ssh_str(&self, path: &str) -> Result<String, Error> {
-        let ssh_str = if self.port == 22 {
-            format!("{}@{}:{}", self.user, self.host, path)
+    pub fn get_ssh_str(&self, path: &str) -> Result<StackString, Error> {
+        let mut ssh_str = StackString::new();
+        if self.port == 22 {
+            write!(ssh_str, "{}@{}:{}", self.user, self.host, path)?;
         } else {
-            format!("-p {} {}@{}:{}", self.port, self.user, self.host, path)
+            write!(ssh_str, "-p {} {}@{}:{}", self.port, self.user, self.host, path)?;
         };
 
         Ok(ssh_str)
     }
 
-    pub fn get_ssh_username_host(&self) -> Result<SmallVec<[String; 3]>, Error> {
+    pub fn get_ssh_username_host(&self) -> Result<SmallVec<[StackString; 4]>, Error> {
+        let mut user_str = StackString::new();
+        write!(user_str, "{}@{}", self.user, self.host)?;
+        let mut port_str = StackString::new();
+        write!(port_str, "{}", self.port)?;
         let ssh_str = if self.port == 22 {
-            smallvec![format!("{}@{}", self.user, self.host)]
+            smallvec![
+                "-C".into(),
+                user_str,
+            ]
         } else {
             smallvec![
-                "-p".to_string(),
-                self.port.to_string(),
-                format!("{}@{}", self.user, self.host)
+                "-C".into(),
+                "-p".into(),
+                port_str,
+                user_str,
             ]
         };
 
         Ok(ssh_str)
     }
 
-    pub async fn run_command_stream_stdout(&self, cmd: &str) -> Result<String, Error> {
+    pub async fn run_command_stream_stdout(&self, cmd: &str) -> Result<StackString, Error> {
         if let Some(host_lock) = LOCK_CACHE.read().await.get(&self.host) {
             let _guard = host_lock.lock().await;
             info!("cmd {}", cmd);
             let user_host = self.get_ssh_username_host()?;
-            let mut args: SmallVec<[&str; 4]> = user_host.iter().map(String::as_str).collect();
+            let mut args: SmallVec<[&str; 5]> = user_host.iter().map(StackString::as_str).collect();
             args.push(cmd);
             let process = Command::new("ssh").args(&args).output().await?;
-            String::from_utf8(process.stdout).map_err(Into::into)
+            if !process.status.success() {
+                error!("{}", StackString::from_utf8_lossy(&process.stderr));
+                Err(format_err!("Process failed"))
+            } else {
+                StackString::from_utf8(process.stdout).map_err(Into::into)
+            }
         } else {
             Err(format_err!("Failed to acquire lock"))
         }
@@ -85,7 +101,7 @@ impl SSHInstance {
             let _guard = host_lock.lock();
             debug!("run_command_print_stdout cmd {}", cmd);
             let user_host = self.get_ssh_username_host()?;
-            let mut args: SmallVec<[&str; 4]> = user_host.iter().map(String::as_str).collect();
+            let mut args: SmallVec<[&str; 4]> = user_host.iter().map(StackString::as_str).collect();
             args.push(cmd);
             let mut command = Command::new("ssh")
                 .args(&args)
@@ -118,7 +134,7 @@ impl SSHInstance {
 
     pub async fn run_command_ssh(&self, cmd: &str) -> Result<(), Error> {
         let user_host = self.get_ssh_username_host()?;
-        let mut args: SmallVec<[&str; 4]> = user_host.iter().map(String::as_str).collect();
+        let mut args: SmallVec<[&str; 4]> = user_host.iter().map(StackString::as_str).collect();
         args.push(cmd);
         if let Some(host_lock) = LOCK_CACHE.read().await.get(&self.host) {
             let _guard = host_lock.lock().await;
