@@ -31,7 +31,7 @@ serde_yaml = "0.8"
 stdout-channel = "0.4"
 uuid = "0.8"
 deadqueue = "0.2"
-reqwest = {version="0.11", features=["cookies", "json", "rustls"], default_features=false}
+reqwest = {version="0.11", features=["cookies", "json", "rustls-tls"], default_features=false}
 rweb_helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.4.0" }
 stack-string = { version="0.4", features=["postgres_types", "rweb-openapi"] }
 authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.7.16"}
