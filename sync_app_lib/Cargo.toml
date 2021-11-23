@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_lib"
-version = "0.8.2"
+version = "0.8.3"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -28,7 +28,7 @@ rand = "0.8"
 percent-encoding = "2.1"
 parking_lot = "0.11"
 log = "0.4"
-reqwest = {version="0.11", features=["cookies", "json"]}
+reqwest = {version="0.11", features=["cookies", "json", "rustls"], default_features=false}
 crossbeam-utils = "0.8"
 anyhow = "1.0"
 thiserror = "1.0"
@@ -51,4 +51,4 @@ postgres-types = "0.2"
 postgres_query = {git = "https://github.com/ddboline/rust-postgres-query", tag = "0.3.4", features=["deadpool"]}
 
 stdout-channel = "0.4"
-stack-string = { version="0.3", features=["postgres_types"] }
+stack-string = { version="0.4", features=["postgres_types"] }

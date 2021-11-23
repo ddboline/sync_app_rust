@@ -1,13 +1,13 @@
 [package]
 name = "sync_app_http"
-version = "0.8.2"
+version = "0.8.3"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rweb = {version="0.14", features=["openapi", "uuid"], default-features=false}
+rweb = {version="0.15", features=["openapi", "uuid"], default-features=false}
 http = "0.2"
 chrono = "0.4"
 lazy_static = "1.4"
@@ -31,7 +31,7 @@ serde_yaml = "0.8"
 stdout-channel = "0.4"
 uuid = "0.8"
 deadqueue = "0.2"
-reqwest = {version="0.11", features=["cookies", "json"]}
-rweb_helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.3.4" }
-stack-string = { version="0.3", features=["postgres_types", "rweb-openapi"] }
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.7.14"}
+reqwest = {version="0.11", features=["cookies", "json", "rustls"], default_features=false}
+rweb_helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.4.0" }
+stack-string = { version="0.4", features=["postgres_types", "rweb-openapi"] }
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.7.16"}
