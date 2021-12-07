@@ -188,9 +188,10 @@ impl SyncPodcastsRequest {
                 .stdout
                 .split(|c| *c == b'\n')
                 .map(|s| {
-                    String::from_utf8(s.to_vec())
-                        .map_err(Into::into)
-                        .map(Into::into)
+                    let mut buf = StackString::new();
+                    let s = std::str::from_utf8(s)?;
+                    buf.push_str(s);
+                    Ok(buf)
                 })
                 .collect()
         }
@@ -219,9 +220,10 @@ impl SyncSecurityRequest {
             .stdout
             .split(|c| *c == b'\n')
             .map(|s| {
-                String::from_utf8(s.to_vec())
-                    .map_err(Into::into)
-                    .map(Into::into)
+                let mut buf = StackString::new();
+                let s = std::str::from_utf8(s)?;
+                buf.push_str(s);
+                Ok(buf)
             })
             .collect();
 

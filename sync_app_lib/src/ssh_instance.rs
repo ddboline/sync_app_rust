@@ -1,8 +1,9 @@
 use anyhow::{format_err, Error};
 use lazy_static::lazy_static;
-use log::{debug, info, error};
+use log::{debug, error, info};
 use smallvec::{smallvec, SmallVec};
-use std::{collections::HashMap, process::Stdio};
+use stack_string::StackString;
+use std::{collections::HashMap, fmt::Write, process::Stdio};
 use tokio::{
     io::{stdout, AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::Command,
@@ -10,8 +11,6 @@ use tokio::{
     task::spawn,
 };
 use url::Url;
-use stack_string::StackString;
-use std::fmt::Write;
 
 lazy_static! {
     static ref LOCK_CACHE: RwLock<HashMap<StackString, Mutex<()>>> = RwLock::new(HashMap::new());
@@ -26,10 +25,7 @@ pub struct SSHInstance {
 
 impl SSHInstance {
     pub async fn new(user: &str, host: &str, port: u16) -> Self {
-        LOCK_CACHE
-            .write()
-            .await
-            .insert(host.into(), Mutex::new(()));
+        LOCK_CACHE.write().await.insert(host.into(), Mutex::new(()));
         Self {
             user: user.into(),
             host: host.into(),
@@ -49,7 +45,11 @@ impl SSHInstance {
         if self.port == 22 {
             write!(ssh_str, "{}@{}:{}", self.user, self.host, path)?;
         } else {
-            write!(ssh_str, "-p {} {}@{}:{}", self.port, self.user, self.host, path)?;
+            write!(
+                ssh_str,
+                "-p {} {}@{}:{}",
+                self.port, self.user, self.host, path
+            )?;
         };
 
         Ok(ssh_str)
@@ -61,17 +61,9 @@ impl SSHInstance {
         let mut port_str = StackString::new();
         write!(port_str, "{}", self.port)?;
         let ssh_str = if self.port == 22 {
-            smallvec![
-                "-C".into(),
-                user_str,
-            ]
+            smallvec!["-C".into(), user_str,]
         } else {
-            smallvec![
-                "-C".into(),
-                "-p".into(),
-                port_str,
-                user_str,
-            ]
+            smallvec!["-C".into(), "-p".into(), port_str, user_str,]
         };
 
         Ok(ssh_str)

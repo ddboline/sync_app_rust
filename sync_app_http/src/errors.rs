@@ -11,7 +11,8 @@ use rweb::{
 };
 use serde::Serialize;
 use std::{
-    borrow::Cow, convert::Infallible, fmt::Debug, io::Error as IoError, string::FromUtf8Error,
+    borrow::Cow, convert::Infallible, fmt::Debug, io::Error as IoError, str::Utf8Error,
+    string::FromUtf8Error,
 };
 use thiserror::Error;
 use url::ParseError;
@@ -36,6 +37,8 @@ pub enum ServiceError {
     IoError(#[from] IoError),
     #[error("FromUtf8Error {0}")]
     FromUtf8Error(#[from] FromUtf8Error),
+    #[error("Utf8Error {0}")]
+    Utf8Error(#[from] Utf8Error),
 }
 
 impl Reject for ServiceError {}
