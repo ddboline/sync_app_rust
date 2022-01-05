@@ -12,11 +12,11 @@ use std::{
     path::Path,
     sync::Arc,
 };
+use stdout_channel::rate_limiter::RateLimiter;
 use tokio::fs::{self, create_dir_all};
 
 use crate::{
     exponential_retry,
-    rate_limiter::RateLimiter,
     storage_v1_types::{
         Bucket, BucketsListParams, BucketsService, Object, ObjectsCopyParams, ObjectsDeleteParams,
         ObjectsGetParams, ObjectsInsertParams, ObjectsListParams, ObjectsService, StorageParams,

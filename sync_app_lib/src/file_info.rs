@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
+use derive_more::{From, Into};
 use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -70,7 +71,7 @@ impl FromStr for Sha1Sum {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default, Into)]
 pub struct ServiceId(pub StackString);
 
 impl From<StackString> for ServiceId {
@@ -301,7 +302,7 @@ impl From<&FileInfo> for FileInfoCache {
             filestat_st_mtime: item.filestat.st_mtime as i32,
             filestat_st_size: item.filestat.st_size as i32,
             serviceid: item.serviceid.0.clone(),
-            servicetype: item.servicetype.to_string().into(),
+            servicetype: item.servicetype.to_str().into(),
             servicesession: item.servicesession.0.clone(),
             created_at: Utc::now(),
             deleted_at: None,

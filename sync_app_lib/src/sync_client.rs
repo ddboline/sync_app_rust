@@ -8,7 +8,8 @@ use reqwest::{
     Client, Response, Url,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::path::Path;
+use stack_string::StackString;
+use std::{fmt::Write, path::Path};
 use tempfile::NamedTempFile;
 use tokio::{fs, task::spawn_blocking};
 
@@ -69,8 +70,9 @@ impl SyncClient {
             .post(&url, &HeaderMap::new(), &data)
             .await?
             .error_for_status()?;
-
-        let url = from_url.join(&format!("{}/user", base_url))?;
+        let mut buf = StackString::new();
+        write!(buf, "{}/user", base_url)?;
+        let url = from_url.join(&buf)?;
         let resp = self
             .remote_session
             .get(&url, &HeaderMap::new())

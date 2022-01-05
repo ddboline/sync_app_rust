@@ -1,6 +1,7 @@
 use anyhow::{format_err, Error};
 use chrono::DateTime;
-use std::path::Path;
+use stack_string::StackString;
+use std::{fmt::Write, path::Path};
 use url::Url;
 
 use gdrive_lib::{gcs_instance::GcsInstance, storage_v1_types::Object};
@@ -18,7 +19,10 @@ impl FileInfoGcs {
         if url.scheme() != "gs" {
             return Err(format_err!("Invalid URL"));
         }
-        let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
+        let bucket: StackString = url
+            .host_str()
+            .ok_or_else(|| format_err!("Parse error"))?
+            .into();
         let key = url.path();
         let filepath = Path::new(&key);
         let filename = filepath
@@ -27,8 +31,10 @@ impl FileInfoGcs {
             .to_string_lossy()
             .into_owned()
             .into();
-        let fileurl: Url = format!("gs://{}/{}", bucket, key).parse()?;
-        let serviceid = bucket.to_string().into();
+        let mut buf = StackString::new();
+        write!(buf, "gs://{}/{}", bucket, key)?;
+        let fileurl: Url = buf.parse()?;
+        let serviceid = bucket.clone().into();
         let servicesession = bucket.parse()?;
 
         let finfo = FileInfo::new(
@@ -87,9 +93,11 @@ impl FileInfoGcs {
             .timestamp();
         let size = item.size.ok_or_else(|| format_err!("No file size"))?;
         let st_size = size.parse()?;
-        let fileurl: Url = format!("gs://{}/{}", bucket, key).parse()?;
-
-        let serviceid = bucket.to_string().into();
+        let mut buf = StackString::new();
+        write!(buf, "gs://{}/{}", bucket, key)?;
+        let fileurl: Url = buf.parse()?;
+        let id_str: StackString = bucket.into();
+        let serviceid = id_str.into();
         let servicesession = bucket.parse()?;
 
         let finfo = FileInfo::new(

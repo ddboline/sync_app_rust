@@ -8,7 +8,7 @@ use rayon::iter::{
 };
 use refinery::embed_migrations;
 use stack_string::StackString;
-use std::sync::Arc;
+use std::{fmt::Write, sync::Arc};
 use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
 use tokio::task::spawn_blocking;
@@ -157,7 +157,9 @@ impl SyncOpts {
                 results?;
                 info!("Check 2");
                 for entry in FileSyncCache::get_cache_list(pool).await? {
-                    stdout.send(format!("{} {}", entry.src_url, entry.dst_url));
+                    let mut buf = StackString::new();
+                    write!(buf, "{} {}", entry.src_url, entry.dst_url)?;
+                    stdout.send(buf);
                 }
                 Ok(())
             }
@@ -231,7 +233,9 @@ impl SyncOpts {
                         let stdout = stdout.clone();
                         let mut flist = FileList::from_url(url, config, &pool).await?;
                         flist.with_list(flist.fill_file_list().await?);
-                        stdout.send(format!("{}\t{}", url, flist.get_filemap().len()));
+                        let mut buf = StackString::new();
+                        write!(buf, "{}\t{}", url, flist.get_filemap().len()).unwrap();
+                        stdout.send(buf);
                         Ok(())
                     });
                     let results: Result<Vec<_>, Error> = try_join_all(futures).await;
@@ -282,7 +286,11 @@ impl SyncOpts {
                 let clist = FileSyncConfig::get_config_list(pool)
                     .await?
                     .into_iter()
-                    .map(|v| format!("{} {}", v.src_url, v.dst_url))
+                    .map(|v| {
+                        let mut buf = StackString::new();
+                        write!(buf, "{} {}", v.src_url, v.dst_url).unwrap();
+                        buf
+                    })
                     .join("\n");
                 stdout.send(clist);
                 Ok(())
@@ -291,7 +299,11 @@ impl SyncOpts {
                 let clist = FileSyncCache::get_cache_list(pool)
                     .await?
                     .into_iter()
-                    .map(|v| format!("{} {}", v.src_url, v.dst_url))
+                    .map(|v| {
+                        let mut buf = StackString::new();
+                        write!(buf, "{} {}", v.src_url, v.dst_url).unwrap();
+                        buf
+                    })
                     .join("\n");
                 stdout.send(clist);
                 Ok(())

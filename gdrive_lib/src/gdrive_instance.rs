@@ -22,6 +22,7 @@ use std::{
     string::ToString,
     sync::Arc,
 };
+use stdout_channel::rate_limiter::RateLimiter;
 use tokio::{
     fs::{self, create_dir_all},
     io::AsyncReadExt,
@@ -36,7 +37,6 @@ use crate::{
         FilesExportParams, FilesGetParams, FilesListParams, FilesService, FilesUpdateParams,
     },
     exponential_retry,
-    rate_limiter::RateLimiter,
 };
 
 fn https_client() -> TlsClient {
@@ -351,7 +351,7 @@ impl GDriveInstance {
             .map(OsStr::to_string_lossy)
             .ok_or_else(|| format_err!("Failed to convert string"))?;
         let new_file = File {
-            name: Some(directory_name.to_string()),
+            name: Some(directory_name.into_owned()),
             mime_type: Some("application/vnd.google-apps.folder".to_string()),
             parents: Some(vec![parentid.to_string()]),
             ..File::default()
@@ -686,7 +686,7 @@ impl GDriveInstance {
             for seg in segments {
                 let name = percent_decode(seg.as_bytes())
                     .decode_utf8_lossy()
-                    .to_string();
+                    .into_owned();
                 let mut matching_directory: Option<StackString> = None;
                 if let Some(parents) = dir_name_map.get(name.as_str()) {
                     for parent in parents {
@@ -734,7 +734,8 @@ impl GDriveInstance {
 
     pub async fn store_start_page_token(&self, path: &Path) -> Result<(), Error> {
         if let Some(start_page_token) = self.start_page_token.load().as_ref() {
-            fs::write(path, start_page_token.to_string()).await?;
+            let buf = StackString::from_display(start_page_token)?;
+            fs::write(path, buf).await?;
         }
         Ok(())
     }

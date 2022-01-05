@@ -3,6 +3,7 @@ use chrono::NaiveDate;
 use futures::future::try_join_all;
 use stack_string::StackString;
 use std::{
+    fmt::Write as FmtWrite,
     fs::{create_dir_all, File},
     io::{BufRead, BufReader, Write},
     path::PathBuf,
@@ -37,11 +38,9 @@ async fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
 
     let flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool).await?;
     flist.set_directory_map(true).await?;
-
-    let outdir = dirs::home_dir()
-        .unwrap()
-        .join("tmp")
-        .join(&format!("gdrive_{}_output", prefix));
+    let mut buf = StackString::new();
+    write!(buf, "gdrive_{}_output", prefix)?;
+    let outdir = dirs::home_dir().unwrap().join("tmp").join(&buf);
     if !outdir.exists() {
         create_dir_all(&outdir)?;
     }
@@ -76,10 +75,9 @@ async fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
 }
 
 fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
-    let outdir = dirs::home_dir()
-        .unwrap()
-        .join("tmp")
-        .join(&format!("gdrive_{}_output", prefix));
+    let mut buf = StackString::new();
+    write!(buf, "gdrive_{}_output", prefix)?;
+    let outdir = dirs::home_dir().unwrap().join("tmp").join(&buf);
     if !outdir.exists() {
         create_dir_all(&outdir)?;
     }
@@ -91,7 +89,10 @@ fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
         .filter_map(|item| {
             item.ok().and_then(|entry| {
                 let file_name = entry.file_name().to_string_lossy();
-                if file_name.starts_with(&format!("{}_", prefix)) {
+                let mut buf = StackString::new();
+                buf.push_str(prefix);
+                buf.push_str("_");
+                if file_name.starts_with(buf.as_str()) {
                     Some(entry.into_path())
                 } else {
                     None
@@ -99,11 +100,9 @@ fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
             })
         })
         .collect();
-
-    let outdir = dirs::home_dir()
-        .unwrap()
-        .join("tmp")
-        .join(&format!("gdrive_{}_parsed", prefix));
+    let mut buf = StackString::new();
+    write!(buf, "gdrive_{}_parsed", prefix)?;
+    let outdir = dirs::home_dir().unwrap().join("tmp").join(&buf);
     if !outdir.exists() {
         create_dir_all(&outdir)?;
     }
@@ -121,8 +120,9 @@ fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
             };
             let linestr = line.trim_matches('\u{feff}');
             if let Ok(date) = NaiveDate::parse_from_str(linestr.trim(), "%B%d%Y") {
-                println!("date {}", date);
-                let new_filename = outdir.join(date.to_string()).with_extension("txt");
+                let date_str = StackString::from_display(date)?;
+                println!("date {}", date_str);
+                let new_filename = outdir.join(date_str).with_extension("txt");
                 let new_file = File::create(&new_filename)?;
                 current_file.replace(new_file);
                 new_files.push(new_filename);

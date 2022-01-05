@@ -172,11 +172,11 @@ pub struct SyncPodcastsRequest {}
 impl SyncPodcastsRequest {
     pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
         let _guard = locks.podcast.lock().await;
-        if !Path::new("/usr/bin/podcatch-rust").exists() {
+        let command_path = "/usr/bin/podcatch-rust";
+        if !Path::new(command_path).exists() {
             return Ok(Vec::new());
         }
-        let command = "/usr/bin/podcatch-rust".to_string();
-        let process = Command::new(&command)
+        let process = Command::new(&command_path)
             .env_remove("DATABASE_URL")
             .env_remove("GOOGLE_MUSIC_DIRECTORY")
             .output()

@@ -1,7 +1,8 @@
 use anyhow::{format_err, Error};
 use chrono::DateTime;
 use rusoto_s3::Object;
-use std::path::Path;
+use stack_string::StackString;
+use std::{fmt::Write, path::Path};
 use url::Url;
 
 use crate::{
@@ -17,7 +18,10 @@ impl FileInfoS3 {
         if url.scheme() != "s3" {
             return Err(format_err!("Invalid URL"));
         }
-        let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
+        let bucket: StackString = url
+            .host_str()
+            .ok_or_else(|| format_err!("Parse error"))?
+            .into();
         let key = url.path();
         let filepath = Path::new(&key);
         let filename = filepath
@@ -26,8 +30,10 @@ impl FileInfoS3 {
             .to_string_lossy()
             .into_owned()
             .into();
-        let fileurl: Url = format!("s3://{}/{}", bucket, key).parse()?;
-        let serviceid = bucket.to_string().into();
+        let mut fileurl = StackString::new();
+        write!(fileurl, "s3://{}/{}", bucket, key)?;
+        let fileurl: Url = fileurl.parse()?;
+        let serviceid = bucket.clone().into();
         let servicesession = bucket.parse()?;
 
         let finfo = FileInfo::new(
@@ -86,9 +92,11 @@ impl FileInfoS3 {
         )?
         .timestamp();
         let size = item.size.ok_or_else(|| format_err!("No file size"))?;
-        let fileurl: Url = format!("s3://{}/{}", bucket, key).parse()?;
-
-        let serviceid = bucket.to_string().into();
+        let mut fileurl = StackString::new();
+        write!(fileurl, "s3://{}/{}", bucket, key)?;
+        let fileurl: Url = fileurl.parse()?;
+        let id_str: StackString = bucket.into();
+        let serviceid = id_str.into();
         let servicesession = bucket.parse()?;
 
         let finfo = FileInfo::new(

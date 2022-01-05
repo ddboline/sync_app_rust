@@ -10,7 +10,7 @@ use rayon::iter::{
 use std::{
     collections::HashMap,
     convert::TryInto,
-    fmt::Debug,
+    fmt::{Debug, Write},
     fs::rename,
     ops::Deref,
     path::{Path, PathBuf},
@@ -167,14 +167,20 @@ pub trait FileListTrait: Send + Sync + Debug {
     fn cleanup(&self) -> Result<(), Error> {
         if self.get_servicetype() == FileService::GDrive {
             let config = &self.get_config();
-            let fname = config
-                .gdrive_token_path
-                .join(format!("{}_start_page_token", self.get_servicesession().0));
+            let mut token_str = StackString::new();
+            write!(
+                token_str,
+                "{}_start_page_token",
+                self.get_servicesession().0
+            )?;
+            let fname = config.gdrive_token_path.join(token_str);
             let ext = fname
                 .extension()
                 .ok_or_else(|| format_err!("No extension"))?
                 .to_string_lossy();
-            let start_page_path = fname.with_extension(format!("{}.new", ext));
+            let mut ext_str = StackString::new();
+            write!(ext_str, "{}.new", ext)?;
+            let start_page_path = fname.with_extension(ext_str);
             info!("{:?} {:?}", start_page_path, fname);
             if start_page_path.exists() {
                 rename(&start_page_path, &fname).map_err(Into::into)
@@ -355,15 +361,15 @@ pub trait FileListTrait: Send + Sync + Debug {
         let mut inserted = 0;
         for d in directory_map.values() {
             let is_root = root_id.as_ref().map_or(false, |rid| rid == &d.directory_id);
-
+            let servicetype = StackString::from_display(self.get_servicetype()).unwrap();
             let cache = DirectoryInfoCache {
                 id: -1,
                 directory_id: d.directory_id.as_str().into(),
                 directory_name: d.directory_name.as_str().into(),
                 parent_id: d.parentid.clone(),
                 is_root,
-                servicetype: self.get_servicetype().to_string().into(),
-                servicesession: self.get_servicesession().0.as_str().into(),
+                servicetype,
+                servicesession: self.get_servicesession().clone().0,
             };
 
             cache.insert(pool).await?;
@@ -458,20 +464,22 @@ impl FileListTrait for FileList {
 }
 
 pub fn remove_baseurl(urlname: &Url, baseurl: &Url) -> StackString {
-    let baseurl = format!("{}/", baseurl.as_str().trim_end_matches('/'));
-    urlname.as_str().replacen(&baseurl, "", 1).into()
+    let mut buf = StackString::new();
+    write!(buf, "{}/", baseurl.as_str().trim_end_matches('/')).unwrap();
+    urlname.as_str().replacen(buf.as_str(), "", 1).into()
 }
 
 pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<Url, Error> {
     let baseurl1 = baseurl1.as_str().trim_end_matches('/');
-
-    let urlstr = format!("{}/{}", baseurl1, remove_baseurl(urlname, baseurl0));
+    let mut urlstr = StackString::new();
+    write!(urlstr, "{}/{}", baseurl1, remove_baseurl(urlname, baseurl0))?;
     Url::parse(&urlstr).map_err(Into::into)
 }
 
 pub fn remove_basepath(basename: &str, basepath: &str) -> StackString {
-    let basepath = format!("{}/", basepath.trim_end_matches('/'));
-    basename.replacen(&basepath, "", 1).into()
+    let mut buf = StackString::new();
+    write!(buf, "{}/", basepath.trim_end_matches('/')).unwrap();
+    basename.replacen(buf.as_str(), "", 1).into()
 }
 
 pub fn replace_basepath(basename: &Path, basepath0: &Path, basepath1: &Path) -> PathBuf {
@@ -481,9 +489,8 @@ pub fn replace_basepath(basename: &Path, basepath0: &Path, basepath1: &Path) -> 
 
     let basename = basename.to_string_lossy();
 
-    let new_path = format!("{}/{}", basepath1, remove_basepath(&basename, &basepath0));
-    let new_path = Path::new(&new_path);
-    new_path.to_path_buf()
+    let new_path = Path::new(basepath1);
+    new_path.join(remove_basepath(&basename, &basepath0))
 }
 
 pub fn group_urls(url_list: &[Url]) -> HashMap<StackString, Vec<Url>> {

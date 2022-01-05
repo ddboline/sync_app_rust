@@ -28,15 +28,16 @@ pub struct FileListLocal(pub FileList);
 impl FileListLocal {
     pub fn new(basedir: &Path, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         let basepath = basedir.canonicalize()?;
-        let basestr = basepath.to_string_lossy().to_string();
+        let basestr = basepath.to_string_lossy();
         let baseurl = Url::from_file_path(basepath.clone())
             .map_err(|e| format_err!("Failed to parse url {:?}", e))?;
+        let session = basestr.parse()?;
         let flist = FileList::new(
             baseurl,
             basepath,
             config.clone(),
             FileService::Local,
-            basestr.parse()?,
+            session,
             HashMap::new(),
             pool.clone(),
         );
@@ -48,13 +49,14 @@ impl FileListLocal {
             let path = url
                 .to_file_path()
                 .map_err(|e| format_err!("Parse failure {:?}", e))?;
-            let basestr = path.to_string_lossy().to_string();
+            let basestr = path.to_string_lossy();
+            let session = basestr.parse()?;
             let flist = FileList::new(
                 url.clone(),
                 path,
                 config.clone(),
                 FileService::Local,
-                basestr.parse()?,
+                session,
                 HashMap::new(),
                 pool.clone(),
             );
@@ -118,22 +120,18 @@ impl FileListTrait for FileListLocal {
             .into_iter()
             .filter(|entry| !entry.file_type().is_dir())
             .map(|entry| {
-                let filepath = entry
-                    .path()
-                    .canonicalize()
-                    .map_err(|e| {
-                        error!("entry {:?}", entry);
-                        e
-                    })?
-                    .to_string_lossy()
-                    .to_string();
+                let filepath = entry.path().canonicalize().map_err(|e| {
+                    error!("entry {:?}", entry);
+                    e
+                })?;
+                let filepath_str = filepath.to_string_lossy();
                 let metadata = entry.metadata()?;
                 let modified = metadata
                     .modified()?
                     .duration_since(SystemTime::UNIX_EPOCH)?
                     .as_secs() as u32;
                 let size = metadata.len() as u32;
-                if let Some(finfo) = flist_dict.get(filepath.as_str()) {
+                if let Some(finfo) = flist_dict.get(filepath_str.as_ref()) {
                     if finfo.filestat.st_mtime >= modified && finfo.filestat.st_size == size {
                         return Ok(finfo.clone());
                     }
@@ -161,12 +159,11 @@ impl FileListTrait for FileListLocal {
             entries
                 .into_par_iter()
                 .map(|entry| {
-                    let filepath = entry
-                        .path()
-                        .canonicalize()
-                        .ok()
-                        .map_or_else(|| "".to_string(), |s| s.to_string_lossy().to_string());
-                    stdout.send(filepath);
+                    if let Some(filepath) = entry.path().canonicalize().ok() {
+                        let filepath_str = filepath.to_string_lossy();
+                        let filepath_str: StackString = filepath_str.as_ref().into();
+                        stdout.send(filepath_str);
+                    }
                     Ok(())
                 })
                 .collect()

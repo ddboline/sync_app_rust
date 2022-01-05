@@ -4,6 +4,7 @@ use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{
     collections::HashMap,
+    fmt::Write,
     fs::{create_dir_all, remove_file},
     path::Path,
 };
@@ -31,7 +32,9 @@ pub struct FileListS3 {
 
 impl FileListS3 {
     pub fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
-        let baseurl: Url = format!("s3://{}", bucket).parse()?;
+        let mut buf = StackString::new();
+        write!(buf, "s3://{}", bucket)?;
+        let baseurl: Url = buf.parse()?;
         let basepath = Path::new("");
 
         let flist = FileList::new(
@@ -133,11 +136,15 @@ impl FileListTrait for FileListS3 {
 
         self.s3
             .process_list_of_keys(bucket, Some(prefix), |i| {
-                stdout.send(format!(
+                let mut buf = StackString::new();
+                write!(
+                    buf,
                     "s3://{}/{}",
                     bucket,
                     i.key.as_ref().map_or_else(|| "", String::as_str)
-                ));
+                )
+                .unwrap();
+                stdout.send(buf);
                 Ok(())
             })
             .await
@@ -151,7 +158,7 @@ impl FileListTrait for FileListS3 {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::S3 && finfo1.servicetype == FileService::Local {
-            let local_file = finfo1.filepath.to_string_lossy().to_string();
+            let local_file = finfo1.filepath.to_string_lossy();
             let parent_dir = finfo1
                 .filepath
                 .parent()
@@ -164,8 +171,8 @@ impl FileListTrait for FileListS3 {
                 .host_str()
                 .ok_or_else(|| format_err!("No bucket"))?;
             let key = remote_url.path().trim_start_matches('/');
-            if Path::new(&local_file).exists() {
-                remove_file(&local_file)?;
+            if Path::new(local_file.as_ref()).exists() {
+                remove_file(local_file.as_ref())?;
             }
             let md5sum = self.s3.download(bucket, key, &local_file).await?;
             if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
@@ -193,11 +200,8 @@ impl FileListTrait for FileListS3 {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::S3 {
-            let local_file = finfo0
-                .filepath
-                .canonicalize()?
-                .to_string_lossy()
-                .to_string();
+            let local_path = finfo0.filepath.canonicalize()?;
+            let local_file = local_path.to_string_lossy();
             let remote_url = &finfo1.urlname;
             let bucket = remote_url
                 .host_str()

@@ -77,7 +77,7 @@ impl FileListGDrive {
             let basepath = basepath
                 .to_file_path()
                 .map_err(|e| format_err!("Failure {:?}", e))?;
-            let basepath = basepath.to_string_lossy().to_string();
+            let basepath = basepath.to_string_lossy();
             let basepath = Path::new(basepath.trim_start_matches('/'));
             let flist = FileList::new(
                 url.clone(),
@@ -413,8 +413,10 @@ mod tests {
     use anyhow::{format_err, Error};
     use chrono::NaiveDate;
     use log::{debug, error};
+    use stack_string::StackString;
     use std::{
         collections::HashMap,
+        fmt::Write as FmtWrite,
         fs::{create_dir_all, File},
         io::{BufRead, BufReader, Write},
         path::{Path, PathBuf},
@@ -436,7 +438,9 @@ mod tests {
         async fn new(fname: &Path) -> Result<Self, Error> {
             let original = fname.to_path_buf();
             let ext = original.extension().unwrap().to_string_lossy();
-            let new = fname.with_extension(format!("{}.new", ext)).to_path_buf();
+            let mut ext_str = StackString::new();
+            write!(ext_str, "{}.new", ext)?;
+            let new = fname.with_extension(ext_str).to_path_buf();
 
             if new.exists() {
                 remove_file(&new).await?;

@@ -7,7 +7,11 @@ use maplit::hashmap;
 use postgres_query::FromSqlRow;
 use reqwest::{header::HeaderMap, Response, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Debug, future::Future};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Write},
+    future::Future,
+};
 
 use stack_string::StackString;
 
@@ -183,27 +187,29 @@ impl MovieSync {
         T: Debug + Serialize + DeserializeOwned + Send + 'static,
     {
         let mut output = Vec::new();
-
-        let path = format!(
+        let mut path = StackString::new();
+        write!(
+            path,
             "list/{}?start_timestamp={}",
             table,
             last_modified_local.format("%Y-%m-%dT%H:%M:%S%.fZ")
-        );
+        )?;
         let url = endpoint.join(&path)?;
         debug!("{}", url);
-        output.push(format!("{}", url).into());
+        output.push(url.as_str().into());
         let remote_data: Vec<T> = self.client.get_remote(&url).await?;
         let local_data: Vec<T> = self
             .client
             .get_local(table, Some(last_modified_remote))
             .await?;
-
         self.client.put_local(table, &remote_data, None).await?;
-
-        let path = format!("list/{}", table);
+        let mut path = StackString::new();
+        write!(path, "list/{}", table)?;
         let url = endpoint.join(&path)?;
         self.client.put_remote(&url, &local_data, js_prefix).await?;
-        output.push(format!("{} {}", table, local_data.len()).into());
+        let mut buf = StackString::new();
+        write!(buf, "{} {}", table, local_data.len())?;
+        output.push(buf);
 
         Ok(output)
     }

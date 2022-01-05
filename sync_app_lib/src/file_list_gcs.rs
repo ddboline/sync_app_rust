@@ -4,6 +4,7 @@ use checksums::{hash_file, Algorithm};
 use log::info;
 use std::{
     collections::HashMap,
+    fmt::Write,
     fs::{create_dir_all, remove_file},
     path::Path,
 };
@@ -32,7 +33,9 @@ pub struct FileListGcs {
 
 impl FileListGcs {
     pub async fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
-        let baseurl: Url = format!("gs://{}", bucket).parse()?;
+        let mut baseurl = StackString::new();
+        write!(baseurl, "gs://{}", bucket)?;
+        let baseurl: Url = baseurl.parse()?;
         let basepath = Path::new("");
 
         let flist = FileList::new(
@@ -130,11 +133,15 @@ impl FileListTrait for FileListGcs {
 
         self.gcs
             .process_list_of_keys(bucket, Some(prefix), |i| {
-                stdout.send(format!(
+                let mut buf = StackString::new();
+                write!(
+                    buf,
                     "gs://{}/{}",
                     bucket,
                     i.name.as_ref().map_or_else(|| "", String::as_str)
-                ));
+                )
+                .unwrap();
+                stdout.send(buf);
                 Ok(())
             })
             .await
@@ -148,7 +155,7 @@ impl FileListTrait for FileListGcs {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::GCS && finfo1.servicetype == FileService::Local {
-            let local_file = finfo1.filepath.to_string_lossy().to_string();
+            let local_file = finfo1.filepath.to_string_lossy();
             let parent_dir = finfo1
                 .filepath
                 .parent()
@@ -161,11 +168,11 @@ impl FileListTrait for FileListGcs {
                 .host_str()
                 .ok_or_else(|| format_err!("No bucket"))?;
             let key = remote_url.path().trim_start_matches('/');
-            if Path::new(&local_file).exists() {
-                remove_file(&local_file)?;
+            if Path::new(local_file.as_ref()).exists() {
+                remove_file(local_file.as_ref())?;
             }
             self.gcs.download(bucket, key, &local_file).await?;
-            let md5sum: StackString = hash_file(Path::new(&local_file), Algorithm::MD5)
+            let md5sum: StackString = hash_file(Path::new(local_file.as_ref()), Algorithm::MD5)
                 .to_lowercase()
                 .into();
             if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
@@ -193,11 +200,8 @@ impl FileListTrait for FileListGcs {
         let finfo0 = finfo0.get_finfo();
         let finfo1 = finfo1.get_finfo();
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::GCS {
-            let local_file = finfo0
-                .filepath
-                .canonicalize()?
-                .to_string_lossy()
-                .to_string();
+            let local_path = finfo0.filepath.canonicalize()?;
+            let local_file = local_path.to_string_lossy();
             let remote_url = &finfo1.urlname;
             let bucket = remote_url
                 .host_str()

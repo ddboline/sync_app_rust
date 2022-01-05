@@ -14,7 +14,6 @@ pub mod directory_info;
 pub mod drive_v3_types;
 pub mod gcs_instance;
 pub mod gdrive_instance;
-pub mod rate_limiter;
 pub mod storage_v1_types;
 
 use anyhow::Error;
@@ -43,13 +42,5 @@ where
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }

@@ -5,7 +5,11 @@ use maplit::hashmap;
 use postgres_query::FromSqlRow;
 use reqwest::{header::HeaderMap, Response, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Debug, future::Future};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Write},
+    future::Future,
+};
 
 use stack_string::StackString;
 
@@ -229,10 +233,18 @@ impl GarminSync {
         if items.len() < 10 {
             items
                 .iter()
-                .map(|item| format!("{} {:?}", label, item).into())
+                .map(|item| {
+                    let mut buf = StackString::new();
+                    write!(buf, "{} {:?}", label, item).unwrap();
+                    buf
+                })
                 .collect()
         } else {
-            vec![format!("{} items {}", label, items.len()).into()]
+            vec![{
+                let mut buf = StackString::new();
+                write!(buf, "{} items {}", label, items.len()).unwrap();
+                buf
+            }]
         }
     }
 

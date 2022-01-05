@@ -73,7 +73,7 @@ impl S3Instance {
     pub async fn create_bucket(&self, bucket_name: &str) -> Result<String, Error> {
         exponential_retry(|| {
             let req = CreateBucketRequest {
-                bucket: bucket_name.to_string(),
+                bucket: bucket_name.into(),
                 ..CreateBucketRequest::default()
             };
             async move {
@@ -90,7 +90,7 @@ impl S3Instance {
     pub async fn delete_bucket(&self, bucket_name: &str) -> Result<(), Error> {
         exponential_retry(|| {
             let req = DeleteBucketRequest {
-                bucket: bucket_name.to_string(),
+                bucket: bucket_name.into(),
                 ..DeleteBucketRequest::default()
             };
             async move { self.s3_client.delete_bucket(req).await.map_err(Into::into) }
@@ -101,8 +101,8 @@ impl S3Instance {
     pub async fn delete_key(&self, bucket_name: &str, key_name: &str) -> Result<(), Error> {
         exponential_retry(|| {
             let req = DeleteObjectRequest {
-                bucket: bucket_name.to_string(),
-                key: key_name.to_string(),
+                bucket: bucket_name.into(),
+                key: key_name.into(),
                 ..DeleteObjectRequest::default()
             };
             async move {
@@ -126,8 +126,8 @@ impl S3Instance {
             let copy_source = source.to_string();
             let req = CopyObjectRequest {
                 copy_source,
-                bucket: bucket_to.to_string(),
-                key: key_to.to_string(),
+                bucket: bucket_to.into(),
+                key: key_to.into(),
                 ..CopyObjectRequest::default()
             };
             async move { self.s3_client.copy_object(req).await.map_err(Into::into) }
@@ -147,8 +147,8 @@ impl S3Instance {
         }
         exponential_retry(|| {
             let req = PutObjectRequest {
-                bucket: bucket_name.to_string(),
-                key: key_name.to_string(),
+                bucket: bucket_name.into(),
+                key: key_name.into(),
                 ..PutObjectRequest::default()
             };
             async move {
@@ -170,8 +170,8 @@ impl S3Instance {
     ) -> Result<StackString, Error> {
         exponential_retry(|| {
             let req = GetObjectRequest {
-                bucket: bucket_name.to_string(),
-                key: key_name.to_string(),
+                bucket: bucket_name.into(),
+                key: key_name.into(),
                 ..GetObjectRequest::default()
             };
             async move {
