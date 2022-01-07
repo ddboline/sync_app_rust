@@ -11,6 +11,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::used_underscore_binding)]
 #![allow(clippy::upper_case_acronyms)]
+#![allow(clippy::missing_panics_doc)]
 
 pub mod calendar_sync;
 pub mod config;

@@ -231,7 +231,7 @@ impl FileListTrait for FileListSSH {
 
         let expected_count: usize = output
             .split('\n')
-            .nth(0)
+            .next()
             .unwrap_or("")
             .split('\t')
             .nth(1)

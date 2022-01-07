@@ -77,11 +77,11 @@ impl SSHInstance {
             let mut args: SmallVec<[&str; 5]> = user_host.iter().map(StackString::as_str).collect();
             args.push(cmd);
             let process = Command::new("ssh").args(&args).output().await?;
-            if !process.status.success() {
+            if process.status.success() {
+                StackString::from_utf8(process.stdout).map_err(Into::into)
+            } else {
                 error!("{}", StackString::from_utf8_lossy(&process.stderr));
                 Err(format_err!("Process failed"))
-            } else {
-                StackString::from_utf8(process.stdout).map_err(Into::into)
             }
         } else {
             Err(format_err!("Failed to acquire lock"))

@@ -159,7 +159,7 @@ impl FileListTrait for FileListLocal {
             entries
                 .into_par_iter()
                 .map(|entry| {
-                    if let Some(filepath) = entry.path().canonicalize().ok() {
+                    if let Ok(filepath) = entry.path().canonicalize() {
                         let filepath_str = filepath.to_string_lossy();
                         let filepath_str: StackString = filepath_str.as_ref().into();
                         stdout.send(filepath_str);
