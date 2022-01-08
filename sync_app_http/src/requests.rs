@@ -2,15 +2,15 @@ use lazy_static::lazy_static;
 use log::debug;
 use rweb::Schema;
 use serde::{Deserialize, Serialize};
+use stack_string::{format_sstr, StackString};
 use std::{
+    fmt::Write,
     io::{BufRead, BufReader},
     path::Path,
     time::Instant,
 };
 use stdout_channel::{MockStdout, StdoutChannel};
 use tokio::{process::Command, sync::Mutex, task::spawn_blocking};
-
-use stack_string::StackString;
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
@@ -229,7 +229,7 @@ impl SyncSecurityRequest {
 
         let run_time = Instant::now() - start_time;
         let mut lines = lines?;
-        lines.push(format!("Run time {:0.2} s", run_time.as_secs_f64()).into());
+        lines.push(format_sstr!("Run time {:0.2} s", run_time.as_secs_f64()).into());
         Ok(lines)
     }
 }

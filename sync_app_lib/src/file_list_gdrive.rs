@@ -3,7 +3,8 @@ use arc_swap::{ArcSwap, ArcSwapOption};
 use async_trait::async_trait;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use std::{collections::HashMap, fs::create_dir_all, path::Path, sync::Arc};
+use stack_string::{format_sstr, StackString};
+use std::{collections::HashMap, fmt::Write, fs::create_dir_all, path::Path, sync::Arc};
 use stdout_channel::StdoutChannel;
 use url::Url;
 
@@ -11,8 +12,6 @@ use gdrive_lib::{
     directory_info::DirectoryInfo,
     gdrive_instance::{GDriveInfo, GDriveInstance},
 };
-
-use stack_string::StackString;
 
 use crate::{
     config::Config,
@@ -38,7 +37,7 @@ impl FileListGDrive {
         config: &Config,
         pool: &PgPool,
     ) -> Result<Self, Error> {
-        let baseurl: Url = format!("gdrive://{}/{}", servicesession, basepath).parse()?;
+        let baseurl: Url = format_sstr!("gdrive://{}/{}", servicesession, basepath).parse()?;
         let basepath = Path::new(basepath);
 
         let flist = FileList::new(
@@ -72,8 +71,8 @@ impl FileListGDrive {
                 .as_str()
                 .trim_start_matches("gdrive://")
                 .replace(url.path(), "");
-            let tmp = format!("gdrive://{}/", servicesession);
-            let basepath: Url = url.as_str().replace(&tmp, "file:///").parse()?;
+            let tmp = format_sstr!("gdrive://{}/", servicesession);
+            let basepath: Url = url.as_str().replace(tmp.as_str(), "file:///").parse()?;
             let basepath = basepath
                 .to_file_path()
                 .map_err(|e| format_err!("Failure {:?}", e))?;
@@ -262,7 +261,7 @@ impl FileListTrait for FileListGDrive {
         let start_page_path = self
             .gdrive
             .start_page_token_filename
-            .with_extension(format!("{}.new", ext));
+            .with_extension(format_sstr!("{}.new", ext));
 
         self.gdrive.store_start_page_token(&start_page_path).await?;
 
@@ -296,7 +295,7 @@ impl FileListTrait for FileListGDrive {
                             .await
                             .and_then(FileInfoGDrive::from_gdriveinfo)
                         {
-                            stdout.send(format!("{}\n", finfo.get_finfo().urlname));
+                            stdout.send(format_sstr!("{}\n", finfo.get_finfo().urlname));
                         }
                         Ok(())
                     }
@@ -413,7 +412,7 @@ mod tests {
     use anyhow::{format_err, Error};
     use chrono::NaiveDate;
     use log::{debug, error};
-    use stack_string::StackString;
+    use stack_string::{format_sstr, StackString};
     use std::{
         collections::HashMap,
         fmt::Write as FmtWrite,
@@ -438,8 +437,7 @@ mod tests {
         async fn new(fname: &Path) -> Result<Self, Error> {
             let original = fname.to_path_buf();
             let ext = original.extension().unwrap().to_string_lossy();
-            let mut ext_str = StackString::new();
-            write!(ext_str, "{}.new", ext)?;
+            let ext_str = format_sstr!("{}.new", ext);
             let new = fname.with_extension(ext_str).to_path_buf();
 
             if new.exists() {
@@ -466,7 +464,7 @@ mod tests {
 
         let fname = config
             .gdrive_token_path
-            .join(format!("{}_start_page_token", "ddboline@gmail.com"));
+            .join(format_sstr!("{}_start_page_token", "ddboline@gmail.com"));
         let tmp = TempStartPageToken::new(&fname).await?;
 
         let pool = PgPool::new(&config.database_url);

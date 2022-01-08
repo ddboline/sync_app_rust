@@ -7,13 +7,12 @@ use maplit::hashmap;
 use postgres_query::FromSqlRow;
 use reqwest::{header::HeaderMap, Response, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
     fmt::{Debug, Write},
     future::Future,
 };
-
-use stack_string::StackString;
 
 use crate::{config::Config, reqwest_session::ReqwestSession, sync_client::SyncClient};
 
@@ -187,13 +186,11 @@ impl MovieSync {
         T: Debug + Serialize + DeserializeOwned + Send + 'static,
     {
         let mut output = Vec::new();
-        let mut path = StackString::new();
-        write!(
-            path,
+        let path = format_sstr!(
             "list/{}?start_timestamp={}",
             table,
             last_modified_local.format("%Y-%m-%dT%H:%M:%S%.fZ")
-        )?;
+        );
         let url = endpoint.join(&path)?;
         debug!("{}", url);
         output.push(url.as_str().into());
@@ -203,12 +200,10 @@ impl MovieSync {
             .get_local(table, Some(last_modified_remote))
             .await?;
         self.client.put_local(table, &remote_data, None).await?;
-        let mut path = StackString::new();
-        write!(path, "list/{}", table)?;
+        let path = format_sstr!("list/{}", table);
         let url = endpoint.join(&path)?;
         self.client.put_remote(&url, &local_data, js_prefix).await?;
-        let mut buf = StackString::new();
-        write!(buf, "{} {}", table, local_data.len())?;
+        let buf = format_sstr!("{} {}", table, local_data.len());
         output.push(buf);
 
         Ok(output)

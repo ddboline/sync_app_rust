@@ -1,7 +1,7 @@
 use anyhow::Error;
 use chrono::NaiveDate;
 use futures::future::try_join_all;
-use stack_string::StackString;
+use stack_string::{format_sstr, StackString};
 use std::{
     fmt::Write as FmtWrite,
     fs::{create_dir_all, File},
@@ -38,8 +38,7 @@ async fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
 
     let flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool).await?;
     flist.set_directory_map(true).await?;
-    let mut buf = StackString::new();
-    write!(buf, "gdrive_{}_output", prefix)?;
+    let buf = format_sstr!("gdrive_{}_output", prefix);
     let outdir = dirs::home_dir().unwrap().join("tmp").join(&buf);
     if !outdir.exists() {
         create_dir_all(&outdir)?;
@@ -75,8 +74,7 @@ async fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
 }
 
 fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
-    let mut buf = StackString::new();
-    write!(buf, "gdrive_{}_output", prefix)?;
+    let buf = format_sstr!("gdrive_{}_output", prefix);
     let outdir = dirs::home_dir().unwrap().join("tmp").join(&buf);
     if !outdir.exists() {
         create_dir_all(&outdir)?;
@@ -100,8 +98,7 @@ fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
             })
         })
         .collect();
-    let mut buf = StackString::new();
-    write!(buf, "gdrive_{}_parsed", prefix)?;
+    let buf = format_sstr!("gdrive_{}_parsed", prefix);
     let outdir = dirs::home_dir().unwrap().join("tmp").join(&buf);
     if !outdir.exists() {
         create_dir_all(&outdir)?;
@@ -120,7 +117,7 @@ fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
             };
             let linestr = line.trim_matches('\u{feff}');
             if let Ok(date) = NaiveDate::parse_from_str(linestr.trim(), "%B%d%Y") {
-                let date_str = StackString::from_display(date)?;
+                let date_str = StackString::from_display(date);
                 println!("date {}", date_str);
                 let new_filename = outdir.join(date_str).with_extension("txt");
                 let new_file = File::create(&new_filename)?;

@@ -5,13 +5,12 @@ use maplit::hashmap;
 use postgres_query::FromSqlRow;
 use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
+use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
     fmt::{Debug, Write},
     future::Future,
 };
-
-use stack_string::StackString;
 
 use crate::{
     config::Config, iso_8601_datetime, reqwest_session::ReqwestSession, sync_client::SyncClient,
@@ -89,8 +88,7 @@ impl CalendarSync {
                     results
                         .into_iter()
                         .map(|event| {
-                            let mut key = StackString::new();
-                            write!(key, "{}_{}", event.gcal_id, event.event_id).unwrap();
+                            let key = format_sstr!("{}_{}", event.gcal_id, event.event_id);
                             (key, event)
                         })
                         .collect()
@@ -141,18 +139,10 @@ impl CalendarSync {
         if items.len() < 10 {
             items
                 .iter()
-                .map(|item| {
-                    let mut buf = StackString::new();
-                    write!(buf, "{} {:?}", label, item).unwrap();
-                    buf
-                })
+                .map(|item| format_sstr!("{} {:?}", label, item))
                 .collect()
         } else {
-            vec![{
-                let mut buf = StackString::new();
-                write!(buf, "{} items {}", label, items.len()).unwrap();
-                buf
-            }]
+            vec![{ format_sstr!("{} items {}", label, items.len()) }]
         }
     }
 

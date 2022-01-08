@@ -7,6 +7,7 @@ use postgres_query::query;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
+use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
     convert::TryInto,
@@ -21,7 +22,6 @@ use tokio::task::spawn_blocking;
 use url::Url;
 
 use gdrive_lib::{directory_info::DirectoryInfo, gdrive_instance::GDriveInstance};
-use stack_string::StackString;
 
 use crate::{
     config::Config,
@@ -167,19 +167,13 @@ pub trait FileListTrait: Send + Sync + Debug {
     fn cleanup(&self) -> Result<(), Error> {
         if self.get_servicetype() == FileService::GDrive {
             let config = &self.get_config();
-            let mut token_str = StackString::new();
-            write!(
-                token_str,
-                "{}_start_page_token",
-                self.get_servicesession().0
-            )?;
+            let token_str = format_sstr!("{}_start_page_token", self.get_servicesession().0);
             let fname = config.gdrive_token_path.join(token_str);
             let ext = fname
                 .extension()
                 .ok_or_else(|| format_err!("No extension"))?
                 .to_string_lossy();
-            let mut ext_str = StackString::new();
-            write!(ext_str, "{}.new", ext)?;
+            let ext_str = format_sstr!("{}.new", ext);
             let start_page_path = fname.with_extension(ext_str);
             info!("{:?} {:?}", start_page_path, fname);
             if start_page_path.exists() {
@@ -361,7 +355,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let mut inserted = 0;
         for d in directory_map.values() {
             let is_root = root_id.as_ref().map_or(false, |rid| rid == &d.directory_id);
-            let servicetype = StackString::from_display(self.get_servicetype()).unwrap();
+            let servicetype = StackString::from_display(self.get_servicetype());
             let cache = DirectoryInfoCache {
                 id: -1,
                 directory_id: d.directory_id.as_str().into(),
@@ -464,21 +458,18 @@ impl FileListTrait for FileList {
 }
 
 pub fn remove_baseurl(urlname: &Url, baseurl: &Url) -> StackString {
-    let mut buf = StackString::new();
-    write!(buf, "{}/", baseurl.as_str().trim_end_matches('/')).unwrap();
+    let buf = format_sstr!("{}/", baseurl.as_str().trim_end_matches('/'));
     urlname.as_str().replacen(buf.as_str(), "", 1).into()
 }
 
 pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<Url, Error> {
     let baseurl1 = baseurl1.as_str().trim_end_matches('/');
-    let mut urlstr = StackString::new();
-    write!(urlstr, "{}/{}", baseurl1, remove_baseurl(urlname, baseurl0))?;
+    let urlstr = format_sstr!("{}/{}", baseurl1, remove_baseurl(urlname, baseurl0));
     Url::parse(&urlstr).map_err(Into::into)
 }
 
 pub fn remove_basepath(basename: &str, basepath: &str) -> StackString {
-    let mut buf = StackString::new();
-    write!(buf, "{}/", basepath.trim_end_matches('/')).unwrap();
+    let buf = format_sstr!("{}/", basepath.trim_end_matches('/'));
     basename.replacen(buf.as_str(), "", 1).into()
 }
 

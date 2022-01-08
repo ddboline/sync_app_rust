@@ -7,8 +7,9 @@ use common::{
 use lazy_static::lazy_static;
 use log::debug;
 use parking_lot::{Mutex, MutexGuard};
+use stack_string::format_sstr;
 use std::{
-    fmt::{self, Debug},
+    fmt::{self, Debug, Write},
     path::Path,
     sync::Arc,
 };
@@ -43,7 +44,7 @@ pub struct GcsInstance {
 
 impl Debug for GcsInstance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "GcsInstance")
+        f.write_str("GcsInstance")
     }
 }
 
@@ -57,7 +58,7 @@ impl GcsInstance {
         let https = https_client();
         let sec = yup_oauth2::read_service_account_key(gcs_secret_file).await?;
 
-        let token_file = gcs_token_path.join(format!("{}.json", session_name));
+        let token_file = gcs_token_path.join(format_sstr!("{}.json", session_name));
 
         let parent = gcs_token_path;
 

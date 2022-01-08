@@ -4,10 +4,12 @@ use futures::future::try_join_all;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use smallvec::{smallvec, SmallVec};
+use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
     convert::From,
     fmt,
+    fmt::Write,
     path::{Path, PathBuf},
     str::FromStr,
     sync::Arc,
@@ -390,7 +392,8 @@ mod tests {
     use anyhow::Error;
     use log::debug;
     use rusoto_s3::{Object, Owner};
-    use std::{collections::HashMap, env::current_dir, path::Path};
+    use stack_string::{format_sstr, StackString};
+    use std::{collections::HashMap, env::current_dir, fmt::Write, path::Path};
 
     use crate::{
         config::Config,
@@ -468,7 +471,7 @@ mod tests {
 
         debug!("{:?}", cache_list);
 
-        let test_key = format!(
+        let test_key = format_sstr!(
             "file://{}/src/file_sync.rs",
             current_dir()?.to_string_lossy()
         );

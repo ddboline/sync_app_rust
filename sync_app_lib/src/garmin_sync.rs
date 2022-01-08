@@ -11,7 +11,7 @@ use std::{
     future::Future,
 };
 
-use stack_string::StackString;
+use stack_string::{format_sstr, StackString};
 
 use super::{
     config::Config, iso_8601_datetime, reqwest_session::ReqwestSession, sync_client::SyncClient,
@@ -233,18 +233,10 @@ impl GarminSync {
         if items.len() < 10 {
             items
                 .iter()
-                .map(|item| {
-                    let mut buf = StackString::new();
-                    write!(buf, "{} {:?}", label, item).unwrap();
-                    buf
-                })
+                .map(|item| format_sstr!("{} {:?}", label, item))
                 .collect()
         } else {
-            vec![{
-                let mut buf = StackString::new();
-                write!(buf, "{} items {}", label, items.len()).unwrap();
-                buf
-            }]
+            vec![{ format_sstr!("{} items {}", label, items.len()) }]
         }
     }
 

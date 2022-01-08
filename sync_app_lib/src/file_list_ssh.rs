@@ -2,14 +2,13 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use log::debug;
 use serde::{Deserialize, Serialize};
+use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap, convert::TryInto, fmt::Write, fs::create_dir_all, path::Path, sync::Arc,
 };
 use stdout_channel::StdoutChannel;
 use tokio::task::spawn_blocking;
 use url::Url;
-
-use stack_string::StackString;
 
 use crate::{
     config::Config,
@@ -32,15 +31,13 @@ impl FileListSSH {
             let basepath = Path::new(url.path()).to_path_buf();
             let host = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
             let port = url.port().unwrap_or(22);
-            let mut session = StackString::new();
-            write!(
-                session,
+            let session = format_sstr!(
                 "ssh://{}@{}:{}{}",
                 url.username(),
                 host,
                 port,
                 basepath.to_string_lossy()
-            )?;
+            );
             let flist = FileList::new(
                 url.clone(),
                 basepath,
@@ -115,7 +112,7 @@ impl FileListTrait for FileListSSH {
 
             self.ssh
                 .run_scp(
-                    &self.ssh.get_ssh_str(&path0)?,
+                    &self.ssh.get_ssh_str(&path0),
                     finfo1.filepath.to_string_lossy().as_ref(),
                 )
                 .await
@@ -147,14 +144,13 @@ impl FileListTrait for FileListSSH {
                 .ok_or_else(|| format_err!("No parent directory"))?
                 .to_string_lossy()
                 .replace(" ", r#"\ "#);
-            let mut command = StackString::new();
-            write!(command, "mkdir -p {}", parent_dir)?;
+            let command = format_sstr!("mkdir -p {}", parent_dir);
             self.ssh.run_command_ssh(&command).await?;
 
             self.ssh
                 .run_scp(
                     finfo0.filepath.to_string_lossy().as_ref(),
-                    &self.ssh.get_ssh_str(&path1)?,
+                    &self.ssh.get_ssh_str(&path1),
                 )
                 .await
         } else {
@@ -190,8 +186,7 @@ impl FileListTrait for FileListSSH {
         let path1 = Path::new(url1.path())
             .to_string_lossy()
             .replace(" ", r#"\ "#);
-        let mut command = StackString::new();
-        write!(command, "mv {} {}", path0, path1)?;
+        let command = format_sstr!("mv {} {}", path0, path1);
         self.ssh.run_command_ssh(&command).await
     }
 
@@ -201,8 +196,7 @@ impl FileListTrait for FileListSSH {
         let path = Path::new(url.path())
             .to_string_lossy()
             .replace(" ", r#"\ "#);
-        let mut command = StackString::new();
-        write!(command, "rm {}", path)?;
+        let command = format_sstr!("rm {}", path);
         self.ssh.run_command_ssh(&command).await
     }
 
@@ -213,20 +207,17 @@ impl FileListTrait for FileListSSH {
             .iter()
             .last()
             .ok_or_else(|| format_err!("No hostname"))?;
-        let mut command = StackString::new();
-        write!(
-            command,
+        let command = format_sstr!(
             r#"
                 sync-app-rust index -u file://{path} &&
                 sync-app-rust count -u file://{path} &&
                 sync-app-rust ser -u file://{path}
             "#,
             path = path,
-        )?;
+        );
         let output = self.ssh.run_command_stream_stdout(&command).await?;
         let output = output.trim();
-        let mut url_prefix = StackString::new();
-        write!(url_prefix, "ssh://{}", user_host)?;
+        let url_prefix = format_sstr!("ssh://{}", user_host);
         let baseurl = self.get_baseurl().clone();
 
         let expected_count: usize = output
@@ -274,8 +265,7 @@ impl FileListTrait for FileListSSH {
 
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
         let path = self.get_basepath().to_string_lossy();
-        let mut command = StackString::new();
-        write!(command, "sync-app-rust ls -u file://{}", path)?;
+        let command = format_sstr!("sync-app-rust ls -u file://{}", path);
         stdout.send(&command);
         self.ssh.run_command_print_stdout(&command).await
     }
@@ -285,7 +275,9 @@ impl FileListTrait for FileListSSH {
 mod tests {
     use anyhow::Error;
     use log::debug;
+    use stack_string::{format_sstr, StackString};
     use std::{
+        fmt::Write,
         fs::remove_file,
         path::{Path, PathBuf},
     };
@@ -337,7 +329,7 @@ mod tests {
         let pool = PgPool::new(&config.database_url);
 
         let path: PathBuf = "src/file_list_ssh.rs".parse()?;
-        let url: Url = format!("file://{}", path.canonicalize()?.to_string_lossy()).parse()?;
+        let url: Url = format_sstr!("file://{}", path.canonicalize()?.to_string_lossy()).parse()?;
         let finfo0 = FileInfoLocal::from_url(&url)?;
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/tmp/file_list_ssh.rs".parse()?;
         let finfo1 = FileInfoSSH::from_url(&url)?;

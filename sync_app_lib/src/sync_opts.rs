@@ -7,7 +7,7 @@ use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
 use refinery::embed_migrations;
-use stack_string::StackString;
+use stack_string::{format_sstr, StackString};
 use std::{fmt::Write, sync::Arc};
 use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
@@ -157,8 +157,7 @@ impl SyncOpts {
                 results?;
                 info!("Check 2");
                 for entry in FileSyncCache::get_cache_list(pool).await? {
-                    let mut buf = StackString::new();
-                    write!(buf, "{} {}", entry.src_url, entry.dst_url)?;
+                    let buf = format_sstr!("{} {}", entry.src_url, entry.dst_url);
                     stdout.send(buf);
                 }
                 Ok(())
@@ -233,8 +232,7 @@ impl SyncOpts {
                         let stdout = stdout.clone();
                         let mut flist = FileList::from_url(url, config, &pool).await?;
                         flist.with_list(flist.fill_file_list().await?);
-                        let mut buf = StackString::new();
-                        write!(buf, "{}\t{}", url, flist.get_filemap().len()).unwrap();
+                        let buf = format_sstr!("{}\t{}", url, flist.get_filemap().len());
                         stdout.send(buf);
                         Ok(())
                     });
@@ -286,11 +284,7 @@ impl SyncOpts {
                 let clist = FileSyncConfig::get_config_list(pool)
                     .await?
                     .into_iter()
-                    .map(|v| {
-                        let mut buf = StackString::new();
-                        write!(buf, "{} {}", v.src_url, v.dst_url).unwrap();
-                        buf
-                    })
+                    .map(|v| format_sstr!("{} {}", v.src_url, v.dst_url))
                     .join("\n");
                 stdout.send(clist);
                 Ok(())
@@ -300,8 +294,7 @@ impl SyncOpts {
                     .await?
                     .into_iter()
                     .map(|v| {
-                        let mut buf = StackString::new();
-                        write!(buf, "{} {}", v.src_url, v.dst_url).unwrap();
+                        let buf = format_sstr!("{} {}", v.src_url, v.dst_url);
                         buf
                     })
                     .join("\n");

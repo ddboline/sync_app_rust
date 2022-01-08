@@ -2,7 +2,7 @@ use anyhow::{format_err, Error};
 use lazy_static::lazy_static;
 use log::{debug, error, info};
 use smallvec::{smallvec, SmallVec};
-use stack_string::StackString;
+use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt::Write, process::Stdio};
 use tokio::{
     io::{stdout, AsyncBufReadExt, AsyncWriteExt, BufReader},
@@ -40,26 +40,17 @@ impl SSHInstance {
         Ok(Self::new(user, host, port).await)
     }
 
-    pub fn get_ssh_str(&self, path: &str) -> Result<StackString, Error> {
-        let mut ssh_str = StackString::new();
+    pub fn get_ssh_str(&self, path: &str) -> StackString {
         if self.port == 22 {
-            write!(ssh_str, "{}@{}:{}", self.user, self.host, path)?;
+            format_sstr!("{}@{}:{}", self.user, self.host, path)
         } else {
-            write!(
-                ssh_str,
-                "-p {} {}@{}:{}",
-                self.port, self.user, self.host, path
-            )?;
-        };
-
-        Ok(ssh_str)
+            format_sstr!("-p {} {}@{}:{}", self.port, self.user, self.host, path)
+        }
     }
 
     pub fn get_ssh_username_host(&self) -> Result<SmallVec<[StackString; 4]>, Error> {
-        let mut user_str = StackString::new();
-        write!(user_str, "{}@{}", self.user, self.host)?;
-        let mut port_str = StackString::new();
-        write!(port_str, "{}", self.port)?;
+        let user_str = format_sstr!("{}@{}", self.user, self.host);
+        let port_str = format_sstr!("{}", self.port);
         let ssh_str = if self.port == 22 {
             smallvec!["-C".into(), user_str,]
         } else {
@@ -111,8 +102,7 @@ impl SSHInstance {
             while let Ok(bytes) = reader.read_line(&mut line).await {
                 if bytes > 0 {
                     let user_host = &user_host[user_host.len() - 1];
-                    let mut buf = StackString::new();
-                    write!(buf, "ssh://{}{}", user_host, line)?;
+                    let buf = format_sstr!("ssh://{}{}", user_host, line);
                     stdout.write_all(buf.as_bytes()).await?;
                 } else {
                     break;

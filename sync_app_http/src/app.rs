@@ -9,8 +9,8 @@ use rweb::{
     openapi::{self, Info},
     Filter, Reply,
 };
-use stack_string::StackString;
-use std::{net::SocketAddr, sync::Arc, time};
+use stack_string::{format_sstr, StackString};
+use std::{fmt::Write, net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, task::JoinHandle, time::interval};
 use uuid::Uuid;
 
@@ -185,7 +185,7 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
         .or(spec_json_path)
         .or(spec_yaml_path)
         .recover(error_response);
-    let addr: SocketAddr = format!("127.0.0.1:{}", port).parse()?;
+    let addr: SocketAddr = format_sstr!("127.0.0.1:{}", port).parse()?;
     rweb::serve(routes).bind(addr).await;
     Ok(())
 }

@@ -4,8 +4,8 @@ use rweb_helper::{
     html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase, RwebResponse,
 };
 use serde::Serialize;
-use stack_string::StackString;
-use std::time::Duration;
+use stack_string::{format_sstr, StackString};
+use std::{fmt::Write, time::Duration};
 use tokio::time::sleep;
 
 use sync_app_lib::file_sync::FileSyncAction;
@@ -38,7 +38,7 @@ pub async fn sync_frontpage(
         .await?
         .into_iter()
         .map(|v| {
-            format!(
+            format_sstr!(
                 r#"
         <input type="button" name="Rm" value="Rm" onclick="removeCacheEntry({id})">
         <input type="button" name="DelSrc" value="DelSrc" onclick="deleteEntry('{src}', {id})">
@@ -100,7 +100,7 @@ pub async fn list_sync_cache(
         .handle(&data.db)
         .await?
         .into_iter()
-        .map(|v| format!("{} {}", v.src_url, v.dst_url))
+        .map(|v| format_sstr!("{} {}", v.src_url, v.dst_url))
         .join("\n");
     Ok(HtmlBase::new(body).into())
 }
@@ -200,7 +200,7 @@ pub async fn remove(
 
 #[derive(RwebResponse)]
 #[response(description = "Sync Podcasts")]
-struct SyncPodcastsResponse(HtmlBase<String, Error>);
+struct SyncPodcastsResponse(HtmlBase<StackString, Error>);
 
 #[get("/sync/sync_podcasts")]
 pub async fn sync_podcasts(
@@ -209,7 +209,7 @@ pub async fn sync_podcasts(
 ) -> WarpResult<SyncPodcastsResponse> {
     match user.push_session(SyncKey::SyncPodcast, data).await? {
         Some(result) => {
-            let body = format!(
+            let body = format_sstr!(
                 r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
                 result.join("\n")
             );
@@ -230,7 +230,7 @@ pub async fn user(#[filter = "LoggedUser::filter"] user: LoggedUser) -> WarpResu
 
 #[derive(RwebResponse)]
 #[response(description = "Sync Security Logs")]
-struct SyncSecurityLogsResponse(HtmlBase<String, Error>);
+struct SyncSecurityLogsResponse(HtmlBase<StackString, Error>);
 
 #[get("/sync/sync_security")]
 pub async fn sync_security(
@@ -239,7 +239,7 @@ pub async fn sync_security(
 ) -> WarpResult<SyncSecurityLogsResponse> {
     match user.push_session(SyncKey::SyncSecurity, data).await? {
         Some(result) => {
-            let body = format!(
+            let body = format_sstr!(
                 r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
                 result.join("\n")
             );

@@ -12,7 +12,9 @@ use log::debug;
 use maplit::{hashmap, hashset};
 use mime::Mime;
 use percent_encoding::percent_decode;
-use stack_string::StackString;
+use stack_string::{format_sstr, StackString};
+use std::fmt::Write;
+
 use std::{
     collections::{HashMap, HashSet},
     ffi::OsStr,
@@ -87,7 +89,7 @@ pub struct GDriveInstance {
 
 impl Debug for GDriveInstance {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "GDriveInstance")
+        f.write_str("GDriveInstance")
     }
 }
 
@@ -97,12 +99,12 @@ impl GDriveInstance {
         gdrive_secret_file: &Path,
         session_name: &str,
     ) -> Result<Self, Error> {
-        let fname = gdrive_token_path.join(format!("{}_start_page_token", session_name));
+        let fname = gdrive_token_path.join(format_sstr!("{}_start_page_token", session_name));
         debug!("{:?}", gdrive_secret_file);
         let https = https_client();
         let sec = yup_oauth2::read_application_secret(gdrive_secret_file).await?;
 
-        let token_file = gdrive_token_path.join(format!("{}.json", session_name));
+        let token_file = gdrive_token_path.join(format_sstr!("{}.json", session_name));
 
         let parent = gdrive_token_path;
 
@@ -203,10 +205,10 @@ impl GDriveInstance {
         if let Some(ref p) = parents {
             let q = p
                 .iter()
-                .map(|id| format!("'{}' in parents", id))
+                .map(|id| format_sstr!("'{}' in parents", id))
                 .join(" or ");
 
-            query_chain.push(format!("({})", q).into());
+            query_chain.push(format_sstr!("({})", q).into());
         }
         query_chain.push("trashed = false".into());
         let query = query_chain.join(" and ");
@@ -651,7 +653,7 @@ impl GDriveInstance {
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
                 if let Some(dinfo) = dirmap.get(pid_) {
-                    fullpath.push(format!("{}/", dinfo.directory_name).into());
+                    fullpath.push(format_sstr!("{}/", dinfo.directory_name).into());
                     dinfo.parentid.clone()
                 } else {
                     self.get_file_metadata(pid_)
@@ -734,7 +736,7 @@ impl GDriveInstance {
 
     pub async fn store_start_page_token(&self, path: &Path) -> Result<(), Error> {
         if let Some(start_page_token) = self.start_page_token.load().as_ref() {
-            let buf = StackString::from_display(start_page_token)?;
+            let buf = StackString::from_display(start_page_token);
             fs::write(path, buf).await?;
         }
         Ok(())
@@ -856,7 +858,7 @@ impl GDriveInfo {
             p.push(e.as_str());
             p
         });
-        let urlname = format!("gdrive://{}/", gdrive.session_name);
+        let urlname = format_sstr!("gdrive://{}/", gdrive.session_name);
         let urlname = Url::parse(&urlname)?;
         let urlname = export_path.iter().try_fold(urlname, |u, e| {
             if e.contains('#') {

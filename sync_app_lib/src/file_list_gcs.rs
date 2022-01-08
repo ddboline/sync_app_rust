@@ -2,6 +2,7 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use checksums::{hash_file, Algorithm};
 use log::info;
+use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
     fmt::Write,
@@ -11,8 +12,6 @@ use std::{
 use stdout_channel::StdoutChannel;
 use tokio::task::spawn_blocking;
 use url::Url;
-
-use stack_string::StackString;
 
 use gdrive_lib::gcs_instance::GcsInstance;
 
@@ -33,8 +32,7 @@ pub struct FileListGcs {
 
 impl FileListGcs {
     pub async fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
-        let mut baseurl = StackString::new();
-        write!(baseurl, "gs://{}", bucket)?;
+        let baseurl = format_sstr!("gs://{}", bucket);
         let baseurl: Url = baseurl.parse()?;
         let basepath = Path::new("");
 
@@ -133,14 +131,11 @@ impl FileListTrait for FileListGcs {
 
         self.gcs
             .process_list_of_keys(bucket, Some(prefix), |i| {
-                let mut buf = StackString::new();
-                write!(
-                    buf,
+                let buf = format_sstr!(
                     "gs://{}/{}",
                     bucket,
                     i.name.as_ref().map_or_else(|| "", String::as_str)
-                )
-                .unwrap();
+                );
                 stdout.send(buf);
                 Ok(())
             })

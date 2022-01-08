@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
 use chrono::DateTime;
-use stack_string::StackString;
+use stack_string::{format_sstr, StackString};
 use std::{fmt::Write, path::Path};
 use url::Url;
 
@@ -31,8 +31,7 @@ impl FileInfoGcs {
             .to_string_lossy()
             .into_owned()
             .into();
-        let mut buf = StackString::new();
-        write!(buf, "gs://{}/{}", bucket, key)?;
+        let buf = format_sstr!("gs://{}/{}", bucket, key);
         let fileurl: Url = buf.parse()?;
         let serviceid = bucket.clone().into();
         let servicesession = bucket.parse()?;
@@ -93,8 +92,7 @@ impl FileInfoGcs {
             .timestamp();
         let size = item.size.ok_or_else(|| format_err!("No file size"))?;
         let st_size = size.parse()?;
-        let mut buf = StackString::new();
-        write!(buf, "gs://{}/{}", bucket, key)?;
+        let buf = format_sstr!("gs://{}/{}", bucket, key);
         let fileurl: Url = buf.parse()?;
         let id_str: StackString = bucket.into();
         let serviceid = id_str.into();

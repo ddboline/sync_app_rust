@@ -2,7 +2,8 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use log::error;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::{collections::HashMap, path::Path, string::ToString, time::SystemTime};
+use stack_string::{format_sstr, StackString};
+use std::{collections::HashMap, fmt::Write, path::Path, string::ToString, time::SystemTime};
 use stdout_channel::StdoutChannel;
 use tokio::{
     fs::{copy, create_dir_all, remove_file, rename},
@@ -10,8 +11,6 @@ use tokio::{
 };
 use url::Url;
 use walkdir::WalkDir;
-
-use stack_string::StackString;
 
 use crate::{
     config::Config,
@@ -243,7 +242,8 @@ impl FileListTrait for FileListLocal {
 mod tests {
     use anyhow::Error;
     use log::{debug, info};
-    use std::{collections::HashMap, convert::TryInto, path::PathBuf};
+    use stack_string::{format_sstr, StackString};
+    use std::{collections::HashMap, convert::TryInto, fmt::Write, path::PathBuf};
     use url::Url;
 
     use crate::{
@@ -261,7 +261,7 @@ mod tests {
     fn create_conf() -> Result<(), Error> {
         let basepath: PathBuf = "src".parse()?;
         let baseurl: Url =
-            format!("file://{}", basepath.canonicalize()?.to_string_lossy()).parse()?;
+            format_sstr!("file://{}", basepath.canonicalize()?.to_string_lossy()).parse()?;
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
         let conf = FileListLocal::new(&basepath, &config, &pool);
