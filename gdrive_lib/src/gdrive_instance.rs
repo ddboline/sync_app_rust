@@ -208,7 +208,7 @@ impl GDriveInstance {
                 .map(|id| format_sstr!("'{}' in parents", id))
                 .join(" or ");
 
-            query_chain.push(format_sstr!("({})", q).into());
+            query_chain.push(format_sstr!("({})", q));
         }
         query_chain.push("trashed = false".into());
         let query = query_chain.join(" and ");
@@ -653,7 +653,7 @@ impl GDriveInstance {
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
                 if let Some(dinfo) = dirmap.get(pid_) {
-                    fullpath.push(format_sstr!("{}/", dinfo.directory_name).into());
+                    fullpath.push(format_sstr!("{}/", dinfo.directory_name));
                     dinfo.parentid.clone()
                 } else {
                     self.get_file_metadata(pid_)

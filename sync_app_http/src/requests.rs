@@ -229,7 +229,7 @@ impl SyncSecurityRequest {
 
         let run_time = Instant::now() - start_time;
         let mut lines = lines?;
-        lines.push(format_sstr!("Run time {:0.2} s", run_time.as_secs_f64()).into());
+        lines.push(format_sstr!("Run time {:0.2} s", run_time.as_secs_f64()));
         Ok(lines)
     }
 }
