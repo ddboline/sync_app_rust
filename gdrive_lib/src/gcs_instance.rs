@@ -31,7 +31,11 @@ lazy_static! {
 }
 
 fn https_client() -> TlsClient {
-    let conn = hyper_rustls::HttpsConnector::with_native_roots();
+    let conn = hyper_rustls::HttpsConnectorBuilder::new()
+        .with_native_roots()
+        .https_only()
+        .enable_http1()
+        .build();
     hyper::Client::builder().build(conn)
 }
 
