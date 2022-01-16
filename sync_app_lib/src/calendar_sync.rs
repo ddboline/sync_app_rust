@@ -18,7 +18,6 @@ use crate::{
 
 #[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarList {
-    pub id: i32,
     pub calendar_name: StackString,
     pub gcal_id: StackString,
     pub gcal_name: Option<StackString>,
@@ -33,7 +32,6 @@ pub struct CalendarList {
 
 #[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarCache {
-    pub id: i32,
     pub gcal_id: StackString,
     pub event_id: StackString,
     pub event_start_time: DateTime<Utc>,
