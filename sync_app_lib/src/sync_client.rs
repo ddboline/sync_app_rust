@@ -10,7 +10,6 @@ use reqwest::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{fmt::Write, path::Path};
-use tempfile::NamedTempFile;
 use tokio::{fs, task::spawn_blocking};
 
 use crate::{config::Config, local_session::LocalSession, reqwest_session::ReqwestSession};
