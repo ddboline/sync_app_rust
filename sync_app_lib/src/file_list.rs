@@ -173,7 +173,7 @@ pub trait FileListTrait: Send + Sync + Debug {
                 .extension()
                 .ok_or_else(|| format_err!("No extension"))?
                 .to_string_lossy();
-            let ext_str = format_sstr!("{}.new", ext);
+            let ext_str = format_sstr!("{ext}.new");
             let start_page_path = fname.with_extension(ext_str);
             info!("{:?} {:?}", start_page_path, fname);
             if start_page_path.exists() {

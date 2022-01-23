@@ -102,7 +102,7 @@ impl SSHInstance {
             while let Ok(bytes) = reader.read_line(&mut line).await {
                 if bytes > 0 {
                     let user_host = &user_host[user_host.len() - 1];
-                    let buf = format_sstr!("ssh://{}{}", user_host, line);
+                    let buf = format_sstr!("ssh://{user_host}{line}");
                     stdout.write_all(buf.as_bytes()).await?;
                 } else {
                     break;
@@ -124,7 +124,7 @@ impl SSHInstance {
             if Command::new("ssh").args(&args).status().await?.success() {
                 Ok(())
             } else {
-                Err(format_err!("{} failed", cmd))
+                Err(format_err!("{cmd} failed"))
             }
         } else {
             Err(format_err!("Failed to acquire lock"))

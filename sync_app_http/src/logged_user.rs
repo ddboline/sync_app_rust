@@ -61,7 +61,8 @@ impl LoggedUser {
         config: &Config,
         session_key: &str,
     ) -> Result<Option<SyncSession>, anyhow::Error> {
-        let url = format_sstr!("https://{}/api/session/{}", config.domain, session_key);
+        let domain = &config.domain;
+        let url = format_sstr!("https://{domain}/api/session/{session_key}");
         let session_str = StackString::from_display(self.session);
         let value = HeaderValue::from_str(&session_str)?;
         let key = HeaderValue::from_str(&self.secret_key)?;
@@ -90,7 +91,8 @@ impl LoggedUser {
         session_key: &str,
         session_value: SyncSession,
     ) -> Result<(), anyhow::Error> {
-        let url = format_sstr!("https://{}/api/session/{}", config.domain, session_key);
+        let domain = &config.domain;
+        let url = format_sstr!("https://{domain}/api/session/{session_key}");
         let session_str = StackString::from_display(self.session);
         let value = HeaderValue::from_str(&session_str)?;
         let key = HeaderValue::from_str(&self.secret_key)?;
@@ -111,7 +113,8 @@ impl LoggedUser {
         config: &Config,
         session_key: &str,
     ) -> Result<(), anyhow::Error> {
-        let url = format_sstr!("https://{}/api/session/{}", config.domain, session_key);
+        let domain = &config.domain;
+        let url = format_sstr!("https://{domain}/api/session/{session_key}");
         let session_str = StackString::from_display(self.session);
         let value = HeaderValue::from_str(&session_str)?;
         let key = HeaderValue::from_str(&self.secret_key)?;

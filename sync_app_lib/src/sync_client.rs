@@ -69,7 +69,7 @@ impl SyncClient {
             .post(&url, &HeaderMap::new(), &data)
             .await?
             .error_for_status()?;
-        let buf = format_sstr!("{}/user", base_url);
+        let buf = format_sstr!("{base_url}/user");
         let url = from_url.join(&buf)?;
         let resp = self
             .remote_session
@@ -79,7 +79,7 @@ impl SyncClient {
         let user: LoggedUser = resp
             .json()
             .await
-            .map_err(|e| format_err!("Login problem {:?}", e))?;
+            .map_err(|e| format_err!("Login problem {e:?}"))?;
         debug!("user: {:?}", user.email);
         Ok(())
     }

@@ -22,7 +22,7 @@ impl FileInfoLocal {
         if url.scheme() == "file" {
             let path = url
                 .to_file_path()
-                .map_err(|e| format_err!("Parse failure {:?}", e))?;
+                .map_err(|e| format_err!("Parse failure {e:?}"))?;
 
             let filename = path
                 .file_name()
@@ -134,7 +134,7 @@ impl FileInfoLocal {
 
         let filepath = path.canonicalize()?;
         let fileurl = Url::from_file_path(filepath.clone())
-            .map_err(|e| format_err!("Failed to parse url {:?}", e))?;
+            .map_err(|e| format_err!("Failed to parse url {e:?}"))?;
         let md5sum = _get_md5sum(&filepath).ok().map(|s| Md5Sum(s.into()));
         let sha1sum = _get_sha1sum(&filepath).ok().map(|s| Sha1Sum(s.into()));
 

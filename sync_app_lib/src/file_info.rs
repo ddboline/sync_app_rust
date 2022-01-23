@@ -45,7 +45,7 @@ impl FromStr for Md5Sum {
         if s.len() == 32 {
             Ok(Self(s.into()))
         } else {
-            Err(format_err!("Invalid md5sum {}", s))
+            Err(format_err!("Invalid md5sum {s}"))
         }
     }
 }
@@ -66,7 +66,7 @@ impl FromStr for Sha1Sum {
         if s.len() == 40 {
             Ok(Self(s.into()))
         } else {
-            Err(format_err!("Invalid sha1sum {}", s))
+            Err(format_err!("Invalid sha1sum {s}"))
         }
     }
 }

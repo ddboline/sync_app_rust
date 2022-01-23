@@ -31,7 +31,7 @@ pub struct FileListS3 {
 
 impl FileListS3 {
     pub fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
-        let buf = format_sstr!("s3://{}", bucket);
+        let buf = format_sstr!("s3://{bucket}");
         let baseurl: Url = buf.parse()?;
         let basepath = Path::new("");
 
@@ -134,11 +134,8 @@ impl FileListTrait for FileListS3 {
 
         self.s3
             .process_list_of_keys(bucket, Some(prefix), |i| {
-                let buf = format_sstr!(
-                    "s3://{}/{}",
-                    bucket,
-                    i.key.as_ref().map_or_else(|| "", String::as_str)
-                );
+                let key = i.key.as_ref().map_or_else(|| "", String::as_str);
+                let buf = format_sstr!("s3://{bucket}/{key}");
                 stdout.send(buf);
                 Ok(())
             })

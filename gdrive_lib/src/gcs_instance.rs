@@ -62,7 +62,7 @@ impl GcsInstance {
         let https = https_client();
         let sec = yup_oauth2::read_service_account_key(gcs_secret_file).await?;
 
-        let token_file = gcs_token_path.join(format_sstr!("{}.json", session_name));
+        let token_file = gcs_token_path.join(format_sstr!("{session_name}.json"));
 
         let parent = gcs_token_path;
 

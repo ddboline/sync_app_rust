@@ -185,7 +185,7 @@ pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
         .or(spec_json_path)
         .or(spec_yaml_path)
         .recover(error_response);
-    let addr: SocketAddr = format_sstr!("127.0.0.1:{}", port).parse()?;
+    let addr: SocketAddr = format_sstr!("127.0.0.1:{port}").parse()?;
     rweb::serve(routes).bind(addr).await;
     Ok(())
 }

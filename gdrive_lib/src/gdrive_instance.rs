@@ -103,12 +103,12 @@ impl GDriveInstance {
         gdrive_secret_file: &Path,
         session_name: &str,
     ) -> Result<Self, Error> {
-        let fname = gdrive_token_path.join(format_sstr!("{}_start_page_token", session_name));
+        let fname = gdrive_token_path.join(format_sstr!("{session_name}_start_page_token"));
         debug!("{:?}", gdrive_secret_file);
         let https = https_client();
         let sec = yup_oauth2::read_application_secret(gdrive_secret_file).await?;
 
-        let token_file = gdrive_token_path.join(format_sstr!("{}.json", session_name));
+        let token_file = gdrive_token_path.join(format_sstr!("{session_name}.json"));
 
         let parent = gdrive_token_path;
 
@@ -209,10 +209,10 @@ impl GDriveInstance {
         if let Some(ref p) = parents {
             let q = p
                 .iter()
-                .map(|id| format_sstr!("'{}' in parents", id))
+                .map(|id| format_sstr!("'{id}' in parents"))
                 .join(" or ");
 
-            query_chain.push(format_sstr!("({})", q));
+            query_chain.push(format_sstr!("({q})"));
         }
         query_chain.push("trashed = false".into());
         let query = query_chain.join(" and ");
@@ -351,7 +351,7 @@ impl GDriveInstance {
     pub async fn create_directory(&self, directory: &Url, parentid: &str) -> Result<File, Error> {
         let directory_path = directory
             .to_file_path()
-            .map_err(|e| format_err!("No file path {:?}", e))?;
+            .map_err(|e| format_err!("No file path {e:?}"))?;
         let directory_name = directory_path
             .file_name()
             .map(OsStr::to_string_lossy)
@@ -373,11 +373,11 @@ impl GDriveInstance {
     pub async fn upload(&self, local: &Url, parentid: &str) -> Result<File, Error> {
         let file_path = local
             .to_file_path()
-            .map_err(|e| format_err!("No file path {:?}", e))?;
+            .map_err(|e| format_err!("No file path {e:?}"))?;
         let file_obj = fs::File::open(&file_path).await?;
         let mime: Mime = "application/octet-stream"
             .parse()
-            .map_err(|e| format_err!("bad mimetype {:?}", e))?;
+            .map_err(|e| format_err!("bad mimetype {e:?}"))?;
         let new_file = File {
             name: file_path
                 .as_path()
@@ -437,10 +437,10 @@ impl GDriveInstance {
         if let Some(mime) = mime_type {
             if UNEXPORTABLE_MIME_TYPES.contains::<str>(mime.as_ref()) {
                 return Err(format_err!(
-                    "UNEXPORTABLE_FILE: The MIME type of this file is {:?}, which can not be \
-                     exported from Drive. Web content link provided by Drive: {:?}\n",
-                    mime,
-                    self.get_file_metadata(gdriveid)
+                    "UNEXPORTABLE_FILE: The MIME type of this file is {mime:?}, which can not be \
+                     exported from Drive. Web content link provided by Drive: {m:?}\n",
+                    m = self
+                        .get_file_metadata(gdriveid)
                         .await
                         .ok()
                         .map(|metadata| metadata.web_view_link)
@@ -781,8 +781,8 @@ impl GDriveInstance {
             ]
             .join(",");
             let fields = format!(
-                "kind,nextPageToken,newStartPageToken,changes({},file({}))",
-                changes_fields, file_fields,
+                "kind,nextPageToken,newStartPageToken,changes({changes_fields},\
+                 file({file_fields}))"
             );
 
             loop {

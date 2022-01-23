@@ -32,7 +32,7 @@ pub struct FileListGcs {
 
 impl FileListGcs {
     pub async fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
-        let baseurl = format_sstr!("gs://{}", bucket);
+        let baseurl = format_sstr!("gs://{bucket}");
         let baseurl: Url = baseurl.parse()?;
         let basepath = Path::new("");
 
@@ -131,11 +131,8 @@ impl FileListTrait for FileListGcs {
 
         self.gcs
             .process_list_of_keys(bucket, Some(prefix), |i| {
-                let buf = format_sstr!(
-                    "gs://{}/{}",
-                    bucket,
-                    i.name.as_ref().map_or_else(|| "", String::as_str)
-                );
+                let key = i.name.as_ref().map_or_else(|| "", String::as_str);
+                let buf = format_sstr!("gs://{bucket}/{key}");
                 stdout.send(buf);
                 Ok(())
             })

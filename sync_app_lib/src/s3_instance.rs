@@ -143,7 +143,7 @@ impl S3Instance {
         key_name: &str,
     ) -> Result<(), Error> {
         if !Path::new(fname).exists() {
-            return Err(format_err!("File doesn't exist {}", fname));
+            return Err(format_err!("File doesn't exist {fname}"));
         }
         exponential_retry(|| {
             let req = PutObjectRequest {

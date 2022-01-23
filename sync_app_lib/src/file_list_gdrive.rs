@@ -37,7 +37,7 @@ impl FileListGDrive {
         config: &Config,
         pool: &PgPool,
     ) -> Result<Self, Error> {
-        let baseurl: Url = format_sstr!("gdrive://{}/{}", servicesession, basepath).parse()?;
+        let baseurl: Url = format_sstr!("gdrive://{servicesession}/{basepath}").parse()?;
         let basepath = Path::new(basepath);
 
         let flist = FileList::new(
@@ -71,11 +71,11 @@ impl FileListGDrive {
                 .as_str()
                 .trim_start_matches("gdrive://")
                 .replace(url.path(), "");
-            let tmp = format_sstr!("gdrive://{}/", servicesession);
+            let tmp = format_sstr!("gdrive://{servicesession}/");
             let basepath: Url = url.as_str().replace(tmp.as_str(), "file:///").parse()?;
             let basepath = basepath
                 .to_file_path()
-                .map_err(|e| format_err!("Failure {:?}", e))?;
+                .map_err(|e| format_err!("Failure {e:?}"))?;
             let basepath = basepath.to_string_lossy();
             let basepath = Path::new(basepath.trim_start_matches('/'));
             let flist = FileList::new(
@@ -261,7 +261,7 @@ impl FileListTrait for FileListGDrive {
         let start_page_path = self
             .gdrive
             .start_page_token_filename
-            .with_extension(format_sstr!("{}.new", ext));
+            .with_extension(format_sstr!("{ext}.new"));
 
         self.gdrive.store_start_page_token(&start_page_path).await?;
 
@@ -354,7 +354,7 @@ impl FileListTrait for FileListGDrive {
         if finfo0.servicetype == FileService::Local && finfo1.servicetype == FileService::GDrive {
             let local_file = finfo0.filepath.clone().canonicalize()?;
             let local_url =
-                Url::from_file_path(local_file).map_err(|e| format_err!("failure {:?}", e))?;
+                Url::from_file_path(local_file).map_err(|e| format_err!("failure {e:?}"))?;
 
             let remote_url = finfo1.urlname.clone();
             let directory_map = self.directory_map.load().clone();
@@ -437,7 +437,7 @@ mod tests {
         async fn new(fname: &Path) -> Result<Self, Error> {
             let original = fname.to_path_buf();
             let ext = original.extension().unwrap().to_string_lossy();
-            let ext_str = format_sstr!("{}.new", ext);
+            let ext_str = format_sstr!("{ext}.new");
             let new = fname.with_extension(ext_str).to_path_buf();
 
             if new.exists() {
@@ -464,7 +464,7 @@ mod tests {
 
         let fname = config
             .gdrive_token_path
-            .join(format_sstr!("{}_start_page_token", "ddboline@gmail.com"));
+            .join(format_sstr!("ddboline@gmail.com_start_page_token"));
         let tmp = TempStartPageToken::new(&fname).await?;
 
         let pool = PgPool::new(&config.database_url);
@@ -483,7 +483,7 @@ mod tests {
         flist.with_list(new_flist);
 
         let result = flist.cache_file_list().await?;
-        debug!("wrote {}", result);
+        debug!("wrote {result}");
 
         let new_flist = flist.load_file_list().await?;
 
@@ -518,7 +518,7 @@ mod tests {
         assert!(new_flist.len() > 0);
         flist.with_list(new_flist);
         let result = flist.cache_file_list().await?;
-        debug!("wrote {}", result);
+        debug!("wrote {result}");
         flist.cleanup()?;
 
         Ok(())

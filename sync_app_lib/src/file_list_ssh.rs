@@ -144,7 +144,7 @@ impl FileListTrait for FileListSSH {
                 .ok_or_else(|| format_err!("No parent directory"))?
                 .to_string_lossy()
                 .replace(" ", r#"\ "#);
-            let command = format_sstr!("mkdir -p {}", parent_dir);
+            let command = format_sstr!("mkdir -p {parent_dir}");
             self.ssh.run_command_ssh(&command).await?;
 
             self.ssh
@@ -186,7 +186,7 @@ impl FileListTrait for FileListSSH {
         let path1 = Path::new(url1.path())
             .to_string_lossy()
             .replace(" ", r#"\ "#);
-        let command = format_sstr!("mv {} {}", path0, path1);
+        let command = format_sstr!("mv {path0} {path1}");
         self.ssh.run_command_ssh(&command).await
     }
 
@@ -196,7 +196,7 @@ impl FileListTrait for FileListSSH {
         let path = Path::new(url.path())
             .to_string_lossy()
             .replace(" ", r#"\ "#);
-        let command = format_sstr!("rm {}", path);
+        let command = format_sstr!("rm {path}");
         self.ssh.run_command_ssh(&command).await
     }
 
@@ -212,12 +212,11 @@ impl FileListTrait for FileListSSH {
                 sync-app-rust index -u file://{path} &&
                 sync-app-rust count -u file://{path} &&
                 sync-app-rust ser -u file://{path}
-            "#,
-            path = path,
+            "#
         );
         let output = self.ssh.run_command_stream_stdout(&command).await?;
         let output = output.trim();
-        let url_prefix = format_sstr!("ssh://{}", user_host);
+        let url_prefix = format_sstr!("ssh://{user_host}");
         let baseurl = self.get_baseurl().clone();
 
         let expected_count: usize = output
@@ -265,7 +264,7 @@ impl FileListTrait for FileListSSH {
 
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
         let path = self.get_basepath().to_string_lossy();
-        let command = format_sstr!("sync-app-rust ls -u file://{}", path);
+        let command = format_sstr!("sync-app-rust ls -u file://{path}");
         stdout.send(&command);
         self.ssh.run_command_print_stdout(&command).await
     }

@@ -137,7 +137,7 @@ impl CalendarSync {
         if items.len() < 10 {
             items
                 .iter()
-                .map(|item| format_sstr!("{} {:?}", label, item))
+                .map(|item| format_sstr!("{label} {item:?}"))
                 .collect()
         } else {
             vec![{ format_sstr!("{} items {}", label, items.len()) }]

@@ -30,7 +30,7 @@ impl FileInfoS3 {
             .to_string_lossy()
             .into_owned()
             .into();
-        let fileurl = format_sstr!("s3://{}/{}", bucket, key);
+        let fileurl = format_sstr!("s3://{bucket}/{key}");
         let fileurl: Url = fileurl.parse()?;
         let serviceid = bucket.clone().into();
         let servicesession = bucket.parse()?;
@@ -91,7 +91,7 @@ impl FileInfoS3 {
         )?
         .timestamp();
         let size = item.size.ok_or_else(|| format_err!("No file size"))?;
-        let fileurl = format_sstr!("s3://{}/{}", bucket, key);
+        let fileurl = format_sstr!("s3://{bucket}/{key}");
         let fileurl: Url = fileurl.parse()?;
         let id_str: StackString = bucket.into();
         let serviceid = id_str.into();

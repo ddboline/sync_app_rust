@@ -38,7 +38,7 @@ async fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
 
     let flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool).await?;
     flist.set_directory_map(true).await?;
-    let buf = format_sstr!("gdrive_{}_output", prefix);
+    let buf = format_sstr!("gdrive_{prefix}_output");
     let outdir = dirs::home_dir().unwrap().join("tmp").join(&buf);
     if !outdir.exists() {
         create_dir_all(&outdir)?;
@@ -74,7 +74,7 @@ async fn export_diary_to_text(prefix: &str) -> Result<Vec<StackString>, Error> {
 }
 
 fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
-    let buf = format_sstr!("gdrive_{}_output", prefix);
+    let buf = format_sstr!("gdrive_{prefix}_output");
     let outdir = dirs::home_dir().unwrap().join("tmp").join(&buf);
     if !outdir.exists() {
         create_dir_all(&outdir)?;
@@ -98,7 +98,7 @@ fn parse_diary_entries(prefix: &str) -> Result<Vec<PathBuf>, Error> {
             })
         })
         .collect();
-    let buf = format_sstr!("gdrive_{}_parsed", prefix);
+    let buf = format_sstr!("gdrive_{prefix}_parsed");
     let outdir = dirs::home_dir().unwrap().join("tmp").join(&buf);
     if !outdir.exists() {
         create_dir_all(&outdir)?;
