@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
-    fmt::{Debug, Write},
+    fmt::{Debug, Write, self},
     future::Future,
 };
 
@@ -45,6 +45,12 @@ pub struct CalendarCache {
     pub last_modified: DateTime<Utc>,
 }
 
+impl fmt::Display for CalendarCache {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}_{}", self.gcal_id, self.event_id)
+    }
+}
+
 pub struct CalendarSync {
     client: SyncClient,
 }
@@ -67,11 +73,10 @@ impl CalendarSync {
                 "calendar_list",
                 |results| {
                     debug!("calendars {}", results.len());
-                    let results: HashMap<_, _> = results
+                    results
                         .into_iter()
                         .map(|val| (val.gcal_id.clone(), val))
-                        .collect();
-                    results
+                        .collect()
                 },
             )
             .await?;
@@ -86,7 +91,7 @@ impl CalendarSync {
                     results
                         .into_iter()
                         .map(|event| {
-                            let key = format_sstr!("{}_{}", event.gcal_id, event.event_id);
+                            let key = format_sstr!("event");
                             (key, event)
                         })
                         .collect()

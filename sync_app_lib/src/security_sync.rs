@@ -1,0 +1,148 @@
+use stack_string::{StackString, format_sstr};
+use chrono::{DateTime, Utc};
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use postgres_query::FromSqlRow;
+use anyhow::Error;
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::fmt::Write;
+use std::borrow::Borrow;
+use std::hash::Hash;
+use log::debug;
+use std::fmt;
+
+use crate::sync_client::SyncClient;
+use crate::config::Config;
+
+#[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct IntrusionLog {
+    pub id: i32,
+    pub service: StackString,
+    pub server: StackString,
+    pub datetime: DateTime<Utc>,
+    pub host: StackString,
+    pub username: Option<StackString>,
+}
+
+impl fmt::Display for IntrusionLog {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}-{}-{}-{}", self.service, self.server, self.datetime, self.host)
+    }
+}
+
+#[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
+pub struct HostCountry {
+    pub host: StackString,
+    pub code: StackString,
+    pub ipaddr: Option<StackString>,
+    pub created_at: DateTime<Utc>,
+}
+
+pub struct SecuritySync {client: SyncClient}
+
+impl SecuritySync {
+    pub fn new(config: Config) -> Self {
+        Self {
+            client: SyncClient::new(config, "/usr/bin/security-log-parse-rust"),
+        }
+    }
+
+    pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
+        self.client.init("security_log").await?;
+
+        let mut output = Vec::new();
+
+        let results = self.run_single_sync(
+            "security_log/intrusion_log",
+            "updates",
+            "intrusion_log",
+            |results: Vec<IntrusionLog>| {
+                debug!("intrusion_log {}", results.len());
+                results
+                    .into_iter()
+                    .map(|val| {
+                        let key = format_sstr!("{val}");
+                        (key, val)
+                    }).collect()
+            }
+        ).await?;
+        output.extend_from_slice(&results);
+
+        let results = self.run_single_sync(
+            "security_log/host_country",
+            "updates",
+            "host_country",
+            |results: Vec<HostCountry>| {
+                debug!("host_country {}", results.len());
+                results.into_iter().map(|val| {
+                    (val.host.clone(), val)
+                }).collect()
+            }
+        ).await?;
+        output.extend_from_slice(&results);
+
+        Ok(output)
+    }
+
+    async fn run_single_sync<T, U, V>(
+        &self,
+        path: &str,
+        js_prefix: &str,
+        table: &str,
+        mut transform: T,
+    ) -> Result<Vec<StackString>, Error>
+    where T: FnMut(Vec<U>) -> HashMap<V, U>,
+          U: DeserializeOwned + Send + 'static + Debug + Serialize,
+          V: Hash + Eq,
+    {
+        let mut output = Vec::new();
+        let from_url = self.client.get_url()?;
+
+        let url = from_url.join(path)?;
+        let measurements0 = transform(self.client.get_remote(&url).await?);
+        let measurements1 = transform(self.client.get_local(table, None).await?);
+
+        let measurements2 = Self::combine_maps(&measurements0, &measurements1);
+        let measurements3 = Self::combine_maps(&measurements1, &measurements0);
+
+        output.extend(Self::get_debug(table, &measurements2));
+        output.extend(Self::get_debug(table, &measurements3));
+
+        let url = from_url.join(path)?;
+        self.client.put_local(table, &measurements2, None).await?;
+        self.client
+            .put_remote(&url, &measurements3, js_prefix)
+            .await?;
+
+        Ok(output)
+    }
+
+    fn combine_maps<'a, T, U>(
+        measurements0: &'a HashMap<U, T>,
+        measurements1: &'a HashMap<U, T>,
+    ) -> Vec<&'a T>
+    where U: Hash + Eq,
+    {
+        measurements0
+            .iter()
+            .filter_map(|(k, v)| {
+                if measurements1.contains_key(k) {
+                    None
+                } else {
+                    Some(v)
+                }
+            })
+            .collect()
+    }
+
+    fn get_debug<T: Debug>(label: &str, items: &[T]) -> Vec<StackString> {
+        if items.len() < 10 {
+            items
+                .iter()
+                .map(|item| format_sstr!("{label} {item:?}"))
+                .collect()
+        } else {
+            vec![{ format_sstr!("{} items {}", label, items.len()) }]
+        }
+    }
+}

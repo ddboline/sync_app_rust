@@ -17,6 +17,7 @@ use uuid::Uuid;
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
     garmin_sync::GarminSync, movie_sync::MovieSync, pgpool::PgPool,
+    security_sync::SecuritySync,
 };
 
 use crate::logged_user::{LoggedUser, SyncKey, SyncSession};
@@ -40,7 +41,7 @@ pub struct AccessLocks {
     pub movie: Mutex<MovieSync>,
     pub calendar: Mutex<CalendarSync>,
     pub podcast: Mutex<()>,
-    pub security: Mutex<()>,
+    pub security: Mutex<SecuritySync>,
 }
 
 impl AccessLocks {
@@ -51,7 +52,7 @@ impl AccessLocks {
             movie: Mutex::new(MovieSync::new(config.clone())),
             calendar: Mutex::new(CalendarSync::new(config.clone())),
             podcast: Mutex::new(()),
-            security: Mutex::new(()),
+            security: Mutex::new(SecuritySync::new(config.clone())),
         }
     }
 }
