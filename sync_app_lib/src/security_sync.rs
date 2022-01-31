@@ -30,14 +30,6 @@ impl fmt::Display for IntrusionLog {
     }
 }
 
-#[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
-pub struct HostCountry {
-    pub host: StackString,
-    pub code: StackString,
-    pub ipaddr: Option<StackString>,
-    pub created_at: DateTime<Utc>,
-}
-
 pub struct SecuritySync {client: SyncClient}
 
 impl SecuritySync {
@@ -64,19 +56,6 @@ impl SecuritySync {
                         let key = format_sstr!("{val}");
                         (key, val)
                     }).collect()
-            }
-        ).await?;
-        output.extend_from_slice(&results);
-
-        let results = self.run_single_sync(
-            "security_log/host_country",
-            "updates",
-            "host_country",
-            |results: Vec<HostCountry>| {
-                debug!("host_country {}", results.len());
-                results.into_iter().map(|val| {
-                    (val.host.clone(), val)
-                }).collect()
             }
         ).await?;
         output.extend_from_slice(&results);
