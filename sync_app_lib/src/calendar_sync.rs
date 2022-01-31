@@ -91,7 +91,7 @@ impl CalendarSync {
                     results
                         .into_iter()
                         .map(|event| {
-                            let key = format_sstr!("event");
+                            let key = format_sstr!("{event}");
                             (key, event)
                         })
                         .collect()
