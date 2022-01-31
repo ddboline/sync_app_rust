@@ -42,6 +42,7 @@ pub mod ssh_instance;
 pub mod sync_client;
 pub mod sync_opts;
 pub mod url_wrapper;
+pub mod security_sync;
 
 use anyhow::Error;
 use rand::{

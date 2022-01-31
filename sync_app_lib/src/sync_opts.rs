@@ -16,6 +16,7 @@ use url::Url;
 
 use crate::{
     calendar_sync::CalendarSync,
+    security_sync::SecuritySync,
     config::Config,
     file_info::{FileInfo, FileInfoTrait},
     file_list::{group_urls, FileList, FileListTrait},
@@ -62,6 +63,7 @@ impl SyncOpts {
                 FileSyncAction::SyncGarmin,
                 FileSyncAction::SyncMovie,
                 FileSyncAction::SyncCalendar,
+                FileSyncAction::SyncSecurity,
             ] {
                 Self::new(*action, &[])
                     .process_sync_opts(&config, &pool, &stdout)
@@ -317,6 +319,13 @@ impl SyncOpts {
             }
             FileSyncAction::SyncCalendar => {
                 let sync = CalendarSync::new(config.clone());
+                for line in sync.run_sync().await? {
+                    stdout.send(line);
+                }
+                Ok(())
+            }
+            FileSyncAction::SyncSecurity => {
+                let sync = SecuritySync::new(config.clone());
                 for line in sync.run_sync().await? {
                     stdout.send(line);
                 }

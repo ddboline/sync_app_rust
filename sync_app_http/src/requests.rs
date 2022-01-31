@@ -202,34 +202,6 @@ pub struct SyncSecurityRequest {}
 
 impl SyncSecurityRequest {
     pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
-        let home_dir = match dirs::home_dir() {
-            Some(home_dir) => home_dir,
-            None => return Ok(Vec::new()),
-        };
-        let script = home_dir.join("bin").join("run_security_log_parse.sh");
-        if !script.exists() {
-            return Ok(Vec::new());
-        }
-        let _guard = locks.security.lock().await;
-        let start_time = Instant::now();
-        let lines: Result<Vec<StackString>, Error> = Command::new(&script)
-            .env_remove("DATABASE_URL")
-            .env_remove("EXPORT_DIR")
-            .output()
-            .await?
-            .stdout
-            .split(|c| *c == b'\n')
-            .map(|s| {
-                let mut buf = StackString::new();
-                let s = std::str::from_utf8(s)?;
-                buf.push_str(s);
-                Ok(buf)
-            })
-            .collect();
-
-        let run_time = Instant::now() - start_time;
-        let mut lines = lines?;
-        lines.push(format_sstr!("Run time {:0.2} s", run_time.as_secs_f64()));
-        Ok(lines)
+        locks.security.lock().await.run_sync().await.map_err(Into::into)
     }
 }

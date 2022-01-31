@@ -42,6 +42,7 @@ pub enum FileSyncAction {
     SyncGarmin,
     SyncMovie,
     SyncCalendar,
+    SyncSecurity,
     SyncAll,
     RunMigrations,
 }
@@ -66,6 +67,7 @@ impl FromStr for FileSyncAction {
             "sync_garmin" => Ok(Self::SyncGarmin),
             "sync_movie" => Ok(Self::SyncMovie),
             "sync_calendar" => Ok(Self::SyncCalendar),
+            "sync_security" => Ok(Self::SyncSecurity),
             "sync_all" => Ok(Self::SyncAll),
             "run-migrations" => Ok(Self::RunMigrations),
             _ => Err(format_err!("Parse failure")),
