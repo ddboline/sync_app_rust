@@ -1,18 +1,18 @@
-use stack_string::{StackString, format_sstr};
-use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
-use postgres_query::FromSqlRow;
 use anyhow::Error;
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::fmt::Write;
-use std::borrow::Borrow;
-use std::hash::Hash;
+use chrono::{DateTime, Utc};
 use log::debug;
-use std::fmt;
+use postgres_query::FromSqlRow;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use stack_string::{format_sstr, StackString};
+use std::{
+    borrow::Borrow,
+    collections::HashMap,
+    fmt,
+    fmt::{Debug, Write},
+    hash::Hash,
+};
 
-use crate::sync_client::SyncClient;
-use crate::config::Config;
+use crate::{config::Config, sync_client::SyncClient};
 
 #[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct IntrusionLog {
@@ -26,11 +26,25 @@ pub struct IntrusionLog {
 
 impl fmt::Display for IntrusionLog {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}-{}-{}-{}", self.service, self.server, self.datetime, self.host)
+        write!(
+            f,
+            "{}-{}-{}-{}",
+            self.service, self.server, self.datetime, self.host
+        )
     }
 }
 
-pub struct SecuritySync {client: SyncClient}
+#[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
+pub struct HostCountry {
+    pub host: StackString,
+    pub code: StackString,
+    pub ipaddr: Option<StackString>,
+    pub created_at: DateTime<Utc>,
+}
+
+pub struct SecuritySync {
+    client: SyncClient,
+}
 
 impl SecuritySync {
     pub fn new(config: Config) -> Self {
@@ -44,22 +58,31 @@ impl SecuritySync {
 
         let mut output = Vec::new();
 
-        let results = self.run_single_sync(
-            "security_log/intrusion_log",
-            "updates",
-            "intrusion_log",
-            |results: Vec<IntrusionLog>| {
-                debug!("intrusion_log {}", results.len());
-                results
-                    .into_iter()
-                    .map(|val| {
-                        let key = format_sstr!("{val}");
-                        (key, val)
-                    }).collect()
-            }
-        ).await?;
+        let results = self
+            .run_single_sync(
+                "security_log/intrusion_log",
+                "updates",
+                "intrusion_log",
+                |results: Vec<IntrusionLog>| {
+                    debug!("intrusion_log {}", results.len());
+                    results
+                        .into_iter()
+                        .map(|val| {
+                            let key = format_sstr!("{val}");
+                            (key, val)
+                        })
+                        .collect()
+                },
+            )
+            .await?;
         output.extend_from_slice(&results);
 
+        let url = self.client.get_url()?;
+        let url = url.join("security_log/cleanup")?;
+        let remote_hosts: Vec<HostCountry> = self.client.get_remote(&url).await?;
+        output.extend(remote_hosts.into_iter().map(|h| format_sstr!("{h:?}")));
+        let local_hosts: Vec<HostCountry> = self.client.get_local_command(&["cleanup"]).await?;
+        output.extend(local_hosts.into_iter().map(|h| format_sstr!("{h:?}")));
         Ok(output)
     }
 
@@ -70,9 +93,10 @@ impl SecuritySync {
         table: &str,
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
-    where T: FnMut(Vec<U>) -> HashMap<V, U>,
-          U: DeserializeOwned + Send + 'static + Debug + Serialize,
-          V: Hash + Eq,
+    where
+        T: FnMut(Vec<U>) -> HashMap<V, U>,
+        U: DeserializeOwned + Send + 'static + Debug + Serialize,
+        V: Hash + Eq,
     {
         let mut output = Vec::new();
         let from_url = self.client.get_url()?;
@@ -100,7 +124,8 @@ impl SecuritySync {
         measurements0: &'a HashMap<U, T>,
         measurements1: &'a HashMap<U, T>,
     ) -> Vec<&'a T>
-    where U: Hash + Eq,
+    where
+        U: Hash + Eq,
     {
         measurements0
             .iter()
