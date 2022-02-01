@@ -81,8 +81,11 @@ impl SecuritySync {
         let url = url.join("security_log/cleanup")?;
         let remote_hosts: Vec<HostCountry> = self.client.get_remote(&url).await?;
         output.extend(remote_hosts.into_iter().map(|h| format_sstr!("{h:?}")));
-        let local_hosts: Vec<HostCountry> = self.client.get_local_command(&["cleanup"]).await?;
-        output.extend(local_hosts.into_iter().map(|h| format_sstr!("{h:?}")));
+        let local_hosts: Result<Vec<HostCountry>, _> =
+            self.client.get_local_command(&["cleanup"]).await;
+        if let Ok(local_hosts) = local_hosts {
+            output.extend(local_hosts.into_iter().map(|h| format_sstr!("{h:?}")));
+        }
         Ok(output)
     }
 

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
-    fmt::{Debug, Write, self},
+    fmt::{self, Debug, Write},
     future::Future,
 };
 

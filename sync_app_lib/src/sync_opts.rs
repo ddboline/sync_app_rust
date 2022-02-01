@@ -16,7 +16,6 @@ use url::Url;
 
 use crate::{
     calendar_sync::CalendarSync,
-    security_sync::SecuritySync,
     config::Config,
     file_info::{FileInfo, FileInfoTrait},
     file_list::{group_urls, FileList, FileListTrait},
@@ -26,6 +25,7 @@ use crate::{
     models::{BlackList, FileSyncCache, FileSyncConfig},
     movie_sync::MovieSync,
     pgpool::PgPool,
+    security_sync::SecuritySync,
 };
 
 embed_migrations!("../migrations");

@@ -16,8 +16,7 @@ use uuid::Uuid;
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
-    garmin_sync::GarminSync, movie_sync::MovieSync, pgpool::PgPool,
-    security_sync::SecuritySync,
+    garmin_sync::GarminSync, movie_sync::MovieSync, pgpool::PgPool, security_sync::SecuritySync,
 };
 
 use crate::logged_user::{LoggedUser, SyncKey, SyncSession};
