@@ -202,6 +202,12 @@ pub struct SyncSecurityRequest {}
 
 impl SyncSecurityRequest {
     pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
-        locks.security.lock().await.run_sync().await.map_err(Into::into)
+        locks
+            .security
+            .lock()
+            .await
+            .run_sync()
+            .await
+            .map_err(Into::into)
     }
 }

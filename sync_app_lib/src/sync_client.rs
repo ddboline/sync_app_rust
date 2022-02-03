@@ -136,6 +136,18 @@ impl SyncClient {
         }
     }
 
+    pub async fn get_local_command<T: DeserializeOwned + Send + 'static>(
+        &self,
+        args: &[&str],
+    ) -> Result<Vec<T>, Error> {
+        let data = self.local_session.run_command(args).await?;
+        if data.is_empty() {
+            Ok(Vec::new())
+        } else {
+            spawn_blocking(move || serde_json::from_slice(&data).map_err(Into::into)).await?
+        }
+    }
+
     pub async fn put_local<T: Serialize>(
         &self,
         table: &str,

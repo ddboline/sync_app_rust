@@ -38,6 +38,7 @@ pub mod path_buf_wrapper;
 pub mod pgpool;
 pub mod reqwest_session;
 pub mod s3_instance;
+pub mod security_sync;
 pub mod ssh_instance;
 pub mod sync_client;
 pub mod sync_opts;

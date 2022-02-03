@@ -44,22 +44,34 @@ impl SecuritySync {
 
         let mut output = Vec::new();
 
-        let results = self.run_single_sync(
-            "security_log/intrusion_log",
-            "updates",
-            "intrusion_log",
-            |results: Vec<IntrusionLog>| {
-                debug!("intrusion_log {}", results.len());
-                results
-                    .into_iter()
-                    .map(|val| {
-                        let key = format_sstr!("{val}");
-                        (key, val)
-                    }).collect()
-            }
-        ).await?;
+        let results = self
+            .run_single_sync(
+                "security_log/intrusion_log",
+                "updates",
+                "intrusion_log",
+                |results: Vec<IntrusionLog>| {
+                    debug!("intrusion_log {}", results.len());
+                    results
+                        .into_iter()
+                        .map(|val| {
+                            let key = format_sstr!("{val}");
+                            (key, val)
+                        })
+                        .collect()
+                },
+            )
+            .await?;
         output.extend_from_slice(&results);
 
+        let url = self.client.get_url()?;
+        let url = url.join("security_log/cleanup")?;
+        let remote_hosts: Vec<HostCountry> = self.client.get_remote(&url).await?;
+        output.extend(remote_hosts.into_iter().map(|h| format_sstr!("{h:?}")));
+        let local_hosts: Result<Vec<HostCountry>, _> =
+            self.client.get_local_command(&["cleanup"]).await;
+        if let Ok(local_hosts) = local_hosts {
+            output.extend(local_hosts.into_iter().map(|h| format_sstr!("{h:?}")));
+        }
         Ok(output)
     }
 

@@ -35,10 +35,14 @@ impl LocalSession {
             args.push("-s");
             args.push(start_timestamp);
         }
+        self.run_command(&args).await
+    }
+
+    pub async fn run_command(&self, args: &[&str]) -> Result<Vec<u8>, Error> {
         let output = Command::new(&self.exe_path)
             .env_remove("DATABASE_URL")
             .env_remove("PGURL")
-            .args(&args)
+            .args(args)
             .kill_on_drop(true)
             .output()
             .await?;

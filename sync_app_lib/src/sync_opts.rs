@@ -26,6 +26,7 @@ use crate::{
     models::{BlackList, FileSyncCache, FileSyncConfig},
     movie_sync::MovieSync,
     pgpool::PgPool,
+    security_sync::SecuritySync,
 };
 
 embed_migrations!("../migrations");
