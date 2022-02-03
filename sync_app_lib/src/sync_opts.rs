@@ -16,7 +16,6 @@ use url::Url;
 
 use crate::{
     calendar_sync::CalendarSync,
-    security_sync::SecuritySync,
     config::Config,
     file_info::{FileInfo, FileInfoTrait},
     file_list::{group_urls, FileList, FileListTrait},
