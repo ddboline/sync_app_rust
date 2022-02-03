@@ -34,6 +34,14 @@ impl fmt::Display for IntrusionLog {
     }
 }
 
+#[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
+pub struct HostCountry {
+    pub host: StackString,
+    pub code: StackString,
+    pub ipaddr: Option<StackString>,
+    pub created_at: DateTime<Utc>,
+}
+
 pub struct SecuritySync {
     client: SyncClient,
 }
