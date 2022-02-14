@@ -15,7 +15,7 @@ use tokio::{sync::Mutex, task::JoinHandle, time::interval};
 use uuid::Uuid;
 
 use sync_app_lib::{
-    calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
+    calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction, sync_opts::SyncOpts,
     garmin_sync::GarminSync, movie_sync::MovieSync, pgpool::PgPool, security_sync::SecuritySync,
 };
 
@@ -35,7 +35,7 @@ use super::{
 };
 
 pub struct AccessLocks {
-    pub sync: Mutex<()>,
+    pub sync: Mutex<SyncOpts>,
     pub garmin: Mutex<GarminSync>,
     pub movie: Mutex<MovieSync>,
     pub calendar: Mutex<CalendarSync>,
@@ -46,7 +46,7 @@ pub struct AccessLocks {
 impl AccessLocks {
     pub fn new(config: &Config) -> Self {
         Self {
-            sync: Mutex::new(()),
+            sync: Mutex::new(SyncOpts::default()),
             garmin: Mutex::new(GarminSync::new(config.clone())),
             movie: Mutex::new(MovieSync::new(config.clone())),
             calendar: Mutex::new(CalendarSync::new(config.clone())),
