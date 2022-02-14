@@ -6,6 +6,7 @@ use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use tokio::task::spawn_blocking;
 use url::Url;
+use smallvec::{smallvec, SmallVec};
 
 use gdrive_lib::directory_info::DirectoryInfo;
 
@@ -411,13 +412,13 @@ impl FileSyncConfig {
     }
 
     pub async fn get_url_list(pool: &PgPool) -> Result<Vec<Url>, Error> {
-        let proc_list: Result<Vec<_>, Error> = Self::get_config_list(pool)
+        let proc_list: Result<Vec<SmallVec<[_; 2]>>, Error> = Self::get_config_list(pool)
             .await?
             .into_iter()
             .map(|v| {
                 let u0: Url = v.src_url.parse()?;
                 let u1: Url = v.dst_url.parse()?;
-                Ok(vec![u0, u1])
+                Ok(smallvec![u0, u1])
             })
             .collect();
         Ok(proc_list?.into_iter().flatten().collect())
