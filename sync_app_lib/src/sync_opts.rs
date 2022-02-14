@@ -13,6 +13,7 @@ use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
 use tokio::task::spawn_blocking;
 use url::Url;
+use smallvec::SmallVec;
 
 use crate::{
     calendar_sync::CalendarSync,
@@ -43,11 +44,20 @@ pub struct SyncOpts {
     pub urls: Vec<Url>,
 }
 
+impl Default for SyncOpts {
+    fn default() -> Self {
+        Self {
+            action: FileSyncAction::ShowCache,
+            urls: Vec::new(),
+        }
+    }
+}
+
 impl SyncOpts {
     pub fn new(action: FileSyncAction, urls: &[Url]) -> Self {
         Self {
             action,
-            urls: urls.to_vec(),
+            urls: urls.into(),
         }
     }
 
@@ -86,19 +96,21 @@ impl SyncOpts {
         let blacklist = Arc::new(BlackList::new(pool).await.unwrap_or_default());
         match self.action {
             FileSyncAction::Index => {
+                let _url_list: Vec<_>;
                 let urls = if self.urls.is_empty() {
-                    FileSyncConfig::get_url_list(pool).await?
+                    _url_list = FileSyncConfig::get_url_list(pool).await?;
+                    &_url_list
                 } else {
-                    self.urls.clone()
+                    &self.urls
                 };
                 info!("urls: {:?}", urls);
-                let futures = urls.into_iter().map(|url| {
+                let futures = urls.iter().map(|url| {
                     let blacklist = Arc::clone(&blacklist);
                     let pool = pool.clone();
                     async move {
-                        let mut flist = FileList::from_url(&url, config, &pool).await?;
+                        let mut flist = FileList::from_url(url, config, &pool).await?;
                         let list = flist.fill_file_list().await?;
-                        let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
+                        let list: Vec<_> = if blacklist.could_be_in_blacklist(url) {
                             list.into_par_iter()
                                 .filter(|entry| !blacklist.is_in_blacklist(&entry.urlname))
                                 .collect()
