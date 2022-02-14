@@ -31,11 +31,11 @@ impl SyncRequest {
         config: &Config,
         locks: &AccessLocks,
     ) -> Result<Vec<StackString>, Error> {
-        let _guard = locks.sync.lock().await;
-        let opts = SyncOpts::new(self.action, &[]);
+        let mut sync = locks.sync.lock().await;
+        sync.action = self.action;
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
-        opts.process_sync_opts(config, pool, &stdout).await?;
+        sync.process_sync_opts(config, pool, &stdout).await?;
         stdout.close().await?;
         let mut output = Vec::new();
         while let Some(line) = mock_stdout.lock().await.pop() {
@@ -122,9 +122,10 @@ impl SyncRemoveRequest {
         config: &Config,
         pool: &PgPool,
     ) -> Result<Vec<StackString>, Error> {
-        let _guard = locks.sync.lock().await;
+        let mut sync = locks.sync.lock().await;
         let url = self.url.parse()?;
-        let sync = SyncOpts::new(FileSyncAction::Delete, &[url]);
+        sync.action = FileSyncAction::Delete;
+        sync.urls = vec![url];
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
         sync.process_sync_opts(config, pool, &stdout).await?;
@@ -150,13 +151,14 @@ impl SyncEntryProcessRequest {
         pool: &PgPool,
         config: &Config,
     ) -> Result<(), Error> {
-        let _guard = locks.sync.lock().await;
+        let mut sync = locks.sync.lock().await;
         let entry = FileSyncCache::get_by_id(pool, self.id)
             .await?
             .ok_or_else(|| Error::BadRequest("No entry".into()))?;
         let src_url = entry.src_url.parse()?;
         let dst_url = entry.dst_url.parse()?;
-        let sync = SyncOpts::new(FileSyncAction::Copy, &[src_url, dst_url]);
+        sync.action = FileSyncAction::Copy;
+        sync.urls = vec![src_url, dst_url];
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
         sync.process_sync_opts(config, pool, &stdout).await?;
