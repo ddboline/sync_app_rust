@@ -7,13 +7,13 @@ use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
 use refinery::embed_migrations;
+use smallvec::SmallVec;
 use stack_string::{format_sstr, StackString};
 use std::{fmt::Write, sync::Arc};
 use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
 use tokio::task::spawn_blocking;
 use url::Url;
-use smallvec::SmallVec;
 
 use crate::{
     calendar_sync::CalendarSync,

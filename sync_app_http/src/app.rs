@@ -15,8 +15,9 @@ use tokio::{sync::Mutex, task::JoinHandle, time::interval};
 use uuid::Uuid;
 
 use sync_app_lib::{
-    calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction, sync_opts::SyncOpts,
+    calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
     garmin_sync::GarminSync, movie_sync::MovieSync, pgpool::PgPool, security_sync::SecuritySync,
+    sync_opts::SyncOpts,
 };
 
 use crate::logged_user::{LoggedUser, SyncKey, SyncSession};
