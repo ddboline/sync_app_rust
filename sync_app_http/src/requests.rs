@@ -33,6 +33,7 @@ impl SyncRequest {
     ) -> Result<Vec<StackString>, Error> {
         let mut sync = locks.sync.lock().await;
         sync.action = self.action;
+        sync.urls = Vec::new();
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
         sync.process_sync_opts(config, pool, &stdout).await?;

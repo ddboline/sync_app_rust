@@ -1,6 +1,6 @@
 [package]
 name = "gdrive_lib"
-version = "0.8.16"
+version = "0.8.17"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -30,6 +30,6 @@ crossbeam = "0.8"
 deadqueue = "0.2"
 env_logger = "0.9"
 async-google-apis-common = { git = "https://github.com/ddboline/async-google-apis.git" }
-tokio = {version="1.9", features=["full"]}
+tokio = {version="1.17", features=["full"]}
 stack-string = { version="0.6", features=["postgres_types"] }
 stdout-channel = "0.4"
