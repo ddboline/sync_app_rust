@@ -269,7 +269,7 @@ mod tests {
         assert_eq!(conf.is_ok(), true);
         let conf = conf?;
         assert_eq!(conf.get_servicetype(), FileService::Local);
-        debug!("{:?}", conf.get_baseurl());
+        debug!("{:?}", conf.get_baseurl().as_str());
         assert_eq!(conf.get_baseurl(), &baseurl);
         Ok(())
     }

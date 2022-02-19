@@ -520,7 +520,7 @@ mod tests {
         let result = flist.cache_file_list().await?;
         debug!("wrote {result}");
         flist.cleanup()?;
-
+        debug!("{}", flist.get_baseurl().as_str());
         Ok(())
     }
 }

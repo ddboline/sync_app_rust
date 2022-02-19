@@ -69,7 +69,7 @@ impl SSHInstance {
             args.push(cmd);
             let process = Command::new("ssh").args(&args).output().await?;
             if process.status.success() {
-                StackString::from_utf8(process.stdout).map_err(Into::into)
+                StackString::from_utf8_vec(process.stdout).map_err(Into::into)
             } else {
                 error!("{}", StackString::from_utf8_lossy(&process.stderr));
                 Err(format_err!("Process failed"))
