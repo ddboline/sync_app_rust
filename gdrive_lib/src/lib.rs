@@ -9,6 +9,7 @@
 #![allow(clippy::shadow_unrelated)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::used_underscore_binding)]
+#![allow(clippy::needless_late_init)]
 
 pub mod directory_info;
 pub mod drive_v3_types;

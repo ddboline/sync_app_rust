@@ -143,7 +143,7 @@ impl FileListTrait for FileListSSH {
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?
                 .to_string_lossy()
-                .replace(" ", r#"\ "#);
+                .replace(' ', r#"\ "#);
             let command = format_sstr!("mkdir -p {parent_dir}");
             self.ssh.run_command_ssh(&command).await?;
 
@@ -182,10 +182,10 @@ impl FileListTrait for FileListSSH {
 
         let path0 = Path::new(url0.path())
             .to_string_lossy()
-            .replace(" ", r#"\ "#);
+            .replace(' ', r#"\ "#);
         let path1 = Path::new(url1.path())
             .to_string_lossy()
-            .replace(" ", r#"\ "#);
+            .replace(' ', r#"\ "#);
         let command = format_sstr!("mv {path0} {path1}");
         self.ssh.run_command_ssh(&command).await
     }
@@ -195,7 +195,7 @@ impl FileListTrait for FileListSSH {
         let url = &finfo.get_finfo().urlname;
         let path = Path::new(url.path())
             .to_string_lossy()
-            .replace(" ", r#"\ "#);
+            .replace(' ', r#"\ "#);
         let command = format_sstr!("rm {path}");
         self.ssh.run_command_ssh(&command).await
     }
