@@ -3,10 +3,6 @@ pub use authorized_users::{
     KEY_LENGTH, SECRET_KEY, TRIGGER_DB_UPDATE,
 };
 use chrono::{DateTime, Duration, Utc};
-use futures::{
-    executor::block_on,
-    future::{ready, Ready},
-};
 use log::debug;
 use reqwest::{header::HeaderValue, Client};
 use rweb::{filters::cookie::cookie, Filter, Rejection, Schema};
@@ -14,12 +10,11 @@ use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{
     convert::{TryFrom, TryInto},
-    env,
     env::var,
     fmt::Write,
     str::FromStr,
 };
-use tokio::task::{spawn, JoinHandle};
+use tokio::task::spawn;
 use uuid::Uuid;
 
 use sync_app_lib::{config::Config, models::AuthorizedUsers, pgpool::PgPool};
@@ -37,7 +32,7 @@ pub struct LoggedUser {
 }
 
 impl LoggedUser {
-    pub fn verify_session_id(&self, session_id: Uuid) -> Result<(), Error> {
+    fn verify_session_id(&self, session_id: Uuid) -> Result<(), Error> {
         if self.session == session_id {
             Ok(())
         } else {
@@ -45,6 +40,7 @@ impl LoggedUser {
         }
     }
 
+    #[must_use]
     pub fn filter() -> impl Filter<Extract = (Self,), Error = Rejection> + Copy {
         cookie("session-id")
             .and(cookie("jwt"))
@@ -55,7 +51,7 @@ impl LoggedUser {
             })
     }
 
-    pub async fn get_session(
+    async fn get_session(
         &self,
         client: &Client,
         config: &Config,
@@ -84,7 +80,7 @@ impl LoggedUser {
         Ok(None)
     }
 
-    pub async fn set_session(
+    async fn set_session(
         &self,
         client: &Client,
         config: &Config,
@@ -107,6 +103,8 @@ impl LoggedUser {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn rm_session(
         &self,
         client: &Client,
@@ -128,6 +126,8 @@ impl LoggedUser {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn push_session(
         self,
         key: SyncKey,
@@ -164,19 +164,6 @@ impl LoggedUser {
         }
         Ok(None)
     }
-
-    pub async fn clear_sessions(&self, data: AppState) -> Result<(), Error> {
-        for key in SyncKey::all_keys() {
-            self.set_session(
-                &data.client,
-                &data.config,
-                key.to_str(),
-                SyncSession::default(),
-            )
-            .await?;
-        }
-        Ok(())
-    }
 }
 
 impl From<AuthorizedUser> for LoggedUser {
@@ -212,6 +199,8 @@ impl FromStr for LoggedUser {
     }
 }
 
+/// # Errors
+/// Return error if db query fails
 pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
     debug!("{:?}", *TRIGGER_DB_UPDATE);
     let users: Vec<_> = if TRIGGER_DB_UPDATE.check() {
@@ -224,9 +213,9 @@ pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
         AUTHORIZED_USERS.get_users()
     };
     if let Ok("true") = var("TESTENV").as_ref().map(String::as_str) {
-        AUTHORIZED_USERS.merge_users(["user@test"])?;
+        AUTHORIZED_USERS.merge_users(["user@test"]);
     }
-    AUTHORIZED_USERS.merge_users(users)?;
+    AUTHORIZED_USERS.merge_users(users);
     debug!("{:?}", *AUTHORIZED_USERS);
     Ok(())
 }
@@ -247,6 +236,7 @@ impl Default for SyncSession {
 }
 
 impl SyncSession {
+    #[must_use]
     pub fn from_lines(lines: Vec<StackString>) -> Self {
         Self {
             created_at: Utc::now(),
@@ -265,6 +255,7 @@ pub enum SyncKey {
 }
 
 impl SyncKey {
+    #[must_use]
     pub fn to_str(self) -> &'static str {
         match self {
             Self::SyncGarmin => "sync_garmin",
@@ -275,6 +266,7 @@ impl SyncKey {
         }
     }
 
+    #[must_use]
     pub fn all_keys() -> [Self; 5] {
         [
             Self::SyncGarmin,
@@ -296,9 +288,9 @@ use crate::requests::{
     CalendarSyncRequest, GarminSyncRequest, MovieSyncRequest, SyncPodcastsRequest,
     SyncSecurityRequest,
 };
-use log::error;
 
 impl SyncMesg {
+    #[must_use]
     pub fn new(user: LoggedUser, key: SyncKey) -> Self {
         Self { user, key }
     }

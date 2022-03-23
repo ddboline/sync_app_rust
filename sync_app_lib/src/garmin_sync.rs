@@ -1,21 +1,16 @@
-use anyhow::{format_err, Error};
+use anyhow::Error;
 use chrono::{DateTime, NaiveDate, Utc};
 use core::hash::Hash;
-use maplit::hashmap;
 use postgres_query::FromSqlRow;
-use reqwest::{header::HeaderMap, Response, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{Debug, Write},
-    future::Future,
 };
 
 use stack_string::{format_sstr, StackString};
 
-use super::{
-    config::Config, iso_8601_datetime, reqwest_session::ReqwestSession, sync_client::SyncClient,
-};
+use super::{config::Config, sync_client::SyncClient};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 struct ScaleMeasurement {
@@ -102,12 +97,15 @@ pub struct GarminSync {
 }
 
 impl GarminSync {
+    #[must_use]
     pub fn new(config: Config) -> Self {
         Self {
             client: SyncClient::new(config, "/usr/bin/garmin-rust-cli"),
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
         self.client.init("garmin").await?;
         let mut output = Vec::new();

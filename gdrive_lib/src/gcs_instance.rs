@@ -53,6 +53,8 @@ impl Debug for GcsInstance {
 }
 
 impl GcsInstance {
+    /// # Errors
+    /// Return error if api call fails
     pub async fn new(
         gcs_token_path: &Path,
         gcs_secret_file: &Path,
@@ -94,6 +96,8 @@ impl GcsInstance {
         GCSINSTANCE_TEST_MUTEX.lock()
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_list_of_keys(
         &self,
         bucket: &str,
@@ -131,6 +135,8 @@ impl GcsInstance {
         Ok(output)
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn process_list_of_keys<T>(
         &self,
         bucket: &str,
@@ -173,18 +179,20 @@ impl GcsInstance {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn download(
         &self,
         bucket_name: &str,
         key_name: &str,
         fname: &str,
     ) -> Result<(), Error> {
-        let gparams = StorageParams {
+        let params = StorageParams {
             alt: Some(StorageParamsAlt::Media),
             ..StorageParams::default()
         };
         let params = ObjectsGetParams {
-            storage_params: Some(gparams),
+            storage_params: Some(params),
             bucket: bucket_name.into(),
             object: key_name.into(),
             ..ObjectsGetParams::default()
@@ -202,6 +210,8 @@ impl GcsInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn upload(
         &self,
         fname: &str,
@@ -228,6 +238,8 @@ impl GcsInstance {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn copy_key(
         &self,
         source: &Url,
@@ -252,6 +264,8 @@ impl GcsInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn delete_key(&self, bucket_name: &str, key_name: &str) -> Result<(), Error> {
         let params = ObjectsDeleteParams {
             bucket: bucket_name.into(),
@@ -265,6 +279,8 @@ impl GcsInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_list_of_buckets(&self, project: &str) -> Result<Vec<Bucket>, Error> {
         let mut params = BucketsListParams {
             project: project.into(),

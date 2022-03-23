@@ -1,10 +1,9 @@
 use anyhow::{format_err, Error};
-use chrono::DateTime;
 use stack_string::{format_sstr, StackString};
 use std::{fmt::Write, path::Path};
 use url::Url;
 
-use gdrive_lib::{gcs_instance::GcsInstance, storage_v1_types::Object};
+use gdrive_lib::storage_v1_types::Object;
 
 use crate::{
     file_info::{FileInfo, FileInfoTrait, FileStat, Md5Sum, Sha1Sum},
@@ -15,6 +14,8 @@ use crate::{
 pub struct FileInfoGcs(FileInfo);
 
 impl FileInfoGcs {
+    /// # Errors
+    /// Return error if init fails
     pub fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "gs" {
             return Err(format_err!("Invalid URL"));
@@ -74,6 +75,8 @@ impl FileInfoTrait for FileInfoGcs {
 }
 
 impl FileInfoGcs {
+    /// # Errors
+    /// Return error if init fails
     pub fn from_object(bucket: &str, item: Object) -> Result<Self, Error> {
         let key = item.name.as_ref().ok_or_else(|| format_err!("No key"))?;
         let filepath = Path::new(&key);

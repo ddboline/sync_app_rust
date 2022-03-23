@@ -1,15 +1,12 @@
 use anyhow::{format_err, Error};
-use chrono::{DateTime, Utc};
-use derive_more::{From, Into};
-use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
+use chrono::Utc;
+use derive_more::Into;
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{Into, TryFrom, TryInto},
     fmt::Debug,
     ops::Deref,
-    path::PathBuf,
     str::FromStr,
-    string::ToString,
     sync::Arc,
 };
 use url::Url;
@@ -170,6 +167,7 @@ pub trait FileInfoTrait: Send + Sync + Debug {
 }
 
 impl FileInfo {
+    #[must_use]
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         filename: StackString,
@@ -196,14 +194,18 @@ impl FileInfo {
         Self(Arc::new(inner))
     }
 
+    #[must_use]
     pub fn from_inner(inner: FileInfoInner) -> Self {
         Self(Arc::new(inner))
     }
 
+    #[must_use]
     pub fn inner(&self) -> &FileInfoInner {
         &self.0
     }
 
+    /// # Errors
+    /// Return error if bad scheme
     pub fn from_url(url: &Url) -> Result<Self, Error> {
         match url.scheme() {
             "file" => FileInfoLocal::from_url(url).map(FileInfoTrait::into_finfo),
@@ -281,6 +283,8 @@ impl TryFrom<FileInfoCache> for FileInfo {
 }
 
 impl FileInfo {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
         FileInfoCache::get_by_urlname(url, pool)
             .await?
@@ -316,6 +320,8 @@ impl From<FileInfo> for FileInfoCache {
     }
 }
 
+/// # Errors
+/// Return error if db query fails
 pub async fn cache_file_info(pool: &PgPool, finfo: FileInfo) -> Result<FileInfoCache, Error> {
     let finfo_cache: FileInfoCache = finfo.into();
 

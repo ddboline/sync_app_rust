@@ -98,6 +98,8 @@ impl Debug for GDriveInstance {
 }
 
 impl GDriveInstance {
+    /// # Errors
+    /// Return error if intialization fails
     pub async fn new(
         gdrive_token_path: &Path,
         gdrive_secret_file: &Path,
@@ -149,16 +151,20 @@ impl GDriveInstance {
         })
     }
 
+    #[must_use]
     pub fn with_max_keys(mut self, max_keys: usize) -> Self {
         self.max_keys = Some(max_keys);
         self
     }
 
+    #[must_use]
     pub fn with_page_size(mut self, page_size: i32) -> Self {
         self.page_size = page_size;
         self
     }
 
+    /// # Errors
+    /// Return error if intialization fails
     pub async fn read_start_page_token_from_file(&self) -> Result<(), Error> {
         self.start_page_token
             .store(Self::read_start_page_token(&self.start_page_token_filename).await?);
@@ -226,6 +232,8 @@ impl GDriveInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if `get_filelist` fails
     pub async fn get_all_files(&self, get_folders: bool) -> Result<Vec<File>, Error> {
         let mut all_files = Vec::new();
         let mut page_token: Option<StackString> = None;
@@ -253,6 +261,8 @@ impl GDriveInstance {
         Ok(all_files)
     }
 
+    /// # Errors
+    /// Return error if `get_all_files` fails
     pub async fn get_all_file_info(
         &self,
         get_folders: bool,
@@ -263,6 +273,8 @@ impl GDriveInstance {
             .await
     }
 
+    /// # Errors
+    /// Return error if `from_object` fails
     #[allow(clippy::manual_filter_map)]
     pub async fn convert_file_list_to_gdrive_info(
         &self,
@@ -291,6 +303,8 @@ impl GDriveInstance {
         try_join_all(futures).await
     }
 
+    /// # Errors
+    /// Return error if `get_filelist` fails
     pub async fn process_list_of_keys<T, U>(
         &self,
         parents: &Option<Vec<StackString>>,
@@ -326,6 +340,8 @@ impl GDriveInstance {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_file_metadata(&self, id: &str) -> Result<File, Error> {
         let p = DriveParams {
             alt: Some(DriveParamsAlt::Json),
@@ -348,6 +364,8 @@ impl GDriveInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn create_directory(&self, directory: &Url, parentid: &str) -> Result<File, Error> {
         let directory_path = directory
             .to_file_path()
@@ -370,6 +388,8 @@ impl GDriveInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn upload(&self, local: &Url, parentid: &str) -> Result<File, Error> {
         let file_path = local
             .to_file_path()
@@ -408,6 +428,8 @@ impl GDriveInstance {
         })
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn export(&self, gdriveid: &str, local: &Path, mime_type: &str) -> Result<(), Error> {
         let params = FilesExportParams {
             file_id: gdriveid.into(),
@@ -425,6 +447,8 @@ impl GDriveInstance {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn download<T>(
         &self,
         gdriveid: &str,
@@ -484,6 +508,8 @@ impl GDriveInstance {
         }
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn move_to_trash(&self, id: &str) -> Result<(), Error> {
         let f = File {
             trashed: Some(true),
@@ -502,6 +528,8 @@ impl GDriveInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn delete_permanently(&self, id: &str) -> Result<(), Error> {
         let params = FilesDeleteParams {
             file_id: id.into(),
@@ -515,6 +543,8 @@ impl GDriveInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn move_to(&self, id: &str, parent: &str, new_name: &str) -> Result<(), Error> {
         let current_parents = self
             .get_file_metadata(id)
@@ -542,6 +572,8 @@ impl GDriveInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_directory_map(
         &self,
     ) -> Result<(HashMap<StackString, DirectoryInfo>, Option<StackString>), Error> {
@@ -630,6 +662,7 @@ impl GDriveInstance {
         Ok((dmap, root_id))
     }
 
+    #[must_use]
     pub fn get_directory_name_map(
         directory_map: &HashMap<StackString, DirectoryInfo>,
     ) -> HashMap<StackString, Vec<DirectoryInfo>> {
@@ -641,6 +674,8 @@ impl GDriveInstance {
         })
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_export_path(
         &self,
         finfo: &File,
@@ -683,6 +718,8 @@ impl GDriveInstance {
         Ok(fullpath.into_iter().rev().collect())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub fn get_parent_id(
         url: &Url,
         dir_name_map: &HashMap<StackString, Vec<DirectoryInfo>>,
@@ -716,6 +753,8 @@ impl GDriveInstance {
         Ok(None)
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_start_page_token(&self) -> Result<usize, Error> {
         let params = ChangesGetStartPageTokenParams {
             ..ChangesGetStartPageTokenParams::default()
@@ -738,6 +777,8 @@ impl GDriveInstance {
         .await
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn store_start_page_token(&self, path: &Path) -> Result<(), Error> {
         if let Some(start_page_token) = self.start_page_token.load().as_ref() {
             let buf = StackString::from_display(start_page_token);
@@ -746,6 +787,8 @@ impl GDriveInstance {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn read_start_page_token(path: &Path) -> Result<Option<usize>, Error> {
         if !path.exists() {
             return Ok(None);
@@ -757,6 +800,8 @@ impl GDriveInstance {
         Ok(Some(start_page_token))
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_all_changes(&self) -> Result<Vec<Change>, Error> {
         if let Some(start_page_token) = self.start_page_token.load() {
             let mut start_page_token = start_page_token.to_string();
@@ -838,6 +883,8 @@ pub struct GDriveInfo {
 }
 
 impl GDriveInfo {
+    /// # Errors
+    /// Return error if api call fails
     pub async fn from_object(
         item: &File,
         gdrive: &GDriveInstance,
@@ -866,7 +913,7 @@ impl GDriveInfo {
         let urlname = Url::parse(&urlname)?;
         let urlname = export_path.iter().try_fold(urlname, |u, e| {
             if e.contains('#') {
-                u.join(&e.replace("#", "%35"))
+                u.join(&e.replace('#', "%35"))
             } else {
                 u.join(e)
             }
@@ -889,6 +936,8 @@ impl GDriveInfo {
         Ok(finfo)
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn from_changes_object(
         item: Change,
         gdrive: &GDriveInstance,

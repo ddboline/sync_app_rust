@@ -1,18 +1,15 @@
 use anyhow::Error;
 use chrono::{DateTime, Utc};
-use futures::TryFutureExt;
 use log::info;
-use postgres_query::{client::GenericClient, query, query_dyn, FromSqlRow};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use postgres_query::{query, FromSqlRow};
 use smallvec::{smallvec, SmallVec};
-use tokio::task::spawn_blocking;
 use url::Url;
 
 use gdrive_lib::directory_info::DirectoryInfo;
 
 use stack_string::StackString;
 
-use crate::pgpool::{PgPool, PgTransaction};
+use crate::pgpool::PgPool;
 
 #[derive(FromSqlRow, Clone, Debug)]
 pub struct FileInfoCache {
@@ -41,6 +38,8 @@ pub struct FileInfoKey {
 }
 
 impl FileInfoKey {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
         info!("delete_cache_entry");
         let query = query!(
@@ -65,6 +64,8 @@ impl FileInfoKey {
 }
 
 impl FileInfoCache {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_all_cached(
         servicesession: &str,
         servicetype: &str,
@@ -84,6 +85,8 @@ impl FileInfoCache {
         query.fetch(&conn).await.map_err(Into::into)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_by_urlname(url: &Url, pool: &PgPool) -> Result<Vec<Self>, Error> {
         let urlname = url.as_str();
         let query = query!(
@@ -98,6 +101,7 @@ impl FileInfoCache {
         query.fetch(&conn).await.map_err(Into::into)
     }
 
+    #[must_use]
     pub fn get_key(&self) -> Option<FileInfoKey> {
         let filename = self.filename.clone();
         let filepath = self.filepath.clone();
@@ -114,6 +118,8 @@ impl FileInfoCache {
         Some(finfo)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_cache(&self, pool: &PgPool) -> Result<Option<Self>, Error> {
         let query = query!(
             r#"
@@ -137,6 +143,8 @@ impl FileInfoCache {
         query.fetch_opt(&conn).await.map_err(Into::into)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn insert(&self, pool: &PgPool) -> Result<(), Error> {
         info!("FileInfoCache.insert");
         let query = query!(
@@ -174,6 +182,8 @@ impl FileInfoCache {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_all(
         servicesession: &str,
         servicetype: &str,
@@ -193,6 +203,8 @@ impl FileInfoCache {
         Ok(n as usize)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_by_id(
         gdriveid: &str,
         servicesession: &str,
@@ -215,6 +227,8 @@ impl FileInfoCache {
         Ok(n as usize)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn clear_all(
         servicesession: &str,
         servicetype: &str,
@@ -247,6 +261,7 @@ pub struct DirectoryInfoCache {
 }
 
 impl DirectoryInfoCache {
+    #[must_use]
     pub fn into_directory_info(self) -> DirectoryInfo {
         DirectoryInfo {
             directory_id: self.directory_id,
@@ -255,6 +270,8 @@ impl DirectoryInfoCache {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_all(
         servicesession: &str,
         servicetype: &str,
@@ -273,6 +290,8 @@ impl DirectoryInfoCache {
         query.fetch(&conn).await.map_err(Into::into)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn insert(&self, pool: &PgPool) -> Result<(), Error> {
         let query = query!(
             r#"
@@ -294,6 +313,8 @@ impl DirectoryInfoCache {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_all(
         servicesession: &str,
         servicetype: &str,
@@ -313,6 +334,8 @@ impl DirectoryInfoCache {
         Ok(n as usize)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_by_id(
         gdriveid: &str,
         servicesession: &str,
@@ -345,18 +368,24 @@ pub struct FileSyncCache {
 }
 
 impl FileSyncCache {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_cache_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
         let query = query!("SELECT * FROM file_sync_cache ORDER BY src_url");
         let conn = pool.get().await?;
         query.fetch(&conn).await.map_err(Into::into)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_by_id(pool: &PgPool, id: i32) -> Result<Option<Self>, Error> {
         let query = query!("SELECT * FROM file_sync_cache WHERE id=$id", id = id);
         let conn = pool.get().await?;
         query.fetch_opt(&conn).await.map_err(Into::into)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_by_id(pool: &PgPool, id: i32) -> Result<(), Error> {
         let query = query!("DELETE FROM file_sync_cache WHERE id=$id", id = id);
         let conn = pool.get().await?;
@@ -364,10 +393,14 @@ impl FileSyncCache {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_cache_entry(&self, pool: &PgPool) -> Result<(), Error> {
         Self::delete_by_id(pool, self.id).await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn cache_sync_sync(&self, pool: &PgPool) -> Result<(), Error> {
         let query = query!(
             r#"
@@ -382,6 +415,8 @@ impl FileSyncCache {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn cache_sync(pool: &PgPool, src_url: &str, dst_url: &str) -> Result<(), Error> {
         let src_url: Url = src_url.parse()?;
         let dst_url: Url = dst_url.parse()?;
@@ -405,12 +440,16 @@ pub struct FileSyncConfig {
 }
 
 impl FileSyncConfig {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_config_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
         let query = query!("SELECT * FROM file_sync_config");
         let conn = pool.get().await?;
         query.fetch(&conn).await.map_err(Into::into)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_url_list(pool: &PgPool) -> Result<Vec<Url>, Error> {
         let proc_list: Result<Vec<SmallVec<[_; 2]>>, Error> = Self::get_config_list(pool)
             .await?
@@ -424,6 +463,8 @@ impl FileSyncConfig {
         Ok(proc_list?.into_iter().flatten().collect())
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn insert_config(&self, pool: &PgPool) -> Result<(), Error> {
         let query = query!(
             r#"
@@ -445,6 +486,8 @@ pub struct AuthorizedUsers {
 }
 
 impl AuthorizedUsers {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_authorized_users(pool: &PgPool) -> Result<Vec<Self>, Error> {
         let query = query!("SELECT * FROM authorized_users");
         let conn = pool.get().await?;
@@ -472,18 +515,22 @@ pub struct BlackList {
 }
 
 impl BlackList {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn new(pool: &PgPool) -> Result<Self, Error> {
         FileSyncBlacklist::get_blacklist(pool)
             .await
             .map(|blacklist| Self { blacklist })
     }
 
+    #[must_use]
     pub fn is_in_blacklist(&self, url: &Url) -> bool {
         self.blacklist
             .iter()
             .any(|item| url.as_str().contains(item.blacklist_url.as_str()))
     }
 
+    #[must_use]
     pub fn could_be_in_blacklist(&self, url: &Url) -> bool {
         self.blacklist
             .iter()

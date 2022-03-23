@@ -2,15 +2,11 @@ use anyhow::{format_err, Error};
 use chrono::{DateTime, Utc};
 use log::debug;
 use maplit::hashmap;
-use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue},
-    redirect::Policy,
-    Client, Response, Url,
-};
+use reqwest::{header::HeaderMap, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use stack_string::{format_sstr, StackString};
+use stack_string::format_sstr;
 use std::{fmt::Write, path::Path};
-use tokio::{fs, task::spawn_blocking};
+use tokio::task::spawn_blocking;
 
 use crate::{config::Config, local_session::LocalSession, reqwest_session::ReqwestSession};
 
@@ -30,6 +26,8 @@ impl SyncClient {
         }
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub fn get_url(&self) -> Result<Url, Error> {
         let from_url: Url = self
             .config
@@ -41,6 +39,8 @@ impl SyncClient {
         Ok(from_url)
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn init(&self, base_url: &str) -> Result<(), Error> {
         #[derive(Serialize, Deserialize)]
         struct LoggedUser {
@@ -84,6 +84,8 @@ impl SyncClient {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn shutdown(&self) -> Result<(), Error> {
         let from_url = self.get_url()?;
 
@@ -95,11 +97,15 @@ impl SyncClient {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_remote<T: DeserializeOwned>(&self, url: &Url) -> Result<Vec<T>, Error> {
         let resp = self.remote_session.get(url, &HeaderMap::new()).await?;
         resp.json().await.map_err(Into::into)
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn put_remote<T: Serialize>(
         &self,
         url: &Url,
@@ -120,6 +126,8 @@ impl SyncClient {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_local<T: DeserializeOwned + Send + 'static>(
         &self,
         table: &str,
@@ -136,6 +144,8 @@ impl SyncClient {
         }
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn get_local_command<T: DeserializeOwned + Send + 'static>(
         &self,
         args: &[&str],
@@ -148,6 +158,8 @@ impl SyncClient {
         }
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn put_local<T: Serialize>(
         &self,
         table: &str,

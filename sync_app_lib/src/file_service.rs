@@ -35,6 +35,7 @@ impl FromStr for FileService {
 }
 
 impl FileService {
+    #[must_use]
     pub fn to_str(self) -> &'static str {
         match self {
             Self::Local => "local",

@@ -2,8 +2,8 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use log::error;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use stack_string::{format_sstr, StackString};
-use std::{collections::HashMap, fmt::Write, path::Path, string::ToString, time::SystemTime};
+use stack_string::StackString;
+use std::{collections::HashMap, path::Path, time::SystemTime};
 use stdout_channel::StdoutChannel;
 use tokio::{
     fs::{copy, create_dir_all, remove_file, rename},
@@ -25,6 +25,8 @@ use crate::{
 pub struct FileListLocal(pub FileList);
 
 impl FileListLocal {
+    /// # Errors
+    /// Return error if init fails
     pub fn new(basedir: &Path, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         let basepath = basedir.canonicalize()?;
         let basestr = basepath.to_string_lossy();
@@ -43,6 +45,8 @@ impl FileListLocal {
         Ok(Self(flist))
     }
 
+    /// # Errors
+    /// Return error if init fails
     pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "file" {
             let path = url
@@ -242,14 +246,13 @@ impl FileListTrait for FileListLocal {
 mod tests {
     use anyhow::Error;
     use log::{debug, info};
-    use stack_string::{format_sstr, StackString};
+    use stack_string::format_sstr;
     use std::{collections::HashMap, convert::TryInto, fmt::Write, path::PathBuf};
     use url::Url;
 
     use crate::{
         config::Config,
         file_info::FileInfo,
-        file_list::FileList,
         file_list_local::{FileListLocal, FileListTrait},
         file_service::FileService,
         models::FileInfoCache,

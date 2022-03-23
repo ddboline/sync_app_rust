@@ -14,6 +14,8 @@ use crate::{
 pub struct FileInfoS3(FileInfo);
 
 impl FileInfoS3 {
+    /// # Errors
+    /// Return error if init fails
     pub fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "s3" {
             return Err(format_err!("Invalid URL"));
@@ -73,6 +75,8 @@ impl FileInfoTrait for FileInfoS3 {
 }
 
 impl FileInfoS3 {
+    /// # Errors
+    /// Return error if init fails
     pub fn from_object(bucket: &str, item: Object) -> Result<Self, Error> {
         let key = item.key.as_ref().ok_or_else(|| format_err!("No key"))?;
         let filepath = Path::new(&key);

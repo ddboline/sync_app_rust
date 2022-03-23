@@ -5,7 +5,7 @@ use parking_lot::{Mutex, MutexGuard};
 use rusoto_core::Region;
 use rusoto_s3::{
     Bucket, CopyObjectRequest, CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest,
-    GetObjectRequest, ListObjectsV2Request, Object, PutObjectRequest, S3Client, S3,
+    GetObjectRequest, Object, PutObjectRequest, S3Client, S3,
 };
 use s3_ext::S3Ext;
 use std::{fmt, path::Path};
@@ -42,6 +42,7 @@ impl Default for S3Instance {
 }
 
 impl S3Instance {
+    #[must_use]
     pub fn new(aws_region_name: &str) -> Self {
         let region: Region = aws_region_name.parse().ok().unwrap_or(Region::UsEast1);
         Self {
@@ -54,11 +55,14 @@ impl S3Instance {
         S3INSTANCE_TEST_MUTEX.lock()
     }
 
+    #[must_use]
     pub fn max_keys(mut self, max_keys: usize) -> Self {
         self.max_keys = Some(max_keys);
         self
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_list_of_buckets(&self) -> Result<Vec<Bucket>, Error> {
         exponential_retry(|| async move {
             self.s3_client
@@ -70,6 +74,8 @@ impl S3Instance {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn create_bucket(&self, bucket_name: &str) -> Result<String, Error> {
         exponential_retry(|| {
             let req = CreateBucketRequest {
@@ -87,6 +93,8 @@ impl S3Instance {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_bucket(&self, bucket_name: &str) -> Result<(), Error> {
         exponential_retry(|| {
             let req = DeleteBucketRequest {
@@ -98,6 +106,8 @@ impl S3Instance {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_key(&self, bucket_name: &str, key_name: &str) -> Result<(), Error> {
         exponential_retry(|| {
             let req = DeleteObjectRequest {
@@ -116,6 +126,8 @@ impl S3Instance {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn copy_key(
         &self,
         source: &Url,
@@ -136,6 +148,8 @@ impl S3Instance {
         .map(|x| x.copy_object_result.and_then(|s| s.e_tag))
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn upload(
         &self,
         fname: &str,
@@ -162,6 +176,8 @@ impl S3Instance {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn download(
         &self,
         bucket_name: &str,
@@ -185,6 +201,8 @@ impl S3Instance {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_list_of_keys(
         &self,
         bucket: &str,
@@ -204,6 +222,8 @@ impl S3Instance {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn process_list_of_keys<T>(
         &self,
         bucket: &str,

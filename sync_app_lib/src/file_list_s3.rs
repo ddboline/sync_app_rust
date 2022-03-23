@@ -10,7 +10,6 @@ use std::{
     path::Path,
 };
 use stdout_channel::StdoutChannel;
-use tokio::task::spawn_blocking;
 use url::Url;
 
 use crate::{
@@ -30,6 +29,8 @@ pub struct FileListS3 {
 }
 
 impl FileListS3 {
+    /// # Errors
+    /// Return error if init fails
     pub fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         let buf = format_sstr!("s3://{bucket}");
         let baseurl: Url = buf.parse()?;
@@ -49,6 +50,8 @@ impl FileListS3 {
         Ok(Self { flist, s3 })
     }
 
+    /// # Errors
+    /// Return error if init fails
     pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "s3" {
             let basepath = Path::new(url.path());
@@ -71,6 +74,7 @@ impl FileListS3 {
         }
     }
 
+    #[must_use]
     pub fn max_keys(mut self, max_keys: usize) -> Self {
         self.s3 = self.s3.max_keys(max_keys);
         self

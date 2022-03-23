@@ -1,5 +1,3 @@
-#![allow(clippy::semicolon_if_nothing_returned)]
-
 use sync_app_http::app::start_app;
 
 #[tokio::main]

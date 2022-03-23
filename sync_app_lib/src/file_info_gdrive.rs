@@ -14,6 +14,8 @@ use crate::{
 pub struct FileInfoGDrive(pub FileInfo);
 
 impl FileInfoGDrive {
+    /// # Errors
+    /// Return error if init fails
     pub fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() != "gdrive" {
             return Err(format_err!("Invalid URL"));
@@ -72,6 +74,8 @@ impl FileInfoTrait for FileInfoGDrive {
 }
 
 impl FileInfoGDrive {
+    /// # Errors
+    /// Return error if init fails
     pub fn from_gdriveinfo(item: GDriveInfo) -> Result<Self, Error> {
         let md5sum = item.md5sum.and_then(|m| m.parse().ok());
         let serviceid = item.serviceid.into();

@@ -4,10 +4,7 @@ use std::{
     path::{Path, PathBuf},
     process::Stdio,
 };
-use tokio::{
-    io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader},
-    process::{Child, Command},
-};
+use tokio::{io::AsyncWriteExt, process::Command};
 
 #[derive(Clone)]
 pub struct LocalSession {
@@ -24,6 +21,8 @@ impl LocalSession {
         Self { exe_path }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_command_export(
         &self,
         table: &str,
@@ -38,6 +37,8 @@ impl LocalSession {
         self.run_command(&args).await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_command(&self, args: &[&str]) -> Result<Vec<u8>, Error> {
         let output = Command::new(&self.exe_path)
             .env_remove("DATABASE_URL")
@@ -57,6 +58,8 @@ impl LocalSession {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_command_import(
         &self,
         table: &str,

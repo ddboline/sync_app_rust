@@ -1,7 +1,6 @@
 use anyhow::Error;
-use chrono::Duration;
 use deadqueue::unlimited::Queue;
-use log::{debug, error};
+use log::error;
 use reqwest::{Client, ClientBuilder};
 use rweb::{
     filters::BoxedFilter,
@@ -9,26 +8,18 @@ use rweb::{
     openapi::{self, Info},
     Filter, Reply,
 };
-use stack_string::{format_sstr, StackString};
+use stack_string::format_sstr;
 use std::{fmt::Write, net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, task::JoinHandle, time::interval};
-use uuid::Uuid;
 
 use sync_app_lib::{
-    calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
-    garmin_sync::GarminSync, movie_sync::MovieSync, pgpool::PgPool, security_sync::SecuritySync,
-    sync_opts::SyncOpts,
+    calendar_sync::CalendarSync, config::Config, garmin_sync::GarminSync, movie_sync::MovieSync,
+    pgpool::PgPool, security_sync::SecuritySync, sync_opts::SyncOpts,
 };
-
-use crate::logged_user::{LoggedUser, SyncKey, SyncSession};
 
 use super::{
     errors::error_response,
-    logged_user::{fill_from_db, get_secrets, SyncMesg, SECRET_KEY, TRIGGER_DB_UPDATE},
-    requests::{
-        CalendarSyncRequest, GarminSyncRequest, MovieSyncRequest, SyncPodcastsRequest, SyncRequest,
-        SyncSecurityRequest,
-    },
+    logged_user::{fill_from_db, get_secrets, SyncMesg, TRIGGER_DB_UPDATE},
     routes::{
         delete_cache_entry, list_sync_cache, proc_all, process_cache_entry, remove, sync_all,
         sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
@@ -45,6 +36,7 @@ pub struct AccessLocks {
 }
 
 impl AccessLocks {
+    #[must_use]
     pub fn new(config: &Config) -> Self {
         Self {
             sync: Mutex::new(SyncOpts::default()),
@@ -74,6 +66,8 @@ pub struct AppState {
     pub queue: Arc<Queue<SyncJob>>,
 }
 
+/// # Errors
+/// Return error if app init fails
 pub async fn start_app() -> Result<(), Error> {
     async fn _update_db(pool: PgPool) {
         let mut i = interval(time::Duration::from_secs(60));
@@ -123,7 +117,7 @@ fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
         .boxed()
 }
 
-pub async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
+async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     async fn _run_queue(app: AppState) {
         loop {
             let (SyncMesg { user, key }, task) = app.queue.pop().await;

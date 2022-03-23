@@ -10,7 +10,6 @@ use std::{
     path::Path,
 };
 use stdout_channel::StdoutChannel;
-use tokio::task::spawn_blocking;
 use url::Url;
 
 use gdrive_lib::gcs_instance::GcsInstance;
@@ -31,6 +30,8 @@ pub struct FileListGcs {
 }
 
 impl FileListGcs {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         let baseurl = format_sstr!("gs://{bucket}");
         let baseurl: Url = baseurl.parse()?;
@@ -50,6 +51,8 @@ impl FileListGcs {
         Ok(Self { flist, gcs })
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "gs" {
             let basepath = Path::new(url.path());

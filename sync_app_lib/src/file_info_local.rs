@@ -18,6 +18,8 @@ use crate::{
 pub struct FileInfoLocal(pub FileInfo);
 
 impl FileInfoLocal {
+    /// # Errors
+    /// Return error if init fails
     pub fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() == "file" {
             let path = url
@@ -102,6 +104,8 @@ fn _get_stat(p: &Path) -> Result<FileStat, Error> {
 }
 
 impl FileInfoLocal {
+    /// # Errors
+    /// Return error if init fails
     pub fn from_path_and_metadata(
         path: &Path,
         metadata: Option<Metadata>,
@@ -152,6 +156,8 @@ impl FileInfoLocal {
         Ok(Self(finfo))
     }
 
+    /// # Errors
+    /// Return error if init fails
     pub fn from_path(
         path: &Path,
         serviceid: Option<ServiceId>,
@@ -164,6 +170,8 @@ impl FileInfoLocal {
         Self::from_path_and_metadata(path, metadata, serviceid, servicesession)
     }
 
+    /// # Errors
+    /// Return error if init fails
     pub fn from_direntry(
         item: &DirEntry,
         serviceid: Option<ServiceId>,

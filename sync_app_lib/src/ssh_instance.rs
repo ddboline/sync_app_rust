@@ -8,7 +8,6 @@ use tokio::{
     io::{stdout, AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::Command,
     sync::{Mutex, RwLock},
-    task::spawn,
 };
 use url::Url;
 
@@ -33,6 +32,8 @@ impl SSHInstance {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn from_url(url: &Url) -> Result<Self, Error> {
         let host = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
         let port = url.port().unwrap_or(22);
@@ -40,6 +41,7 @@ impl SSHInstance {
         Ok(Self::new(user, host, port).await)
     }
 
+    #[must_use]
     pub fn get_ssh_str(&self, path: &str) -> StackString {
         if self.port == 22 {
             format_sstr!("{}@{}:{}", self.user, self.host, path)
@@ -48,23 +50,24 @@ impl SSHInstance {
         }
     }
 
-    pub fn get_ssh_username_host(&self) -> Result<SmallVec<[StackString; 4]>, Error> {
+    #[must_use]
+    pub fn get_ssh_username_host(&self) -> SmallVec<[StackString; 4]> {
         let user_str = format_sstr!("{}@{}", self.user, self.host);
         let port_str = format_sstr!("{}", self.port);
-        let ssh_str = if self.port == 22 {
+        if self.port == 22 {
             smallvec!["-C".into(), user_str,]
         } else {
             smallvec!["-C".into(), "-p".into(), port_str, user_str,]
-        };
-
-        Ok(ssh_str)
+        }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_command_stream_stdout(&self, cmd: &str) -> Result<StackString, Error> {
         if let Some(host_lock) = LOCK_CACHE.read().await.get(&self.host) {
             let _guard = host_lock.lock().await;
             info!("cmd {}", cmd);
-            let user_host = self.get_ssh_username_host()?;
+            let user_host = self.get_ssh_username_host();
             let mut args: SmallVec<[&str; 5]> = user_host.iter().map(StackString::as_str).collect();
             args.push(cmd);
             let process = Command::new("ssh").args(&args).output().await?;
@@ -79,11 +82,13 @@ impl SSHInstance {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_command_print_stdout(&self, cmd: &str) -> Result<(), Error> {
         if let Some(host_lock) = LOCK_CACHE.read().await.get(&self.host) {
             let _guard = host_lock.lock();
             debug!("run_command_print_stdout cmd {}", cmd);
-            let user_host = self.get_ssh_username_host()?;
+            let user_host = self.get_ssh_username_host();
             let mut args: SmallVec<[&str; 4]> = user_host.iter().map(StackString::as_str).collect();
             args.push(cmd);
             let mut command = Command::new("ssh")
@@ -114,8 +119,10 @@ impl SSHInstance {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_command_ssh(&self, cmd: &str) -> Result<(), Error> {
-        let user_host = self.get_ssh_username_host()?;
+        let user_host = self.get_ssh_username_host();
         let mut args: SmallVec<[&str; 4]> = user_host.iter().map(StackString::as_str).collect();
         args.push(cmd);
         if let Some(host_lock) = LOCK_CACHE.read().await.get(&self.host) {
@@ -131,6 +138,8 @@ impl SSHInstance {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_command(&self, cmd: &str, args: &[&str]) -> Result<(), Error> {
         if let Some(host_lock) = LOCK_CACHE.read().await.get(&self.host) {
             let _guard = host_lock.lock();
@@ -145,6 +154,8 @@ impl SSHInstance {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_scp(&self, arg0: &str, arg1: &str) -> Result<(), Error> {
         self.run_command("scp", &[arg0, arg1]).await
     }

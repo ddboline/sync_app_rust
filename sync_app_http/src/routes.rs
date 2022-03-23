@@ -1,23 +1,20 @@
 use itertools::Itertools;
-use rweb::{get, post, Json, Query, Rejection, Reply};
+use rweb::{get, Query, Rejection};
 use rweb_helper::{
     html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase, RwebResponse,
 };
-use serde::Serialize;
 use stack_string::{format_sstr, StackString};
-use std::{fmt::Write, time::Duration};
-use tokio::time::sleep;
+use std::fmt::Write;
 
 use sync_app_lib::file_sync::FileSyncAction;
 
 use super::{
     app::AppState,
     errors::ServiceError as Error,
-    logged_user::{LoggedUser, SyncKey, SyncMesg},
+    logged_user::{LoggedUser, SyncKey},
     requests::{
-        CalendarSyncRequest, GarminSyncRequest, ListSyncCacheRequest, MovieSyncRequest,
-        SyncEntryDeleteRequest, SyncEntryProcessRequest, SyncPodcastsRequest, SyncRemoveRequest,
-        SyncRequest, SyncSecurityRequest,
+        ListSyncCacheRequest, SyncEntryDeleteRequest, SyncEntryProcessRequest, SyncRemoveRequest,
+        SyncRequest,
     },
 };
 

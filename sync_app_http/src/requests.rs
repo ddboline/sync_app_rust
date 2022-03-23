@@ -1,21 +1,13 @@
-use lazy_static::lazy_static;
 use log::debug;
 use rweb::Schema;
 use serde::{Deserialize, Serialize};
-use stack_string::{format_sstr, StackString};
-use std::{
-    fmt::Write,
-    io::{BufRead, BufReader},
-    path::Path,
-    time::Instant,
-};
+use stack_string::StackString;
+use std::path::Path;
 use stdout_channel::{MockStdout, StdoutChannel};
-use tokio::{process::Command, sync::Mutex, task::spawn_blocking};
+use tokio::process::Command;
 
 use sync_app_lib::{
-    calendar_sync::CalendarSync, config::Config, file_sync::FileSyncAction,
-    garmin_sync::GarminSync, models::FileSyncCache, movie_sync::MovieSync, pgpool::PgPool,
-    sync_opts::SyncOpts,
+    config::Config, file_sync::FileSyncAction, models::FileSyncCache, pgpool::PgPool,
 };
 
 use crate::{app::AccessLocks, errors::ServiceError as Error};
@@ -25,6 +17,8 @@ pub struct SyncRequest {
 }
 
 impl SyncRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(
         &self,
         pool: &PgPool,
@@ -50,6 +44,8 @@ impl SyncRequest {
 pub struct ListSyncCacheRequest {}
 
 impl ListSyncCacheRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(&self, pool: &PgPool) -> Result<Vec<FileSyncCache>, Error> {
         FileSyncCache::get_cache_list(pool)
             .await
@@ -63,6 +59,8 @@ pub struct SyncEntryDeleteRequest {
 }
 
 impl SyncEntryDeleteRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(&self, pool: &PgPool) -> Result<(), Error> {
         FileSyncCache::delete_by_id(pool, self.id)
             .await
@@ -73,6 +71,8 @@ impl SyncEntryDeleteRequest {
 pub struct GarminSyncRequest {}
 
 impl GarminSyncRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
         locks
             .garmin
@@ -86,6 +86,8 @@ impl GarminSyncRequest {
 pub struct MovieSyncRequest {}
 
 impl MovieSyncRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
         locks
             .movie
@@ -100,6 +102,8 @@ impl MovieSyncRequest {
 pub struct CalendarSyncRequest {}
 
 impl CalendarSyncRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
         locks
             .calendar
@@ -117,6 +121,8 @@ pub struct SyncRemoveRequest {
 }
 
 impl SyncRemoveRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(
         &self,
         locks: &AccessLocks,
@@ -146,6 +152,8 @@ pub struct SyncEntryProcessRequest {
 }
 
 impl SyncEntryProcessRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(
         &self,
         locks: &AccessLocks,
@@ -173,6 +181,8 @@ impl SyncEntryProcessRequest {
 pub struct SyncPodcastsRequest {}
 
 impl SyncPodcastsRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
         let _guard = locks.podcast.lock().await;
         let command_path = "/usr/bin/podcatch-rust";
@@ -204,6 +214,8 @@ impl SyncPodcastsRequest {
 pub struct SyncSecurityRequest {}
 
 impl SyncSecurityRequest {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
         locks
             .security

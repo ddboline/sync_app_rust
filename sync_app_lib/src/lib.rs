@@ -1,5 +1,3 @@
-#![allow(unused_imports)]
-#![allow(clippy::must_use_candidate)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::cast_precision_loss)]
@@ -7,12 +5,11 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::similar_names)]
-#![allow(clippy::shadow_unrelated)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::used_underscore_binding)]
-#![allow(clippy::upper_case_acronyms)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::return_self_not_must_use)]
+// #![allow(clippy::shadow_unrelated)]
+// #![allow(clippy::used_underscore_binding)]
+// #![allow(clippy::upper_case_acronyms)]
+// #![allow(clippy::missing_panics_doc)]
+// #![allow(clippy::return_self_not_must_use)]
 
 pub mod calendar_sync;
 pub mod config;
@@ -46,13 +43,10 @@ pub mod sync_opts;
 pub mod url_wrapper;
 
 use anyhow::Error;
-use rand::{
-    distributions::{Alphanumeric, Distribution, Uniform},
-    thread_rng,
-};
-use std::{future::Future, str::FromStr};
-use tokio::time::{sleep, Duration};
+use std::str::FromStr;
 
+/// # Errors
+/// Return error if api call fails
 pub fn map_parse<T, U>(x: &Option<U>) -> Result<Option<T>, Error>
 where
     T: FromStr,

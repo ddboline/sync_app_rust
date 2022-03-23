@@ -2,14 +2,11 @@ use anyhow::{format_err, Error};
 use fmt::Debug;
 use futures::future::try_join_all;
 use log::debug;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use smallvec::{smallvec, SmallVec};
-use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
     convert::From,
     fmt,
-    fmt::Write,
     path::{Path, PathBuf},
     str::FromStr,
     sync::Arc,
@@ -112,10 +109,13 @@ pub struct FileSync {
 }
 
 impl FileSync {
+    #[must_use]
     pub fn new(config: Config) -> Self {
         Self { config }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn compare_lists(
         flist0: &dyn FileListTrait,
         flist1: &dyn FileListTrait,
@@ -262,6 +262,8 @@ impl FileSync {
         do_update
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn process_sync_cache(&self, pool: &PgPool) -> Result<(), Error> {
         let futures = FileSyncCache::get_cache_list(pool)
             .await?
@@ -327,6 +329,8 @@ impl FileSync {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete_files(&self, urls: &[Url], pool: &PgPool) -> Result<(), Error> {
         let all_urls: Vec<Url> = if urls.is_empty() {
             let proc_list: Result<Vec<SmallVec<[Url; 2]>>, Error> =
@@ -369,6 +373,8 @@ impl FileSync {
         Ok(())
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn copy_object(
         flist: &dyn FileListTrait,
         finfo0: &dyn FileInfoTrait,
@@ -394,7 +400,7 @@ mod tests {
     use anyhow::Error;
     use log::debug;
     use rusoto_s3::{Object, Owner};
-    use stack_string::{format_sstr, StackString};
+    use stack_string::format_sstr;
     use std::{collections::HashMap, env::current_dir, fmt::Write, path::Path};
 
     use crate::{

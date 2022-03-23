@@ -5,7 +5,6 @@ use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{
-    borrow::Borrow,
     collections::HashMap,
     fmt,
     fmt::{Debug, Write},
@@ -47,12 +46,15 @@ pub struct SecuritySync {
 }
 
 impl SecuritySync {
+    #[must_use]
     pub fn new(config: Config) -> Self {
         Self {
             client: SyncClient::new(config, "/usr/bin/security-log-parse-rust"),
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
         self.client.init("security_log").await?;
 

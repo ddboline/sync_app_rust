@@ -34,4 +34,4 @@ deadqueue = "0.2"
 reqwest = {version="0.11", features=["cookies", "json", "rustls-tls"], default_features=false}
 rweb-helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.4.2" }
 stack-string = { version="0.7", features=["postgres_types", "rweb-openapi"] }
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.7.28"}
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.7.29"}

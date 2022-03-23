@@ -1,13 +1,8 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
-use log::debug;
-use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
-use std::{
-    collections::HashMap, convert::TryInto, fmt::Write, fs::create_dir_all, path::Path, sync::Arc,
-};
+use std::{collections::HashMap, fmt::Write, fs::create_dir_all, path::Path};
 use stdout_channel::StdoutChannel;
-use tokio::task::spawn_blocking;
 use url::Url;
 
 use crate::{
@@ -26,6 +21,8 @@ pub struct FileListSSH {
 }
 
 impl FileListSSH {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "ssh" {
             let basepath = Path::new(url.path()).to_path_buf();
@@ -202,7 +199,7 @@ impl FileListTrait for FileListSSH {
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let path = self.get_basepath().to_string_lossy();
-        let user_host = self.ssh.get_ssh_username_host()?;
+        let user_host = self.ssh.get_ssh_username_host();
         let user_host = user_host
             .iter()
             .last()
@@ -274,7 +271,7 @@ impl FileListTrait for FileListSSH {
 mod tests {
     use anyhow::Error;
     use log::debug;
-    use stack_string::{format_sstr, StackString};
+    use stack_string::format_sstr;
     use std::{
         fmt::Write,
         fs::remove_file,
@@ -283,9 +280,9 @@ mod tests {
     use url::Url;
 
     use crate::{
-        config::Config, file_info::FileInfoTrait, file_info_local::FileInfoLocal,
-        file_info_ssh::FileInfoSSH, file_list::FileListTrait, file_list_ssh::FileListSSH,
-        file_service::FileService, pgpool::PgPool,
+        config::Config, file_info_local::FileInfoLocal, file_info_ssh::FileInfoSSH,
+        file_list::FileListTrait, file_list_ssh::FileListSSH, file_service::FileService,
+        pgpool::PgPool,
     };
 
     #[tokio::test]

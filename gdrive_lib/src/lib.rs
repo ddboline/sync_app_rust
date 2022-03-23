@@ -1,15 +1,9 @@
-#![allow(clippy::must_use_candidate)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_possible_wrap)]
-#![allow(clippy::similar_names)]
-#![allow(clippy::shadow_unrelated)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::used_underscore_binding)]
-#![allow(clippy::needless_late_init)]
 
 pub mod directory_info;
 pub mod drive_v3_types;
@@ -25,6 +19,8 @@ use rand::{
 use std::future::Future;
 use tokio::time::{sleep, Duration};
 
+/// # Errors
+/// Returns error if timeout is reached
 pub async fn exponential_retry<T, U, F>(f: T) -> Result<U, Error>
 where
     T: Fn() -> F,

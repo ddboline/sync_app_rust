@@ -1,20 +1,15 @@
-use anyhow::{format_err, Error};
+use anyhow::Error;
 use chrono::{DateTime, Utc};
 use log::debug;
-use maplit::hashmap;
 use postgres_query::FromSqlRow;
-use reqwest::{header::HeaderMap, Response, Url};
 use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
     fmt::{self, Debug, Write},
-    future::Future,
 };
 
-use crate::{
-    config::Config, iso_8601_datetime, reqwest_session::ReqwestSession, sync_client::SyncClient,
-};
+use crate::{config::Config, sync_client::SyncClient};
 
 #[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarList {
@@ -56,12 +51,15 @@ pub struct CalendarSync {
 }
 
 impl CalendarSync {
+    #[must_use]
     pub fn new(config: Config) -> Self {
         Self {
             client: SyncClient::new(config, "/usr/bin/calendar-app-rust"),
         }
     }
 
+    /// # Errors
+    /// Return error if sync fails
     #[allow(clippy::similar_names)]
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
         self.client.init("calendar").await?;

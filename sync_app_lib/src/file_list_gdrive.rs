@@ -1,5 +1,5 @@
 use anyhow::{format_err, Error};
-use arc_swap::{ArcSwap, ArcSwapOption};
+use arc_swap::ArcSwap;
 use async_trait::async_trait;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
@@ -31,6 +31,8 @@ pub struct FileListGDrive {
 }
 
 impl FileListGDrive {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn new(
         servicesession: &str,
         basepath: &str,
@@ -65,6 +67,8 @@ impl FileListGDrive {
         })
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "gdrive" {
             let servicesession = url
@@ -108,6 +112,8 @@ impl FileListGDrive {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn set_directory_map(&self, use_cache: bool) -> Result<(), Error> {
         let (dmap, root_dir) = if use_cache {
             let dlist = self.load_directory_info_cache().await?;
@@ -124,6 +130,7 @@ impl FileListGDrive {
         Ok(())
     }
 
+    #[must_use]
     pub fn max_keys(mut self, max_keys: usize) -> Self {
         self.gdrive = self.gdrive.with_max_keys(max_keys);
         self
@@ -409,19 +416,15 @@ impl FileListTrait for FileListGDrive {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::{format_err, Error};
-    use chrono::NaiveDate;
-    use log::{debug, error};
-    use stack_string::{format_sstr, StackString};
+    use anyhow::Error;
+    use log::debug;
+    use stack_string::format_sstr;
     use std::{
         collections::HashMap,
         fmt::Write as FmtWrite,
-        fs::{create_dir_all, File},
-        io::{BufRead, BufReader, Write},
         path::{Path, PathBuf},
     };
-    use tokio::fs::{copy, remove_file, rename};
-    use walkdir::WalkDir;
+    use tokio::fs::remove_file;
 
     use gdrive_lib::gdrive_instance::GDriveInstance;
 

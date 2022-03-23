@@ -11,6 +11,8 @@ use crate::{
 pub struct FileInfoSSH(pub FileInfo);
 
 impl FileInfoSSH {
+    /// # Errors
+    /// Return error if init fails
     pub fn from_url(url: &Url) -> Result<Self, Error> {
         if url.scheme() == "ssh" {
             let path = url.path();

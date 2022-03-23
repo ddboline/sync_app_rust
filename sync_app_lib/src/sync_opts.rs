@@ -2,24 +2,20 @@ use anyhow::{format_err, Error};
 use chrono::Utc;
 use futures::future::try_join_all;
 use itertools::Itertools;
-use log::{error, info};
-use rayon::iter::{
-    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
-};
+use log::info;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use refinery::embed_migrations;
-use smallvec::SmallVec;
 use stack_string::{format_sstr, StackString};
 use std::{fmt::Write, sync::Arc};
 use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
-use tokio::task::spawn_blocking;
 use url::Url;
 
 use crate::{
     calendar_sync::CalendarSync,
     config::Config,
-    file_info::{FileInfo, FileInfoTrait},
-    file_list::{group_urls, FileList, FileListTrait},
+    file_info::FileInfo,
+    file_list::{group_urls, FileList},
     file_service::FileService,
     file_sync::{FileSync, FileSyncAction},
     garmin_sync::GarminSync,
@@ -54,6 +50,7 @@ impl Default for SyncOpts {
 }
 
 impl SyncOpts {
+    #[must_use]
     pub fn new(action: FileSyncAction, urls: &[Url]) -> Self {
         Self {
             action,
@@ -61,6 +58,8 @@ impl SyncOpts {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn process_args() -> Result<StdoutChannel<StackString>, Error> {
         let stdout = StdoutChannel::new();
         let opts = Self::from_args();
@@ -85,6 +84,8 @@ impl SyncOpts {
         Ok(stdout)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     #[allow(clippy::cognitive_complexity)]
     #[allow(clippy::similar_names)]
     pub async fn process_sync_opts(
@@ -96,10 +97,10 @@ impl SyncOpts {
         let blacklist = Arc::new(BlackList::new(pool).await.unwrap_or_default());
         match self.action {
             FileSyncAction::Index => {
-                let _url_list: Vec<_>;
+                let url_list: Vec<_>;
                 let urls = if self.urls.is_empty() {
-                    _url_list = FileSyncConfig::get_url_list(pool).await?;
-                    &_url_list
+                    url_list = FileSyncConfig::get_url_list(pool).await?;
+                    &url_list
                 } else {
                     &self.urls
                 };

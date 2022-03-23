@@ -1,12 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
-use itertools::Itertools;
 use log::info;
-use postgres_query::query;
-use rayon::iter::{
-    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
-};
 use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
@@ -18,10 +12,9 @@ use std::{
     sync::Arc,
 };
 use stdout_channel::StdoutChannel;
-use tokio::task::spawn_blocking;
 use url::Url;
 
-use gdrive_lib::{directory_info::DirectoryInfo, gdrive_instance::GDriveInstance};
+use gdrive_lib::directory_info::DirectoryInfo;
 
 use crate::{
     config::Config,
@@ -51,6 +44,7 @@ impl Deref for FileList {
 }
 
 impl FileList {
+    #[must_use]
     pub fn new(
         baseurl: Url,
         basepath: PathBuf,
@@ -73,6 +67,8 @@ impl FileList {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn from_url(
         url: &Url,
         config: &Config,
@@ -164,6 +160,8 @@ pub trait FileListTrait: Send + Sync + Debug {
         unimplemented!()
     }
 
+    /// # Errors
+    /// Return error if init fails
     fn cleanup(&self) -> Result<(), Error> {
         if self.get_servicetype() == FileService::GDrive {
             let config = &self.get_config();
@@ -457,22 +455,27 @@ impl FileListTrait for FileList {
     }
 }
 
+#[must_use]
 pub fn remove_baseurl(urlname: &Url, baseurl: &Url) -> StackString {
     let buf = format_sstr!("{}/", baseurl.as_str().trim_end_matches('/'));
     urlname.as_str().replacen(buf.as_str(), "", 1).into()
 }
 
+/// # Errors
+/// Return error if init fails
 pub fn replace_baseurl(urlname: &Url, baseurl0: &Url, baseurl1: &Url) -> Result<Url, Error> {
     let baseurl1 = baseurl1.as_str().trim_end_matches('/');
     let urlstr = format_sstr!("{}/{}", baseurl1, remove_baseurl(urlname, baseurl0));
     Url::parse(&urlstr).map_err(Into::into)
 }
 
+#[must_use]
 pub fn remove_basepath(basename: &str, basepath: &str) -> StackString {
     let buf = format_sstr!("{}/", basepath.trim_end_matches('/'));
     basename.replacen(buf.as_str(), "", 1).into()
 }
 
+#[must_use]
 pub fn replace_basepath(basename: &Path, basepath0: &Path, basepath1: &Path) -> PathBuf {
     let basepath0 = basepath0.to_string_lossy();
     let basepath1 = basepath1.to_string_lossy();
@@ -484,6 +487,7 @@ pub fn replace_basepath(basename: &Path, basepath0: &Path, basepath1: &Path) -> 
     new_path.join(remove_basepath(&basename, &basepath0))
 }
 
+#[must_use]
 pub fn group_urls(url_list: &[Url]) -> HashMap<StackString, Vec<Url>> {
     url_list.iter().fold(HashMap::new(), |mut h, m| {
         let key = m.scheme();

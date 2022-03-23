@@ -1,6 +1,5 @@
 use anyhow::{format_err, Error};
 use arc_swap::ArcSwap;
-use maplit::hashmap;
 use rand::{
     distributions::{Distribution, Uniform},
     thread_rng,
@@ -10,13 +9,8 @@ use reqwest::{
     redirect::Policy,
     Client, Response, Url,
 };
-use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap, future::Future, pin::Pin, sync::Arc, thread::sleep, time::Duration,
-};
-use tokio::sync::Mutex;
-
-use crate::config::Config;
+use serde::Serialize;
+use std::{collections::HashMap, future::Future, sync::Arc, thread::sleep, time::Duration};
 
 #[derive(Debug, Clone)]
 struct ReqwestSessionInner {
@@ -43,6 +37,8 @@ impl Default for ReqwestSession {
 }
 
 impl ReqwestSessionInner {
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get(&self, url: Url, mut headers: HeaderMap) -> Result<Response, Error> {
         for (k, v) in &self.headers {
             headers.insert(k, v.into());
@@ -55,6 +51,8 @@ impl ReqwestSessionInner {
             .map_err(Into::into)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn post<T>(
         &self,
         url: Url,
@@ -76,6 +74,8 @@ impl ReqwestSessionInner {
             .map_err(Into::into)
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete(&self, url: Url, mut headers: HeaderMap) -> Result<Response, Error> {
         for (k, v) in &self.headers {
             headers.insert(k, v.into());
@@ -90,6 +90,7 @@ impl ReqwestSessionInner {
 }
 
 impl ReqwestSession {
+    #[must_use]
     pub fn new(allow_redirects: bool) -> Self {
         let redirect_policy = if allow_redirects {
             Policy::default()
@@ -130,6 +131,8 @@ impl ReqwestSession {
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
         Self::exponential_retry(|| async move {
             self.client
@@ -141,6 +144,8 @@ impl ReqwestSession {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn post<T>(
         &self,
         url: &Url,
@@ -159,6 +164,8 @@ impl ReqwestSession {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn delete(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
         Self::exponential_retry(|| async move {
             self.client
@@ -169,6 +176,8 @@ impl ReqwestSession {
         .await
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn set_default_headers(&self, headers: HashMap<&str, &str>) -> Result<(), Error> {
         let mut client = self.client.load().clone();
         for (k, v) in headers {

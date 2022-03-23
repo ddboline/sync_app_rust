@@ -1,20 +1,18 @@
 #![allow(clippy::too_many_arguments)]
 
-use anyhow::{format_err, Error};
+use anyhow::Error;
 use chrono::{DateTime, NaiveDate, Utc};
 use log::debug;
-use maplit::hashmap;
 use postgres_query::FromSqlRow;
-use reqwest::{header::HeaderMap, Response, Url};
+use reqwest::Url;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
     fmt::{Debug, Write},
-    future::Future,
 };
 
-use crate::{config::Config, reqwest_session::ReqwestSession, sync_client::SyncClient};
+use crate::{config::Config, sync_client::SyncClient};
 
 #[derive(Deserialize)]
 struct LastModifiedStruct {
@@ -90,12 +88,15 @@ pub struct MovieSync {
 }
 
 impl MovieSync {
+    #[must_use]
     pub fn new(config: Config) -> Self {
         Self {
             client: SyncClient::new(config, "/usr/bin/movie-queue-cli"),
         }
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
         self.client.init("list").await?;
         let mut output = Vec::new();
