@@ -13,7 +13,6 @@ use maplit::{hashmap, hashset};
 use mime::Mime;
 use percent_encoding::percent_decode;
 use stack_string::{format_sstr, StackString};
-use std::fmt::Write;
 
 use std::{
     collections::{HashMap, HashSet},

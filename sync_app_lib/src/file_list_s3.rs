@@ -5,7 +5,6 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
-    fmt::Write,
     fs::{create_dir_all, remove_file},
     path::Path,
 };

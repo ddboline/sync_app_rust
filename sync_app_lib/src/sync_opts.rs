@@ -6,7 +6,7 @@ use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use refinery::embed_migrations;
 use stack_string::{format_sstr, StackString};
-use std::{fmt::Write, sync::Arc};
+use std::sync::Arc;
 use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
 use url::Url;

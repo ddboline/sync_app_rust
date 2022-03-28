@@ -1,7 +1,7 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use stack_string::{format_sstr, StackString};
-use std::{collections::HashMap, fmt::Write, fs::create_dir_all, path::Path};
+use std::{collections::HashMap, fs::create_dir_all, path::Path};
 use stdout_channel::StdoutChannel;
 use url::Url;
 
@@ -273,7 +273,6 @@ mod tests {
     use log::debug;
     use stack_string::format_sstr;
     use std::{
-        fmt::Write,
         fs::remove_file,
         path::{Path, PathBuf},
     };

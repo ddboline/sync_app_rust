@@ -7,10 +7,7 @@ use postgres_query::FromSqlRow;
 use reqwest::Url;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
-use std::{
-    collections::HashMap,
-    fmt::{Debug, Write},
-};
+use std::{collections::HashMap, fmt::Debug};
 
 use crate::{config::Config, sync_client::SyncClient};
 

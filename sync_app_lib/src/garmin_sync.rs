@@ -3,10 +3,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use core::hash::Hash;
 use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fmt::{Debug, Write},
-};
+use std::{collections::HashMap, fmt::Debug};
 
 use stack_string::{format_sstr, StackString};
 

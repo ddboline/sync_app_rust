@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use stack_string::{format_sstr, StackString};
-use std::{collections::HashMap, fmt::Write, fs::create_dir_all, path::Path, sync::Arc};
+use std::{collections::HashMap, fs::create_dir_all, path::Path, sync::Arc};
 use stdout_channel::StdoutChannel;
 use url::Url;
 
@@ -421,7 +421,6 @@ mod tests {
     use stack_string::format_sstr;
     use std::{
         collections::HashMap,
-        fmt::Write as FmtWrite,
         path::{Path, PathBuf},
     };
     use tokio::fs::remove_file;

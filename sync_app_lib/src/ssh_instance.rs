@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use log::{debug, error, info};
 use smallvec::{smallvec, SmallVec};
 use stack_string::{format_sstr, StackString};
-use std::{collections::HashMap, fmt::Write, process::Stdio};
+use std::{collections::HashMap, process::Stdio};
 use tokio::{
     io::{stdout, AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::Command,

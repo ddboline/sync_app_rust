@@ -3,7 +3,6 @@ use chrono::NaiveDate;
 use futures::future::try_join_all;
 use stack_string::{format_sstr, StackString};
 use std::{
-    fmt::Write as FmtWrite,
     fs::{create_dir_all, File},
     io::{BufRead, BufReader, Write},
     path::PathBuf,

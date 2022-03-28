@@ -9,7 +9,7 @@ use log::debug;
 use parking_lot::{Mutex, MutexGuard};
 use stack_string::format_sstr;
 use std::{
-    fmt::{self, Debug, Write},
+    fmt::{self, Debug},
     path::Path,
     sync::Arc,
 };

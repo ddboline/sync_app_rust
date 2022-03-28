@@ -401,7 +401,7 @@ mod tests {
     use log::debug;
     use rusoto_s3::{Object, Owner};
     use stack_string::format_sstr;
-    use std::{collections::HashMap, env::current_dir, fmt::Write, path::Path};
+    use std::{collections::HashMap, env::current_dir, path::Path};
 
     use crate::{
         config::Config,

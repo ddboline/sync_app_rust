@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
 use stack_string::{format_sstr, StackString};
-use std::{fmt::Write, path::Path};
+use std::path::Path;
 use url::Url;
 
 use gdrive_lib::storage_v1_types::Object;

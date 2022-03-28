@@ -2,7 +2,7 @@ use anyhow::{format_err, Error};
 use chrono::DateTime;
 use rusoto_s3::Object;
 use stack_string::{format_sstr, StackString};
-use std::{fmt::Write, path::Path};
+use std::path::Path;
 use url::Url;
 
 use crate::{

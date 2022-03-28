@@ -5,7 +5,7 @@ use maplit::hashmap;
 use reqwest::{header::HeaderMap, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::format_sstr;
-use std::{fmt::Write, path::Path};
+use std::path::Path;
 use tokio::task::spawn_blocking;
 
 use crate::{config::Config, local_session::LocalSession, reqwest_session::ReqwestSession};

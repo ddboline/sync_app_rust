@@ -247,7 +247,7 @@ mod tests {
     use anyhow::Error;
     use log::{debug, info};
     use stack_string::format_sstr;
-    use std::{collections::HashMap, convert::TryInto, fmt::Write, path::PathBuf};
+    use std::{collections::HashMap, convert::TryInto, path::PathBuf};
     use url::Url;
 
     use crate::{

@@ -9,7 +9,7 @@ use rweb::{
     Filter, Reply,
 };
 use stack_string::format_sstr;
-use std::{fmt::Write, net::SocketAddr, sync::Arc, time};
+use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, task::JoinHandle, time::interval};
 
 use sync_app_lib::{

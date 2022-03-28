@@ -4,7 +4,6 @@ use rweb_helper::{
     html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase, RwebResponse,
 };
 use stack_string::{format_sstr, StackString};
-use std::fmt::Write;
 
 use sync_app_lib::file_sync::FileSyncAction;
 

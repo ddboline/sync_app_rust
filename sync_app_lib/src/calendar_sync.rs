@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
-    fmt::{self, Debug, Write},
+    fmt::{self, Debug},
 };
 
 use crate::{config::Config, sync_client::SyncClient};

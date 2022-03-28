@@ -4,12 +4,7 @@ use log::debug;
 use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
-use std::{
-    collections::HashMap,
-    fmt,
-    fmt::{Debug, Write},
-    hash::Hash,
-};
+use std::{collections::HashMap, fmt, fmt::Debug, hash::Hash};
 
 use crate::{config::Config, sync_client::SyncClient};
 
