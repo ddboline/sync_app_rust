@@ -1,5 +1,4 @@
 use anyhow::{format_err, Error};
-use chrono::Utc;
 use derive_more::Into;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -9,6 +8,7 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
+use time::OffsetDateTime;
 use url::Url;
 
 use stack_string::StackString;
@@ -308,7 +308,7 @@ impl From<&FileInfo> for FileInfoCache {
             serviceid: item.serviceid.0.clone(),
             servicetype: item.servicetype.to_str().into(),
             servicesession: item.servicesession.0.clone(),
-            created_at: Utc::now(),
+            created_at: OffsetDateTime::now_utc(),
             deleted_at: None,
         }
     }

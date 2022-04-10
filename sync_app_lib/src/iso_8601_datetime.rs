@@ -1,29 +1,38 @@
 use anyhow::Error;
-use chrono::{DateTime, TimeZone, Utc};
 use serde::{self, Deserialize, Deserializer, Serializer};
 use stack_string::StackString;
+use time::{
+    format_description::well_known::Rfc3339,
+    macros::{datetime, format_description},
+    OffsetDateTime, UtcOffset,
+};
 
 #[must_use]
-pub fn sentinel_datetime() -> DateTime<Utc> {
-    Utc.ymd(0, 1, 1).and_hms(0, 0, 0)
+pub fn sentinel_datetime() -> OffsetDateTime {
+    datetime!(0000-01-01 00:00:00).assume_utc()
 }
 
 #[must_use]
-pub fn convert_datetime_to_str(datetime: DateTime<Utc>) -> StackString {
-    StackString::from_display(datetime.format("%Y-%m-%dT%H:%M:%SZ"))
+pub fn convert_datetime_to_str(datetime: OffsetDateTime) -> StackString {
+    datetime
+        .to_offset(UtcOffset::UTC)
+        .format(format_description!(
+            "[year]-[month]-[day]T[hour]:[minute]:[second]Z"
+        ))
+        .map_or_else(|_| "".into(), Into::into)
 }
 
 /// # Errors
 /// Return error if parse fails
-pub fn convert_str_to_datetime(s: &str) -> Result<DateTime<Utc>, Error> {
-    DateTime::parse_from_rfc3339(&s.replace('Z', "+00:00"))
-        .map(|x| x.with_timezone(&Utc))
+pub fn convert_str_to_datetime(s: &str) -> Result<OffsetDateTime, Error> {
+    OffsetDateTime::parse(&s.replace('Z', "+00:00"), &Rfc3339)
+        .map(|x| x.to_offset(UtcOffset::UTC))
         .map_err(Into::into)
 }
 
 /// # Errors
 /// Return error if serialization fails
-pub fn serialize<S>(date: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S>(date: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -32,7 +41,7 @@ where
 
 /// # Errors
 /// Return error if deserialization fails
-pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+pub fn deserialize<'de, D>(deserializer: D) -> Result<OffsetDateTime, D::Error>
 where
     D: Deserializer<'de>,
 {

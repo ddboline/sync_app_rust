@@ -1,20 +1,20 @@
 #![allow(clippy::too_many_arguments)]
 
 use anyhow::Error;
-use chrono::{DateTime, NaiveDate, Utc};
 use log::debug;
 use postgres_query::FromSqlRow;
 use reqwest::Url;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt::Debug};
+use time::{macros::format_description, Date, OffsetDateTime};
 
 use crate::{config::Config, sync_client::SyncClient};
 
 #[derive(Deserialize)]
 struct LastModifiedStruct {
     table: StackString,
-    last_modified: DateTime<Utc>,
+    last_modified: OffsetDateTime,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -23,7 +23,7 @@ pub struct ImdbEpisodes {
     pub title: StackString,
     pub season: i32,
     pub episode: i32,
-    pub airdate: NaiveDate,
+    pub airdate: Date,
     pub rating: f64,
     pub eptitle: StackString,
     pub epurl: StackString,
@@ -65,9 +65,9 @@ pub struct PlexEvent {
     pub title: StackString,
     pub parent_title: Option<StackString>,
     pub grandparent_title: Option<StackString>,
-    pub added_at: DateTime<Utc>,
-    pub updated_at: Option<DateTime<Utc>>,
-    pub last_modified: DateTime<Utc>,
+    pub added_at: OffsetDateTime,
+    pub updated_at: Option<OffsetDateTime>,
+    pub last_modified: OffsetDateTime,
     pub metadata_type: Option<StackString>,
     pub section_type: Option<StackString>,
     pub section_title: Option<StackString>,
@@ -100,19 +100,19 @@ impl MovieSync {
 
         let from_url = self.client.get_url()?;
         let url = from_url.join("list/last_modified")?;
-        debug!("{}", url);
+        println!("{}", url);
         let last_modified0 = self.get_last_modified(&url).await?;
         let last_modified1 =
             Self::transform_last_modified(self.client.get_local("last_modified", None).await?);
 
-        debug!("{:?} {:?}", last_modified0, last_modified1);
+        println!("{:?} {:?}", last_modified0, last_modified1);
 
         macro_rules! sync_single_table {
             ($table:expr, $js_prefix:expr, $T:ty) => {{
                 let table = $table;
                 let js_prefix = $js_prefix;
                 debug!("{} {}", table, js_prefix);
-                let now = Utc::now();
+                let now = OffsetDateTime::now_utc();
                 let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
                 let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
                 let results = self
@@ -122,11 +122,17 @@ impl MovieSync {
             }};
         }
 
+        println!("plex_event");
         sync_single_table!("plex_event", "events", PlexEvent);
+        println!("plex_filename");
         sync_single_table!("plex_filename", "filenames", PlexFilename);
+        println!("imdb_ratings");
         sync_single_table!("imdb_ratings", "shows", ImdbRatings);
+        println!("imdb_episodes");
         sync_single_table!("imdb_episodes", "episodes", ImdbEpisodes);
+        println!("movie_collection");
         sync_single_table!("movie_collection", "collection", MovieCollectionRow);
+        println!("movie_queue");
         sync_single_table!("movie_queue", "queue", MovieQueueRow);
 
         self.client.shutdown().await?;
@@ -137,7 +143,7 @@ impl MovieSync {
     async fn get_last_modified(
         &self,
         url: &Url,
-    ) -> Result<HashMap<StackString, DateTime<Utc>>, Error> {
+    ) -> Result<HashMap<StackString, OffsetDateTime>, Error> {
         let last_modified: Vec<LastModifiedStruct> = self.client.get_remote(url).await?;
         let results = Self::transform_last_modified(last_modified);
         Ok(results)
@@ -145,7 +151,7 @@ impl MovieSync {
 
     fn transform_last_modified(
         data: Vec<LastModifiedStruct>,
-    ) -> HashMap<StackString, DateTime<Utc>> {
+    ) -> HashMap<StackString, OffsetDateTime> {
         data.into_iter()
             .map(|entry| (entry.table, entry.last_modified))
             .collect()
@@ -154,8 +160,8 @@ impl MovieSync {
     async fn run_single_sync<T>(
         &self,
         table: &str,
-        last_modified_remote: DateTime<Utc>,
-        last_modified_local: DateTime<Utc>,
+        last_modified_remote: OffsetDateTime,
+        last_modified_local: OffsetDateTime,
         js_prefix: &str,
     ) -> Result<Vec<StackString>, Error>
     where
@@ -176,8 +182,8 @@ impl MovieSync {
         &self,
         endpoint: &Url,
         table: &str,
-        last_modified_remote: DateTime<Utc>,
-        last_modified_local: DateTime<Utc>,
+        last_modified_remote: OffsetDateTime,
+        last_modified_local: OffsetDateTime,
         js_prefix: &str,
     ) -> Result<Vec<StackString>, Error>
     where
@@ -187,7 +193,11 @@ impl MovieSync {
         let path = format_sstr!(
             "list/{}?start_timestamp={}",
             table,
-            last_modified_local.format("%Y-%m-%dT%H:%M:%S%.fZ")
+            last_modified_local
+                .format(format_description!(
+                    "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond]Z"
+                ))
+                .unwrap_or_else(|_| "".into()),
         );
         let url = endpoint.join(&path)?;
         debug!("{}", url);
@@ -195,7 +205,7 @@ impl MovieSync {
         let remote_data: Vec<T> = self.client.get_remote(&url).await?;
         let local_data: Vec<T> = self
             .client
-            .get_local(table, Some(last_modified_remote))
+            .get_local(table, Some(last_modified_remote.into()))
             .await?;
         self.client.put_local(table, &remote_data, None).await?;
         let path = format_sstr!("list/{table}");

@@ -1,11 +1,11 @@
 use anyhow::{format_err, Error};
-use chrono::{DateTime, Utc};
 use log::debug;
 use maplit::hashmap;
 use reqwest::{header::HeaderMap, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::format_sstr;
 use std::path::Path;
+use time::OffsetDateTime;
 use tokio::task::spawn_blocking;
 
 use crate::{config::Config, local_session::LocalSession, reqwest_session::ReqwestSession};
@@ -131,7 +131,7 @@ impl SyncClient {
     pub async fn get_local<T: DeserializeOwned + Send + 'static>(
         &self,
         table: &str,
-        start_timestamp: Option<DateTime<Utc>>,
+        start_timestamp: Option<OffsetDateTime>,
     ) -> Result<Vec<T>, Error> {
         let data = self
             .local_session
@@ -164,7 +164,7 @@ impl SyncClient {
         &self,
         table: &str,
         data: &[T],
-        start_timestamp: Option<DateTime<Utc>>,
+        start_timestamp: Option<OffsetDateTime>,
     ) -> Result<(), Error> {
         let data = serde_json::to_vec(&data)?;
         self.local_session

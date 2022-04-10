@@ -41,6 +41,7 @@ pub mod ssh_instance;
 pub mod sync_client;
 pub mod sync_opts;
 pub mod url_wrapper;
+pub mod datetimetype;
 
 use anyhow::Error;
 use std::str::FromStr;

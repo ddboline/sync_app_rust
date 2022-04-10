@@ -2,7 +2,6 @@ pub use authorized_users::{
     get_random_key, get_secrets, token::Token, AuthorizedUser, AUTHORIZED_USERS, JWT_SECRET,
     KEY_LENGTH, SECRET_KEY, TRIGGER_DB_UPDATE,
 };
-use chrono::{DateTime, Duration, Utc};
 use log::debug;
 use reqwest::{header::HeaderValue, Client};
 use rweb::{filters::cookie::cookie, Filter, Rejection, Schema};
@@ -13,6 +12,7 @@ use std::{
     env::var,
     str::FromStr,
 };
+use time::{Duration, OffsetDateTime};
 use tokio::task::spawn;
 use uuid::Uuid;
 
@@ -72,7 +72,7 @@ impl LoggedUser {
             .await?;
         debug!("Got session {:?}", session);
         if let Some(session) = session {
-            if session.created_at > (Utc::now() - Duration::minutes(10)) {
+            if session.created_at > (OffsetDateTime::now_utc() - Duration::minutes(10)) {
                 return Ok(Some(session));
             }
         }
@@ -221,14 +221,14 @@ pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SyncSession {
-    pub created_at: DateTime<Utc>,
+    pub created_at: OffsetDateTime,
     pub result: Option<Vec<StackString>>,
 }
 
 impl Default for SyncSession {
     fn default() -> Self {
         Self {
-            created_at: Utc::now(),
+            created_at: OffsetDateTime::now_utc(),
             result: None,
         }
     }
@@ -238,7 +238,7 @@ impl SyncSession {
     #[must_use]
     pub fn from_lines(lines: Vec<StackString>) -> Self {
         Self {
-            created_at: Utc::now(),
+            created_at: OffsetDateTime::now_utc(),
             result: Some(lines),
         }
     }

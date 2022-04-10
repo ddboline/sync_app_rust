@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.8.19"
+version = "0.9.0"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 rweb = {version="0.15", features=["openapi", "uuid"], default-features=false}
 http = "0.2"
-chrono = "0.4"
+time = {version="0.3", features=["serde-human-readable", "macros", "formatting"]}
 lazy_static = "1.4"
 parking_lot = "0.12"
 sync_app_lib = {path = "../sync_app_lib"}
@@ -32,6 +32,6 @@ stdout-channel = "0.5"
 uuid = "0.8"
 deadqueue = "0.2"
 reqwest = {version="0.11", features=["cookies", "json", "rustls-tls"], default_features=false}
-rweb-helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.4.2" }
+rweb-helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.4.9" }
 stack-string = { version="0.7", features=["postgres_types", "rweb-openapi"] }
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.7.30"}
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.8.0"}

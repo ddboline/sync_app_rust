@@ -1,9 +1,9 @@
 use anyhow::Error;
-use chrono::{DateTime, NaiveDate, Utc};
 use core::hash::Hash;
 use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug};
+use time::{Date, OffsetDateTime};
 
 use stack_string::{format_sstr, StackString};
 
@@ -12,7 +12,7 @@ use super::{config::Config, sync_client::SyncClient};
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 struct ScaleMeasurement {
     pub id: i32,
-    pub datetime: DateTime<Utc>,
+    pub datetime: OffsetDateTime,
     pub mass: f64,
     pub fat_pct: f64,
     pub water_pct: f64,
@@ -24,7 +24,7 @@ struct ScaleMeasurement {
 pub struct StravaActivity {
     pub id: i64,
     pub name: StackString,
-    pub start_date: DateTime<Utc>,
+    pub start_date: OffsetDateTime,
     pub distance: Option<f64>,
     pub moving_time: Option<i64>,
     pub elapsed_time: i64,
@@ -39,7 +39,7 @@ pub struct StravaActivity {
 pub struct FitbitActivityEntry {
     log_id: i64,
     log_type: StackString,
-    start_time: DateTime<Utc>,
+    start_time: OffsetDateTime,
     tcx_link: Option<StackString>,
     activity_type_id: Option<i64>,
     activity_name: Option<StackString>,
@@ -54,7 +54,7 @@ pub struct GarminConnectActivity {
     pub activity_id: i64,
     pub activity_name: Option<StackString>,
     pub description: Option<StackString>,
-    pub start_time_gmt: DateTime<Utc>,
+    pub start_time_gmt: OffsetDateTime,
     pub distance: Option<f64>,
     pub duration: f64,
     pub elapsed_duration: Option<f64>,
@@ -69,7 +69,7 @@ pub struct GarminConnectActivity {
 pub struct RaceResults {
     pub id: i64,
     pub race_type: String,
-    pub race_date: Option<NaiveDate>,
+    pub race_date: Option<Date>,
     pub race_name: Option<StackString>,
     pub race_distance: i32, // distance in meters
     pub race_time: f64,
@@ -79,7 +79,7 @@ pub struct RaceResults {
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, FromSqlRow)]
 pub struct FitbitStatisticsSummary {
-    pub date: NaiveDate,
+    pub date: Date,
     pub min_heartrate: f64,
     pub max_heartrate: f64,
     pub mean_heartrate: f64,
@@ -200,7 +200,7 @@ impl GarminSync {
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
     where
-        T: FnMut(Vec<ScaleMeasurement>) -> HashMap<DateTime<Utc>, ScaleMeasurement>,
+        T: FnMut(Vec<ScaleMeasurement>) -> HashMap<OffsetDateTime, ScaleMeasurement>,
     {
         let mut output = Vec::new();
         let from_url = self.client.get_url()?;
@@ -236,8 +236,8 @@ impl GarminSync {
     }
 
     fn combine_measurements<'a, T>(
-        measurements0: &'a HashMap<DateTime<Utc>, T>,
-        measurements1: &'a HashMap<DateTime<Utc>, T>,
+        measurements0: &'a HashMap<OffsetDateTime, T>,
+        measurements1: &'a HashMap<OffsetDateTime, T>,
     ) -> Vec<&'a T> {
         measurements0
             .iter()
@@ -312,7 +312,7 @@ impl GarminSync {
     ) -> Result<Vec<StackString>, Error> {
         fn transform_personal(
             activities: &[RaceResults],
-        ) -> HashMap<(&StackString, NaiveDate), &RaceResults> {
+        ) -> HashMap<(&StackString, Date), &RaceResults> {
             activities
                 .iter()
                 .filter_map(|result| {
@@ -383,8 +383,8 @@ impl GarminSync {
     }
 
     fn combine_personal_race_results<'a, T>(
-        race_results0: &'a HashMap<(&'a StackString, NaiveDate), &'a T>,
-        race_results1: &'a HashMap<(&'a StackString, NaiveDate), &'a T>,
+        race_results0: &'a HashMap<(&'a StackString, Date), &'a T>,
+        race_results1: &'a HashMap<(&'a StackString, Date), &'a T>,
     ) -> Vec<&'a T> {
         race_results0
             .iter()

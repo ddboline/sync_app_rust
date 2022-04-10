@@ -1,9 +1,9 @@
 use anyhow::{format_err, Error};
-use chrono::{DateTime, Utc};
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
 };
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use tokio::{io::AsyncWriteExt, process::Command};
 
 #[derive(Clone)]
@@ -26,10 +26,10 @@ impl LocalSession {
     pub async fn run_command_export(
         &self,
         table: &str,
-        start_timestamp: Option<DateTime<Utc>>,
+        start_timestamp: Option<OffsetDateTime>,
     ) -> Result<Vec<u8>, Error> {
         let mut args = vec!["export", "-t", table];
-        let start_timestamp = start_timestamp.map(|t| t.to_rfc3339());
+        let start_timestamp = start_timestamp.and_then(|t| t.format(&Rfc3339).ok());
         if let Some(start_timestamp) = start_timestamp.as_ref() {
             args.push("-s");
             args.push(start_timestamp);
@@ -64,10 +64,10 @@ impl LocalSession {
         &self,
         table: &str,
         input: &[u8],
-        start_timestamp: Option<DateTime<Utc>>,
+        start_timestamp: Option<OffsetDateTime>,
     ) -> Result<(), Error> {
         let mut args = vec!["import", "-t", table];
-        let start_timestamp = start_timestamp.map(|t| t.to_rfc3339());
+        let start_timestamp = start_timestamp.and_then(|t| t.format(&Rfc3339).ok());
         if let Some(start_timestamp) = start_timestamp.as_ref() {
             args.push("-s");
             args.push(start_timestamp);
