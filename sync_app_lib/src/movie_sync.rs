@@ -100,12 +100,12 @@ impl MovieSync {
 
         let from_url = self.client.get_url()?;
         let url = from_url.join("list/last_modified")?;
-        println!("{}", url);
+        debug!("{}", url);
         let last_modified0 = self.get_last_modified(&url).await?;
         let last_modified1 =
             Self::transform_last_modified(self.client.get_local("last_modified", None).await?);
 
-        println!("{:?} {:?}", last_modified0, last_modified1);
+        debug!("{:?} {:?}", last_modified0, last_modified1);
 
         macro_rules! sync_single_table {
             ($table:expr, $js_prefix:expr, $T:ty) => {{
@@ -122,17 +122,17 @@ impl MovieSync {
             }};
         }
 
-        println!("plex_event");
+        debug!("plex_event");
         sync_single_table!("plex_event", "events", PlexEvent);
-        println!("plex_filename");
+        debug!("plex_filename");
         sync_single_table!("plex_filename", "filenames", PlexFilename);
-        println!("imdb_ratings");
+        debug!("imdb_ratings");
         sync_single_table!("imdb_ratings", "shows", ImdbRatings);
-        println!("imdb_episodes");
+        debug!("imdb_episodes");
         sync_single_table!("imdb_episodes", "episodes", ImdbEpisodes);
-        println!("movie_collection");
+        debug!("movie_collection");
         sync_single_table!("movie_collection", "collection", MovieCollectionRow);
-        println!("movie_queue");
+        debug!("movie_queue");
         sync_single_table!("movie_queue", "queue", MovieQueueRow);
 
         self.client.shutdown().await?;
