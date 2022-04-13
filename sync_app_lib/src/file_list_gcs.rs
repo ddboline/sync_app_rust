@@ -169,7 +169,7 @@ impl FileListTrait for FileListGcs {
             let md5sum: StackString = hash_file(Path::new(local_file.as_ref()), Algorithm::MD5)
                 .to_lowercase()
                 .into();
-            if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
+            if md5sum != finfo1.md5sum.as_ref().map_or_else(|| "", |m| m.as_str()) {
                 info!(
                     "Multipart upload? {} {}",
                     finfo1.urlname.as_str(),

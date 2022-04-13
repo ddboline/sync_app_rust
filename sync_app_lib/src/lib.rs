@@ -13,6 +13,7 @@
 
 pub mod calendar_sync;
 pub mod config;
+pub mod date_time_wrapper;
 pub mod file_info;
 pub mod file_info_gcs;
 pub mod file_info_gdrive;
@@ -28,7 +29,6 @@ pub mod file_list_ssh;
 pub mod file_service;
 pub mod file_sync;
 pub mod garmin_sync;
-pub mod iso_8601_datetime;
 pub mod local_session;
 pub mod models;
 pub mod movie_sync;

@@ -1,8 +1,8 @@
 use anyhow::{format_err, Error};
-use chrono::DateTime;
 use rusoto_s3::Object;
 use stack_string::{format_sstr, StackString};
 use std::path::Path;
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use url::Url;
 
 use crate::{
@@ -88,12 +88,11 @@ impl FileInfoS3 {
             .into_owned()
             .into();
         let md5sum = item.e_tag.and_then(|m| m.trim_matches('"').parse().ok());
-        let st_mtime = DateTime::parse_from_rfc3339(
-            item.last_modified
-                .as_ref()
-                .ok_or_else(|| format_err!("No last modified"))?,
-        )?
-        .timestamp();
+        let last_modified = item
+            .last_modified
+            .as_ref()
+            .ok_or_else(|| format_err!("No last modified"))?;
+        let st_mtime = OffsetDateTime::parse(last_modified, &Rfc3339)?.unix_timestamp();
         let size = item.size.ok_or_else(|| format_err!("No file size"))?;
         let fileurl = format_sstr!("s3://{bucket}/{key}");
         let fileurl: Url = fileurl.parse()?;

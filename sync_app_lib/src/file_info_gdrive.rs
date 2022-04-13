@@ -144,7 +144,7 @@ mod tests {
         let finfo = FileInfoGDrive::from_gdriveinfo(f).unwrap();
         assert_eq!(finfo.get_finfo().filename, "armstrong_thesis_2003.pdf");
         assert_eq!(
-            finfo.get_finfo().serviceid.0.as_str(),
+            finfo.get_finfo().serviceid.as_str(),
             "1REd76oJ6YheyjF2R9Il0E8xbjalgpNgG"
         );
     }

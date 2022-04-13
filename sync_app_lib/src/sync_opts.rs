@@ -1,5 +1,4 @@
 use anyhow::{format_err, Error};
-use chrono::Utc;
 use futures::future::try_join_all;
 use itertools::Itertools;
 use log::info;
@@ -14,6 +13,7 @@ use url::Url;
 use crate::{
     calendar_sync::CalendarSync,
     config::Config,
+    date_time_wrapper::DateTimeWrapper,
     file_info::FileInfo,
     file_list::{group_urls, FileList},
     file_service::FileService,
@@ -287,7 +287,7 @@ impl SyncOpts {
                         id: -1,
                         src_url: self.urls[0].as_str().into(),
                         dst_url: self.urls[1].as_str().into(),
-                        last_run: Utc::now(),
+                        last_run: DateTimeWrapper::now(),
                     };
                     conf.insert_config(pool).await?;
                     Ok(())

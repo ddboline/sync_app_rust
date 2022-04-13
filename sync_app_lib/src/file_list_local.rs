@@ -141,7 +141,7 @@ impl FileListTrait for FileListLocal {
                 };
                 FileInfoLocal::from_direntry(
                     &entry,
-                    Some(servicesession.0.clone().into()),
+                    Some(servicesession.as_str().into()),
                     Some(servicesession.clone()),
                 )
                 .map(|x| x.0)
@@ -306,8 +306,8 @@ mod tests {
         let mut cache_info: FileInfoCache = result.into();
         info!("{:?}", cache_info);
         assert_eq!(
-            &result.md5sum.as_ref().unwrap().0,
-            cache_info.md5sum.as_ref().unwrap()
+            result.md5sum.as_ref().map(|s| s.as_str()),
+            cache_info.md5sum.as_ref().map(|s| s.as_str())
         );
         cache_info.id = 5;
 

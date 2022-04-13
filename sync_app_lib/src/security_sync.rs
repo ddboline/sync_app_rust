@@ -1,10 +1,10 @@
 use anyhow::Error;
-use chrono::{DateTime, Utc};
 use log::debug;
 use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt, fmt::Debug, hash::Hash};
+use time::OffsetDateTime;
 
 use crate::{config::Config, sync_client::SyncClient};
 
@@ -13,7 +13,7 @@ pub struct IntrusionLog {
     pub id: i32,
     pub service: StackString,
     pub server: StackString,
-    pub datetime: DateTime<Utc>,
+    pub datetime: OffsetDateTime,
     pub host: StackString,
     pub username: Option<StackString>,
 }
@@ -33,7 +33,7 @@ pub struct HostCountry {
     pub host: StackString,
     pub code: StackString,
     pub ipaddr: Option<StackString>,
-    pub created_at: DateTime<Utc>,
+    pub created_at: OffsetDateTime,
 }
 
 pub struct SecuritySync {

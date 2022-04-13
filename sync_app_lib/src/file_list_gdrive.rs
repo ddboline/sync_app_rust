@@ -55,7 +55,7 @@ impl FileListGDrive {
         let gdrive = GDriveInstance::new(
             &config.gdrive_token_path,
             &config.gdrive_secret_file,
-            &flist.servicesession.0,
+            flist.servicesession.as_str(),
         )
         .await?;
 
@@ -93,11 +93,11 @@ impl FileListGDrive {
             );
 
             let config = config.clone();
-            let servicesession = flist.servicesession.0.clone();
+            let servicesession = flist.servicesession.as_ref();
             let gdrive = GDriveInstance::new(
                 &config.gdrive_token_path,
                 &config.gdrive_secret_file,
-                &servicesession,
+                servicesession,
             )
             .await?;
 
@@ -252,7 +252,7 @@ impl FileListTrait for FileListGDrive {
         }
 
         for f in flist {
-            flist_dict.insert(f.serviceid.0.clone(), f);
+            flist_dict.insert(f.serviceid.clone().into(), f);
         }
 
         let flist = flist_dict.into_iter().map(|(_, v)| v).collect();
@@ -329,17 +329,17 @@ impl FileListTrait for FileListGDrive {
             if !parent_dir.exists() {
                 create_dir_all(&parent_dir)?;
             }
-            let gdriveid = finfo0.serviceid.clone().0;
-            let gfile = self.gdrive.get_file_metadata(&gdriveid).await?;
+            let gdriveid = finfo0.serviceid.as_str();
+            let gfile = self.gdrive.get_file_metadata(gdriveid).await?;
             debug!("{:?}", gfile.mime_type);
             if GDriveInstance::is_unexportable(&gfile.mime_type) {
                 debug!("unexportable");
-                self.remove_by_id(&gdriveid).await?;
+                self.remove_by_id(gdriveid).await?;
                 debug!("removed from database");
                 return Ok(());
             }
             self.gdrive
-                .download(&gdriveid, local_path, &gfile.mime_type)
+                .download(gdriveid, local_path, &gfile.mime_type)
                 .await
         } else {
             Err(format_err!(
@@ -391,7 +391,7 @@ impl FileListTrait for FileListGDrive {
         {
             return Ok(());
         }
-        let gdriveid = &finfo0.serviceid.0;
+        let gdriveid = finfo0.serviceid.as_str();
         let url = finfo1.urlname.as_ref();
         let directory_map = self.directory_map.load().clone();
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
@@ -406,7 +406,9 @@ impl FileListTrait for FileListGDrive {
         let finfo = finfo.get_finfo().clone();
         self.set_directory_map(true).await?;
         if finfo.servicetype == FileService::GDrive {
-            self.gdrive.delete_permanently(&finfo.serviceid.0).await?;
+            self.gdrive
+                .delete_permanently(finfo.serviceid.as_str())
+                .await?;
             Ok(())
         } else {
             Err(format_err!("Wrong service type"))

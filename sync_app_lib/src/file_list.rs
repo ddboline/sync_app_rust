@@ -165,7 +165,7 @@ pub trait FileListTrait: Send + Sync + Debug {
     fn cleanup(&self) -> Result<(), Error> {
         if self.get_servicetype() == FileService::GDrive {
             let config = &self.get_config();
-            let token_str = format_sstr!("{}_start_page_token", self.get_servicesession().0);
+            let token_str = format_sstr!("{}_start_page_token", self.get_servicesession().as_str());
             let fname = config.gdrive_token_path.join(token_str);
             let ext = fname
                 .extension()
@@ -223,7 +223,7 @@ pub trait FileListTrait: Send + Sync + Debug {
 
         info!(
             "flist_cache_map {} {} {} {} {}",
-            self.get_servicesession().0,
+            self.get_servicesession().as_str(),
             self.get_servicetype(),
             flist_cache_map.len(),
             current_cache.len(),
@@ -271,7 +271,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
         let pool = self.get_pool();
-        FileInfoCache::get_all_cached(&session.0, stype.to_str(), pool)
+        FileInfoCache::get_all_cached(session.as_str(), stype.to_str(), pool)
             .await
             .map_err(Into::into)
     }
@@ -317,7 +317,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let stype = self.get_servicetype();
         let pool = self.get_pool();
 
-        DirectoryInfoCache::get_all(&session.0, stype.to_str(), pool)
+        DirectoryInfoCache::get_all(session.as_str(), stype.to_str(), pool)
             .await
             .map_err(Into::into)
     }
@@ -361,7 +361,7 @@ pub trait FileListTrait: Send + Sync + Debug {
                 parent_id: d.parentid.clone(),
                 is_root,
                 servicetype,
-                servicesession: self.get_servicesession().clone().0,
+                servicesession: self.get_servicesession().clone().into(),
             };
 
             cache.insert(pool).await?;
@@ -376,7 +376,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        FileInfoCache::delete_all(&session.0, stype.to_str(), pool)
+        FileInfoCache::delete_all(session.as_str(), stype.to_str(), pool)
             .await
             .map_err(Into::into)
     }
@@ -386,7 +386,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        FileInfoCache::delete_by_id(gdriveid, &session.0, stype.to_str(), pool)
+        FileInfoCache::delete_by_id(gdriveid, session.as_str(), stype.to_str(), pool)
             .await
             .map_err(Into::into)
     }
@@ -396,7 +396,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        DirectoryInfoCache::delete_all(&session.0, stype.to_str(), pool)
+        DirectoryInfoCache::delete_all(session.as_str(), stype.to_str(), pool)
             .await
             .map_err(Into::into)
     }

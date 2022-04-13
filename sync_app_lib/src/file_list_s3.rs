@@ -170,7 +170,7 @@ impl FileListTrait for FileListS3 {
                 remove_file(local_file.as_ref())?;
             }
             let md5sum = self.s3.download(bucket, key, &local_file).await?;
-            if md5sum != finfo1.md5sum.clone().map_or_else(|| "".into(), |u| u.0) {
+            if md5sum != finfo1.md5sum.as_ref().map_or_else(|| "", |u| u.as_str()) {
                 info!(
                     "Multipart upload? {} {}",
                     finfo1.urlname.as_str(),

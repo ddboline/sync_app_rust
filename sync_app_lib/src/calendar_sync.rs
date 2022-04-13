@@ -1,5 +1,4 @@
 use anyhow::Error;
-use chrono::{DateTime, Utc};
 use log::debug;
 use postgres_query::FromSqlRow;
 use serde::{Deserialize, Serialize};
@@ -9,7 +8,7 @@ use std::{
     fmt::{self, Debug},
 };
 
-use crate::{config::Config, sync_client::SyncClient};
+use crate::{config::Config, date_time_wrapper::DateTimeWrapper, sync_client::SyncClient};
 
 #[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarList {
@@ -20,7 +19,7 @@ pub struct CalendarList {
     pub gcal_location: Option<StackString>,
     pub gcal_timezone: Option<StackString>,
     pub sync: bool,
-    pub last_modified: DateTime<Utc>,
+    pub last_modified: DateTimeWrapper,
     pub edit: bool,
     pub display: bool,
 }
@@ -29,15 +28,15 @@ pub struct CalendarList {
 pub struct CalendarCache {
     pub gcal_id: StackString,
     pub event_id: StackString,
-    pub event_start_time: DateTime<Utc>,
-    pub event_end_time: DateTime<Utc>,
+    pub event_start_time: DateTimeWrapper,
+    pub event_end_time: DateTimeWrapper,
     pub event_url: Option<StackString>,
     pub event_name: StackString,
     pub event_description: Option<StackString>,
     pub event_location_name: Option<StackString>,
     pub event_location_lat: Option<f64>,
     pub event_location_lon: Option<f64>,
-    pub last_modified: DateTime<Utc>,
+    pub last_modified: DateTimeWrapper,
 }
 
 impl fmt::Display for CalendarCache {
