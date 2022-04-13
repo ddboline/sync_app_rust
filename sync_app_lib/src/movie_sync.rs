@@ -7,14 +7,14 @@ use reqwest::Url;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt::Debug};
-use time::{macros::format_description, Date, OffsetDateTime};
+use time::{macros::format_description, Date};
 
-use crate::{config::Config, sync_client::SyncClient};
+use crate::{config::Config, date_time_wrapper::DateTimeWrapper, sync_client::SyncClient};
 
 #[derive(Deserialize)]
 struct LastModifiedStruct {
     table: StackString,
-    last_modified: OffsetDateTime,
+    last_modified: DateTimeWrapper,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -65,9 +65,9 @@ pub struct PlexEvent {
     pub title: StackString,
     pub parent_title: Option<StackString>,
     pub grandparent_title: Option<StackString>,
-    pub added_at: OffsetDateTime,
-    pub updated_at: Option<OffsetDateTime>,
-    pub last_modified: OffsetDateTime,
+    pub added_at: DateTimeWrapper,
+    pub updated_at: Option<DateTimeWrapper>,
+    pub last_modified: DateTimeWrapper,
     pub metadata_type: Option<StackString>,
     pub section_type: Option<StackString>,
     pub section_title: Option<StackString>,
@@ -112,7 +112,7 @@ impl MovieSync {
                 let table = $table;
                 let js_prefix = $js_prefix;
                 debug!("{} {}", table, js_prefix);
-                let now = OffsetDateTime::now_utc();
+                let now = DateTimeWrapper::now();
                 let last_mod0 = last_modified0.get(table).unwrap_or_else(|| &now);
                 let last_mod1 = last_modified1.get(table).unwrap_or_else(|| &now);
                 let results = self
@@ -143,7 +143,7 @@ impl MovieSync {
     async fn get_last_modified(
         &self,
         url: &Url,
-    ) -> Result<HashMap<StackString, OffsetDateTime>, Error> {
+    ) -> Result<HashMap<StackString, DateTimeWrapper>, Error> {
         let last_modified: Vec<LastModifiedStruct> = self.client.get_remote(url).await?;
         let results = Self::transform_last_modified(last_modified);
         Ok(results)
@@ -151,7 +151,7 @@ impl MovieSync {
 
     fn transform_last_modified(
         data: Vec<LastModifiedStruct>,
-    ) -> HashMap<StackString, OffsetDateTime> {
+    ) -> HashMap<StackString, DateTimeWrapper> {
         data.into_iter()
             .map(|entry| (entry.table, entry.last_modified))
             .collect()
@@ -160,8 +160,8 @@ impl MovieSync {
     async fn run_single_sync<T>(
         &self,
         table: &str,
-        last_modified_remote: OffsetDateTime,
-        last_modified_local: OffsetDateTime,
+        last_modified_remote: DateTimeWrapper,
+        last_modified_local: DateTimeWrapper,
         js_prefix: &str,
     ) -> Result<Vec<StackString>, Error>
     where
@@ -182,8 +182,8 @@ impl MovieSync {
         &self,
         endpoint: &Url,
         table: &str,
-        last_modified_remote: OffsetDateTime,
-        last_modified_local: OffsetDateTime,
+        last_modified_remote: DateTimeWrapper,
+        last_modified_local: DateTimeWrapper,
         js_prefix: &str,
     ) -> Result<Vec<StackString>, Error>
     where

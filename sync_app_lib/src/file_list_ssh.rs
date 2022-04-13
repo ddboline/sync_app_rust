@@ -234,7 +234,7 @@ impl FileListTrait for FileListSSH {
                 return Err(format_err!(
                     "{} {} Expected {} doesn't match actual count {}",
                     self.get_servicetype(),
-                    self.get_servicesession().0,
+                    self.get_servicesession().as_str(),
                     expected_count,
                     count
                 ));

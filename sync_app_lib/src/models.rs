@@ -2,14 +2,13 @@ use anyhow::Error;
 use log::info;
 use postgres_query::{query, FromSqlRow};
 use smallvec::{smallvec, SmallVec};
-use time::OffsetDateTime;
 use url::Url;
 
 use gdrive_lib::directory_info::DirectoryInfo;
 
 use stack_string::StackString;
 
-use crate::pgpool::PgPool;
+use crate::{date_time_wrapper::DateTimeWrapper, pgpool::PgPool};
 
 #[derive(FromSqlRow, Clone, Debug)]
 pub struct FileInfoCache {
@@ -24,8 +23,8 @@ pub struct FileInfoCache {
     pub serviceid: StackString,
     pub servicetype: StackString,
     pub servicesession: StackString,
-    pub created_at: OffsetDateTime,
-    pub deleted_at: Option<OffsetDateTime>,
+    pub created_at: DateTimeWrapper,
+    pub deleted_at: Option<DateTimeWrapper>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -364,7 +363,7 @@ pub struct FileSyncCache {
     pub id: i32,
     pub src_url: StackString,
     pub dst_url: StackString,
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTimeWrapper,
 }
 
 impl FileSyncCache {
@@ -424,7 +423,7 @@ impl FileSyncCache {
             id: -1,
             src_url: src_url.as_str().into(),
             dst_url: dst_url.as_str().into(),
-            created_at: OffsetDateTime::now_utc(),
+            created_at: DateTimeWrapper::now(),
         };
         value.cache_sync_sync(pool).await?;
         Ok(())
@@ -436,7 +435,7 @@ pub struct FileSyncConfig {
     pub id: i32,
     pub src_url: StackString,
     pub dst_url: StackString,
-    pub last_run: OffsetDateTime,
+    pub last_run: DateTimeWrapper,
 }
 
 impl FileSyncConfig {

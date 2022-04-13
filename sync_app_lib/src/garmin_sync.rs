@@ -3,16 +3,16 @@ use core::hash::Hash;
 use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug};
-use time::{Date, OffsetDateTime};
+use time::Date;
 
 use stack_string::{format_sstr, StackString};
 
-use super::{config::Config, sync_client::SyncClient};
+use super::{config::Config, date_time_wrapper::DateTimeWrapper, sync_client::SyncClient};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 struct ScaleMeasurement {
     pub id: i32,
-    pub datetime: OffsetDateTime,
+    pub datetime: DateTimeWrapper,
     pub mass: f64,
     pub fat_pct: f64,
     pub water_pct: f64,
@@ -24,7 +24,7 @@ struct ScaleMeasurement {
 pub struct StravaActivity {
     pub id: i64,
     pub name: StackString,
-    pub start_date: OffsetDateTime,
+    pub start_date: DateTimeWrapper,
     pub distance: Option<f64>,
     pub moving_time: Option<i64>,
     pub elapsed_time: i64,
@@ -39,7 +39,7 @@ pub struct StravaActivity {
 pub struct FitbitActivityEntry {
     log_id: i64,
     log_type: StackString,
-    start_time: OffsetDateTime,
+    start_time: DateTimeWrapper,
     tcx_link: Option<StackString>,
     activity_type_id: Option<i64>,
     activity_name: Option<StackString>,
@@ -54,7 +54,7 @@ pub struct GarminConnectActivity {
     pub activity_id: i64,
     pub activity_name: Option<StackString>,
     pub description: Option<StackString>,
-    pub start_time_gmt: OffsetDateTime,
+    pub start_time_gmt: DateTimeWrapper,
     pub distance: Option<f64>,
     pub duration: f64,
     pub elapsed_duration: Option<f64>,
@@ -200,7 +200,7 @@ impl GarminSync {
         mut transform: T,
     ) -> Result<Vec<StackString>, Error>
     where
-        T: FnMut(Vec<ScaleMeasurement>) -> HashMap<OffsetDateTime, ScaleMeasurement>,
+        T: FnMut(Vec<ScaleMeasurement>) -> HashMap<DateTimeWrapper, ScaleMeasurement>,
     {
         let mut output = Vec::new();
         let from_url = self.client.get_url()?;
@@ -236,8 +236,8 @@ impl GarminSync {
     }
 
     fn combine_measurements<'a, T>(
-        measurements0: &'a HashMap<OffsetDateTime, T>,
-        measurements1: &'a HashMap<OffsetDateTime, T>,
+        measurements0: &'a HashMap<DateTimeWrapper, T>,
+        measurements1: &'a HashMap<DateTimeWrapper, T>,
     ) -> Vec<&'a T> {
         measurements0
             .iter()

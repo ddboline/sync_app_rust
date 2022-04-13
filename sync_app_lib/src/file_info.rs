@@ -1,23 +1,21 @@
 use anyhow::{format_err, Error};
-use derive_more::Into;
+use derive_more::{Deref, From, Into};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{Into, TryFrom, TryInto},
     fmt::Debug,
-    ops::Deref,
     str::FromStr,
     sync::Arc,
 };
-use time::OffsetDateTime;
 use url::Url;
 
 use stack_string::StackString;
 
 use crate::{
-    file_info_gcs::FileInfoGcs, file_info_gdrive::FileInfoGDrive, file_info_local::FileInfoLocal,
-    file_info_s3::FileInfoS3, file_info_ssh::FileInfoSSH, file_service::FileService, map_parse,
-    models::FileInfoCache, path_buf_wrapper::PathBufWrapper, pgpool::PgPool,
-    url_wrapper::UrlWrapper,
+    date_time_wrapper::DateTimeWrapper, file_info_gcs::FileInfoGcs,
+    file_info_gdrive::FileInfoGDrive, file_info_local::FileInfoLocal, file_info_s3::FileInfoS3,
+    file_info_ssh::FileInfoSSH, file_service::FileService, map_parse, models::FileInfoCache,
+    path_buf_wrapper::PathBufWrapper, pgpool::PgPool, url_wrapper::UrlWrapper,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -26,14 +24,8 @@ pub struct FileStat {
     pub st_size: u32,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Md5Sum(pub StackString);
-
-impl From<StackString> for Md5Sum {
-    fn from(s: StackString) -> Self {
-        Self(s)
-    }
-}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Into, From, Deref)]
+pub struct Md5Sum(StackString);
 
 impl FromStr for Md5Sum {
     type Err = Error;
@@ -47,14 +39,8 @@ impl FromStr for Md5Sum {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Sha1Sum(pub StackString);
-
-impl From<StackString> for Sha1Sum {
-    fn from(s: StackString) -> Self {
-        Self(s)
-    }
-}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Into)]
+pub struct Sha1Sum(StackString);
 
 impl FromStr for Sha1Sum {
     type Err = Error;
@@ -68,14 +54,8 @@ impl FromStr for Sha1Sum {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default, Into)]
-pub struct ServiceId(pub StackString);
-
-impl From<StackString> for ServiceId {
-    fn from(s: StackString) -> Self {
-        Self(s)
-    }
-}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default, Into, From, Deref)]
+pub struct ServiceId(StackString);
 
 impl From<String> for ServiceId {
     fn from(s: String) -> Self {
@@ -95,8 +75,8 @@ impl From<ServiceSession> for ServiceId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct ServiceSession(pub StackString);
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default, Into, Deref)]
+pub struct ServiceSession(StackString);
 
 impl FromStr for ServiceSession {
     type Err = Error;
@@ -139,15 +119,15 @@ impl Default for FileInfoInner {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Deref)]
 pub struct FileInfo(Arc<FileInfoInner>);
 
-impl Deref for FileInfo {
-    type Target = FileInfoInner;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
+// impl Deref for FileInfo {
+//     type Target = FileInfoInner;
+//     fn deref(&self) -> &Self::Target {
+//         &self.0
+//     }
+// }
 
 pub enum FileInfoKeyType {
     FileName,
@@ -308,7 +288,7 @@ impl From<&FileInfo> for FileInfoCache {
             serviceid: item.serviceid.0.clone(),
             servicetype: item.servicetype.to_str().into(),
             servicesession: item.servicesession.0.clone(),
-            created_at: OffsetDateTime::now_utc(),
+            created_at: DateTimeWrapper::now(),
             deleted_at: None,
         }
     }
