@@ -4,16 +4,15 @@ use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt, fmt::Debug, hash::Hash};
-use time::OffsetDateTime;
 
-use crate::{config::Config, sync_client::SyncClient};
+use crate::{config::Config, sync_client::SyncClient, date_time_wrapper::DateTimeWrapper};
 
 #[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct IntrusionLog {
     pub id: i32,
     pub service: StackString,
     pub server: StackString,
-    pub datetime: OffsetDateTime,
+    pub datetime: DateTimeWrapper,
     pub host: StackString,
     pub username: Option<StackString>,
 }
@@ -33,7 +32,7 @@ pub struct HostCountry {
     pub host: StackString,
     pub code: StackString,
     pub ipaddr: Option<StackString>,
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTimeWrapper,
 }
 
 pub struct SecuritySync {
