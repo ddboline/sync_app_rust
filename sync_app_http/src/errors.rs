@@ -14,6 +14,7 @@ use std::{
     borrow::Cow, convert::Infallible, fmt::Debug, io::Error as IoError, str::Utf8Error,
     string::FromUtf8Error,
 };
+use stdout_channel::StdoutChannelError;
 use thiserror::Error;
 use url::ParseError;
 
@@ -39,6 +40,8 @@ pub enum ServiceError {
     FromUtf8Error(#[from] FromUtf8Error),
     #[error("Utf8Error {0}")]
     Utf8Error(#[from] Utf8Error),
+    #[error("StdoutChannelError {0}")]
+    StdoutChannelError(#[from] StdoutChannelError),
 }
 
 impl Reject for ServiceError {}

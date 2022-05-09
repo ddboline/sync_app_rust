@@ -5,6 +5,7 @@ pub use authorized_users::{
 use log::debug;
 use reqwest::{header::HeaderValue, Client};
 use rweb::{filters::cookie::cookie, Filter, Rejection, Schema};
+use rweb_helper::UuidWrapper;
 use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{
@@ -25,7 +26,7 @@ pub struct LoggedUser {
     #[schema(description = "Email Address")]
     pub email: StackString,
     #[schema(description = "Session UUID")]
-    pub session: Uuid,
+    pub session: UuidWrapper,
     #[schema(description = "Secret Key")]
     pub secret_key: StackString,
 }
@@ -169,7 +170,7 @@ impl From<AuthorizedUser> for LoggedUser {
     fn from(user: AuthorizedUser) -> Self {
         Self {
             email: user.email,
-            session: user.session,
+            session: user.session.into(),
             secret_key: user.secret_key,
         }
     }
