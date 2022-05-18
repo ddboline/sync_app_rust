@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
+use log::error;
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fs::create_dir_all, path::Path};
 use stdout_channel::StdoutChannel;
@@ -204,58 +205,61 @@ impl FileListTrait for FileListSSH {
             .iter()
             .last()
             .ok_or_else(|| format_err!("No hostname"))?;
-        let command = format_sstr!(
-            r#"
-                sync-app-rust index -u file://{path} &&
-                sync-app-rust count -u file://{path} &&
-                sync-app-rust ser -u file://{path}
-            "#
-        );
+        let command = format_sstr!(r#"sync-app-rust index -u file://{path}"#);
+        self.ssh.run_command_stream_stdout(&command).await?;
+        let command = format_sstr!(r#"sync-app-rust count -u file://{path}"#);
         let output = self.ssh.run_command_stream_stdout(&command).await?;
         let output = output.trim();
-        let url_prefix = format_sstr!("ssh://{user_host}");
-        let baseurl = self.get_baseurl().clone();
-
         let expected_count: usize = output
-            .split('\n')
-            .next()
-            .unwrap_or("")
             .split('\t')
             .nth(1)
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
 
-        let count = output.split('\n').skip(1).count();
-
-        if count == 0 {
+        if expected_count == 0 {
             Ok(Vec::new())
         } else {
-            if count != expected_count {
-                return Err(format_err!(
+            for _ in 0..5 {
+                let command = format_sstr!(r#"sync-app-rust ser -u file://{path}"#);
+                let output = self.ssh.run_command_stream_stdout(&command).await?;
+                let output = output.trim();
+
+                let url_prefix = format_sstr!("ssh://{user_host}");
+                let baseurl = self.get_baseurl().clone();
+
+                let count = output.split('\n').count();
+
+                if count == expected_count {
+                    return output
+                        .split('\n')
+                        .map(|line| {
+                            let baseurl = baseurl.as_str();
+                            let mut finfo: FileInfoInner = serde_json::from_str(line)?;
+                            finfo.servicetype = FileService::SSH;
+                            finfo.urlname = finfo
+                                .urlname
+                                .as_str()
+                                .replace("file://", &url_prefix)
+                                .parse()?;
+                            finfo.serviceid = baseurl.into();
+                            finfo.servicesession = baseurl.parse()?;
+                            Ok(FileInfo::from_inner(finfo))
+                        })
+                        .collect();
+                }
+                error!(
                     "{} {} Expected {} doesn't match actual count {}",
                     self.get_servicetype(),
                     self.get_servicesession().as_str(),
                     expected_count,
                     count
-                ));
+                );
             }
-            output
-                .split('\n')
-                .skip(1)
-                .map(|line| {
-                    let baseurl = baseurl.as_str();
-                    let mut finfo: FileInfoInner = serde_json::from_str(line)?;
-                    finfo.servicetype = FileService::SSH;
-                    finfo.urlname = finfo
-                        .urlname
-                        .as_str()
-                        .replace("file://", &url_prefix)
-                        .parse()?;
-                    finfo.serviceid = baseurl.into();
-                    finfo.servicesession = baseurl.parse()?;
-                    Ok(FileInfo::from_inner(finfo))
-                })
-                .collect()
+            Err(format_err!(
+                "{} {} Timed out",
+                self.get_servicetype(),
+                self.get_servicesession().as_str()
+            ))
         }
     }
 
