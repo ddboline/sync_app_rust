@@ -1,6 +1,5 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
-use log::error;
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fs::create_dir_all, path::Path};
 use stdout_channel::StdoutChannel;
@@ -219,47 +218,53 @@ impl FileListTrait for FileListSSH {
         if expected_count == 0 {
             Ok(Vec::new())
         } else {
-            for _ in 0..5 {
-                let command = format_sstr!(r#"sync-app-rust ser -u file://{path}"#);
+            let mut offset = 0;
+            let limit = 1000;
+
+            let mut items = Vec::new();
+
+            while items.len() < expected_count {
+                let command = format_sstr!(
+                    r#"sync-app-rust ser -u file://{path} --offset {offset} --limit {limit}"#
+                );
                 let output = self.ssh.run_command_stream_stdout(&command).await?;
                 let output = output.trim();
 
                 let url_prefix = format_sstr!("ssh://{user_host}");
                 let baseurl = self.get_baseurl().clone();
 
-                let count = output.split('\n').count();
+                let result: Result<Vec<_>, Error> = output
+                    .split('\n')
+                    .map(|line| {
+                        let baseurl = baseurl.as_str();
+                        let mut finfo: FileInfoInner = serde_json::from_str(line)?;
+                        finfo.servicetype = FileService::SSH;
+                        finfo.urlname = finfo
+                            .urlname
+                            .as_str()
+                            .replace("file://", &url_prefix)
+                            .parse()?;
+                        finfo.serviceid = baseurl.into();
+                        finfo.servicesession = baseurl.parse()?;
+                        Ok(FileInfo::from_inner(finfo))
+                    })
+                    .collect();
+                let result = result?;
+                items.extend_from_slice(&result);
+                offset += result.len();
+            }
 
-                if count == expected_count {
-                    return output
-                        .split('\n')
-                        .map(|line| {
-                            let baseurl = baseurl.as_str();
-                            let mut finfo: FileInfoInner = serde_json::from_str(line)?;
-                            finfo.servicetype = FileService::SSH;
-                            finfo.urlname = finfo
-                                .urlname
-                                .as_str()
-                                .replace("file://", &url_prefix)
-                                .parse()?;
-                            finfo.serviceid = baseurl.into();
-                            finfo.servicesession = baseurl.parse()?;
-                            Ok(FileInfo::from_inner(finfo))
-                        })
-                        .collect();
-                }
-                error!(
+            if items.len() != expected_count {
+                Err(format_err!(
                     "{} {} Expected {} doesn't match actual count {}",
                     self.get_servicetype(),
                     self.get_servicesession().as_str(),
                     expected_count,
-                    count
-                );
+                    items.len()
+                ))
+            } else {
+                Ok(items)
             }
-            Err(format_err!(
-                "{} {} Timed out",
-                self.get_servicetype(),
-                self.get_servicesession().as_str()
-            ))
         }
     }
 
