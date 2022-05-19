@@ -38,6 +38,10 @@ pub struct SyncOpts {
     pub action: FileSyncAction,
     #[structopt(short = "u", long = "urls", parse(try_from_str))]
     pub urls: Vec<Url>,
+    #[structopt(short = "o", long = "offset")]
+    pub offset: Option<usize>,
+    #[structopt(short = "l", long = "limit")]
+    pub limit: Option<usize>,
 }
 
 impl Default for SyncOpts {
@@ -45,6 +49,8 @@ impl Default for SyncOpts {
         Self {
             action: FileSyncAction::ShowCache,
             urls: Vec::new(),
+            offset: None,
+            limit: None,
         }
     }
 }
@@ -55,6 +61,7 @@ impl SyncOpts {
         Self {
             action,
             urls: urls.into(),
+            ..Self::default()
         }
     }
 
@@ -265,9 +272,16 @@ impl SyncOpts {
                         let stdout = stdout.clone();
                         let mut flist = FileList::from_url(url, config, &pool).await?;
                         flist.with_list(flist.fill_file_list().await?);
-                        let results: Result<Vec<_>, Error> = flist
-                            .get_filemap()
+                        let filemap = flist.get_filemap();
+
+                        let offset = self.offset.unwrap_or(0);
+                        let limit = self.limit.unwrap_or_else(|| filemap.len());
+
+                        let results: Result<Vec<_>, Error> = filemap
                             .values()
+                            .sorted_by_key(|finfo| finfo.filepath.as_path())
+                            .skip(offset)
+                            .take(limit)
                             .map(|finfo| {
                                 let line = serde_json::to_string(finfo.inner())?;
                                 stdout.send(line);
