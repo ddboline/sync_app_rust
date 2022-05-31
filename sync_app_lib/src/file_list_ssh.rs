@@ -223,7 +223,11 @@ impl FileListTrait for FileListSSH {
 
             let mut items = Vec::new();
 
-            while items.len() < expected_count {
+            while items.len() != expected_count {
+                if items.len() > expected_count {
+                    let observed = items.len();
+                    return Err(format_err!("inconsistency {observed} {expected_count}"));
+                }
                 let command = format_sstr!(
                     r#"sync-app-rust ser -u file://{path} --offset {offset} --limit {limit}"#
                 );
