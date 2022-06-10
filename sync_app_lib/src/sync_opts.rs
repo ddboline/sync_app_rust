@@ -275,7 +275,7 @@ impl SyncOpts {
                         let filemap = flist.get_filemap();
 
                         let offset = self.offset.unwrap_or(0);
-                        let limit = self.limit.unwrap_or_else(|| filemap.len());
+                        let limit = self.limit.unwrap_or(filemap.len());
 
                         let results: Result<Vec<_>, Error> = filemap
                             .values()
