@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_rust"
-version = "0.9.6"
+version = "0.9.7"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -18,7 +18,7 @@ env_logger = "0.9"
 sync_app_lib = {path = "sync_app_lib"}
 sync_app_http = {path = "sync_app_http"}
 gdrive_lib = {path="gdrive_lib"}
-tokio = {version="1.17", features=["full"]}
+tokio = {version="1.19", features=["full"]}
 anyhow = "1.0"
 dirs = "4.0"
 walkdir = "2.3"
