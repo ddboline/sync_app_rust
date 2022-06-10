@@ -258,7 +258,9 @@ impl FileListTrait for FileListSSH {
                 offset += result.len();
             }
 
-            if items.len() != expected_count {
+            if items.len() == expected_count {
+                Ok(items)
+            } else {
                 Err(format_err!(
                     "{} {} Expected {} doesn't match actual count {}",
                     self.get_servicetype(),
@@ -266,8 +268,6 @@ impl FileListTrait for FileListSSH {
                     expected_count,
                     items.len()
                 ))
-            } else {
-                Ok(items)
             }
         }
     }
