@@ -216,8 +216,10 @@ impl FileListTrait for FileListSSH {
             .unwrap_or(0);
 
         if expected_count == 0 {
+            println!("path empty {path}");
             Ok(Vec::new())
         } else {
+            println!("expected_count {expected_count}");
             let mut offset = 0;
             let limit = 1000;
 
@@ -229,7 +231,7 @@ impl FileListTrait for FileListSSH {
                     return Err(format_err!("inconsistency {observed} {expected_count}"));
                 }
                 let command = format_sstr!(
-                    r#"sync-app-rust ser -u file://{path} --offset {offset} --limit {limit}"#
+                    r#"sync-app-rust ser -u file://{path} --offset {offset} --limit {limit} --expected {expected_count}"#
                 );
                 let output = self.ssh.run_command_stream_stdout(&command).await?;
                 let output = output.trim();
@@ -255,6 +257,12 @@ impl FileListTrait for FileListSSH {
                     .collect();
                 let result = result?;
                 items.extend_from_slice(&result);
+                if result.is_empty() {
+                    let observed = items.len();
+                    return Err(format_err!(
+                        "no results returned {observed} {expected_count}"
+                    ));
+                }
                 offset += result.len();
             }
 

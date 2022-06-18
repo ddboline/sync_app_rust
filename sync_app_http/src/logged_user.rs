@@ -3,7 +3,7 @@ pub use authorized_users::{
     KEY_LENGTH, SECRET_KEY, TRIGGER_DB_UPDATE,
 };
 use log::debug;
-use reqwest::{header::HeaderValue, Client};
+use reqwest::Client;
 use rweb::{filters::cookie::cookie, Filter, Rejection, Schema};
 use rweb_helper::UuidWrapper;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,7 @@ use std::{
 };
 use time::{Duration, OffsetDateTime};
 use tokio::task::spawn;
+use url::Url;
 use uuid::Uuid;
 
 use sync_app_lib::{config::Config, models::AuthorizedUsers, pgpool::PgPool};
@@ -57,20 +58,15 @@ impl LoggedUser {
         config: &Config,
         session_key: &str,
     ) -> Result<Option<SyncSession>, anyhow::Error> {
-        let domain = &config.domain;
-        let url = format_sstr!("https://{domain}/api/session/{session_key}");
-        let session_str = StackString::from_display(self.session);
-        let value = HeaderValue::from_str(&session_str)?;
-        let key = HeaderValue::from_str(&self.secret_key)?;
-        let session: Option<SyncSession> = client
-            .get(url.as_str())
-            .header("session", value)
-            .header("secret-key", key)
-            .send()
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
+        let base_url: Url = format_sstr!("https://{}", config.domain).parse()?;
+        let session: Option<SyncSession> = AuthorizedUser::get_session_data(
+            &base_url,
+            self.session.into(),
+            &self.secret_key,
+            client,
+            session_key,
+        )
+        .await?;
         debug!("Got session {:?}", session);
         if let Some(session) = session {
             if session.created_at > (OffsetDateTime::now_utc() - Duration::minutes(10)) {
@@ -87,19 +83,16 @@ impl LoggedUser {
         session_key: &str,
         session_value: SyncSession,
     ) -> Result<(), anyhow::Error> {
-        let domain = &config.domain;
-        let url = format_sstr!("https://{domain}/api/session/{session_key}");
-        let session_str = StackString::from_display(self.session);
-        let value = HeaderValue::from_str(&session_str)?;
-        let key = HeaderValue::from_str(&self.secret_key)?;
-        client
-            .post(url.as_str())
-            .header("session", value)
-            .header("secret-key", key)
-            .json(&session_value)
-            .send()
-            .await?
-            .error_for_status()?;
+        let base_url: Url = format_sstr!("https://{}", config.domain).parse()?;
+        AuthorizedUser::set_session_data(
+            &base_url,
+            self.session.into(),
+            &self.secret_key,
+            client,
+            session_key,
+            &session_value,
+        )
+        .await?;
         Ok(())
     }
 
@@ -111,18 +104,15 @@ impl LoggedUser {
         config: &Config,
         session_key: &str,
     ) -> Result<(), anyhow::Error> {
-        let domain = &config.domain;
-        let url = format_sstr!("https://{domain}/api/session/{session_key}");
-        let session_str = StackString::from_display(self.session);
-        let value = HeaderValue::from_str(&session_str)?;
-        let key = HeaderValue::from_str(&self.secret_key)?;
-        client
-            .delete(url.as_str())
-            .header("session", value)
-            .header("secret-key", key)
-            .send()
-            .await?
-            .error_for_status()?;
+        let base_url: Url = format_sstr!("https://{}", config.domain).parse()?;
+        AuthorizedUser::rm_session_data(
+            &base_url,
+            self.session.into(),
+            &self.secret_key,
+            client,
+            session_key,
+        )
+        .await?;
         Ok(())
     }
 

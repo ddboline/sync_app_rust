@@ -42,6 +42,8 @@ pub struct SyncOpts {
     pub offset: Option<usize>,
     #[structopt(short = "l", long = "limit")]
     pub limit: Option<usize>,
+    #[structopt(short = "e", long = "expected")]
+    pub expected: Vec<usize>,
 }
 
 impl Default for SyncOpts {
@@ -51,6 +53,7 @@ impl Default for SyncOpts {
             urls: Vec::new(),
             offset: None,
             limit: None,
+            expected: Vec::new(),
         }
     }
 }
@@ -267,7 +270,7 @@ impl SyncOpts {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
-                    let futures = self.urls.iter().map(|url| async move {
+                    let futures = self.urls.iter().enumerate().map(|(idx, url)| async move {
                         let pool = pool.clone();
                         let stdout = stdout.clone();
                         let mut flist = FileList::from_url(url, config, &pool).await?;
@@ -276,6 +279,11 @@ impl SyncOpts {
 
                         let offset = self.offset.unwrap_or(0);
                         let limit = self.limit.unwrap_or(filemap.len());
+                        if let Some(expected) = self.expected.get(idx) {
+                            if *expected != filemap.len() {
+                                return Err(format_err!("expected {expected} {}", filemap.len()));
+                            }
+                        }
 
                         let results: Result<Vec<_>, Error> = filemap
                             .values()
