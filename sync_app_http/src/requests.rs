@@ -19,7 +19,7 @@ pub struct SyncRequest {
 impl SyncRequest {
     /// # Errors
     /// Return error if db query fails
-    pub async fn handle(
+    pub async fn process(
         &self,
         pool: &PgPool,
         config: &Config,
@@ -38,18 +38,6 @@ impl SyncRequest {
         }
         output.reverse();
         Ok(output)
-    }
-}
-
-pub struct ListSyncCacheRequest {}
-
-impl ListSyncCacheRequest {
-    /// # Errors
-    /// Return error if db query fails
-    pub async fn handle(&self, pool: &PgPool) -> Result<Vec<FileSyncCache>, Error> {
-        FileSyncCache::get_cache_list(pool)
-            .await
-            .map_err(Into::into)
     }
 }
 
@@ -123,7 +111,7 @@ pub struct SyncRemoveRequest {
 impl SyncRemoveRequest {
     /// # Errors
     /// Return error if db query fails
-    pub async fn handle(
+    pub async fn process(
         &self,
         locks: &AccessLocks,
         config: &Config,
@@ -154,7 +142,7 @@ pub struct SyncEntryProcessRequest {
 impl SyncEntryProcessRequest {
     /// # Errors
     /// Return error if db query fails
-    pub async fn handle(
+    pub async fn process(
         &self,
         locks: &AccessLocks,
         pool: &PgPool,

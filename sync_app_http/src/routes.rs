@@ -5,16 +5,13 @@ use rweb_helper::{
 };
 use stack_string::{format_sstr, StackString};
 
-use sync_app_lib::file_sync::FileSyncAction;
+use sync_app_lib::{file_sync::FileSyncAction, models::FileSyncCache};
 
 use super::{
     app::AppState,
     errors::ServiceError as Error,
     logged_user::{LoggedUser, SyncKey},
-    requests::{
-        ListSyncCacheRequest, SyncEntryDeleteRequest, SyncEntryProcessRequest, SyncRemoveRequest,
-        SyncRequest,
-    },
+    requests::{SyncEntryDeleteRequest, SyncEntryProcessRequest, SyncRemoveRequest, SyncRequest},
 };
 
 pub type WarpResult<T> = Result<T, Rejection>;
@@ -29,9 +26,9 @@ pub async fn sync_frontpage(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<IndexResponse> {
-    let body = ListSyncCacheRequest {}
-        .handle(&data.db)
-        .await?
+    let body = FileSyncCache::get_cache_list(&data.db)
+        .await
+        .map_err(Into::<Error>::into)?
         .into_iter()
         .map(|v| {
             format_sstr!(
@@ -63,7 +60,7 @@ pub async fn sync_all(
     let req = SyncRequest {
         action: FileSyncAction::Sync,
     };
-    let result = req.handle(&data.db, &data.config, &data.locks).await?;
+    let result = req.process(&data.db, &data.config, &data.locks).await?;
     Ok(HtmlBase::new(result.join("\n")).into())
 }
 
@@ -79,7 +76,7 @@ pub async fn proc_all(
     let req = SyncRequest {
         action: FileSyncAction::Process,
     };
-    let lines = req.handle(&data.db, &data.config, &data.locks).await?;
+    let lines = req.process(&data.db, &data.config, &data.locks).await?;
     Ok(HtmlBase::new(lines.join("\n")).into())
 }
 
@@ -92,9 +89,9 @@ pub async fn list_sync_cache(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<ListSyncCacheResponse> {
-    let body = ListSyncCacheRequest {}
-        .handle(&data.db)
-        .await?
+    let body = FileSyncCache::get_cache_list(&data.db)
+        .await
+        .map_err(Into::<Error>::into)?
         .into_iter()
         .map(|v| format_sstr!("{} {}", v.src_url, v.dst_url))
         .join("\n");
@@ -113,7 +110,7 @@ pub async fn process_cache_entry(
 ) -> WarpResult<ProcessEntryResponse> {
     query
         .into_inner()
-        .handle(&data.locks, &data.db, &data.config)
+        .process(&data.locks, &data.db, &data.config)
         .await?;
     Ok(HtmlBase::new("Finished").into())
 }
@@ -128,7 +125,10 @@ pub async fn delete_cache_entry(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<DeleteEntryResponse> {
-    query.into_inner().handle(&data.db).await?;
+    let query = query.into_inner();
+    FileSyncCache::delete_by_id(&data.db, query.id)
+        .await
+        .map_err(Into::<Error>::into)?;
     Ok(HtmlBase::new("Finished").into())
 }
 
@@ -189,7 +189,7 @@ pub async fn remove(
 ) -> WarpResult<SyncRemoveResponse> {
     let lines = query
         .into_inner()
-        .handle(&data.locks, &data.config, &data.db)
+        .process(&data.locks, &data.config, &data.db)
         .await?;
     Ok(HtmlBase::new(lines.join("\n")).into())
 }
