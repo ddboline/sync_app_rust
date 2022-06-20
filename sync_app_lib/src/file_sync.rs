@@ -121,6 +121,15 @@ impl FileSync {
         flist1: &dyn FileListTrait,
         pool: &PgPool,
     ) -> Result<(), Error> {
+        if flist0.get_filemap().len() != flist1.get_filemap().len() {
+            println!(
+                "f0 {} {} f1 {} {}",
+                flist0.get_baseurl(),
+                flist0.get_filemap().len(),
+                flist1.get_baseurl(),
+                flist1.get_filemap().len()
+            );
+        }
         let list_a_not_b: Vec<_> = flist0
             .get_filemap()
             .iter()
