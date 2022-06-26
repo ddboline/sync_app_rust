@@ -4,9 +4,9 @@ use maplit::hashmap;
 use reqwest::{header::HeaderMap, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::format_sstr;
-use std::path::Path;
+use std::{path::Path, time::Duration};
 use time::OffsetDateTime;
-use tokio::task::spawn_blocking;
+use tokio::{task::spawn_blocking, time::timeout};
 
 use crate::{config::Config, local_session::LocalSession, reqwest_session::ReqwestSession};
 
@@ -48,6 +48,16 @@ impl SyncClient {
         }
 
         let from_url = self.get_url()?;
+
+        let url = from_url.join("api/status")?;
+        // If status endpoint doesn't return after 60 seconds we should exit.
+        timeout(
+            Duration::from_secs(60),
+            self.remote_session.get(&url, &HeaderMap::new()),
+        )
+        .await??
+        .error_for_status()?;
+
         let user = self
             .config
             .remote_username
