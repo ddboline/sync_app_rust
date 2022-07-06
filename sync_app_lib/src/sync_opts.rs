@@ -44,6 +44,8 @@ pub struct SyncOpts {
     pub limit: Option<usize>,
     #[structopt(short = "e", long = "expected")]
     pub expected: Vec<usize>,
+    #[structopt(short = "n", long = "name")]
+    pub name: Option<StackString>,
 }
 
 impl Default for SyncOpts {
@@ -54,6 +56,7 @@ impl Default for SyncOpts {
             offset: None,
             limit: None,
             expected: Vec::new(),
+            name: None,
         }
     }
 }
@@ -138,15 +141,23 @@ impl SyncOpts {
                 Ok(())
             }
             FileSyncAction::Sync => {
-                let urls = if self.urls.is_empty() {
+                let urls = if self.urls.is_empty() || self.name.is_some() {
                     let futures = FileSyncCache::get_cache_list(pool)
                         .await?
                         .into_iter()
                         .map(|v| async move { v.delete_cache_entry(pool).await });
                     let result: Result<Vec<_>, Error> = try_join_all(futures).await;
                     result?;
-
-                    FileSyncConfig::get_url_list(pool).await?
+                    if let Some(name) = self.name.as_ref() {
+                        let v = FileSyncConfig::get_by_name(pool, name)
+                            .await?
+                            .ok_or_else(|| format_err!("Name does not exist"))?;
+                        let u0: Url = v.src_url.parse()?;
+                        let u1: Url = v.dst_url.parse()?;
+                        vec![u0, u1]
+                    } else {
+                        FileSyncConfig::get_url_list(pool).await?
+                    }
                 } else {
                     self.urls.clone()
                 };
@@ -310,6 +321,7 @@ impl SyncOpts {
                         src_url: self.urls[0].as_str().into(),
                         dst_url: self.urls[1].as_str().into(),
                         last_run: DateTimeWrapper::now(),
+                        name: self.name.clone(),
                     };
                     conf.insert_config(pool).await?;
                     Ok(())
@@ -321,7 +333,14 @@ impl SyncOpts {
                 let clist = FileSyncConfig::get_config_list(pool)
                     .await?
                     .into_iter()
-                    .map(|v| format_sstr!("{} {}", v.src_url, v.dst_url))
+                    .map(|v| {
+                        format_sstr!(
+                            "{} {} {}",
+                            v.src_url,
+                            v.dst_url,
+                            v.name.unwrap_or("".into())
+                        )
+                    })
                     .join("\n");
                 stdout.send(clist);
                 Ok(())
