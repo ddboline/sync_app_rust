@@ -14,6 +14,7 @@ use crate::{app::AccessLocks, errors::ServiceError as Error};
 
 pub struct SyncRequest {
     pub action: FileSyncAction,
+    pub name: Option<StackString>,
 }
 
 impl SyncRequest {
@@ -28,6 +29,7 @@ impl SyncRequest {
         let mut sync = locks.sync.lock().await;
         sync.action = self.action;
         sync.urls = Vec::new();
+        sync.name = self.name.clone();
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
         sync.process_sync_opts(config, pool, &stdout).await?;

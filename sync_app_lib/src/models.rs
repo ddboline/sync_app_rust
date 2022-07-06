@@ -436,6 +436,7 @@ pub struct FileSyncConfig {
     pub src_url: StackString,
     pub dst_url: StackString,
     pub last_run: DateTimeWrapper,
+    pub name: Option<StackString>,
 }
 
 impl FileSyncConfig {
@@ -462,16 +463,26 @@ impl FileSyncConfig {
         Ok(proc_list?.into_iter().flatten().collect())
     }
 
+    pub async fn get_by_name(pool: &PgPool, name: &str) -> Result<Option<Self>, Error> {
+        let query = query!(
+            "SELECT * FROM file_sync_config WHERE name = $name",
+            name = name
+        );
+        let conn = pool.get().await?;
+        query.fetch_opt(&conn).await.map_err(Into::into)
+    }
+
     /// # Errors
     /// Return error if db query fails
     pub async fn insert_config(&self, pool: &PgPool) -> Result<(), Error> {
         let query = query!(
             r#"
-                INSERT INTO file_sync_config (src_url, dst_url, last_run)
-                VALUES ($src_url, $dst_url, now())
+                INSERT INTO file_sync_config (src_url, dst_url, last_run, name)
+                VALUES ($src_url, $dst_url, now(), $name)
             "#,
             src_url = self.src_url,
             dst_url = self.dst_url,
+            name = self.name,
         );
         let conn = pool.get().await?;
         query.execute(&conn).await?;

@@ -20,11 +20,24 @@ header {
 }
 
 /* Create two columns/boxes that floats next to each other */
+nav {
+    float: left;
+    width: 20%;
+    height: 300px; /* only for demonstration, should be removed */
+    background: #ffffff;
+    padding: 20px;
+}
+
+/* Style the list inside the menu */
+nav ul {
+    list-style-type: none;
+    padding: 0;
+}
 
 article {
     float: left;
     padding: 20px;
-    width: 90%;
+    width: 70%;
     background-color: #ffffff;
     height: 300px; /* only for demonstration, should be removed */
 }
@@ -46,7 +59,7 @@ footer {
 
 /* Responsive layout - makes the two columns/boxes stack on top of each other instead of next to each other, on small screens */
 @media (max-width: 600px) {
-    article {
+    nav, article {
     width: 100%;
     height: auto;
     }
@@ -66,8 +79,12 @@ footer {
     <button name="garminconnectoutput" id="garminconnectoutput"> &nbsp; </button>
 </h3>
 
+<nav id="navigation" start=0>
+{{{LIST_TEXT}}}
+</nav>
+
 <article id="main_article">
-DISPLAY_TEXT
+{{{DISPLAY_TEXT}}}
 </article>
 
 <script language="JavaScript" type="text/javascript">
@@ -116,6 +133,11 @@ DISPLAY_TEXT
     }
     function syncAll() {
         updateMainArticle('/sync/sync');
+        document.getElementById("garminconnectoutput").innerHTML = "syncing..."
+    }
+    function syncName(name) {
+        let url = '/sync/sync/' + name;
+        updateMainArticle(url);
         document.getElementById("garminconnectoutput").innerHTML = "syncing..."
     }
     function processAll() {

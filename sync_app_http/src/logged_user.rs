@@ -3,6 +3,7 @@ pub use authorized_users::{
     KEY_LENGTH, SECRET_KEY, TRIGGER_DB_UPDATE,
 };
 use log::debug;
+use maplit::hashset;
 use reqwest::Client;
 use rweb::{filters::cookie::cookie, Filter, Rejection, Schema};
 use rweb_helper::UuidWrapper;
@@ -20,7 +21,14 @@ use uuid::Uuid;
 
 use sync_app_lib::{config::Config, models::AuthorizedUsers, pgpool::PgPool};
 
-use crate::{app::AppState, errors::ServiceError as Error};
+use crate::{
+    app::AppState,
+    errors::ServiceError as Error,
+    requests::{
+        CalendarSyncRequest, GarminSyncRequest, MovieSyncRequest, SyncPodcastsRequest,
+        SyncSecurityRequest,
+    },
+};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Schema)]
 pub struct LoggedUser {
@@ -148,7 +156,7 @@ impl LoggedUser {
                 mesg.clone(),
                 spawn({
                     let data = data.clone();
-                    async move { mesg.process_mesg(&data).await.map_err(Into::into) }
+                    async move { mesg.process_mesg(data).await.map_err(Into::into) }
                 }),
             ));
         }
@@ -193,7 +201,7 @@ impl FromStr for LoggedUser {
 /// Return error if db query fails
 pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
     debug!("{:?}", *TRIGGER_DB_UPDATE);
-    let users: Vec<_> = if TRIGGER_DB_UPDATE.check() {
+    let users = if TRIGGER_DB_UPDATE.check() {
         AuthorizedUsers::get_authorized_users(pool)
             .await?
             .into_iter()
@@ -203,9 +211,9 @@ pub async fn fill_from_db(pool: &PgPool) -> Result<(), Error> {
         AUTHORIZED_USERS.get_users()
     };
     if let Ok("true") = var("TESTENV").as_ref().map(String::as_str) {
-        AUTHORIZED_USERS.merge_users(["user@test"]);
+        AUTHORIZED_USERS.update_users(hashset! {"user@test".into()});
     }
-    AUTHORIZED_USERS.merge_users(users);
+    AUTHORIZED_USERS.update_users(users);
     debug!("{:?}", *AUTHORIZED_USERS);
     Ok(())
 }
@@ -274,18 +282,13 @@ pub struct SyncMesg {
     pub key: SyncKey,
 }
 
-use crate::requests::{
-    CalendarSyncRequest, GarminSyncRequest, MovieSyncRequest, SyncPodcastsRequest,
-    SyncSecurityRequest,
-};
-
 impl SyncMesg {
     #[must_use]
     pub fn new(user: LoggedUser, key: SyncKey) -> Self {
         Self { user, key }
     }
 
-    async fn process_mesg(self, app: &AppState) -> Result<(), Error> {
+    async fn process_mesg(self, app: AppState) -> Result<(), Error> {
         debug!(
             "start {} for {} {}",
             self.key.to_str(),
