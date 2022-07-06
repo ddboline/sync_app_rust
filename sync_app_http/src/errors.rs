@@ -17,6 +17,7 @@ use std::{
 use stdout_channel::StdoutChannelError;
 use thiserror::Error;
 use url::ParseError;
+use handlebars::RenderError;
 
 use stack_string::StackString;
 
@@ -42,6 +43,8 @@ pub enum ServiceError {
     Utf8Error(#[from] Utf8Error),
     #[error("StdoutChannelError {0}")]
     StdoutChannelError(#[from] StdoutChannelError),
+    #[error("RenderError {0}")]
+    RenderError(#[from] RenderError),
 }
 
 impl Reject for ServiceError {}

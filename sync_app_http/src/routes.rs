@@ -4,8 +4,9 @@ use rweb_helper::{
     html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase, RwebResponse,
 };
 use stack_string::{format_sstr, StackString};
+use maplit::hashmap;
 
-use sync_app_lib::{file_sync::FileSyncAction, models::FileSyncCache};
+use sync_app_lib::{file_sync::FileSyncAction, models::{FileSyncCache, FileSyncConfig}};
 
 use super::{
     app::AppState,
@@ -26,6 +27,16 @@ pub async fn sync_frontpage(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<IndexResponse> {
+    let conf_list = FileSyncConfig::get_config_list(&data.db)
+        .await.map_err(Into::<Error>::into)?.into_iter().map(|v| {
+            if let Some(name) = v.name.as_ref() {
+                format_sstr!(r#"
+                    <input type="button" type="submit" name="sync-{name}" value="{name}" onclick="syncName( '{name}' )">
+                "#)
+            } else {
+                "".into()
+            }
+        }).join("<br>");
     let body = FileSyncCache::get_cache_list(&data.db)
         .await
         .map_err(Into::<Error>::into)?
@@ -44,7 +55,11 @@ pub async fn sync_frontpage(
             )
         })
         .join("<br>");
-    let body = include_str!("../../templates/index.html").replace("DISPLAY_TEXT", &body);
+    let params = hashmap! {
+        "LIST_TEXT" => conf_list,
+        "DISPLAY_TEXT" => body,
+    };
+    let body = data.hb.render("id", &params).map_err(Into::<Error>::into)?;
     Ok(HtmlBase::new(body).into())
 }
 
@@ -59,6 +74,21 @@ pub async fn sync_all(
 ) -> WarpResult<SyncResponse> {
     let req = SyncRequest {
         action: FileSyncAction::Sync,
+        name: None,
+    };
+    let result = req.process(&data.db, &data.config, &data.locks).await?;
+    Ok(HtmlBase::new(result.join("\n")).into())
+}
+
+#[get("/sync/sync/{name}")]
+pub async fn sync_name(
+    #[filter = "LoggedUser::filter"] _: LoggedUser,
+    #[data] data: AppState,
+    name: StackString,
+) -> WarpResult<SyncResponse> {
+    let req = SyncRequest {
+        action: FileSyncAction::Sync,
+        name: Some(name),
     };
     let result = req.process(&data.db, &data.config, &data.locks).await?;
     Ok(HtmlBase::new(result.join("\n")).into())
@@ -75,6 +105,7 @@ pub async fn proc_all(
 ) -> WarpResult<ProcAllResponse> {
     let req = SyncRequest {
         action: FileSyncAction::Process,
+        name: None,
     };
     let lines = req.process(&data.db, &data.config, &data.locks).await?;
     Ok(HtmlBase::new(lines.join("\n")).into())
