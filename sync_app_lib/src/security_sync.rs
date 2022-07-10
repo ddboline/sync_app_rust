@@ -82,6 +82,7 @@ impl SecuritySync {
         if let Ok(local_hosts) = local_hosts {
             output.extend(local_hosts.into_iter().map(|h| format_sstr!("{h:?}")));
         }
+        self.client.shutdown().await?;
         Ok(output)
     }
 
