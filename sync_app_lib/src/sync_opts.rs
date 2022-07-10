@@ -338,7 +338,7 @@ impl SyncOpts {
                             "{} {} {}",
                             v.src_url,
                             v.dst_url,
-                            v.name.unwrap_or("".into())
+                            v.name.unwrap_or_else(StackString::default)
                         )
                     })
                     .join("\n");

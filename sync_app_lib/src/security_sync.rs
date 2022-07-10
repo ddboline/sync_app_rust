@@ -50,7 +50,7 @@ impl SecuritySync {
     /// # Errors
     /// Return error if db query fails
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
-        self.client.init("security_log").await?;
+        self.client.init("security_log", "security-sync").await?;
 
         let mut output = Vec::new();
 

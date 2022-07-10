@@ -1,12 +1,15 @@
 use itertools::Itertools;
+use maplit::hashmap;
 use rweb::{get, Query, Rejection};
 use rweb_helper::{
     html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase, RwebResponse,
 };
 use stack_string::{format_sstr, StackString};
-use maplit::hashmap;
 
-use sync_app_lib::{file_sync::FileSyncAction, models::{FileSyncCache, FileSyncConfig}};
+use sync_app_lib::{
+    file_sync::FileSyncAction,
+    models::{FileSyncCache, FileSyncConfig},
+};
 
 use super::{
     app::AppState,

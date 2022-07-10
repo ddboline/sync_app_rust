@@ -1,4 +1,5 @@
 use anyhow::Error as AnyhowError;
+use handlebars::RenderError;
 use http::StatusCode;
 use indexmap::IndexMap;
 use log::error;
@@ -17,7 +18,6 @@ use std::{
 use stdout_channel::StdoutChannelError;
 use thiserror::Error;
 use url::ParseError;
-use handlebars::RenderError;
 
 use stack_string::StackString;
 

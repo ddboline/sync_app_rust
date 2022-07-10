@@ -95,7 +95,7 @@ impl MovieSync {
     /// # Errors
     /// Return error if db query fails
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
-        self.client.init("list").await?;
+        self.client.init("list", "movie-sync").await?;
         let mut output = Vec::new();
 
         let from_url = self.client.get_url()?;
@@ -229,7 +229,6 @@ mod tests {
     async fn test_movie_sync() {
         let config = Config::init_config().unwrap();
         let s = MovieSync::new(config);
-        s.client.init("list").await.unwrap();
         let result = s.run_sync().await.unwrap();
         debug!("{:?}", result);
         assert!(result.len() > 0);

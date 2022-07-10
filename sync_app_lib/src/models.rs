@@ -463,6 +463,8 @@ impl FileSyncConfig {
         Ok(proc_list?.into_iter().flatten().collect())
     }
 
+    /// # Errors
+    /// Return error if db query fails
     pub async fn get_by_name(pool: &PgPool, name: &str) -> Result<Option<Self>, Error> {
         let query = query!(
             "SELECT * FROM file_sync_config WHERE name = $name",

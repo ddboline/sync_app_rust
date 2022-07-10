@@ -1,5 +1,6 @@
 use anyhow::Error;
 use deadqueue::unlimited::Queue;
+use handlebars::Handlebars;
 use log::error;
 use reqwest::{Client, ClientBuilder};
 use rweb::{
@@ -11,7 +12,6 @@ use rweb::{
 use stack_string::format_sstr;
 use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{sync::Mutex, task::JoinHandle, time::interval};
-use handlebars::Handlebars;
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, garmin_sync::GarminSync, movie_sync::MovieSync,
@@ -22,8 +22,9 @@ use super::{
     errors::error_response,
     logged_user::{fill_from_db, get_secrets, SyncMesg, TRIGGER_DB_UPDATE},
     routes::{
-        delete_cache_entry, list_sync_cache, proc_all, process_cache_entry, remove, sync_all, sync_name,
-        sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_podcasts, sync_security, user,
+        delete_cache_entry, list_sync_cache, proc_all, process_cache_entry, remove, sync_all,
+        sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_name, sync_podcasts,
+        sync_security, user,
     },
 };
 
@@ -147,7 +148,8 @@ async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     let queue = Arc::new(Queue::new());
 
     let mut hb = Handlebars::new();
-    hb.register_template_string("id", include_str!("../../templates/index.html.hbr")).expect("Failed to parse template");
+    hb.register_template_string("id", include_str!("../../templates/index.html.hbr"))
+        .expect("Failed to parse template");
     let hb = Arc::new(hb);
 
     let app = AppState {

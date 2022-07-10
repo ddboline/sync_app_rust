@@ -1,12 +1,16 @@
 use anyhow::{format_err, Error};
 use log::debug;
 use maplit::hashmap;
-use reqwest::{header::HeaderMap, Url};
+use reqwest::{
+    header::{HeaderMap, HeaderValue},
+    Url,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use stack_string::format_sstr;
+use stack_string::{format_sstr, StackString};
 use std::{path::Path, time::Duration};
 use time::OffsetDateTime;
 use tokio::{task::spawn_blocking, time::timeout};
+use uuid::Uuid;
 
 use crate::{config::Config, local_session::LocalSession, reqwest_session::ReqwestSession};
 
@@ -41,10 +45,12 @@ impl SyncClient {
 
     /// # Errors
     /// Return error if api call fails
-    pub async fn init(&self, base_url: &str) -> Result<(), Error> {
+    pub async fn init(&self, base_url: &str, label: impl Into<Option<&str>>) -> Result<(), Error> {
         #[derive(Serialize, Deserialize)]
         struct LoggedUser {
             email: String,
+            session: Uuid,
+            secret_key: StackString,
         }
 
         let from_url = self.get_url()?;
@@ -90,6 +96,25 @@ impl SyncClient {
             .json()
             .await
             .map_err(|e| format_err!("Login problem {e:?}"))?;
+
+        if let Some(label) = label.into() {
+            let url = from_url.join(format_sstr!("api/session/{label}").as_str())?;
+            let session_str = format_sstr!("{}", user.session);
+            let value = HeaderValue::from_str(&session_str)?;
+            let secret_key = HeaderValue::from_str(&user.secret_key)?;
+            let data = hashmap! {
+                "label" => label,
+                "status" => "running"
+            };
+            let mut headermap = HeaderMap::new();
+            headermap.append("session", value);
+            headermap.append("secret-key", secret_key);
+            self.remote_session
+                .post(&url, &headermap, &data)
+                .await?
+                .error_for_status()?;
+        }
+
         debug!("user: {:?}", user.email);
         Ok(())
     }
@@ -110,7 +135,11 @@ impl SyncClient {
     /// # Errors
     /// Return error if api call fails
     pub async fn get_remote<T: DeserializeOwned>(&self, url: &Url) -> Result<Vec<T>, Error> {
-        let resp = self.remote_session.get(url, &HeaderMap::new()).await?;
+        let resp = self
+            .remote_session
+            .get(url, &HeaderMap::new())
+            .await?
+            .error_for_status()?;
         resp.json().await.map_err(Into::into)
     }
 

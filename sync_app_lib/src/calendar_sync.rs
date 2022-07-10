@@ -61,7 +61,7 @@ impl CalendarSync {
     /// Return error if sync fails
     #[allow(clippy::similar_names)]
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
-        self.client.init("calendar").await?;
+        self.client.init("calendar", "calendar-sync").await?;
         let mut output = Vec::new();
         let results = self
             .run_single_sync_calendar_list(
