@@ -334,12 +334,7 @@ impl SyncOpts {
                     .await?
                     .into_iter()
                     .map(|v| {
-                        format_sstr!(
-                            "{} {} {}",
-                            v.src_url,
-                            v.dst_url,
-                            v.name.unwrap_or_default()
-                        )
+                        format_sstr!("{} {} {}", v.src_url, v.dst_url, v.name.unwrap_or_default())
                     })
                     .join("\n");
                 stdout.send(clist);
