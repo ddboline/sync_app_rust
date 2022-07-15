@@ -1,5 +1,5 @@
 use anyhow::Error;
-use log::debug;
+use log::{debug, error};
 use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
@@ -54,7 +54,7 @@ impl SecuritySync {
 
         let mut output = Vec::new();
 
-        let results = self
+        let results = match self
             .run_single_sync(
                 "security_log/intrusion_log",
                 "updates",
@@ -70,12 +70,27 @@ impl SecuritySync {
                         .collect()
                 },
             )
-            .await?;
+            .await
+        {
+            Ok(x) => x,
+            Err(e) => {
+                error!("Recieved error, shutting down");
+                self.client.shutdown().await?;
+                return Err(e);
+            }
+        };
         output.extend_from_slice(&results);
 
         let url = self.client.get_url()?;
         let url = url.join("security_log/cleanup")?;
-        let remote_hosts: Vec<HostCountry> = self.client.get_remote(&url).await?;
+        let remote_hosts: Vec<HostCountry> = match self.client.get_remote(&url).await {
+            Ok(x) => x,
+            Err(e) => {
+                error!("Recieved error, shutting down");
+                self.client.shutdown().await?;
+                return Err(e);
+            }
+        };
         output.extend(remote_hosts.into_iter().map(|h| format_sstr!("{h:?}")));
         let local_hosts: Result<Vec<HostCountry>, _> =
             self.client.get_local_command(&["cleanup"]).await;
