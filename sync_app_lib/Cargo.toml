@@ -45,6 +45,7 @@ arc-swap = "1.2"
 env_logger = "0.9"
 bytes = "1.1"
 uuid = "1.1"
+notify = "4.0"
 refinery = {version="0.8", features=["tokio-postgres"]}
 deadpool = { version = "0.9", features=["serde", "rt_tokio_1"] }
 deadpool-postgres = { version = "0.10", features=["serde"] }

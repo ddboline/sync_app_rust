@@ -76,21 +76,21 @@ impl FileInfoTrait for FileInfoLocal {
     }
 }
 
-fn _get_md5sum(path: &Path) -> Result<String, Error> {
+pub fn _get_md5sum(path: &Path) -> Result<String, Error> {
     {
         File::open(path)?;
     }
     Ok(hash_file(path, Algorithm::MD5).to_lowercase())
 }
 
-fn _get_sha1sum(path: &Path) -> Result<String, Error> {
+pub fn _get_sha1sum(path: &Path) -> Result<String, Error> {
     {
         File::open(path)?;
     }
     Ok(hash_file(path, Algorithm::SHA1).to_lowercase())
 }
 
-fn _get_stat(p: &Path) -> Result<FileStat, Error> {
+pub fn _get_stat(p: &Path) -> Result<FileStat, Error> {
     let metadata = fs::metadata(p)?;
 
     let modified = metadata

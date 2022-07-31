@@ -2,6 +2,7 @@ use anyhow::Error;
 use log::info;
 use postgres_query::{query, FromSqlRow};
 use smallvec::{smallvec, SmallVec};
+use std::path::Path;
 use url::Url;
 
 use gdrive_lib::directory_info::DirectoryInfo;
@@ -242,6 +243,28 @@ impl FileInfoCache {
             servicesession = servicesession,
             servicetype = servicetype,
         );
+        let conn = pool.get().await?;
+        let n = query.execute(&conn).await?;
+        Ok(n as usize)
+    }
+
+    pub async fn get_local_by_path(path: &Path, pool: &PgPool) -> Result<Vec<Self>, Error> {
+        let path = path.canonicalize()?;
+        let path_str = path.as_os_str().to_string_lossy();
+        let query = query!(
+            r#"
+                SELECT * FROM file_info_cache
+                WHERE servicetype = 'local'
+                  AND filepath = $path_str
+            "#,
+            path_str = path_str,
+        );
+        let conn = pool.get().await?;
+        query.fetch(&conn).await.map_err(Into::into)
+    }
+
+    pub async fn delete(&self, pool: &PgPool) -> Result<usize, Error> {
+        let query = query!("DELETE FROM file_info_cache WHERE id = $id", id = self.id);
         let conn = pool.get().await?;
         let n = query.execute(&conn).await?;
         Ok(n as usize)

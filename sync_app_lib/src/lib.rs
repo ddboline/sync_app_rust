@@ -28,6 +28,7 @@ pub mod file_list_s3;
 pub mod file_list_ssh;
 pub mod file_service;
 pub mod file_sync;
+pub mod file_watch_local;
 pub mod garmin_sync;
 pub mod local_session;
 pub mod models;
