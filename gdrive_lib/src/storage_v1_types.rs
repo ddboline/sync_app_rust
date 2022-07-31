@@ -30,6 +30,7 @@
 //! THIS FILE HAS BEEN GENERATED -- SAVE ANY MODIFICATIONS BEFORE REPLACING.
 
 use async_google_apis_common::*;
+use std::fmt::Write;
 
 /// Scopes of this API. Convertible to their string representation with `AsRef`.
 #[derive(Debug, Clone, Copy)]
@@ -6051,7 +6052,7 @@ impl BucketAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6084,7 +6085,7 @@ impl BucketAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6120,7 +6121,7 @@ impl BucketAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6156,7 +6157,7 @@ impl BucketAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6193,7 +6194,7 @@ impl BucketAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6231,7 +6232,7 @@ impl BucketAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6337,7 +6338,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6369,7 +6370,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6401,7 +6402,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6430,7 +6431,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6460,7 +6461,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6495,7 +6496,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6528,7 +6529,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6565,7 +6566,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6602,7 +6603,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6635,7 +6636,7 @@ impl BucketsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6738,7 +6739,7 @@ impl ChannelsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6850,7 +6851,7 @@ impl DefaultObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6887,7 +6888,7 @@ impl DefaultObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6923,7 +6924,7 @@ impl DefaultObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6959,7 +6960,7 @@ impl DefaultObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6996,7 +6997,7 @@ impl DefaultObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7034,7 +7035,7 @@ impl DefaultObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7144,7 +7145,7 @@ impl NotificationsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7180,7 +7181,7 @@ impl NotificationsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7216,7 +7217,7 @@ impl NotificationsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7249,7 +7250,7 @@ impl NotificationsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7358,7 +7359,7 @@ impl ObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7392,7 +7393,7 @@ impl ObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7429,7 +7430,7 @@ impl ObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7466,7 +7467,7 @@ impl ObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7504,7 +7505,7 @@ impl ObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7543,7 +7544,7 @@ impl ObjectAccessControlsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7661,7 +7662,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7710,7 +7711,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7746,7 +7747,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7784,7 +7785,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7817,7 +7818,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7849,7 +7850,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7891,7 +7892,7 @@ impl ObjectsService {
         let mut url_params = format!("?uploadType=multipart{params}", params = params);
 
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7934,7 +7935,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?uploadType=resumable{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -7982,7 +7983,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8015,7 +8016,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8069,7 +8070,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8107,7 +8108,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8145,7 +8146,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8178,7 +8179,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8215,7 +8216,7 @@ impl ObjectsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8398,7 +8399,7 @@ impl ProjectsHmacKeysService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8434,7 +8435,7 @@ impl ProjectsHmacKeysService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8470,7 +8471,7 @@ impl ProjectsHmacKeysService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8505,7 +8506,7 @@ impl ProjectsHmacKeysService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8546,7 +8547,7 @@ impl ProjectsHmacKeysService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -8660,7 +8661,7 @@ impl ProjectsServiceAccountService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.storage_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);

@@ -30,6 +30,7 @@
 //! THIS FILE HAS BEEN GENERATED -- SAVE ANY MODIFICATIONS BEFORE REPLACING.
 
 use async_google_apis_common::*;
+use std::fmt::Write;
 
 /// Scopes of this API. Convertible to their string representation with `AsRef`.
 #[derive(Debug, Clone, Copy)]
@@ -4509,7 +4510,7 @@ impl AboutService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -4614,7 +4615,7 @@ impl ChangesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -4643,7 +4644,7 @@ impl ChangesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -4672,7 +4673,7 @@ impl ChangesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -4775,7 +4776,7 @@ impl ChannelsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -4881,7 +4882,7 @@ impl CommentsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -4918,7 +4919,7 @@ impl CommentsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -4954,7 +4955,7 @@ impl CommentsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -4986,7 +4987,7 @@ impl CommentsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5022,7 +5023,7 @@ impl CommentsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5125,7 +5126,7 @@ impl DrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5159,7 +5160,7 @@ impl DrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5191,7 +5192,7 @@ impl DrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5223,7 +5224,7 @@ impl DrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5252,7 +5253,7 @@ impl DrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5284,7 +5285,7 @@ impl DrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5316,7 +5317,7 @@ impl DrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5423,7 +5424,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5453,7 +5454,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5492,7 +5493,7 @@ impl FilesService {
         let mut url_params = format!("?uploadType=multipart{params}", params = params);
 
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5532,7 +5533,7 @@ impl FilesService {
 
         let mut url_params = format!("?uploadType=resumable{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5583,7 +5584,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5612,7 +5613,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5650,7 +5651,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5680,7 +5681,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5717,7 +5718,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5746,7 +5747,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5779,7 +5780,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5822,7 +5823,7 @@ impl FilesService {
         let mut url_params = format!("?uploadType=multipart{params}", params = params);
 
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5877,7 +5878,7 @@ impl FilesService {
 
         let mut url_params = format!("?uploadType=resumable{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -5932,7 +5933,7 @@ impl FilesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6042,7 +6043,7 @@ impl PermissionsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6079,7 +6080,7 @@ impl PermissionsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6115,7 +6116,7 @@ impl PermissionsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6147,7 +6148,7 @@ impl PermissionsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6187,7 +6188,7 @@ impl PermissionsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6297,7 +6298,7 @@ impl RepliesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6335,7 +6336,7 @@ impl RepliesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6372,7 +6373,7 @@ impl RepliesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6408,7 +6409,7 @@ impl RepliesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6445,7 +6446,7 @@ impl RepliesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6558,7 +6559,7 @@ impl RevisionsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6599,7 +6600,7 @@ impl RevisionsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6631,7 +6632,7 @@ impl RevisionsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6667,7 +6668,7 @@ impl RevisionsService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6774,7 +6775,7 @@ impl TeamdrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6810,7 +6811,7 @@ impl TeamdrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6845,7 +6846,7 @@ impl TeamdrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6874,7 +6875,7 @@ impl TeamdrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
@@ -6913,7 +6914,7 @@ impl TeamdrivesService {
 
         let mut url_params = format!("?{params}", params = params);
         if let Some(ref api_params) = &params.drive_params {
-            url_params.push_str(&format!("{}", api_params));
+            write!(url_params, "{}", api_params)?;
         }
 
         let full_uri = format!("{}{}", path, url_params);
