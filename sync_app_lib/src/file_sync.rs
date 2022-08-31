@@ -22,7 +22,7 @@ use crate::{
     pgpool::PgPool,
 };
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Eq)]
 pub enum FileSyncAction {
     Index,
     Sync,

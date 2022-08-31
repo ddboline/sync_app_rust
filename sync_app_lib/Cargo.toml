@@ -42,7 +42,6 @@ envy = "0.4"
 tempfile = "3.1"
 smallvec = "1.6"
 arc-swap = "1.2"
-env_logger = "0.9"
 bytes = "1.1"
 uuid = "1.1"
 refinery = {version="0.8", features=["tokio-postgres"]}
@@ -53,3 +52,6 @@ postgres-types = {version = "0.2", features = ["with-time-0_3", "with-uuid-1", "
 postgres_query = {git = "https://github.com/ddboline/rust-postgres-query", tag = "0.3.4", features=["deadpool"]}
 stdout-channel = "0.5"
 stack-string = { version="0.7", features=["postgres_types"] }
+
+[dev-dependencies]
+env_logger = "0.9"

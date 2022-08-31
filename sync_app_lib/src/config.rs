@@ -127,7 +127,7 @@ impl Deref for Config {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Into, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Into, PartialEq, Eq)]
 #[serde(into = "String", try_from = "String")]
 pub struct UrlWrapper(Url);
 
