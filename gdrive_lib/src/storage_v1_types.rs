@@ -32,6 +32,8 @@
 use async_google_apis_common::*;
 use std::fmt::Write;
 
+use crate::date_time_wrapper::DateTimeWrapper;
+
 /// Scopes of this API. Convertible to their string representation with `AsRef`.
 #[derive(Debug, Clone, Copy)]
 pub enum StorageScopes {
@@ -139,7 +141,7 @@ pub struct BucketIamConfigurationBucketPolicyOnly {
     /// true to false until the locked time, after which the field is immutable.
     #[serde(rename = "lockedTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub locked_time: Option<DateTime<Utc>>,
+    pub locked_time: Option<DateTimeWrapper>,
 }
 
 /// The bucket's uniform bucket-level access configuration.
@@ -156,7 +158,7 @@ pub struct BucketIamConfigurationUniformBucketLevelAccess {
     /// field is immutable.
     #[serde(rename = "lockedTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub locked_time: Option<DateTime<Utc>>,
+    pub locked_time: Option<DateTimeWrapper>,
 }
 
 /// The bucket's IAM configuration.
@@ -333,7 +335,7 @@ pub struct BucketRetentionPolicy {
     /// policy was enforced and effective. This value is in RFC 3339 format.
     #[serde(rename = "effectiveTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub effective_time: Option<DateTime<Utc>>,
+    pub effective_time: Option<DateTimeWrapper>,
     /// Once locked, an object retention policy cannot be modified.
     #[serde(rename = "isLocked")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -501,11 +503,11 @@ pub struct Bucket {
     /// DateTime: The creation time of the bucket in RFC 3339 format.
     #[serde(rename = "timeCreated")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub time_created: Option<DateTime<Utc>>,
+    pub time_created: Option<DateTimeWrapper>,
     /// DateTime: The modification time of the bucket in RFC 3339 format.
     #[serde(rename = "updated")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated: Option<DateTime<Utc>>,
+    pub updated: Option<DateTimeWrapper>,
     /// The bucket's versioning configuration.
     #[serde(rename = "versioning")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -813,12 +815,12 @@ pub struct HmacKeyMetadata {
     /// DateTime: The creation time of the HMAC key in RFC 3339 format.
     #[serde(rename = "timeCreated")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub time_created: Option<DateTime<Utc>>,
+    pub time_created: Option<DateTimeWrapper>,
     /// DateTime: The last modification time of the HMAC key metadata in RFC
     /// 3339 format.
     #[serde(rename = "updated")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated: Option<DateTime<Utc>>,
+    pub updated: Option<DateTimeWrapper>,
 }
 
 /// A list of hmacKeys.
@@ -977,7 +979,7 @@ pub struct Object {
     /// object.
     #[serde(rename = "customTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub custom_time: Option<DateTime<Utc>>,
+    pub custom_time: Option<DateTimeWrapper>,
     /// Metadata of customer-supplied encryption key, if the object is encrypted
     /// by such a key.
     #[serde(rename = "customerEncryption")]
@@ -1057,7 +1059,7 @@ pub struct Object {
     /// unset the temporary hold).
     #[serde(rename = "retentionExpirationTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub retention_expiration_time: Option<DateTime<Utc>>,
+    pub retention_expiration_time: Option<DateTimeWrapper>,
     /// The link to this object.
     #[serde(rename = "selfLink")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1082,22 +1084,22 @@ pub struct Object {
     /// DateTime: The creation time of the object in RFC 3339 format.
     #[serde(rename = "timeCreated")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub time_created: Option<DateTime<Utc>>,
+    pub time_created: Option<DateTimeWrapper>,
     /// DateTime: The deletion time of the object in RFC 3339 format. Will be
     /// returned if and only if this version of the object has been deleted.
     #[serde(rename = "timeDeleted")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub time_deleted: Option<DateTime<Utc>>,
+    pub time_deleted: Option<DateTimeWrapper>,
     /// DateTime: The time at which the object's storage class was last changed.
     /// When the object is initially created, it will be set to timeCreated.
     #[serde(rename = "timeStorageClassUpdated")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub time_storage_class_updated: Option<DateTime<Utc>>,
+    pub time_storage_class_updated: Option<DateTimeWrapper>,
     /// DateTime: The modification time of the object metadata in RFC 3339
     /// format.
     #[serde(rename = "updated")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated: Option<DateTime<Utc>>,
+    pub updated: Option<DateTimeWrapper>,
 }
 
 /// The project team associated with the entity, if any.

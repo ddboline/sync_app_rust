@@ -32,6 +32,8 @@
 use async_google_apis_common::*;
 use std::fmt::Write;
 
+use crate::date_time_wrapper::DateTimeWrapper;
+
 /// Scopes of this API. Convertible to their string representation with `AsRef`.
 #[derive(Debug, Clone, Copy)]
 pub enum DriveScopes {
@@ -244,7 +246,7 @@ pub struct Change {
     /// DateTime: The time of this change (RFC 3339 date-time).
     #[serde(rename = "time")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub time: Option<DateTime<Utc>>,
+    pub time: Option<DateTimeWrapper>,
     /// Deprecated - use changeType instead.
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -364,7 +366,7 @@ pub struct Comment {
     /// date-time).
     #[serde(rename = "createdTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub created_time: Option<DateTime<Utc>>,
+    pub created_time: Option<DateTimeWrapper>,
     /// Whether the comment has been deleted. A deleted comment has no content.
     #[serde(rename = "deleted")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -386,7 +388,7 @@ pub struct Comment {
     /// (RFC 3339 date-time).
     #[serde(rename = "modifiedTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub modified_time: Option<DateTime<Utc>>,
+    pub modified_time: Option<DateTimeWrapper>,
     /// The file content to which the comment refers, typically within the
     /// anchor region. For a text file, for example, this would be the text at
     /// the location of the comment.
@@ -446,7 +448,7 @@ pub struct ContentRestriction {
     /// RFC 3339 timestamp). Only populated if readOnly is true.
     #[serde(rename = "restrictionTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub restriction_time: Option<DateTime<Utc>>,
+    pub restriction_time: Option<DateTimeWrapper>,
     /// The type of the content restriction. Currently the only possible value
     /// is globalContentRestriction.
     #[serde(rename = "type")]
@@ -637,7 +639,7 @@ pub struct Drive {
     /// date-time).
     #[serde(rename = "createdTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub created_time: Option<DateTime<Utc>>,
+    pub created_time: Option<DateTimeWrapper>,
     /// Whether the shared drive is hidden from default view.
     #[serde(rename = "hidden")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1076,7 +1078,7 @@ pub struct File {
     /// DateTime: The time at which the file was created (RFC 3339 date-time).
     #[serde(rename = "createdTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub created_time: Option<DateTime<Utc>>,
+    pub created_time: Option<DateTimeWrapper>,
     /// A short description of the file.
     #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1177,13 +1179,13 @@ pub struct File {
     /// date-time).
     #[serde(rename = "modifiedByMeTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub modified_by_me_time: Option<DateTime<Utc>>,
+    pub modified_by_me_time: Option<DateTimeWrapper>,
     /// DateTime: The last time the file was modified by anyone (RFC 3339
     /// date-time). Note that setting modifiedTime will also update
     /// modifiedByMeTime for the user.
     #[serde(rename = "modifiedTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub modified_time: Option<DateTime<Utc>>,
+    pub modified_time: Option<DateTimeWrapper>,
     /// The name of the file. This is not necessarily unique within a folder.
     /// Note that for immutable items such as the top level folders of shared
     /// drives, My Drive root folder, and Application Data folder the name is
@@ -1246,7 +1248,7 @@ pub struct File {
     /// applicable (RFC 3339 date-time).
     #[serde(rename = "sharedWithMeTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub shared_with_me_time: Option<DateTime<Utc>>,
+    pub shared_with_me_time: Option<DateTimeWrapper>,
     #[serde(rename = "sharingUser")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sharing_user: Option<User>,
@@ -1298,7 +1300,7 @@ pub struct File {
     /// populated for items in shared drives.
     #[serde(rename = "trashedTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub trashed_time: Option<DateTime<Utc>>,
+    pub trashed_time: Option<DateTimeWrapper>,
     #[serde(rename = "trashingUser")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trashing_user: Option<User>,
@@ -1321,7 +1323,7 @@ pub struct File {
     /// date-time).
     #[serde(rename = "viewedByMeTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub viewed_by_me_time: Option<DateTime<Utc>>,
+    pub viewed_by_me_time: Option<DateTimeWrapper>,
     /// Deprecated - use copyRequiresWriterPermission instead.
     #[serde(rename = "viewersCanCopyContent")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1476,7 +1478,7 @@ pub struct Permission {
     /// future  - The time cannot be more than a year in the future
     #[serde(rename = "expirationTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub expiration_time: Option<DateTime<Utc>>,
+    pub expiration_time: Option<DateTimeWrapper>,
     /// The ID of this permission. This is a unique identifier for the grantee,
     /// and is published in User resources as permissionId. IDs should be
     /// treated as opaque values.
@@ -1565,7 +1567,7 @@ pub struct Reply {
     /// DateTime: The time at which the reply was created (RFC 3339 date-time).
     #[serde(rename = "createdTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub created_time: Option<DateTime<Utc>>,
+    pub created_time: Option<DateTimeWrapper>,
     /// Whether the reply has been deleted. A deleted reply has no content.
     #[serde(rename = "deleted")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1586,7 +1588,7 @@ pub struct Reply {
     /// DateTime: The last time the reply was modified (RFC 3339 date-time).
     #[serde(rename = "modifiedTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub modified_time: Option<DateTime<Utc>>,
+    pub modified_time: Option<DateTimeWrapper>,
 }
 
 /// A list of replies to a comment on a file.
@@ -1650,7 +1652,7 @@ pub struct Revision {
     /// DateTime: The last time the revision was modified (RFC 3339 date-time).
     #[serde(rename = "modifiedTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub modified_time: Option<DateTime<Utc>>,
+    pub modified_time: Option<DateTimeWrapper>,
     /// The original filename used to create this revision. This is only
     /// applicable to files with binary content in Drive.
     #[serde(rename = "originalFilename")]
@@ -1903,7 +1905,7 @@ pub struct TeamDrive {
     /// date-time).
     #[serde(rename = "createdTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub created_time: Option<DateTime<Utc>>,
+    pub created_time: Option<DateTimeWrapper>,
     /// The ID of this Team Drive which is also the ID of the top level folder
     /// of this Team Drive.
     #[serde(rename = "id")]

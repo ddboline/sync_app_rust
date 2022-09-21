@@ -10,10 +10,11 @@ use stdout_channel::StdoutChannel;
 use structopt::StructOpt;
 use url::Url;
 
+use gdrive_lib::date_time_wrapper::DateTimeWrapper;
+
 use crate::{
     calendar_sync::CalendarSync,
     config::Config,
-    date_time_wrapper::DateTimeWrapper,
     file_info::FileInfo,
     file_list::{group_urls, FileList},
     file_service::FileService,

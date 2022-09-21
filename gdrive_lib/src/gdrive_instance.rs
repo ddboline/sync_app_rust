@@ -898,7 +898,7 @@ impl GDriveInfo {
             .modified_time
             .as_ref()
             .ok_or_else(|| format_err!("No last modified"))?
-            .timestamp();
+            .unix_timestamp();
         let size: u32 = item.size.as_ref().and_then(|x| x.parse().ok()).unwrap_or(0);
         let serviceid = item.id.as_ref().ok_or_else(|| format_err!("No ID"))?.into();
         let servicesession = gdrive.session_name.parse()?;

@@ -2,13 +2,12 @@ use anyhow::Error;
 use log::info;
 use postgres_query::{query, FromSqlRow};
 use smallvec::{smallvec, SmallVec};
+use stack_string::StackString;
 use url::Url;
 
-use gdrive_lib::directory_info::DirectoryInfo;
+use gdrive_lib::{date_time_wrapper::DateTimeWrapper, directory_info::DirectoryInfo};
 
-use stack_string::StackString;
-
-use crate::{date_time_wrapper::DateTimeWrapper, pgpool::PgPool};
+use crate::pgpool::PgPool;
 
 #[derive(FromSqlRow, Clone, Debug)]
 pub struct FileInfoCache {

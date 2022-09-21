@@ -92,7 +92,7 @@ impl FileInfoGcs {
             .updated
             .as_ref()
             .ok_or_else(|| format_err!("No last modified"))?
-            .timestamp();
+            .unix_timestamp();
         let size = item.size.ok_or_else(|| format_err!("No file size"))?;
         let st_size = size.parse()?;
         let buf = format_sstr!("gs://{bucket}/{key}");
@@ -123,6 +123,7 @@ impl FileInfoGcs {
 #[cfg(test)]
 mod tests {
     use gdrive_lib::storage_v1_types::{Object, ObjectOwner};
+    use time::{macros::datetime, UtcOffset};
 
     use crate::{file_info::FileInfoTrait, file_info_gcs::FileInfoGcs};
 
@@ -135,7 +136,11 @@ mod tests {
         let test_object = Object {
             etag: Some(r#""6f90ebdaabef92a9f76be131037f593b""#.into()),
             name: Some("test_key".into()),
-            updated: "2019-05-01T00:00:00+00:00".parse().ok(),
+            updated: Some(
+                datetime!(2019-05-01 00:00:00)
+                    .assume_offset(UtcOffset::UTC)
+                    .into(),
+            ),
             owner: Some(test_owner),
             size: Some("100".into()),
             storage_class: Some("Standard".into()),

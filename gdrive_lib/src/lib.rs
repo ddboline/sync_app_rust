@@ -5,6 +5,7 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_possible_wrap)]
 
+pub mod date_time_wrapper;
 pub mod directory_info;
 pub mod drive_v3_types;
 pub mod gcs_instance;

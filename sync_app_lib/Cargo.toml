@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_lib"
-version = "0.9.16"
+version = "0.9.17"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -12,7 +12,7 @@ rusoto_core = {version = "0.48", default_features = false, features=["rustls"]}
 rusoto_s3 = {version = "0.48", default_features = false, features=["rustls"]}
 s3-ext = "0.5"
 sts_profile_auth = "0.7"
-url = "2.2"
+url = "2.3"
 dotenv = "0.15"
 walkdir = "2.3"
 rayon = "1.5"
@@ -34,7 +34,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 dirs = "4.0"
 derive_more = "0.99"
-tokio = {version="1.19", features=["full"]}
+tokio = {version="1.21", features=["full"]}
 async-trait = "0.1"
 futures = "0.3"
 itertools = "0.10"

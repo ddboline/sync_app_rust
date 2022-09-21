@@ -8,7 +8,9 @@ use std::{
     fmt::{self, Debug},
 };
 
-use crate::{config::Config, date_time_wrapper::DateTimeWrapper, sync_client::SyncClient};
+use gdrive_lib::date_time_wrapper::DateTimeWrapper;
+
+use crate::{config::Config, sync_client::SyncClient};
 
 #[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize)]
 pub struct CalendarList {

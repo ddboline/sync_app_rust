@@ -5,7 +5,9 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt, fmt::Debug, hash::Hash};
 
-use crate::{config::Config, date_time_wrapper::DateTimeWrapper, sync_client::SyncClient};
+use gdrive_lib::date_time_wrapper::DateTimeWrapper;
+
+use crate::{config::Config, sync_client::SyncClient};
 
 #[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct IntrusionLog {

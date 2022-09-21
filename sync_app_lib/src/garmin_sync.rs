@@ -2,12 +2,13 @@ use anyhow::Error;
 use core::hash::Hash;
 use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt::Debug};
 use time::Date;
 
-use stack_string::{format_sstr, StackString};
+use gdrive_lib::date_time_wrapper::DateTimeWrapper;
 
-use super::{config::Config, date_time_wrapper::DateTimeWrapper, sync_client::SyncClient};
+use super::{config::Config, sync_client::SyncClient};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 struct ScaleMeasurement {
