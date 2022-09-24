@@ -1,4 +1,5 @@
 use anyhow::{format_err, Error};
+use clap::Parser;
 use futures::future::try_join_all;
 use itertools::Itertools;
 use log::info;
@@ -7,7 +8,6 @@ use refinery::embed_migrations;
 use stack_string::{format_sstr, StackString};
 use std::sync::Arc;
 use stdout_channel::StdoutChannel;
-use structopt::StructOpt;
 use url::Url;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
@@ -28,24 +28,24 @@ use crate::{
 
 embed_migrations!("../migrations");
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub struct SyncOpts {
-    #[structopt(parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     /// Available commands are: "index", "sync", "proc(ess)", "copy" or "cp",
     /// "list" or "ls", "delete" or "rm", "move" or "mv", "ser" or
     /// "serialize", "add" or "add_config", "show", "show_cache"
     /// "sync_garmin", "sync_movie", "sync_calendar", "show_config",
     /// "sync_all", "run-migrations"
     pub action: FileSyncAction,
-    #[structopt(short = "u", long = "urls", parse(try_from_str))]
+    #[clap(short = 'u', long = "urls", parse(try_from_str))]
     pub urls: Vec<Url>,
-    #[structopt(short = "o", long = "offset")]
+    #[clap(short = 'o', long = "offset")]
     pub offset: Option<usize>,
-    #[structopt(short = "l", long = "limit")]
+    #[clap(short = 'l', long = "limit")]
     pub limit: Option<usize>,
-    #[structopt(short = "e", long = "expected")]
+    #[clap(short = 'e', long = "expected")]
     pub expected: Vec<usize>,
-    #[structopt(short = "n", long = "name")]
+    #[clap(short = 'n', long = "name")]
     pub name: Option<StackString>,
 }
 
