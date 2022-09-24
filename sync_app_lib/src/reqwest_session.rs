@@ -178,7 +178,7 @@ impl ReqwestSession {
 
     /// # Errors
     /// Return error if db query fails
-    pub async fn set_default_headers(&self, headers: HashMap<&str, &str>) -> Result<(), Error> {
+    pub fn set_default_headers(&self, headers: HashMap<&str, &str>) -> Result<(), Error> {
         let mut client = self.client.load().clone();
         for (k, v) in headers {
             let name: HeaderName = k.parse()?;
