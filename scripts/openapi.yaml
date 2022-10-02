@@ -1,236 +1,258 @@
----
 openapi: 3.0.1
 info:
   title: File Sync WebApp
   description: Web Frontend for File Sync Service
-  version: 0.8.12
+  version: 0.9.18
 paths:
   /sync/index.html:
     get:
       responses:
-        "200":
+        '200':
           description: Main Page
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/sync:
     get:
       responses:
-        "200":
+        '200':
           description: Sync
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
+          description: Internal Server Error
+  /sync/sync/{name}:
+    get:
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Sync
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '405':
+          description: Method not allowed
+        '500':
           description: Internal Server Error
   /sync/proc_all:
     get:
       responses:
-        "200":
+        '200':
           description: Process All
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/proc:
     get:
       parameters:
-        - name: id
-          in: query
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
       responses:
-        "200":
+        '200':
           description: Process Entry
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/remove:
     get:
       parameters:
-        - name: url
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: url
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Remove Sync Entry
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/list_sync_cache:
     get:
       responses:
-        "200":
+        '200':
           description: List Sync Cache
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/delete_cache_entry:
     get:
       parameters:
-        - name: id
-          in: query
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
       responses:
-        "200":
+        '200':
           description: Delete Cache Entry
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/sync_garmin:
     get:
       responses:
-        "200":
+        '200':
           description: Sync Garmin DB
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/sync_movie:
     get:
       responses:
-        "200":
+        '200':
           description: Sync Movie DB
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/sync_calendar:
     get:
       responses:
-        "200":
+        '200':
           description: Sync Calendar DB
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/sync_podcasts:
     get:
       responses:
-        "200":
+        '200':
           description: Sync Podcasts
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/sync_security:
     get:
       responses:
-        "200":
+        '200':
           description: Sync Security Logs
           content:
             text/plain:
               schema:
                 type: string
-        "400":
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
   /sync/user:
     get:
       responses:
-        "200":
+        '200':
           description: Logged in User
           content:
             application/json:
@@ -248,15 +270,15 @@ paths:
                     type: string
                 type: object
                 required:
-                  - email
-                  - session
-                  - secret_key
-        "400":
+                - email
+                - session
+                - secret_key
+        '400':
           description: Bad Request
-        "404":
+        '404':
           description: Not Found
-        "405":
+        '405':
           description: Method not allowed
-        "500":
+        '500':
           description: Internal Server Error
 components: {}
