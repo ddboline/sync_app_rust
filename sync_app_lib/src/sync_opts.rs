@@ -28,16 +28,24 @@ use crate::{
 
 embed_migrations!("../migrations");
 
+fn action_from_str(s: &str) -> Result<FileSyncAction, String> {
+    s.parse().map_err(|e| format!("{e}"))
+}
+
+fn url_from_str(s: &str) -> Result<Url, String> {
+    s.parse().map_err(|e| format!("{e}"))
+}
+
 #[derive(Parser, Debug)]
 pub struct SyncOpts {
-    #[clap(parse(try_from_str))]
+    #[clap(value_parser = action_from_str)]
     /// Available commands are: "index", "sync", "proc(ess)", "copy" or "cp",
     /// "list" or "ls", "delete" or "rm", "move" or "mv", "ser" or
     /// "serialize", "add" or "add_config", "show", "show_cache"
     /// "sync_garmin", "sync_movie", "sync_calendar", "show_config",
     /// "sync_all", "run-migrations"
     pub action: FileSyncAction,
-    #[clap(short = 'u', long = "urls", parse(try_from_str))]
+    #[clap(short = 'u', long = "urls", value_parser = url_from_str)]
     pub urls: Vec<Url>,
     #[clap(short = 'o', long = "offset")]
     pub offset: Option<usize>,
@@ -76,7 +84,7 @@ impl SyncOpts {
     /// Return error if db query fails
     pub async fn process_args() -> Result<StdoutChannel<StackString>, Error> {
         let stdout = StdoutChannel::new();
-        let opts = Self::from_args();
+        let opts = Self::parse();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
 
