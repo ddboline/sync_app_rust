@@ -82,6 +82,17 @@ pub struct PlexFilename {
     pub filename: StackString,
 }
 
+#[derive(FromSqlRow, Default, Debug, Serialize, Deserialize)]
+pub struct PlexMetadata {
+    pub metadata_key: StackString,
+    pub object_type: StackString,
+    pub title: StackString,
+    pub parent_key: Option<StackString>,
+    pub grandparent_key: Option<StackString>,
+    pub show: Option<StackString>,
+}
+
+
 pub struct MovieSync {
     client: SyncClient,
 }
@@ -128,6 +139,8 @@ impl MovieSync {
         sync_single_table!("plex_event", "events", PlexEvent);
         debug!("plex_filename");
         sync_single_table!("plex_filename", "filenames", PlexFilename);
+        debug!("plex_metadata");
+        sync_single_table!("plex_metadata", "entries", PlexMetadata);
         debug!("imdb_ratings");
         sync_single_table!("imdb_ratings", "shows", ImdbRatings);
         debug!("imdb_episodes");
