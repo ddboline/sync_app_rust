@@ -8,6 +8,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt::Debug};
 use time::{macros::format_description, Date};
+use uuid::Uuid;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
 
@@ -92,6 +93,29 @@ pub struct PlexMetadata {
     pub show: Option<StackString>,
 }
 
+#[derive(FromSqlRow, Debug, Serialize, Deserialize)]
+pub struct MusicCollection {
+    pub id: Uuid,
+    pub path: StackString,
+    pub artist: Option<StackString>,
+    pub album: Option<StackString>,
+    pub title: Option<StackString>,
+    pub last_modified: DateTimeWrapper,
+}
+
+impl Default for MusicCollection {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            path: StackString::new(),
+            artist: None,
+            album: None,
+            title: None,
+            last_modified: DateTimeWrapper::now(),
+        }
+    }
+}
+
 
 pub struct MovieSync {
     client: SyncClient,
@@ -149,6 +173,8 @@ impl MovieSync {
         sync_single_table!("movie_collection", "collection", MovieCollectionRow);
         debug!("movie_queue");
         sync_single_table!("movie_queue", "queue", MovieQueueRow);
+        debug!("music_collection");
+        sync_single_table!("music_collection", "entries", MusicCollection);
 
         self.client.shutdown().await?;
 
