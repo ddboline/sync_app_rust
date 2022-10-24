@@ -116,7 +116,6 @@ impl Default for MusicCollection {
     }
 }
 
-
 pub struct MovieSync {
     client: SyncClient,
 }

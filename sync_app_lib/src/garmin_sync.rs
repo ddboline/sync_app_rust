@@ -5,6 +5,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt::Debug};
 use time::Date;
+use uuid::Uuid;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
 
@@ -12,7 +13,7 @@ use super::{config::Config, sync_client::SyncClient};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 struct ScaleMeasurement {
-    pub id: i32,
+    pub id: Uuid,
     pub datetime: DateTimeWrapper,
     pub mass: f64,
     pub fat_pct: f64,
@@ -68,14 +69,14 @@ pub struct GarminConnectActivity {
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromSqlRow, PartialEq)]
 pub struct RaceResults {
-    pub id: i64,
+    pub id: Uuid,
     pub race_type: String,
     pub race_date: Option<Date>,
     pub race_name: Option<StackString>,
     pub race_distance: i32, // distance in meters
     pub race_time: f64,
     pub race_flag: bool,
-    pub race_summary_ids: Vec<Option<i32>>,
+    pub race_summary_ids: Vec<Option<Uuid>>,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, FromSqlRow)]
