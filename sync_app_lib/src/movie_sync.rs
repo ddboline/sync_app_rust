@@ -34,7 +34,7 @@ pub struct ImdbEpisodes {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ImdbRatings {
-    pub index: i32,
+    pub index: Uuid,
     pub show: StackString,
     pub title: Option<StackString>,
     pub link: StackString,
@@ -45,7 +45,7 @@ pub struct ImdbRatings {
 
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct MovieCollectionRow {
-    pub idx: i32,
+    pub idx: Uuid,
     pub path: StackString,
     pub show: StackString,
 }
@@ -53,7 +53,7 @@ pub struct MovieCollectionRow {
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct MovieQueueRow {
     pub idx: i32,
-    pub collection_idx: i32,
+    pub collection_idx: Uuid,
     pub path: StackString,
     pub show: StackString,
 }
