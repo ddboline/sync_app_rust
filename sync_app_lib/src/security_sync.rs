@@ -4,6 +4,7 @@ use postgres_query::FromSqlRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt, fmt::Debug, hash::Hash};
+use uuid::Uuid;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
 
@@ -11,7 +12,7 @@ use crate::{config::Config, sync_client::SyncClient};
 
 #[derive(FromSqlRow, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct IntrusionLog {
-    pub id: i32,
+    pub id: Uuid,
     pub service: StackString,
     pub server: StackString,
     pub datetime: DateTimeWrapper,
