@@ -4,6 +4,7 @@ use postgres_query::{query, FromSqlRow};
 use smallvec::{smallvec, SmallVec};
 use stack_string::StackString;
 use url::Url;
+use uuid::Uuid;
 
 use gdrive_lib::{date_time_wrapper::DateTimeWrapper, directory_info::DirectoryInfo};
 
@@ -11,7 +12,7 @@ use crate::pgpool::PgPool;
 
 #[derive(FromSqlRow, Clone, Debug)]
 pub struct FileInfoCache {
-    pub id: i32,
+    pub id: Uuid,
     pub filename: StackString,
     pub filepath: StackString,
     pub urlname: StackString,
@@ -249,7 +250,7 @@ impl FileInfoCache {
 
 #[derive(FromSqlRow, Clone)]
 pub struct DirectoryInfoCache {
-    pub id: i32,
+    pub id: Uuid,
     pub directory_id: StackString,
     pub directory_name: StackString,
     pub parent_id: Option<StackString>,
@@ -359,7 +360,7 @@ impl DirectoryInfoCache {
 
 #[derive(FromSqlRow, Clone, Debug)]
 pub struct FileSyncCache {
-    pub id: i32,
+    pub id: Uuid,
     pub src_url: StackString,
     pub dst_url: StackString,
     pub created_at: DateTimeWrapper,
@@ -376,7 +377,7 @@ impl FileSyncCache {
 
     /// # Errors
     /// Return error if db query fails
-    pub async fn get_by_id(pool: &PgPool, id: i32) -> Result<Option<Self>, Error> {
+    pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Self>, Error> {
         let query = query!("SELECT * FROM file_sync_cache WHERE id=$id", id = id);
         let conn = pool.get().await?;
         query.fetch_opt(&conn).await.map_err(Into::into)
@@ -384,7 +385,7 @@ impl FileSyncCache {
 
     /// # Errors
     /// Return error if db query fails
-    pub async fn delete_by_id(pool: &PgPool, id: i32) -> Result<(), Error> {
+    pub async fn delete_by_id(pool: &PgPool, id: Uuid) -> Result<(), Error> {
         let query = query!("DELETE FROM file_sync_cache WHERE id=$id", id = id);
         let conn = pool.get().await?;
         query.execute(&conn).await?;
@@ -419,7 +420,7 @@ impl FileSyncCache {
         let src_url: Url = src_url.parse()?;
         let dst_url: Url = dst_url.parse()?;
         let value = Self {
-            id: -1,
+            id: Uuid::new_v4(),
             src_url: src_url.as_str().into(),
             dst_url: dst_url.as_str().into(),
             created_at: DateTimeWrapper::now(),
@@ -431,7 +432,7 @@ impl FileSyncCache {
 
 #[derive(FromSqlRow, Clone)]
 pub struct FileSyncConfig {
-    pub id: i32,
+    pub id: Uuid,
     pub src_url: StackString,
     pub dst_url: StackString,
     pub last_run: DateTimeWrapper,
@@ -508,7 +509,7 @@ impl AuthorizedUsers {
 
 #[derive(FromSqlRow, Clone, Debug)]
 pub struct FileSyncBlacklist {
-    pub id: i32,
+    pub id: Uuid,
     pub blacklist_url: StackString,
 }
 

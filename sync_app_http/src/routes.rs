@@ -160,7 +160,7 @@ pub async fn delete_cache_entry(
     #[data] data: AppState,
 ) -> WarpResult<DeleteEntryResponse> {
     let query = query.into_inner();
-    FileSyncCache::delete_by_id(&data.db, query.id)
+    FileSyncCache::delete_by_id(&data.db, query.id.into())
         .await
         .map_err(Into::<Error>::into)?;
     Ok(HtmlBase::new("Finished").into())

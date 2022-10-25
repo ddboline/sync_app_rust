@@ -13,6 +13,7 @@ use std::{
 };
 use stdout_channel::StdoutChannel;
 use url::Url;
+use uuid::Uuid;
 
 use gdrive_lib::directory_info::DirectoryInfo;
 
@@ -355,7 +356,7 @@ pub trait FileListTrait: Send + Sync + Debug {
             let is_root = root_id.as_ref().map_or(false, |rid| rid == &d.directory_id);
             let servicetype = StackString::from_display(self.get_servicetype());
             let cache = DirectoryInfoCache {
-                id: -1,
+                id: Uuid::new_v4(),
                 directory_id: d.directory_id.as_str().into(),
                 directory_name: d.directory_name.as_str().into(),
                 parent_id: d.parentid.clone(),

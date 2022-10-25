@@ -9,6 +9,7 @@ use stack_string::{format_sstr, StackString};
 use std::sync::Arc;
 use stdout_channel::StdoutChannel;
 use url::Url;
+use uuid::Uuid;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
 
@@ -326,7 +327,7 @@ impl SyncOpts {
             FileSyncAction::AddConfig => {
                 if self.urls.len() == 2 {
                     let conf = FileSyncConfig {
-                        id: -1,
+                        id: Uuid::new_v4(),
                         src_url: self.urls[0].as_str().into(),
                         dst_url: self.urls[1].as_str().into(),
                         last_run: DateTimeWrapper::now(),

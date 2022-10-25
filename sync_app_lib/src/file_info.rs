@@ -9,6 +9,7 @@ use std::{
     sync::Arc,
 };
 use url::Url;
+use uuid::Uuid;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
 
@@ -278,7 +279,7 @@ impl FileInfo {
 impl From<&FileInfo> for FileInfoCache {
     fn from(item: &FileInfo) -> Self {
         Self {
-            id: -1,
+            id: Uuid::new_v4(),
             filename: item.filename.clone(),
             filepath: item.filepath.to_string_lossy().as_ref().into(),
             urlname: item.urlname.as_str().into(),

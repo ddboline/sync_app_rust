@@ -1,5 +1,6 @@
 use log::debug;
 use rweb::Schema;
+use rweb_helper::UuidWrapper;
 use serde::{Deserialize, Serialize};
 use stack_string::StackString;
 use std::path::Path;
@@ -45,14 +46,14 @@ impl SyncRequest {
 
 #[derive(Serialize, Deserialize, Debug, Schema)]
 pub struct SyncEntryDeleteRequest {
-    pub id: i32,
+    pub id: UuidWrapper,
 }
 
 impl SyncEntryDeleteRequest {
     /// # Errors
     /// Return error if db query fails
     pub async fn handle(&self, pool: &PgPool) -> Result<(), Error> {
-        FileSyncCache::delete_by_id(pool, self.id)
+        FileSyncCache::delete_by_id(pool, self.id.into())
             .await
             .map_err(Into::into)
     }
@@ -138,7 +139,7 @@ impl SyncRemoveRequest {
 
 #[derive(Serialize, Deserialize, Debug, Schema)]
 pub struct SyncEntryProcessRequest {
-    pub id: i32,
+    pub id: UuidWrapper,
 }
 
 impl SyncEntryProcessRequest {
@@ -151,7 +152,7 @@ impl SyncEntryProcessRequest {
         config: &Config,
     ) -> Result<(), Error> {
         let mut sync = locks.sync.lock().await;
-        let entry = FileSyncCache::get_by_id(pool, self.id)
+        let entry = FileSyncCache::get_by_id(pool, self.id.into())
             .await?
             .ok_or_else(|| Error::BadRequest("No entry".into()))?;
         let src_url = entry.src_url.parse()?;

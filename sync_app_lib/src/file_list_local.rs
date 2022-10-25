@@ -303,13 +303,12 @@ mod tests {
         assert!(result.filepath.ends_with("file_list_local.rs"));
         assert!(result.urlname.as_str().ends_with("file_list_local.rs"));
 
-        let mut cache_info: FileInfoCache = result.into();
+        let cache_info: FileInfoCache = result.into();
         info!("{:?}", cache_info);
         assert_eq!(
             result.md5sum.as_ref().map(|s| s.as_str()),
             cache_info.md5sum.as_ref().map(|s| s.as_str())
         );
-        cache_info.id = 5;
 
         let test_result: FileInfo = cache_info.try_into()?;
         assert_eq!(*result, test_result);
