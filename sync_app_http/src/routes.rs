@@ -47,11 +47,11 @@ pub async fn sync_frontpage(
         .map(|v| {
             format_sstr!(
                 r#"
-        <input type="button" name="Rm" value="Rm" onclick="removeCacheEntry({id})">
-        <input type="button" name="DelSrc" value="DelSrc" onclick="deleteEntry('{src}', {id})">
+        <input type="button" name="Rm" value="Rm" onclick="removeCacheEntry('{id}')">
+        <input type="button" name="DelSrc" value="DelSrc" onclick="deleteEntry('{src}', '{id}')">
         {src} {dst}
-        <input type="button" name="DelDst" value="DelDst" onclick="deleteEntry('{dst}', {id})">
-        <input type="button" name="Proc" value="Proc" onclick="procCacheEntry({id})">"#,
+        <input type="button" name="DelDst" value="DelDst" onclick="deleteEntry('{dst}', '{id}')">
+        <input type="button" name="Proc" value="Proc" onclick="procCacheEntry('{id}')">"#,
                 id = v.id,
                 src = v.src_url,
                 dst = v.dst_url
