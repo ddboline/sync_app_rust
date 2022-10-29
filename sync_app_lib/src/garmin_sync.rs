@@ -106,8 +106,9 @@ impl GarminSync {
     /// # Errors
     /// Return error if db query fails
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
+        let mut output: Vec<StackString> = self.client.get_local_command(&["sync"]).await?;
+
         self.client.init("garmin", "garmin-sync").await?;
-        let mut output = Vec::new();
         let results = self
             .run_single_sync_scale_measurement(
                 "garmin/scale_measurements",
