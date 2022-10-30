@@ -183,6 +183,10 @@ impl SyncClient {
         }
     }
 
+    pub async fn run_local_command(&self, args: &[&str]) -> Result<Vec<u8>, Error> {
+        self.local_session.run_command(args).await
+    }
+
     /// # Errors
     /// Return error if api call fails
     pub async fn get_local_command<T: DeserializeOwned + Send + 'static>(

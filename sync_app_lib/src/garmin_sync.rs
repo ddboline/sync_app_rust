@@ -106,7 +106,8 @@ impl GarminSync {
     /// # Errors
     /// Return error if db query fails
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
-        let mut output: Vec<StackString> = self.client.get_local_command(&["sync"]).await?;
+        let buf = StackString::from_utf8_vec(self.client.run_local_command(&["sync"]).await?)?;
+        let mut output: Vec<StackString> = buf.split("\n").map(Into::into).collect();
 
         self.client.init("garmin", "garmin-sync").await?;
         let results = self
