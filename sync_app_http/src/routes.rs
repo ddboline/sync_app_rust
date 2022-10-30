@@ -1,4 +1,4 @@
-use itertools::Itertools;
+use futures::TryStreamExt;
 use maplit::hashmap;
 use rweb::{get, Query, Rejection};
 use rweb_helper::{
@@ -30,8 +30,8 @@ pub async fn sync_frontpage(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<IndexResponse> {
-    let conf_list = FileSyncConfig::get_config_list(&data.db)
-        .await.map_err(Into::<Error>::into)?.into_iter().map(|v| {
+    let entries: Vec<_> = FileSyncConfig::get_config_list(&data.db)
+        .await.map_err(Into::<Error>::into)?.map_ok(|v| {
             if let Some(name) = v.name.as_ref() {
                 format_sstr!(r#"
                     <input type="button" type="submit" name="sync-{name}" value="{name}" onclick="syncName( '{name}' )">
@@ -39,12 +39,12 @@ pub async fn sync_frontpage(
             } else {
                 "".into()
             }
-        }).join("<br>");
-    let body = FileSyncCache::get_cache_list(&data.db)
+        }).try_collect().await.map_err(Into::<Error>::into)?;
+    let conf_list = entries.join("<br>");
+    let entries: Vec<_> = FileSyncCache::get_cache_list(&data.db)
         .await
         .map_err(Into::<Error>::into)?
-        .into_iter()
-        .map(|v| {
+        .map_ok(|v| {
             format_sstr!(
                 r#"
         <input type="button" name="Rm" value="Rm" onclick="removeCacheEntry('{id}')">
@@ -57,7 +57,10 @@ pub async fn sync_frontpage(
                 dst = v.dst_url
             )
         })
-        .join("<br>");
+        .try_collect()
+        .await
+        .map_err(Into::<Error>::into)?;
+    let body = entries.join("<br>");
     let params = hashmap! {
         "LIST_TEXT" => conf_list,
         "DISPLAY_TEXT" => body,
@@ -123,12 +126,14 @@ pub async fn list_sync_cache(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<ListSyncCacheResponse> {
-    let body = FileSyncCache::get_cache_list(&data.db)
+    let entries: Vec<_> = FileSyncCache::get_cache_list(&data.db)
         .await
         .map_err(Into::<Error>::into)?
-        .into_iter()
-        .map(|v| format_sstr!("{} {}", v.src_url, v.dst_url))
-        .join("\n");
+        .map_ok(|v| format_sstr!("{} {}", v.src_url, v.dst_url))
+        .try_collect()
+        .await
+        .map_err(Into::<Error>::into)?;
+    let body = entries.join("\n");
     Ok(HtmlBase::new(body).into())
 }
 

@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
 use fmt::Debug;
-use futures::future::try_join_all;
+use futures::{stream::FuturesUnordered, TryStreamExt};
 use log::debug;
 use smallvec::{smallvec, SmallVec};
 use std::{
@@ -206,7 +206,7 @@ impl FileSync {
         if list_a_not_b.is_empty() && list_b_not_a.is_empty() {
             flist0.cleanup().and_then(|_| flist1.cleanup())
         } else {
-            let futures = list_a_not_b
+            let futures: FuturesUnordered<_> = list_a_not_b
                 .into_iter()
                 .chain(list_b_not_a.into_iter())
                 .map(|(f0, f1)| {
@@ -216,8 +216,9 @@ impl FileSync {
                             .await?;
                         Ok(())
                     }
-                });
-            let results: Result<Vec<_>, Error> = try_join_all(futures).await;
+                })
+                .collect();
+            let results: Result<(), Error> = futures.try_collect().await;
             results?;
             Ok(())
         }
@@ -274,64 +275,58 @@ impl FileSync {
     /// # Errors
     /// Return error if db query fails
     pub async fn process_sync_cache(&self, pool: &PgPool) -> Result<(), Error> {
-        let futures = FileSyncCache::get_cache_list(pool)
+        let proc_map: Result<HashMap<_, _>, Error> = FileSyncCache::get_cache_list(pool)
             .await?
-            .into_iter()
-            .map(|v| async move {
+            .map_err(Into::into)
+            .try_fold(HashMap::new(), |mut h, v| async move {
                 let u0: Url = v.src_url.parse()?;
                 let u1: Url = v.dst_url.parse()?;
                 v.delete_cache_entry(pool).await?;
-                Ok((u0, u1))
-            });
-        let proc_list: Result<Vec<_>, Error> = try_join_all(futures).await;
-
-        let proc_map: HashMap<_, _> =
-            proc_list?
-                .into_iter()
-                .fold(HashMap::new(), |mut h, (u0, u1)| {
-                    let key = u0;
-                    let val = u1;
-                    h.entry(key).or_insert_with(Vec::new).push(val);
-                    h
-                });
-        let proc_map = Arc::new(proc_map);
+                h.entry(u0).or_insert_with(Vec::new).push(u1);
+                Ok(h)
+            })
+            .await;
+        let proc_map = Arc::new(proc_map?);
 
         let key_list: Vec<_> = proc_map.keys().cloned().collect();
 
         for urls in group_urls(&key_list).values() {
             if let Some(u0) = urls.get(0) {
-                let futures = urls.iter().map(|key| {
-                    let key = key.clone();
-                    let proc_map = proc_map.clone();
-                    let u0 = u0.clone();
-                    async move {
-                        if let Some(vals) = proc_map.get(&key) {
-                            let flist0 = FileList::from_url(&u0, &self.config, pool).await?;
-                            for val in vals {
-                                let finfo0 = match FileInfo::from_database(pool, &key).await? {
-                                    Some(f) => f,
-                                    None => FileInfo::from_url(&key)?,
-                                };
-                                let finfo1 = match FileInfo::from_database(pool, val).await? {
-                                    Some(f) => f,
-                                    None => FileInfo::from_url(val)?,
-                                };
-                                debug!("copy {} {}", key, val);
-                                if finfo1.servicetype == FileService::Local {
-                                    Self::copy_object(&(*flist0), &finfo0, &finfo1).await?;
-                                    flist0.cleanup()?;
-                                } else {
-                                    let flist1 =
-                                        FileList::from_url(val, &self.config, pool).await?;
-                                    Self::copy_object(&(*flist1), &finfo0, &finfo1).await?;
-                                    flist1.cleanup()?;
+                let futures: FuturesUnordered<_> = urls
+                    .iter()
+                    .map(|key| {
+                        let key = key.clone();
+                        let proc_map = proc_map.clone();
+                        let u0 = u0.clone();
+                        async move {
+                            if let Some(vals) = proc_map.get(&key) {
+                                let flist0 = FileList::from_url(&u0, &self.config, pool).await?;
+                                for val in vals {
+                                    let finfo0 = match FileInfo::from_database(pool, &key).await? {
+                                        Some(f) => f,
+                                        None => FileInfo::from_url(&key)?,
+                                    };
+                                    let finfo1 = match FileInfo::from_database(pool, val).await? {
+                                        Some(f) => f,
+                                        None => FileInfo::from_url(val)?,
+                                    };
+                                    debug!("copy {} {}", key, val);
+                                    if finfo1.servicetype == FileService::Local {
+                                        Self::copy_object(&(*flist0), &finfo0, &finfo1).await?;
+                                        flist0.cleanup()?;
+                                    } else {
+                                        let flist1 =
+                                            FileList::from_url(val, &self.config, pool).await?;
+                                        Self::copy_object(&(*flist1), &finfo0, &finfo1).await?;
+                                        flist1.cleanup()?;
+                                    }
                                 }
                             }
+                            Ok(())
                         }
-                        Ok(())
-                    }
-                });
-                let result: Result<Vec<_>, Error> = try_join_all(futures).await;
+                    })
+                    .collect();
+                let result: Result<(), Error> = futures.try_collect().await;
                 result?;
             }
         }
@@ -345,13 +340,14 @@ impl FileSync {
             let proc_list: Result<Vec<SmallVec<[Url; 2]>>, Error> =
                 FileSyncCache::get_cache_list(pool)
                     .await?
-                    .into_iter()
-                    .map(|v| {
+                    .map_err(Into::into)
+                    .and_then(|v| async move {
                         let u0: Url = v.src_url.parse()?;
                         let u1: Url = v.dst_url.parse()?;
                         Ok(smallvec![u0, u1])
                     })
-                    .collect();
+                    .try_collect()
+                    .await;
             proc_list?.into_iter().flatten().collect()
         } else {
             urls.to_vec()
@@ -363,21 +359,24 @@ impl FileSync {
                 flist.get_file_list_dict(&flist.load_file_list().await?, FileInfoKeyType::UrlName),
             );
 
-            let futures = urls.iter().map(|url| {
-                let flist = flist.clone();
-                let fdict = fdict.clone();
-                async move {
-                    let finfo = if let Some(f) = fdict.get(url.as_str()) {
-                        f.clone()
-                    } else {
-                        FileInfo::from_url(url)?
-                    };
+            let futures: FuturesUnordered<_> = urls
+                .iter()
+                .map(|url| {
+                    let flist = flist.clone();
+                    let fdict = fdict.clone();
+                    async move {
+                        let finfo = if let Some(f) = fdict.get(url.as_str()) {
+                            f.clone()
+                        } else {
+                            FileInfo::from_url(url)?
+                        };
 
-                    debug!("delete {:?}", finfo);
-                    flist.delete(&finfo).await
-                }
-            });
-            try_join_all(futures).await?;
+                        debug!("delete {:?}", finfo);
+                        flist.delete(&finfo).await
+                    }
+                })
+                .collect();
+            futures.try_collect().await?;
         }
         Ok(())
     }
@@ -407,6 +406,7 @@ impl FileSync {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
+    use futures::{future, TryStreamExt};
     use log::debug;
     use rusoto_s3::{Object, Owner};
     use stack_string::format_sstr;
@@ -479,10 +479,10 @@ mod tests {
 
         let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)
             .await?
-            .into_iter()
-            .filter(|v| v.src_url.starts_with("file://"))
-            .map(|v| (v.src_url.clone(), v))
-            .collect();
+            .try_filter(|v| future::ready(v.src_url.starts_with("file://")))
+            .map_ok(|v| (v.src_url.clone(), v))
+            .try_collect()
+            .await?;
 
         assert!(cache_list.len() > 0);
 
@@ -536,10 +536,10 @@ mod tests {
 
         let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)
             .await?
-            .into_iter()
-            .filter(|v| v.src_url.starts_with("s3://"))
-            .map(|v| (v.src_url.clone(), v))
-            .collect();
+            .try_filter(|v| future::ready(v.src_url.starts_with("s3://")))
+            .map_ok(|v| (v.src_url.clone(), v))
+            .try_collect()
+            .await?;
 
         assert!(cache_list.len() > 0);
 

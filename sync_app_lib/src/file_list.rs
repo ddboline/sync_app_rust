@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
+use futures::TryStreamExt;
 use log::info;
 use stack_string::{format_sstr, StackString};
 use std::{
@@ -273,6 +274,8 @@ pub trait FileListTrait: Send + Sync + Debug {
         let stype = self.get_servicetype();
         let pool = self.get_pool();
         FileInfoCache::get_all_cached(session.as_str(), stype.to_str(), pool)
+            .await?
+            .try_collect()
             .await
             .map_err(Into::into)
     }
@@ -319,6 +322,8 @@ pub trait FileListTrait: Send + Sync + Debug {
         let pool = self.get_pool();
 
         DirectoryInfoCache::get_all(session.as_str(), stype.to_str(), pool)
+            .await?
+            .try_collect()
             .await
             .map_err(Into::into)
     }

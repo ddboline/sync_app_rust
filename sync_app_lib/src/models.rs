@@ -1,6 +1,7 @@
 use anyhow::Error;
+use futures::{Stream, TryStreamExt};
 use log::info;
-use postgres_query::{query, FromSqlRow};
+use postgres_query::{query, Error as PqError, FromSqlRow};
 use smallvec::{smallvec, SmallVec};
 use stack_string::StackString;
 use url::Url;
@@ -69,7 +70,7 @@ impl FileInfoCache {
         servicesession: &str,
         servicetype: &str,
         pool: &PgPool,
-    ) -> Result<Vec<Self>, Error> {
+    ) -> Result<impl Stream<Item = Result<Self, PqError>>, Error> {
         let query = query!(
             r#"
                 SELECT * FROM file_info_cache
@@ -81,23 +82,25 @@ impl FileInfoCache {
             servicetype = servicetype,
         );
         let conn = pool.get().await?;
-        query.fetch(&conn).await.map_err(Into::into)
+        query.fetch_streaming(&conn).await.map_err(Into::into)
     }
 
     /// # Errors
     /// Return error if db query fails
-    pub async fn get_by_urlname(url: &Url, pool: &PgPool) -> Result<Vec<Self>, Error> {
+    pub async fn get_by_urlname(url: &Url, pool: &PgPool) -> Result<Option<Self>, Error> {
         let urlname = url.as_str();
         let query = query!(
             r#"
                 SELECT * FROM file_info_cache
                 WHERE urlname=$urlname
                   AND deleted_at IS NULL
+                ORDER BY created_at DESC
+                LIMIT 1
             "#,
             urlname = urlname,
         );
         let conn = pool.get().await?;
-        query.fetch(&conn).await.map_err(Into::into)
+        query.fetch_opt(&conn).await.map_err(Into::into)
     }
 
     #[must_use]
@@ -275,7 +278,7 @@ impl DirectoryInfoCache {
         servicesession: &str,
         servicetype: &str,
         pool: &PgPool,
-    ) -> Result<Vec<Self>, Error> {
+    ) -> Result<impl Stream<Item = Result<Self, PqError>>, Error> {
         let query = query!(
             r#"
                 SELECT * FROM directory_info_cache
@@ -286,7 +289,7 @@ impl DirectoryInfoCache {
             servicetype = servicetype,
         );
         let conn = pool.get().await?;
-        query.fetch(&conn).await.map_err(Into::into)
+        query.fetch_streaming(&conn).await.map_err(Into::into)
     }
 
     /// # Errors
@@ -369,10 +372,12 @@ pub struct FileSyncCache {
 impl FileSyncCache {
     /// # Errors
     /// Return error if db query fails
-    pub async fn get_cache_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
+    pub async fn get_cache_list(
+        pool: &PgPool,
+    ) -> Result<impl Stream<Item = Result<Self, PqError>>, Error> {
         let query = query!("SELECT * FROM file_sync_cache ORDER BY src_url");
         let conn = pool.get().await?;
-        query.fetch(&conn).await.map_err(Into::into)
+        query.fetch_streaming(&conn).await.map_err(Into::into)
     }
 
     /// # Errors
@@ -442,10 +447,12 @@ pub struct FileSyncConfig {
 impl FileSyncConfig {
     /// # Errors
     /// Return error if db query fails
-    pub async fn get_config_list(pool: &PgPool) -> Result<Vec<Self>, Error> {
+    pub async fn get_config_list(
+        pool: &PgPool,
+    ) -> Result<impl Stream<Item = Result<Self, PqError>>, Error> {
         let query = query!("SELECT * FROM file_sync_config");
         let conn = pool.get().await?;
-        query.fetch(&conn).await.map_err(Into::into)
+        query.fetch_streaming(&conn).await.map_err(Into::into)
     }
 
     /// # Errors
@@ -453,13 +460,14 @@ impl FileSyncConfig {
     pub async fn get_url_list(pool: &PgPool) -> Result<Vec<Url>, Error> {
         let proc_list: Result<Vec<SmallVec<[_; 2]>>, Error> = Self::get_config_list(pool)
             .await?
-            .into_iter()
-            .map(|v| {
+            .map_err(Into::into)
+            .and_then(|v| async move {
                 let u0: Url = v.src_url.parse()?;
                 let u1: Url = v.dst_url.parse()?;
                 Ok(smallvec![u0, u1])
             })
-            .collect();
+            .try_collect()
+            .await;
         Ok(proc_list?.into_iter().flatten().collect())
     }
 
@@ -500,10 +508,12 @@ pub struct AuthorizedUsers {
 impl AuthorizedUsers {
     /// # Errors
     /// Return error if db query fails
-    pub async fn get_authorized_users(pool: &PgPool) -> Result<Vec<Self>, Error> {
+    pub async fn get_authorized_users(
+        pool: &PgPool,
+    ) -> Result<impl Stream<Item = Result<Self, PqError>>, Error> {
         let query = query!("SELECT * FROM authorized_users");
         let conn = pool.get().await?;
-        query.fetch(&conn).await.map_err(Into::into)
+        query.fetch_streaming(&conn).await.map_err(Into::into)
     }
 }
 
@@ -514,10 +524,12 @@ pub struct FileSyncBlacklist {
 }
 
 impl FileSyncBlacklist {
-    async fn get_blacklist(pool: &PgPool) -> Result<Vec<Self>, Error> {
+    async fn get_blacklist(
+        pool: &PgPool,
+    ) -> Result<impl Stream<Item = Result<Self, PqError>>, Error> {
         let query = query!("SELECT * FROM file_sync_blacklist");
         let conn = pool.get().await?;
-        query.fetch(&conn).await.map_err(Into::into)
+        query.fetch_streaming(&conn).await.map_err(Into::into)
     }
 }
 
@@ -530,9 +542,11 @@ impl BlackList {
     /// # Errors
     /// Return error if db query fails
     pub async fn new(pool: &PgPool) -> Result<Self, Error> {
-        FileSyncBlacklist::get_blacklist(pool)
-            .await
-            .map(|blacklist| Self { blacklist })
+        let blacklist: Vec<_> = FileSyncBlacklist::get_blacklist(pool)
+            .await?
+            .try_collect()
+            .await?;
+        Ok(Self { blacklist })
     }
 
     #[must_use]

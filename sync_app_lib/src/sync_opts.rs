@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
 use clap::Parser;
-use futures::future::try_join_all;
+use futures::{future::try_join_all, stream::FuturesUnordered, TryStreamExt};
 use itertools::Itertools;
 use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -128,35 +128,41 @@ impl SyncOpts {
                     &self.urls
                 };
                 info!("urls: {:?}", urls);
-                let futures = urls.iter().map(|url| {
-                    let blacklist = Arc::clone(&blacklist);
-                    let pool = pool.clone();
-                    async move {
-                        let mut flist = FileList::from_url(url, config, &pool).await?;
-                        let list = flist.fill_file_list().await?;
-                        let list: Vec<_> = if blacklist.could_be_in_blacklist(url) {
-                            list.into_par_iter()
-                                .filter(|entry| !blacklist.is_in_blacklist(&entry.urlname))
-                                .collect()
-                        } else {
-                            list
-                        };
-                        flist.with_list(list);
-                        flist.cache_file_list().await?;
-                        Ok(flist)
-                    }
-                });
-                let result: Result<Vec<_>, Error> = try_join_all(futures).await;
+                let futures: FuturesUnordered<_> = urls
+                    .iter()
+                    .map(|url| {
+                        let blacklist = Arc::clone(&blacklist);
+                        let pool = pool.clone();
+                        async move {
+                            let mut flist = FileList::from_url(url, config, &pool).await?;
+                            let list = flist.fill_file_list().await?;
+                            let list: Vec<_> = if blacklist.could_be_in_blacklist(url) {
+                                list.into_par_iter()
+                                    .filter(|entry| !blacklist.is_in_blacklist(&entry.urlname))
+                                    .collect()
+                            } else {
+                                list
+                            };
+                            flist.with_list(list);
+                            flist.cache_file_list().await?;
+                            Ok(())
+                        }
+                    })
+                    .collect();
+                let result: Result<(), Error> = futures.try_collect().await;
                 result?;
                 Ok(())
             }
             FileSyncAction::Sync => {
                 let urls = if self.urls.is_empty() || self.name.is_some() {
-                    let futures = FileSyncCache::get_cache_list(pool)
+                    let result: Result<(), Error> = FileSyncCache::get_cache_list(pool)
                         .await?
-                        .into_iter()
-                        .map(|v| async move { v.delete_cache_entry(pool).await });
-                    let result: Result<Vec<_>, Error> = try_join_all(futures).await;
+                        .map_err(Into::into)
+                        .try_for_each(|v| async move {
+                            v.delete_cache_entry(pool).await?;
+                            Ok(())
+                        })
+                        .await;
                     result?;
                     if let Some(name) = self.name.as_ref() {
                         let v = FileSyncConfig::get_by_name(pool, name)
@@ -193,16 +199,20 @@ impl SyncOpts {
                 let flists: Result<Vec<_>, Error> = try_join_all(futures).await;
                 let flists = flists?;
                 info!("Check 1");
-                let futures = flists.chunks(2).map(|f| async move {
-                    if f.len() == 2 {
-                        FileSync::compare_lists(&(*f[0]), &(*f[1]), pool).await?;
-                    }
-                    Ok(())
-                });
-                let results: Result<Vec<_>, Error> = try_join_all(futures).await;
+                let futures: FuturesUnordered<_> = flists
+                    .chunks(2)
+                    .map(|f| async move {
+                        if f.len() == 2 {
+                            FileSync::compare_lists(&(*f[0]), &(*f[1]), pool).await?;
+                        }
+                        Ok(())
+                    })
+                    .collect();
+                let results: Result<(), Error> = futures.try_collect().await;
                 results?;
                 info!("Check 2");
-                for entry in FileSyncCache::get_cache_list(pool).await? {
+                let mut stream = Box::pin(FileSyncCache::get_cache_list(pool).await?);
+                while let Some(entry) = stream.try_next().await? {
                     let buf = format_sstr!("{} {}", entry.src_url, entry.dst_url);
                     stdout.send(buf);
                 }
@@ -273,16 +283,20 @@ impl SyncOpts {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
-                    let futures = self.urls.iter().map(|url| async move {
-                        let pool = pool.clone();
-                        let stdout = stdout.clone();
-                        let mut flist = FileList::from_url(url, config, &pool).await?;
-                        flist.with_list(flist.fill_file_list().await?);
-                        let buf = format_sstr!("{}\t{}", url, flist.get_filemap().len());
-                        stdout.send(buf);
-                        Ok(())
-                    });
-                    let results: Result<Vec<_>, Error> = try_join_all(futures).await;
+                    let futures: FuturesUnordered<_> = self
+                        .urls
+                        .iter()
+                        .map(|url| async move {
+                            let pool = pool.clone();
+                            let stdout = stdout.clone();
+                            let mut flist = FileList::from_url(url, config, &pool).await?;
+                            flist.with_list(flist.fill_file_list().await?);
+                            let buf = format_sstr!("{}\t{}", url, flist.get_filemap().len());
+                            stdout.send(buf);
+                            Ok(())
+                        })
+                        .collect();
+                    let results: Result<(), Error> = futures.try_collect().await;
                     results?;
                     Ok(())
                 }
@@ -291,35 +305,42 @@ impl SyncOpts {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
-                    let futures = self.urls.iter().enumerate().map(|(idx, url)| async move {
-                        let pool = pool.clone();
-                        let stdout = stdout.clone();
-                        let mut flist = FileList::from_url(url, config, &pool).await?;
-                        flist.with_list(flist.fill_file_list().await?);
-                        let filemap = flist.get_filemap();
+                    let futures: FuturesUnordered<_> = self
+                        .urls
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, url)| async move {
+                            let pool = pool.clone();
+                            let stdout = stdout.clone();
+                            let mut flist = FileList::from_url(url, config, &pool).await?;
+                            flist.with_list(flist.fill_file_list().await?);
+                            let filemap = flist.get_filemap();
 
-                        let offset = self.offset.unwrap_or(0);
-                        let limit = self.limit.unwrap_or(filemap.len());
-                        if let Some(expected) = self.expected.get(idx) {
-                            if *expected != filemap.len() {
-                                return Err(format_err!("expected {expected} {}", filemap.len()));
+                            let offset = self.offset.unwrap_or(0);
+                            let limit = self.limit.unwrap_or(filemap.len());
+                            if let Some(expected) = self.expected.get(idx) {
+                                if *expected != filemap.len() {
+                                    return Err(format_err!(
+                                        "expected {expected} {}",
+                                        filemap.len()
+                                    ));
+                                }
                             }
-                        }
 
-                        let results: Result<Vec<_>, Error> = filemap
-                            .values()
-                            .sorted_by_key(|finfo| finfo.filepath.as_path())
-                            .skip(offset)
-                            .take(limit)
-                            .map(|finfo| {
-                                let line = serde_json::to_string(finfo.inner())?;
-                                stdout.send(line);
-                                Ok(())
-                            })
-                            .collect();
-                        results
-                    });
-                    let results: Result<Vec<_>, Error> = try_join_all(futures).await;
+                            let results: Result<(), Error> = filemap
+                                .values()
+                                .sorted_by_key(|finfo| finfo.filepath.as_path())
+                                .skip(offset)
+                                .take(limit)
+                                .try_for_each(|finfo| {
+                                    let line = serde_json::to_string(finfo.inner())?;
+                                    stdout.send(line);
+                                    Ok(())
+                                });
+                            results
+                        })
+                        .collect();
+                    let results: Result<(), Error> = futures.try_collect().await;
                     results?;
                     Ok(())
                 }
@@ -340,25 +361,27 @@ impl SyncOpts {
                 }
             }
             FileSyncAction::ShowConfig => {
-                let clist = FileSyncConfig::get_config_list(pool)
+                let entries: Vec<_> = FileSyncConfig::get_config_list(pool)
                     .await?
-                    .into_iter()
-                    .map(|v| {
+                    .map_ok(|v| {
                         format_sstr!("{} {} {}", v.src_url, v.dst_url, v.name.unwrap_or_default())
                     })
-                    .join("\n");
+                    .try_collect()
+                    .await?;
+                let clist = entries.join("\n");
                 stdout.send(clist);
                 Ok(())
             }
             FileSyncAction::ShowCache => {
-                let clist = FileSyncCache::get_cache_list(pool)
+                let clist: Vec<_> = FileSyncCache::get_cache_list(pool)
                     .await?
-                    .into_iter()
-                    .map(|v| {
+                    .map_ok(|v| {
                         let buf = format_sstr!("{} {}", v.src_url, v.dst_url);
                         buf
                     })
-                    .join("\n");
+                    .try_collect()
+                    .await?;
+                let clist = clist.join("\n");
                 stdout.send(clist);
                 Ok(())
             }

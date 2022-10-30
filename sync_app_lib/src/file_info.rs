@@ -270,7 +270,6 @@ impl FileInfo {
     pub async fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
         FileInfoCache::get_by_urlname(url, pool)
             .await?
-            .pop()
             .map(TryInto::try_into)
             .transpose()
     }
