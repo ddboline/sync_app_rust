@@ -1,11 +1,11 @@
 use anyhow::{format_err, Error};
-use arc_swap::ArcSwap;
 use async_trait::async_trait;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fs::create_dir_all, path::Path, sync::Arc};
 use stdout_channel::StdoutChannel;
+use tokio::sync::RwLock;
 use url::Url;
 
 use gdrive_lib::{
@@ -26,8 +26,8 @@ use crate::{
 pub struct FileListGDrive {
     pub flist: FileList,
     pub gdrive: GDriveInstance,
-    pub directory_map: Arc<ArcSwap<HashMap<StackString, DirectoryInfo>>>,
-    pub root_directory: Arc<ArcSwap<Option<StackString>>>,
+    pub directory_map: Arc<RwLock<HashMap<StackString, DirectoryInfo>>>,
+    pub root_directory: Arc<RwLock<Option<StackString>>>,
 }
 
 impl FileListGDrive {
@@ -62,8 +62,8 @@ impl FileListGDrive {
         Ok(Self {
             flist,
             gdrive,
-            directory_map: Arc::new(ArcSwap::new(Arc::new(HashMap::new()))),
-            root_directory: Arc::new(ArcSwap::new(Arc::new(None))),
+            directory_map: Arc::new(RwLock::new(HashMap::new())),
+            root_directory: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -104,8 +104,8 @@ impl FileListGDrive {
             Ok(Self {
                 flist,
                 gdrive,
-                directory_map: Arc::new(ArcSwap::new(Arc::new(HashMap::new()))),
-                root_directory: Arc::new(ArcSwap::new(Arc::new(None))),
+                directory_map: Arc::new(RwLock::new(HashMap::new())),
+                root_directory: Arc::new(RwLock::new(None)),
             })
         } else {
             Err(format_err!("Wrong scheme"))
@@ -125,8 +125,8 @@ impl FileListGDrive {
             self.clear_directory_list().await?;
             self.cache_directory_map(&dmap, &root_dir).await?;
         }
-        self.directory_map.store(Arc::new(dmap));
-        self.root_directory.store(Arc::new(root_dir));
+        *self.directory_map.write().await = dmap;
+        *self.root_directory.write().await = root_dir;
         Ok(())
     }
 
@@ -136,9 +136,11 @@ impl FileListGDrive {
         self
     }
 
-    pub fn set_root_directory(&self, root_directory: &str) {
+    pub async fn set_root_directory(&self, root_directory: &str) {
         self.root_directory
-            .store(Arc::new(Some(root_directory.into())));
+            .write()
+            .await
+            .replace(root_directory.into());
     }
 
     fn convert_gdriveinfo_to_file_info(
@@ -167,7 +169,7 @@ impl FileListGDrive {
     }
 
     async fn get_all_files(&self) -> Result<Vec<FileInfo>, Error> {
-        let directory_map = self.directory_map.load().clone();
+        let directory_map = self.directory_map.read().await;
         let flist: Vec<_> = self.gdrive.get_all_file_info(false, &directory_map).await?;
 
         let flist = self.convert_gdriveinfo_to_file_info(&flist)?;
@@ -185,7 +187,7 @@ impl FileListGDrive {
             })
             .collect();
         let flist: Vec<_> = chlist.into_iter().filter_map(|ch| ch.file).collect();
-        let directory_map = self.directory_map.load().clone();
+        let directory_map = self.directory_map.read().await;
         let flist = self
             .gdrive
             .convert_file_list_to_gdrive_info(&flist, &directory_map)
@@ -277,14 +279,14 @@ impl FileListTrait for FileListGDrive {
 
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
         self.set_directory_map(false).await?;
-        let directory_map = self.directory_map.load().clone();
+        let directory_map = self.directory_map.read().await;
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
 
         #[allow(clippy::manual_map)]
         let parents =
             if let Ok(Some(p)) = GDriveInstance::get_parent_id(self.get_baseurl(), &dnamemap) {
                 Some(vec![p])
-            } else if let Some(root_dir) = self.root_directory.load().clone().as_ref() {
+            } else if let Some(root_dir) = self.root_directory.read().await.as_ref() {
                 Some(vec![root_dir.clone()])
             } else {
                 None
@@ -364,7 +366,7 @@ impl FileListTrait for FileListGDrive {
                 Url::from_file_path(local_file).map_err(|e| format_err!("failure {e:?}"))?;
 
             let remote_url = finfo1.urlname.clone();
-            let directory_map = self.directory_map.load().clone();
+            let directory_map = self.directory_map.read().await;
             let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
             let parent_id = GDriveInstance::get_parent_id(&remote_url, &dnamemap)?
                 .ok_or_else(|| format_err!("No parent id!"))?;
@@ -393,7 +395,7 @@ impl FileListTrait for FileListGDrive {
         }
         let gdriveid = finfo0.serviceid.as_str();
         let url = finfo1.urlname.as_ref();
-        let directory_map = self.directory_map.load().clone();
+        let directory_map = self.directory_map.read().await;
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
         let parentid = GDriveInstance::get_parent_id(url, &dnamemap)?
             .ok_or_else(|| format_err!("No parentid"))?;
@@ -495,8 +497,8 @@ mod tests {
 
         flist.clear_file_list().await?;
 
-        debug!("dmap {}", flist.directory_map.load().len());
-        let directory_map = flist.directory_map.load().clone();
+        debug!("dmap {}", flist.directory_map.read().await.len());
+        let directory_map = flist.directory_map.read().await;
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
         for f in flist.get_filemap().values() {
             let parent_id = GDriveInstance::get_parent_id(&f.urlname, &dnamemap)?;
