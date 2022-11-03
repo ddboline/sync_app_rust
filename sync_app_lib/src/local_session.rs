@@ -65,7 +65,7 @@ impl LocalSession {
         table: &str,
         input: &[u8],
         start_timestamp: Option<OffsetDateTime>,
-    ) -> Result<(), Error> {
+    ) -> Result<Vec<u8>, Error> {
         let mut args = vec!["import", "-t", table];
         let start_timestamp = start_timestamp.and_then(|t| t.format(&Rfc3339).ok());
         if let Some(start_timestamp) = start_timestamp.as_ref() {
@@ -78,6 +78,7 @@ impl LocalSession {
             .args(&args)
             .kill_on_drop(true)
             .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
             .spawn()?;
         let stdin = child.stdin.take();
         if let Some(mut stdin) = stdin {
@@ -85,7 +86,7 @@ impl LocalSession {
         }
         let output = child.wait_with_output().await?;
         if output.status.success() {
-            Ok(())
+            Ok(output.stdout)
         } else {
             Err(format_err!(
                 "Process returned {:?} {:?}",
