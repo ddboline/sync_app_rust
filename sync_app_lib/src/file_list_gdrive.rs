@@ -136,13 +136,6 @@ impl FileListGDrive {
         self
     }
 
-    pub async fn set_root_directory(&self, root_directory: &str) {
-        self.root_directory
-            .write()
-            .await
-            .replace(root_directory.into());
-    }
-
     fn convert_gdriveinfo_to_file_info(
         &self,
         flist: &[GDriveInfo],
