@@ -1,91 +1,20 @@
 use anyhow::{format_err, Error};
-use arc_swap::ArcSwap;
 use rand::{
     distributions::{Distribution, Uniform},
     thread_rng,
 };
-use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue},
-    redirect::Policy,
-    Client, Response, Url,
-};
+use reqwest::{header::HeaderMap, redirect::Policy, Client, Response, Url};
 use serde::Serialize;
-use std::{collections::HashMap, future::Future, sync::Arc, thread::sleep, time::Duration};
+use std::{collections::HashMap, future::Future, thread::sleep, time::Duration};
 
 #[derive(Debug, Clone)]
-struct ReqwestSessionInner {
-    client: Client,
-    headers: HeaderMap,
-}
-
 pub struct ReqwestSession {
-    client: ArcSwap<ReqwestSessionInner>,
-}
-
-impl Clone for ReqwestSession {
-    fn clone(&self) -> Self {
-        Self {
-            client: ArcSwap::from(self.client.load().clone()),
-        }
-    }
+    client: Client,
 }
 
 impl Default for ReqwestSession {
     fn default() -> Self {
         Self::new(true)
-    }
-}
-
-impl ReqwestSessionInner {
-    /// # Errors
-    /// Return error if db query fails
-    pub async fn get(&self, url: Url, mut headers: HeaderMap) -> Result<Response, Error> {
-        for (k, v) in &self.headers {
-            headers.insert(k, v.into());
-        }
-        self.client
-            .get(url)
-            .headers(headers)
-            .send()
-            .await
-            .map_err(Into::into)
-    }
-
-    /// # Errors
-    /// Return error if db query fails
-    pub async fn post<T>(
-        &self,
-        url: Url,
-        mut headers: HeaderMap,
-        form: &HashMap<&str, T>,
-    ) -> Result<Response, Error>
-    where
-        T: Serialize,
-    {
-        for (k, v) in &self.headers {
-            headers.insert(k, v.into());
-        }
-        self.client
-            .post(url)
-            .headers(headers)
-            .json(form)
-            .send()
-            .await
-            .map_err(Into::into)
-    }
-
-    /// # Errors
-    /// Return error if db query fails
-    pub async fn delete(&self, url: Url, mut headers: HeaderMap) -> Result<Response, Error> {
-        for (k, v) in &self.headers {
-            headers.insert(k, v.into());
-        }
-        self.client
-            .delete(url)
-            .headers(headers)
-            .send()
-            .await
-            .map_err(Into::into)
     }
 }
 
@@ -98,14 +27,11 @@ impl ReqwestSession {
             Policy::none()
         };
         Self {
-            client: ArcSwap::new(Arc::new(ReqwestSessionInner {
-                client: Client::builder()
-                    .cookie_store(true)
-                    .redirect(redirect_policy)
-                    .build()
-                    .expect("Failed to build client"),
-                headers: HeaderMap::new(),
-            })),
+            client: Client::builder()
+                .cookie_store(true)
+                .redirect(redirect_policy)
+                .build()
+                .expect("Failed to build client"),
         }
     }
 
@@ -134,14 +60,19 @@ impl ReqwestSession {
     /// # Errors
     /// Return error if db query fails
     pub async fn get(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
-        Self::exponential_retry(|| async move {
-            self.client
-                .load()
-                .clone()
-                .get(url.clone(), headers.clone())
-                .await
-        })
-        .await
+        Self::exponential_retry(|| async move { self._get(url.clone(), headers.clone()).await })
+            .await
+    }
+
+    /// # Errors
+    /// Return error if db query fails
+    async fn _get(&self, url: Url, headers: HeaderMap) -> Result<Response, Error> {
+        self.client
+            .get(url)
+            .headers(headers)
+            .send()
+            .await
+            .map_err(Into::into)
     }
 
     /// # Errors
@@ -155,37 +86,43 @@ impl ReqwestSession {
     where
         T: Serialize,
     {
-        Self::exponential_retry(|| async move {
-            self.client
-                .load()
-                .post(url.clone(), headers.clone(), form)
-                .await
-        })
+        Self::exponential_retry(
+            || async move { self._post(url.clone(), headers.clone(), form).await },
+        )
         .await
+    }
+
+    async fn _post<T>(
+        &self,
+        url: Url,
+        headers: HeaderMap,
+        form: &HashMap<&str, T>,
+    ) -> Result<Response, Error>
+    where
+        T: Serialize,
+    {
+        self.client
+            .post(url)
+            .headers(headers)
+            .json(form)
+            .send()
+            .await
+            .map_err(Into::into)
     }
 
     /// # Errors
     /// Return error if db query fails
     pub async fn delete(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
-        Self::exponential_retry(|| async move {
-            self.client
-                .load()
-                .delete(url.clone(), headers.clone())
-                .await
-        })
-        .await
+        Self::exponential_retry(|| async move { self._delete(url.clone(), headers.clone()).await })
+            .await
     }
 
-    /// # Errors
-    /// Return error if db query fails
-    pub fn set_default_headers(&self, headers: HashMap<&str, &str>) -> Result<(), Error> {
-        let mut client = self.client.load().clone();
-        for (k, v) in headers {
-            let name: HeaderName = k.parse()?;
-            let val: HeaderValue = v.parse()?;
-            Arc::make_mut(&mut client).headers.insert(name, val);
-        }
-        self.client.store(client);
-        Ok(())
+    async fn _delete(&self, url: Url, headers: HeaderMap) -> Result<Response, Error> {
+        self.client
+            .delete(url)
+            .headers(headers)
+            .send()
+            .await
+            .map_err(Into::into)
     }
 }
