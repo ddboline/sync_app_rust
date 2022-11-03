@@ -183,6 +183,8 @@ impl SyncClient {
         }
     }
 
+    /// # Errors
+    /// Return error if api call fails
     pub async fn run_local_command(&self, args: &[&str]) -> Result<Vec<u8>, Error> {
         self.local_session.run_command(args).await
     }
@@ -208,7 +210,7 @@ impl SyncClient {
         table: &str,
         data: &[T],
         start_timestamp: Option<OffsetDateTime>,
-    ) -> Result<(), Error> {
+    ) -> Result<Vec<u8>, Error> {
         let data = serde_json::to_vec(&data)?;
         self.local_session
             .run_command_import(table, &data, start_timestamp)
