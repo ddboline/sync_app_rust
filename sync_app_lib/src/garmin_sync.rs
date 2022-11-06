@@ -108,6 +108,8 @@ impl GarminSync {
     pub async fn run_sync(&self) -> Result<Vec<StackString>, Error> {
         let buf = StackString::from_utf8_vec(self.client.run_local_command(&["sync"]).await?)?;
         let mut output: Vec<StackString> = buf.split('\n').map(Into::into).collect();
+        let buf = StackString::from_utf8_vec(self.client.run_local_command(&["proc"]).await?)?;
+        output.extend(buf.split('\n').map(Into::into));
 
         self.client.init("garmin", "garmin-sync").await?;
         let results = self
@@ -189,9 +191,9 @@ impl GarminSync {
         let results = self
             .run_single_sync_race_results("garmin/race_results_db", "updates", "race_results")
             .await?;
-        output.extend_from_slice(&results);
-
         self.client.shutdown().await?;
+
+        output.extend_from_slice(&results);
 
         Ok(output)
     }
