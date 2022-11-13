@@ -9,6 +9,7 @@ use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt::Debug};
 use time::{macros::format_description, Date};
 use uuid::Uuid;
+use rust_decimal::Decimal;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
 
@@ -26,8 +27,8 @@ pub struct ImdbEpisodes {
     pub title: StackString,
     pub season: i32,
     pub episode: i32,
-    pub airdate: Date,
-    pub rating: f64,
+    pub airdate: Option<Date>,
+    pub rating: Option<Decimal>,
     pub eptitle: StackString,
     pub epurl: StackString,
 }
