@@ -104,7 +104,7 @@ impl FileListTrait for FileListSSH {
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
-                create_dir_all(&parent_dir)?;
+                create_dir_all(parent_dir)?;
             }
 
             self.ssh

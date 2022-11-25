@@ -322,7 +322,7 @@ impl FileListTrait for FileListGDrive {
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
-                create_dir_all(&parent_dir)?;
+                create_dir_all(parent_dir)?;
             }
             let gdriveid = finfo0.serviceid.as_str();
             let gfile = self.gdrive.get_file_metadata(gdriveid).await?;

@@ -4,12 +4,12 @@ use anyhow::Error;
 use log::debug;
 use postgres_query::FromSqlRow;
 use reqwest::Url;
+use rust_decimal::Decimal;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fmt::Debug};
 use time::{macros::format_description, Date};
 use uuid::Uuid;
-use rust_decimal::Decimal;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
 
@@ -238,7 +238,7 @@ impl MovieSync {
                 .format(format_description!(
                     "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond]Z"
                 ))
-                .unwrap_or_else(|_| "".into()),
+                .unwrap_or_default(),
         );
         let url = endpoint.join(&path)?;
         debug!("{}", url);

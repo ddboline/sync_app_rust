@@ -159,7 +159,7 @@ impl FileListTrait for FileListS3 {
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?;
             if !parent_dir.exists() {
-                create_dir_all(&parent_dir)?;
+                create_dir_all(parent_dir)?;
             }
             let remote_url = finfo0.urlname.clone();
             let bucket = remote_url
