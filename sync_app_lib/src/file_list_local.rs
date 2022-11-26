@@ -155,7 +155,7 @@ impl FileListTrait for FileListLocal {
         spawn_blocking(move || {
             let basedir = local_list.get_baseurl().path();
 
-            let wdir = WalkDir::new(&basedir).same_file_system(true).max_depth(1);
+            let wdir = WalkDir::new(basedir).same_file_system(true).max_depth(1);
 
             let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
 

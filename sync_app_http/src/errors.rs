@@ -1,5 +1,4 @@
 use anyhow::Error as AnyhowError;
-use handlebars::RenderError;
 use http::StatusCode;
 use indexmap::IndexMap;
 use log::error;
@@ -44,8 +43,6 @@ pub enum ServiceError {
     Utf8Error(#[from] Utf8Error),
     #[error("StdoutChannelError {0}")]
     StdoutChannelError(#[from] StdoutChannelError),
-    #[error("RenderError {0}")]
-    RenderError(#[from] RenderError),
     #[error("PqError {0}")]
     PqError(#[from] PqError),
 }

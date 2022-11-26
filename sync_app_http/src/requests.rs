@@ -180,7 +180,7 @@ impl SyncPodcastsRequest {
         if !Path::new(command_path).exists() {
             return Ok(Vec::new());
         }
-        let process = Command::new(&command_path)
+        let process = Command::new(command_path)
             .env_remove("DATABASE_URL")
             .env_remove("GOOGLE_MUSIC_DIRECTORY")
             .output()

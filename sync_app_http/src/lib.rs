@@ -7,6 +7,7 @@
 #![allow(clippy::unused_async)]
 
 pub mod app;
+pub mod elements;
 pub mod errors;
 pub mod logged_user;
 pub mod requests;

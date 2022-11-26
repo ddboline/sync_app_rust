@@ -1,10 +1,10 @@
 use futures::TryStreamExt;
-use maplit::hashmap;
 use rweb::{get, Query, Rejection};
 use rweb_helper::{
     html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase, RwebResponse,
 };
 use stack_string::{format_sstr, StackString};
+use std::convert::Infallible;
 
 use sync_app_lib::{
     file_sync::FileSyncAction,
@@ -13,6 +13,7 @@ use sync_app_lib::{
 
 use super::{
     app::AppState,
+    elements::{index_body, text_body},
     errors::ServiceError as Error,
     logged_user::{LoggedUser, SyncKey},
     requests::{SyncEntryDeleteRequest, SyncEntryProcessRequest, SyncRemoveRequest, SyncRequest},
@@ -30,43 +31,29 @@ pub async fn sync_frontpage(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
 ) -> WarpResult<IndexResponse> {
-    let entries: Vec<_> = FileSyncConfig::get_config_list(&data.db)
-        .await.map_err(Into::<Error>::into)?.map_ok(|v| {
-            if let Some(name) = v.name.as_ref() {
-                format_sstr!(r#"
-                    <input type="button" type="submit" name="sync-{name}" value="{name}" onclick="syncName( '{name}' )">
-                "#)
-            } else {
-                "".into()
-            }
-        }).try_collect().await.map_err(Into::<Error>::into)?;
-    let conf_list = entries.join("<br>");
-    let entries: Vec<_> = FileSyncCache::get_cache_list(&data.db)
+    let conf_list: Vec<FileSyncConfig> = FileSyncConfig::get_config_list(&data.db)
         .await
         .map_err(Into::<Error>::into)?
-        .map_ok(|v| {
-            format_sstr!(
-                r#"
-        <input type="button" name="Rm" value="Rm" onclick="removeCacheEntry('{id}')">
-        <input type="button" name="DelSrc" value="DelSrc" onclick="deleteEntry('{src}', '{id}')">
-        {src} {dst}
-        <input type="button" name="DelDst" value="DelDst" onclick="deleteEntry('{dst}', '{id}')">
-        <input type="button" name="Proc" value="Proc" onclick="procCacheEntry('{id}')">"#,
-                id = v.id,
-                src = v.src_url,
-                dst = v.dst_url
-            )
-        })
         .try_collect()
         .await
         .map_err(Into::<Error>::into)?;
-    let body = entries.join("<br>");
-    let params = hashmap! {
-        "LIST_TEXT" => conf_list,
-        "DISPLAY_TEXT" => body,
-    };
-    let body = data.hb.render("id", &params).map_err(Into::<Error>::into)?;
+    let entries: Vec<FileSyncCache> = FileSyncCache::get_cache_list(&data.db)
+        .await
+        .map_err(Into::<Error>::into)?
+        .try_collect()
+        .await
+        .map_err(Into::<Error>::into)?;
+    let body = index_body(conf_list, entries);
     Ok(HtmlBase::new(body).into())
+}
+
+#[derive(RwebResponse)]
+#[response(description = "Javascript", content = "js")]
+struct JsResponse(HtmlBase<&'static str, Infallible>);
+
+#[get("/sync/scripts.js")]
+pub async fn garmin_scripts_js() -> WarpResult<JsResponse> {
+    Ok(HtmlBase::new(include_str!("../../templates/scripts.js")).into())
 }
 
 #[derive(RwebResponse)]
@@ -244,10 +231,7 @@ pub async fn sync_podcasts(
 ) -> WarpResult<SyncPodcastsResponse> {
     match user.push_session(SyncKey::SyncPodcast, data).await? {
         Some(result) => {
-            let body = format_sstr!(
-                r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
-                result.join("\n")
-            );
+            let body = text_body(result.join("\n").into()).into();
             Ok(HtmlBase::new(body).into())
         }
         None => Ok(HtmlBase::new("running".into()).into()),
@@ -274,10 +258,7 @@ pub async fn sync_security(
 ) -> WarpResult<SyncSecurityLogsResponse> {
     match user.push_session(SyncKey::SyncSecurity, data).await? {
         Some(result) => {
-            let body = format_sstr!(
-                r#"<textarea autofocus readonly="readonly" rows=50 cols=100>{}</textarea>"#,
-                result.join("\n")
-            );
+            let body = text_body(result.join("\n").into()).into();
             Ok(HtmlBase::new(body).into())
         }
         None => Ok(HtmlBase::new("running".into()).into()),

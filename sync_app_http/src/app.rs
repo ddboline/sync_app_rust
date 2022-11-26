@@ -1,6 +1,5 @@
 use anyhow::Error;
 use deadqueue::unlimited::Queue;
-use handlebars::Handlebars;
 use log::error;
 use reqwest::{Client, ClientBuilder};
 use rweb::{
@@ -22,9 +21,9 @@ use super::{
     errors::error_response,
     logged_user::{fill_from_db, get_secrets, SyncMesg, TRIGGER_DB_UPDATE},
     routes::{
-        delete_cache_entry, list_sync_cache, proc_all, process_cache_entry, remove, sync_all,
-        sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_name, sync_podcasts,
-        sync_security, user,
+        delete_cache_entry, garmin_scripts_js, list_sync_cache, proc_all, process_cache_entry,
+        remove, sync_all, sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_name,
+        sync_podcasts, sync_security, user,
     },
 };
 
@@ -66,7 +65,6 @@ pub struct AppState {
     pub locks: Arc<AccessLocks>,
     pub client: Arc<Client>,
     pub queue: Arc<Queue<SyncJob>>,
-    pub hb: Arc<Handlebars<'static>>,
 }
 
 /// # Errors
@@ -92,6 +90,7 @@ pub async fn start_app() -> Result<(), Error> {
 
 fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
     let sync_frontpage_path = sync_frontpage(app.clone()).boxed();
+    let garmin_scripts_js_path = garmin_scripts_js().boxed();
     let sync_all_path = sync_all(app.clone()).boxed();
     let sync_name_path = sync_name(app.clone()).boxed();
     let proc_all_path = proc_all(app.clone()).boxed();
@@ -106,6 +105,7 @@ fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
     let sync_security_path = sync_security(app.clone()).boxed();
     let user_path = user().boxed();
     sync_frontpage_path
+        .or(garmin_scripts_js_path)
         .or(sync_all_path)
         .or(sync_name_path)
         .or(proc_all_path)
@@ -147,18 +147,12 @@ async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     let client = Arc::new(ClientBuilder::new().build()?);
     let queue = Arc::new(Queue::new());
 
-    let mut hb = Handlebars::new();
-    hb.register_template_string("id", include_str!("../../templates/index.html.hbr"))
-        .expect("Failed to parse template");
-    let hb = Arc::new(hb);
-
     let app = AppState {
         config,
         db: pool,
         locks,
         client,
         queue,
-        hb,
     };
 
     tokio::task::spawn(_run_queue(app.clone()));

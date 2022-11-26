@@ -361,7 +361,7 @@ impl DirectoryInfoCache {
     }
 }
 
-#[derive(FromSqlRow, Clone, Debug)]
+#[derive(FromSqlRow, Clone, Debug, PartialEq, Eq)]
 pub struct FileSyncCache {
     pub id: Uuid,
     pub src_url: StackString,
@@ -435,7 +435,7 @@ impl FileSyncCache {
     }
 }
 
-#[derive(FromSqlRow, Clone)]
+#[derive(FromSqlRow, Clone, PartialEq, Eq)]
 pub struct FileSyncConfig {
     pub id: Uuid,
     pub src_url: StackString,
