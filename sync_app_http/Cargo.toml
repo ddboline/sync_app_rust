@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.9.36"
+version = "0.10.0"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -28,12 +28,12 @@ dirs = "4.0"
 itertools = "0.10"
 indexmap = "1.6"
 serde_yaml = "0.9"
-stdout-channel = "0.5"
+stdout-channel = "0.6"
 uuid = "1.0"
 deadqueue = "0.2"
 dioxus = { version = "0.2", features = ["ssr"] }
 reqwest = {version="0.11", features=["cookies", "json", "rustls-tls"], default_features=false}
 rweb-helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.4.14" }
-stack-string = { version="0.7", features=["postgres_types", "rweb-openapi"] }
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.9.6"}
+stack-string = { version="0.8", features=["postgres_types", "rweb-openapi"] }
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.10.0"}
 postgres_query = {git = "https://github.com/ddboline/rust-postgres-query", tag = "0.3.4", features=["deadpool"]}

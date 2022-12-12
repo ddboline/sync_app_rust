@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_rust"
-version = "0.9.36"
+version = "0.10.0"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -24,7 +24,7 @@ dirs = "4.0"
 walkdir = "2.3"
 time = {version="0.3", features=["serde-human-readable", "macros", "formatting"]}
 futures = "0.3"
-stack-string = { version="0.7", features=["postgres_types"] }
+stack-string = { version="0.8", features=["postgres_types"] }
 
 [workspace]
 members = [
