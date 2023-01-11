@@ -1,6 +1,5 @@
 use dioxus::prelude::{
-    dioxus_elements, format_args_f, inline_props, rsx, Element, LazyNodes, NodeFactory, Props,
-    Scope, VNode, VirtualDom,
+    dioxus_elements, inline_props, rsx, Element, GlobalAttributes, Props, Scope, VirtualDom,
 };
 
 use stack_string::StackString;
@@ -9,8 +8,8 @@ use sync_app_lib::models::{FileSyncCache, FileSyncConfig};
 pub fn index_body(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> String {
     let mut app =
         VirtualDom::new_with_props(index_element, index_elementProps { conf_list, entries });
-    app.rebuild();
-    dioxus::ssr::render_vdom(&app)
+    drop(app.rebuild());
+    dioxus_ssr::render(&app)
 }
 
 #[inline_props]
@@ -19,7 +18,7 @@ fn index_element(
     conf_list: Vec<FileSyncConfig>,
     entries: Vec<FileSyncCache>,
 ) -> Element {
-    let conf_element = conf_list.iter().enumerate().map(|(idx, v)| {
+    let conf_element = conf_list.iter().enumerate().filter_map(|(idx, v)| {
         v.name.as_ref().map(|name| {
             rsx! {
                 input {
@@ -75,7 +74,7 @@ fn index_element(
     cx.render(rsx! {
         head {
             style {
-                [include_str!("../../templates/style.css")]
+                include_str!("../../templates/style.css")
             }
         },
         body {
@@ -144,8 +143,8 @@ fn index_element(
 
 pub fn text_body(text: StackString) -> String {
     let mut app = VirtualDom::new_with_props(text_element, text_elementProps { text });
-    app.rebuild();
-    dioxus::ssr::render_vdom(&app)
+    drop(app.rebuild());
+    dioxus_ssr::render(&app)
 }
 
 #[inline_props]
