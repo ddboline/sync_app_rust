@@ -250,7 +250,7 @@ impl FileListTrait for FileListGDrive {
             flist_dict.insert(f.serviceid.clone().into(), f);
         }
 
-        let flist = flist_dict.into_iter().map(|(_, v)| v).collect();
+        let flist = flist_dict.into_values().collect();
 
         self.gdrive.start_page_token.store(Some(start_page_token));
 

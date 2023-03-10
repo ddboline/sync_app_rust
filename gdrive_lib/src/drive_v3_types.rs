@@ -2089,28 +2089,28 @@ impl std::fmt::Display for ChangesGetStartPageTokenParams {
             write!(
                 f,
                 "&driveId={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.team_drive_id {
             write!(
                 f,
                 "&teamDriveId={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2189,84 +2189,84 @@ impl std::fmt::Display for ChangesListParams {
             write!(
                 f,
                 "&driveId={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_corpus_removals {
             write!(
                 f,
                 "&includeCorpusRemovals={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_items_from_all_drives {
             write!(
                 f,
                 "&includeItemsFromAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_permissions_for_view {
             write!(
                 f,
                 "&includePermissionsForView={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_removed {
             write!(
                 f,
                 "&includeRemoved={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_team_drive_items {
             write!(
                 f,
                 "&includeTeamDriveItems={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_size {
             write!(
                 f,
                 "&pageSize={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.restrict_to_my_drive {
             write!(
                 f,
                 "&restrictToMyDrive={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.spaces {
             write!(
                 f,
                 "&spaces={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.team_drive_id {
             write!(
                 f,
                 "&teamDriveId={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2345,84 +2345,84 @@ impl std::fmt::Display for ChangesWatchParams {
             write!(
                 f,
                 "&driveId={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_corpus_removals {
             write!(
                 f,
                 "&includeCorpusRemovals={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_items_from_all_drives {
             write!(
                 f,
                 "&includeItemsFromAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_permissions_for_view {
             write!(
                 f,
                 "&includePermissionsForView={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_removed {
             write!(
                 f,
                 "&includeRemoved={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_team_drive_items {
             write!(
                 f,
                 "&includeTeamDriveItems={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_size {
             write!(
                 f,
                 "&pageSize={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.restrict_to_my_drive {
             write!(
                 f,
                 "&restrictToMyDrive={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.spaces {
             write!(
                 f,
                 "&spaces={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.team_drive_id {
             write!(
                 f,
                 "&teamDriveId={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2504,7 +2504,7 @@ impl std::fmt::Display for CommentsGetParams {
             write!(
                 f,
                 "&includeDeleted={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2544,28 +2544,28 @@ impl std::fmt::Display for CommentsListParams {
             write!(
                 f,
                 "&includeDeleted={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_size {
             write!(
                 f,
                 "&pageSize={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.start_modified_time {
             write!(
                 f,
                 "&startModifiedTime={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2657,7 +2657,7 @@ impl std::fmt::Display for DrivesGetParams {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2709,28 +2709,28 @@ impl std::fmt::Display for DrivesListParams {
             write!(
                 f,
                 "&pageSize={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.q {
             write!(
                 f,
                 "&q={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.use_domain_admin_access {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2776,7 +2776,7 @@ impl std::fmt::Display for DrivesUpdateParams {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2831,49 +2831,49 @@ impl std::fmt::Display for FilesCopyParams {
             write!(
                 f,
                 "&enforceSingleParent={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.ignore_default_visibility {
             write!(
                 f,
                 "&ignoreDefaultVisibility={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_permissions_for_view {
             write!(
                 f,
                 "&includePermissionsForView={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.keep_revision_forever {
             write!(
                 f,
                 "&keepRevisionForever={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.ocr_language {
             write!(
                 f,
                 "&ocrLanguage={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2927,56 +2927,56 @@ impl std::fmt::Display for FilesCreateParams {
             write!(
                 f,
                 "&enforceSingleParent={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.ignore_default_visibility {
             write!(
                 f,
                 "&ignoreDefaultVisibility={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_permissions_for_view {
             write!(
                 f,
                 "&includePermissionsForView={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.keep_revision_forever {
             write!(
                 f,
                 "&keepRevisionForever={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.ocr_language {
             write!(
                 f,
                 "&ocrLanguage={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.use_content_as_indexable_text {
             write!(
                 f,
                 "&useContentAsIndexableText={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3012,21 +3012,21 @@ impl std::fmt::Display for FilesDeleteParams {
             write!(
                 f,
                 "&enforceSingleParent={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3052,7 +3052,7 @@ impl std::fmt::Display for FilesEmptyTrashParams {
             write!(
                 f,
                 "&enforceSingleParent={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3105,14 +3105,14 @@ impl std::fmt::Display for FilesGenerateIdsParams {
             write!(
                 f,
                 "&count={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.space {
             write!(
                 f,
                 "&space={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3151,28 +3151,28 @@ impl std::fmt::Display for FilesGetParams {
             write!(
                 f,
                 "&acknowledgeAbuse={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_permissions_for_view {
             write!(
                 f,
                 "&includePermissionsForView={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3257,98 +3257,98 @@ impl std::fmt::Display for FilesListParams {
             write!(
                 f,
                 "&corpora={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.corpus {
             write!(
                 f,
                 "&corpus={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.drive_id {
             write!(
                 f,
                 "&driveId={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_items_from_all_drives {
             write!(
                 f,
                 "&includeItemsFromAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_permissions_for_view {
             write!(
                 f,
                 "&includePermissionsForView={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_team_drive_items {
             write!(
                 f,
                 "&includeTeamDriveItems={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.order_by {
             write!(
                 f,
                 "&orderBy={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_size {
             write!(
                 f,
                 "&pageSize={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.q {
             write!(
                 f,
                 "&q={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.spaces {
             write!(
                 f,
                 "&spaces={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.team_drive_id {
             write!(
                 f,
                 "&teamDriveId={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3405,63 +3405,63 @@ impl std::fmt::Display for FilesUpdateParams {
             write!(
                 f,
                 "&addParents={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.enforce_single_parent {
             write!(
                 f,
                 "&enforceSingleParent={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_permissions_for_view {
             write!(
                 f,
                 "&includePermissionsForView={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.keep_revision_forever {
             write!(
                 f,
                 "&keepRevisionForever={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.ocr_language {
             write!(
                 f,
                 "&ocrLanguage={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.remove_parents {
             write!(
                 f,
                 "&removeParents={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.use_content_as_indexable_text {
             write!(
                 f,
                 "&useContentAsIndexableText={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3500,28 +3500,28 @@ impl std::fmt::Display for FilesWatchParams {
             write!(
                 f,
                 "&acknowledgeAbuse={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_permissions_for_view {
             write!(
                 f,
                 "&includePermissionsForView={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3581,56 +3581,56 @@ impl std::fmt::Display for PermissionsCreateParams {
             write!(
                 f,
                 "&emailMessage={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.enforce_single_parent {
             write!(
                 f,
                 "&enforceSingleParent={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.move_to_new_owners_root {
             write!(
                 f,
                 "&moveToNewOwnersRoot={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.send_notification_email {
             write!(
                 f,
                 "&sendNotificationEmail={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.transfer_ownership {
             write!(
                 f,
                 "&transferOwnership={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.use_domain_admin_access {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3670,21 +3670,21 @@ impl std::fmt::Display for PermissionsDeleteParams {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.use_domain_admin_access {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3724,21 +3724,21 @@ impl std::fmt::Display for PermissionsGetParams {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.use_domain_admin_access {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3790,42 +3790,42 @@ impl std::fmt::Display for PermissionsListParams {
             write!(
                 f,
                 "&includePermissionsForView={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_size {
             write!(
                 f,
                 "&pageSize={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.use_domain_admin_access {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3873,35 +3873,35 @@ impl std::fmt::Display for PermissionsUpdateParams {
             write!(
                 f,
                 "&removeExpiration={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_all_drives {
             write!(
                 f,
                 "&supportsAllDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.supports_team_drives {
             write!(
                 f,
                 "&supportsTeamDrives={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.transfer_ownership {
             write!(
                 f,
                 "&transferOwnership={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.use_domain_admin_access {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3978,7 +3978,7 @@ impl std::fmt::Display for RepliesGetParams {
             write!(
                 f,
                 "&includeDeleted={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4017,21 +4017,21 @@ impl std::fmt::Display for RepliesListParams {
             write!(
                 f,
                 "&includeDeleted={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_size {
             write!(
                 f,
                 "&pageSize={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4105,7 +4105,7 @@ impl std::fmt::Display for RevisionsGetParams {
             write!(
                 f,
                 "&acknowledgeAbuse={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4137,14 +4137,14 @@ impl std::fmt::Display for RevisionsListParams {
             write!(
                 f,
                 "&pageSize={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4236,7 +4236,7 @@ impl std::fmt::Display for TeamdrivesGetParams {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4271,28 +4271,28 @@ impl std::fmt::Display for TeamdrivesListParams {
             write!(
                 f,
                 "&pageSize={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.q {
             write!(
                 f,
                 "&q={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.use_domain_admin_access {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4321,7 +4321,7 @@ impl std::fmt::Display for TeamdrivesUpdateParams {
             write!(
                 f,
                 "&useDomainAdminAccess={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4370,49 +4370,49 @@ impl std::fmt::Display for DriveParams {
             write!(
                 f,
                 "&alt={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.fields {
             write!(
                 f,
                 "&fields={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.key {
             write!(
                 f,
                 "&key={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.oauth_token {
             write!(
                 f,
                 "&oauth_token={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.pretty_print {
             write!(
                 f,
                 "&prettyPrint={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.quota_user {
             write!(
                 f,
                 "&quotaUser={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_ip {
             write!(
                 f,
                 "&userIp={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4510,12 +4510,12 @@ impl AboutService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -4615,12 +4615,12 @@ impl ChangesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -4644,12 +4644,12 @@ impl ChangesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -4673,12 +4673,12 @@ impl ChangesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -4776,12 +4776,12 @@ impl ChannelsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -4882,12 +4882,12 @@ impl CommentsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -4919,12 +4919,12 @@ impl CommentsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -4955,12 +4955,12 @@ impl CommentsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -4987,12 +4987,12 @@ impl CommentsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5023,12 +5023,12 @@ impl CommentsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5126,12 +5126,12 @@ impl DrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5160,12 +5160,12 @@ impl DrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -5192,12 +5192,12 @@ impl DrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5224,12 +5224,12 @@ impl DrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "POST", opt_request).await
@@ -5253,12 +5253,12 @@ impl DrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5285,12 +5285,12 @@ impl DrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "POST", opt_request).await
@@ -5317,12 +5317,12 @@ impl DrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5424,12 +5424,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5454,12 +5454,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5492,13 +5492,13 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?uploadType=multipart{params}", params = params);
+        let mut url_params = format!("?uploadType=multipart{params}");
 
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
 
@@ -5533,12 +5533,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?uploadType=resumable{params}", params = params);
+        let mut url_params = format!("?uploadType=resumable{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5553,10 +5553,9 @@ impl FilesService {
             ))
         } else {
             Err(Error::from(ApiError::RedirectError(format!(
-                "Resumable upload response didn't contain Location: {:?}",
-                headers
+                "Resumable upload response didn't contain Location: {headers:?}"
             )))
-            .context(format!("{:?}", headers)))?
+            .context(format!("{headers:?}")))?
         }
     }
 
@@ -5584,12 +5583,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -5613,12 +5612,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -5651,12 +5650,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
         let opt_request: Option<&EmptyRequest> = None;
 
         do_download(&self.client, &full_uri, headers, "GET".into(), opt_request).await
@@ -5681,12 +5680,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5718,12 +5717,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
         let opt_request: Option<&EmptyRequest> = None;
 
         do_download(&self.client, &full_uri, headers, "GET".into(), opt_request).await
@@ -5747,12 +5746,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -5780,12 +5779,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5822,13 +5821,13 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?uploadType=multipart{params}", params = params);
+        let mut url_params = format!("?uploadType=multipart{params}");
 
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
 
@@ -5878,12 +5877,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?uploadType=resumable{params}", params = params);
+        let mut url_params = format!("?uploadType=resumable{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -5899,10 +5898,10 @@ impl FilesService {
             ))
         } else {
             Err(Error::from(ApiError::RedirectError(format!(
-                "Resumable upload response didn't contain Location: {:?}",
-                headers
+                "Resumable upload response didn't contain Location: {headers:?}"
+                
             )))
-            .context(format!("{:?}", headers)))?
+            .context(format!("{headers:?}")))?
         }
     }
 
@@ -5933,12 +5932,12 @@ impl FilesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
 
@@ -6043,12 +6042,12 @@ impl PermissionsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6080,12 +6079,12 @@ impl PermissionsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6116,12 +6115,12 @@ impl PermissionsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6148,12 +6147,12 @@ impl PermissionsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6188,12 +6187,12 @@ impl PermissionsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6298,12 +6297,12 @@ impl RepliesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6336,12 +6335,12 @@ impl RepliesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6373,12 +6372,12 @@ impl RepliesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6409,12 +6408,12 @@ impl RepliesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6446,12 +6445,12 @@ impl RepliesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6559,12 +6558,12 @@ impl RevisionsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6600,12 +6599,12 @@ impl RevisionsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
         let opt_request: Option<&EmptyRequest> = None;
 
         do_download(&self.client, &full_uri, headers, "GET".into(), opt_request).await
@@ -6632,12 +6631,12 @@ impl RevisionsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6668,12 +6667,12 @@ impl RevisionsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6775,12 +6774,12 @@ impl TeamdrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6811,12 +6810,12 @@ impl TeamdrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6846,12 +6845,12 @@ impl TeamdrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6875,12 +6874,12 @@ impl TeamdrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6914,12 +6913,12 @@ impl TeamdrivesService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.drive_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);

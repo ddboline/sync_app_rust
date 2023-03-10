@@ -2389,14 +2389,14 @@ impl std::fmt::Display for BucketAccessControlsDeleteParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2433,14 +2433,14 @@ impl std::fmt::Display for BucketAccessControlsGetParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2472,14 +2472,14 @@ impl std::fmt::Display for BucketAccessControlsInsertParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2511,14 +2511,14 @@ impl std::fmt::Display for BucketAccessControlsListParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2555,14 +2555,14 @@ impl std::fmt::Display for BucketAccessControlsPatchParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2599,14 +2599,14 @@ impl std::fmt::Display for BucketAccessControlsUpdateParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2646,28 +2646,28 @@ impl std::fmt::Display for BucketsDeleteParams {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2710,35 +2710,35 @@ impl std::fmt::Display for BucketsGetParams {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2775,21 +2775,21 @@ impl std::fmt::Display for BucketsGetIamPolicyParams {
             write!(
                 f,
                 "&optionsRequestedPolicyVersion={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2836,35 +2836,35 @@ impl std::fmt::Display for BucketsInsertParams {
             write!(
                 f,
                 "&predefinedAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.predefined_default_object_acl {
             write!(
                 f,
                 "&predefinedDefaultObjectAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2914,42 +2914,42 @@ impl std::fmt::Display for BucketsListParams {
             write!(
                 f,
                 "&maxResults={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.prefix {
             write!(
                 f,
                 "&prefix={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -2993,14 +2993,14 @@ impl std::fmt::Display for BucketsLockRetentionPolicyParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3049,49 +3049,49 @@ impl std::fmt::Display for BucketsPatchParams {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.predefined_acl {
             write!(
                 f,
                 "&predefinedAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.predefined_default_object_acl {
             write!(
                 f,
                 "&predefinedDefaultObjectAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3123,14 +3123,14 @@ impl std::fmt::Display for BucketsSetIamPolicyParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3170,14 +3170,14 @@ impl std::fmt::Display for BucketsTestIamPermissionsParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3226,49 +3226,49 @@ impl std::fmt::Display for BucketsUpdateParams {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.predefined_acl {
             write!(
                 f,
                 "&predefinedAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.predefined_default_object_acl {
             write!(
                 f,
                 "&predefinedDefaultObjectAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3319,14 +3319,14 @@ impl std::fmt::Display for DefaultObjectAccessControlsDeleteParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3363,14 +3363,14 @@ impl std::fmt::Display for DefaultObjectAccessControlsGetParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3402,14 +3402,14 @@ impl std::fmt::Display for DefaultObjectAccessControlsInsertParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3449,28 +3449,28 @@ impl std::fmt::Display for DefaultObjectAccessControlsListParams {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3507,14 +3507,14 @@ impl std::fmt::Display for DefaultObjectAccessControlsPatchParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3551,14 +3551,14 @@ impl std::fmt::Display for DefaultObjectAccessControlsUpdateParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3593,14 +3593,14 @@ impl std::fmt::Display for NotificationsDeleteParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3635,14 +3635,14 @@ impl std::fmt::Display for NotificationsGetParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3674,14 +3674,14 @@ impl std::fmt::Display for NotificationsInsertParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3713,14 +3713,14 @@ impl std::fmt::Display for NotificationsListParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3765,21 +3765,21 @@ impl std::fmt::Display for ObjectAccessControlsDeleteParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3824,21 +3824,21 @@ impl std::fmt::Display for ObjectAccessControlsGetParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3878,21 +3878,21 @@ impl std::fmt::Display for ObjectAccessControlsInsertParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3932,21 +3932,21 @@ impl std::fmt::Display for ObjectAccessControlsListParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -3991,21 +3991,21 @@ impl std::fmt::Display for ObjectAccessControlsPatchParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4050,21 +4050,21 @@ impl std::fmt::Display for ObjectAccessControlsUpdateParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4119,42 +4119,42 @@ impl std::fmt::Display for ObjectsComposeParams {
             write!(
                 f,
                 "&destinationPredefinedAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_match {
             write!(
                 f,
                 "&ifGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_match {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.kms_key_name {
             write!(
                 f,
                 "&kmsKeyName={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4252,98 +4252,98 @@ impl std::fmt::Display for ObjectsCopyParams {
             write!(
                 f,
                 "&destinationKmsKeyName={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.destination_predefined_acl {
             write!(
                 f,
                 "&destinationPredefinedAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_match {
             write!(
                 f,
                 "&ifGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_not_match {
             write!(
                 f,
                 "&ifGenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_match {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_source_generation_match {
             write!(
                 f,
                 "&ifSourceGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_source_generation_not_match {
             write!(
                 f,
                 "&ifSourceGenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_source_metageneration_match {
             write!(
                 f,
                 "&ifSourceMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_source_metageneration_not_match {
             write!(
                 f,
                 "&ifSourceMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.source_generation {
             write!(
                 f,
                 "&sourceGeneration={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4402,49 +4402,49 @@ impl std::fmt::Display for ObjectsDeleteParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_match {
             write!(
                 f,
                 "&ifGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_not_match {
             write!(
                 f,
                 "&ifGenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_match {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4506,56 +4506,56 @@ impl std::fmt::Display for ObjectsGetParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_match {
             write!(
                 f,
                 "&ifGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_not_match {
             write!(
                 f,
                 "&ifGenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_match {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4595,21 +4595,21 @@ impl std::fmt::Display for ObjectsGetIamPolicyParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4687,77 +4687,77 @@ impl std::fmt::Display for ObjectsInsertParams {
             write!(
                 f,
                 "&contentEncoding={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_match {
             write!(
                 f,
                 "&ifGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_not_match {
             write!(
                 f,
                 "&ifGenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_match {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.kms_key_name {
             write!(
                 f,
                 "&kmsKeyName={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.name {
             write!(
                 f,
                 "&name={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.predefined_acl {
             write!(
                 f,
                 "&predefinedAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4830,77 +4830,77 @@ impl std::fmt::Display for ObjectsListParams {
             write!(
                 f,
                 "&delimiter={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.end_offset {
             write!(
                 f,
                 "&endOffset={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_trailing_delimiter {
             write!(
                 f,
                 "&includeTrailingDelimiter={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.max_results {
             write!(
                 f,
                 "&maxResults={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.prefix {
             write!(
                 f,
                 "&prefix={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.start_offset {
             write!(
                 f,
                 "&startOffset={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.versions {
             write!(
                 f,
                 "&versions={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -4964,63 +4964,63 @@ impl std::fmt::Display for ObjectsPatchParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_match {
             write!(
                 f,
                 "&ifGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_not_match {
             write!(
                 f,
                 "&ifGenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_match {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.predefined_acl {
             write!(
                 f,
                 "&predefinedAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5134,112 +5134,112 @@ impl std::fmt::Display for ObjectsRewriteParams {
             write!(
                 f,
                 "&destinationKmsKeyName={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.destination_predefined_acl {
             write!(
                 f,
                 "&destinationPredefinedAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_match {
             write!(
                 f,
                 "&ifGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_not_match {
             write!(
                 f,
                 "&ifGenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_match {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_source_generation_match {
             write!(
                 f,
                 "&ifSourceGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_source_generation_not_match {
             write!(
                 f,
                 "&ifSourceGenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_source_metageneration_match {
             write!(
                 f,
                 "&ifSourceMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_source_metageneration_not_match {
             write!(
                 f,
                 "&ifSourceMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.max_bytes_rewritten_per_call {
             write!(
                 f,
                 "&maxBytesRewrittenPerCall={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.rewrite_token {
             write!(
                 f,
                 "&rewriteToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.source_generation {
             write!(
                 f,
                 "&sourceGeneration={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5279,21 +5279,21 @@ impl std::fmt::Display for ObjectsSetIamPolicyParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5341,21 +5341,21 @@ impl std::fmt::Display for ObjectsTestIamPermissionsParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5420,63 +5420,63 @@ impl std::fmt::Display for ObjectsUpdateParams {
             write!(
                 f,
                 "&generation={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_match {
             write!(
                 f,
                 "&ifGenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_generation_not_match {
             write!(
                 f,
                 "&ifGenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_match {
             write!(
                 f,
                 "&ifMetagenerationMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.if_metageneration_not_match {
             write!(
                 f,
                 "&ifMetagenerationNotMatch={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.predefined_acl {
             write!(
                 f,
                 "&predefinedAcl={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5549,77 +5549,77 @@ impl std::fmt::Display for ObjectsWatchAllParams {
             write!(
                 f,
                 "&delimiter={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.end_offset {
             write!(
                 f,
                 "&endOffset={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.include_trailing_delimiter {
             write!(
                 f,
                 "&includeTrailingDelimiter={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.max_results {
             write!(
                 f,
                 "&maxResults={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.prefix {
             write!(
                 f,
                 "&prefix={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.projection {
             write!(
                 f,
                 "&projection={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.provisional_user_project {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.start_offset {
             write!(
                 f,
                 "&startOffset={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.versions {
             write!(
                 f,
                 "&versions={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5657,7 +5657,7 @@ impl std::fmt::Display for ProjectsHmacKeysCreateParams {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5687,7 +5687,7 @@ impl std::fmt::Display for ProjectsHmacKeysDeleteParams {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5717,7 +5717,7 @@ impl std::fmt::Display for ProjectsHmacKeysGetParams {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5762,35 +5762,35 @@ impl std::fmt::Display for ProjectsHmacKeysListParams {
             write!(
                 f,
                 "&maxResults={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.page_token {
             write!(
                 f,
                 "&pageToken={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.service_account_email {
             write!(
                 f,
                 "&serviceAccountEmail={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.show_deleted_keys {
             write!(
                 f,
                 "&showDeletedKeys={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5820,7 +5820,7 @@ impl std::fmt::Display for ProjectsHmacKeysUpdateParams {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5851,14 +5851,14 @@ impl std::fmt::Display for ProjectsServiceAccountGetParams {
             write!(
                 f,
                 "&provisionalUserProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_project {
             write!(
                 f,
                 "&userProject={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -5907,49 +5907,49 @@ impl std::fmt::Display for StorageParams {
             write!(
                 f,
                 "&alt={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.fields {
             write!(
                 f,
                 "&fields={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.key {
             write!(
                 f,
                 "&key={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.oauth_token {
             write!(
                 f,
                 "&oauth_token={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.pretty_print {
             write!(
                 f,
                 "&prettyPrint={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.quota_user {
             write!(
                 f,
                 "&quotaUser={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         if let Some(ref v) = self.user_ip {
             write!(
                 f,
                 "&userIp={}",
-                percent_encode(format!("{}", v).as_bytes(), NON_ALPHANUMERIC)
+                percent_encode(format!("{v}").as_bytes(), NON_ALPHANUMERIC)
             )?;
         }
         Ok(())
@@ -6052,12 +6052,12 @@ impl BucketAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6085,12 +6085,12 @@ impl BucketAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6121,12 +6121,12 @@ impl BucketAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6157,12 +6157,12 @@ impl BucketAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6194,12 +6194,12 @@ impl BucketAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6232,12 +6232,12 @@ impl BucketAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6338,12 +6338,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6370,12 +6370,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6402,12 +6402,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6431,12 +6431,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6461,12 +6461,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6496,12 +6496,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "POST", opt_request).await
@@ -6529,12 +6529,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6566,12 +6566,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6603,12 +6603,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6636,12 +6636,12 @@ impl BucketsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6739,12 +6739,12 @@ impl ChannelsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6851,12 +6851,12 @@ impl DefaultObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -6888,12 +6888,12 @@ impl DefaultObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6924,12 +6924,12 @@ impl DefaultObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -6960,12 +6960,12 @@ impl DefaultObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -6997,12 +6997,12 @@ impl DefaultObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7035,12 +7035,12 @@ impl DefaultObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7145,12 +7145,12 @@ impl NotificationsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -7181,12 +7181,12 @@ impl NotificationsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7217,12 +7217,12 @@ impl NotificationsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7250,12 +7250,12 @@ impl NotificationsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7359,12 +7359,12 @@ impl ObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -7393,12 +7393,12 @@ impl ObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7430,12 +7430,12 @@ impl ObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7467,12 +7467,12 @@ impl ObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7505,12 +7505,12 @@ impl ObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7544,12 +7544,12 @@ impl ObjectAccessControlsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7662,12 +7662,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7711,12 +7711,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7747,12 +7747,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -7785,12 +7785,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
         let opt_request: Option<&EmptyRequest> = None;
 
         do_download(&self.client, &full_uri, headers, "GET".into(), opt_request).await
@@ -7818,12 +7818,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -7850,12 +7850,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7891,13 +7891,13 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?uploadType=multipart{params}", params = params);
+        let mut url_params = format!("?uploadType=multipart{params}");
 
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
 
@@ -7935,12 +7935,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?uploadType=resumable{params}", params = params);
+        let mut url_params = format!("?uploadType=resumable{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -7955,10 +7955,9 @@ impl ObjectsService {
             ))
         } else {
             Err(Error::from(ApiError::RedirectError(format!(
-                "Resumable upload response didn't contain Location: {:?}",
-                headers
+                "Resumable upload response didn't contain Location: {headers:?}"
             )))
-            .context(format!("{:?}", headers)))?
+            .context(format!("{headers:?}")))?
         }
     }
 
@@ -7983,12 +7982,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -8016,12 +8015,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -8070,12 +8069,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -8108,12 +8107,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -8146,12 +8145,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -8179,12 +8178,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -8216,12 +8215,12 @@ impl ObjectsService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -8399,12 +8398,12 @@ impl ProjectsHmacKeysService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "POST", opt_request).await
@@ -8435,12 +8434,12 @@ impl ProjectsHmacKeysService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "DELETE", opt_request).await
@@ -8471,12 +8470,12 @@ impl ProjectsHmacKeysService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -8506,12 +8505,12 @@ impl ProjectsHmacKeysService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await
@@ -8547,12 +8546,12 @@ impl ProjectsHmacKeysService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         let opt_request = Some(req);
@@ -8661,12 +8660,12 @@ impl ProjectsServiceAccountService {
             format!("Bearer {token}", token = tok.as_str()),
         ));
 
-        let mut url_params = format!("?{params}", params = params);
+        let mut url_params = format!("?{params}");
         if let Some(ref api_params) = &params.storage_params {
-            write!(url_params, "{}", api_params)?;
+            write!(url_params, "{api_params}")?;
         }
 
-        let full_uri = format!("{}{}", path, url_params);
+        let full_uri = format!("{path}{url_params}");
 
         let opt_request: Option<&EmptyRequest> = None;
         do_request(&self.client, &full_uri, &headers, "GET", opt_request).await

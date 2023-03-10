@@ -924,7 +924,7 @@ impl GDriveInfo {
             urlname,
             md5sum,
             sha1sum: None,
-            filestat: (st_mtime as u32, size as u32),
+            filestat: (st_mtime as u32, size),
             serviceid,
             servicesession,
         };
