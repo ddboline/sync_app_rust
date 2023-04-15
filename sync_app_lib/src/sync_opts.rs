@@ -25,6 +25,7 @@ use crate::{
     movie_sync::MovieSync,
     pgpool::PgPool,
     security_sync::SecuritySync,
+    weather_sync::WeatherSync,
 };
 
 embed_migrations!("../migrations");
@@ -96,6 +97,7 @@ impl SyncOpts {
                 FileSyncAction::SyncMovie,
                 FileSyncAction::SyncCalendar,
                 FileSyncAction::SyncSecurity,
+                FileSyncAction::SyncWeather,
             ] {
                 Self::new(*action, &[])
                     .process_sync_opts(&config, &pool, &stdout)
@@ -408,6 +410,13 @@ impl SyncOpts {
             }
             FileSyncAction::SyncSecurity => {
                 let sync = SecuritySync::new(config.clone());
+                for line in sync.run_sync().await? {
+                    stdout.send(line);
+                }
+                Ok(())
+            }
+            FileSyncAction::SyncWeather => {
+                let sync = WeatherSync::new(config.clone());
                 for line in sync.run_sync().await? {
                     stdout.send(line);
                 }

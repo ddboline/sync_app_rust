@@ -264,3 +264,21 @@ pub async fn sync_security(
         None => Ok(HtmlBase::new("running".into()).into()),
     }
 }
+
+#[derive(RwebResponse)]
+#[response(description = "Sync Weather Data")]
+struct SyncWeatherDataResponse(HtmlBase<StackString, Error>);
+
+#[get("/sync/sync_weather")]
+pub async fn sync_weather(
+    #[filter = "LoggedUser::filter"] user: LoggedUser,
+    #[data] data: AppState,
+) -> WarpResult<SyncWeatherDataResponse> {
+    match user.push_session(SyncKey::SyncWeather, data).await? {
+        Some(result) => {
+            let body = text_body(result.join("\n").into()).into();
+            Ok(HtmlBase::new(body).into())
+        }
+        None => Ok(HtmlBase::new("running".into()).into()),
+    }
+}

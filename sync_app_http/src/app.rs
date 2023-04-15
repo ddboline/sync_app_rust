@@ -14,7 +14,7 @@ use tokio::{sync::Mutex, task::JoinHandle, time::interval};
 
 use sync_app_lib::{
     calendar_sync::CalendarSync, config::Config, garmin_sync::GarminSync, movie_sync::MovieSync,
-    pgpool::PgPool, security_sync::SecuritySync, sync_opts::SyncOpts,
+    pgpool::PgPool, security_sync::SecuritySync, sync_opts::SyncOpts, weather_sync::WeatherSync,
 };
 
 use super::{
@@ -23,7 +23,7 @@ use super::{
     routes::{
         delete_cache_entry, garmin_scripts_js, list_sync_cache, proc_all, process_cache_entry,
         remove, sync_all, sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_name,
-        sync_podcasts, sync_security, user,
+        sync_podcasts, sync_security, user, sync_weather,
     },
 };
 
@@ -34,6 +34,7 @@ pub struct AccessLocks {
     pub calendar: Mutex<CalendarSync>,
     pub podcast: Mutex<()>,
     pub security: Mutex<SecuritySync>,
+    pub weather: Mutex<WeatherSync>,
 }
 
 impl AccessLocks {
@@ -46,6 +47,7 @@ impl AccessLocks {
             calendar: Mutex::new(CalendarSync::new(config.clone())),
             podcast: Mutex::new(()),
             security: Mutex::new(SecuritySync::new(config.clone())),
+            weather: Mutex::new(WeatherSync::new(config.clone())),
         }
     }
 }
@@ -103,6 +105,7 @@ fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
     let sync_calendar_path = sync_calendar(app.clone()).boxed();
     let sync_podcasts_path = sync_podcasts(app.clone()).boxed();
     let sync_security_path = sync_security(app.clone()).boxed();
+    let sync_weather_path = sync_weather(app.clone()).boxed();
     let user_path = user().boxed();
     sync_frontpage_path
         .or(garmin_scripts_js_path)
@@ -118,6 +121,7 @@ fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
         .or(sync_calendar_path)
         .or(sync_podcasts_path)
         .or(sync_security_path)
+        .or(sync_weather_path)
         .or(user_path)
         .boxed()
 }

@@ -27,7 +27,7 @@ use crate::{
     errors::ServiceError as Error,
     requests::{
         CalendarSyncRequest, GarminSyncRequest, MovieSyncRequest, SyncPodcastsRequest,
-        SyncSecurityRequest,
+        SyncSecurityRequest, SyncWeatherRequest,
     },
 };
 
@@ -251,6 +251,7 @@ pub enum SyncKey {
     SyncCalendar,
     SyncPodcast,
     SyncSecurity,
+    SyncWeather,
 }
 
 impl SyncKey {
@@ -262,17 +263,19 @@ impl SyncKey {
             Self::SyncCalendar => "sync_calendar",
             Self::SyncPodcast => "sync_podcast",
             Self::SyncSecurity => "sync_security",
+            Self::SyncWeather => "sync_weather",
         }
     }
 
     #[must_use]
-    pub fn all_keys() -> [Self; 5] {
+    pub fn all_keys() -> [Self; 6] {
         [
             Self::SyncGarmin,
             Self::SyncMovie,
             Self::SyncCalendar,
             Self::SyncPodcast,
             Self::SyncSecurity,
+            Self::SyncWeather,
         ]
     }
 }
@@ -302,6 +305,7 @@ impl SyncMesg {
             SyncKey::SyncCalendar => (CalendarSyncRequest {}).handle(&app.locks).await,
             SyncKey::SyncPodcast => (SyncPodcastsRequest {}).handle(&app.locks).await,
             SyncKey::SyncSecurity => (SyncSecurityRequest {}).handle(&app.locks).await,
+            SyncKey::SyncWeather => (SyncWeatherRequest {}).handle(&app.locks).await,
         }?;
         debug!(
             "finished {} for {} {}, {} lines",

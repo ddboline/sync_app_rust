@@ -217,3 +217,19 @@ impl SyncSecurityRequest {
             .map_err(Into::into)
     }
 }
+
+pub struct SyncWeatherRequest {}
+
+impl SyncWeatherRequest {
+    /// # Errors
+    /// Return error if db query fails
+    pub async fn handle(&self, locks: &AccessLocks) -> Result<Vec<StackString>, Error> {
+        locks
+            .weather
+            .lock()
+            .await
+            .run_sync()
+            .await
+            .map_err(Into::into)
+    }
+}
