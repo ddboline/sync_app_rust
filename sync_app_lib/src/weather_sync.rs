@@ -2,11 +2,11 @@ use anyhow::Error;
 use postgres_query::FromSqlRow;
 use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
-use time::{OffsetDateTime, Duration};
 use std::{
     collections::HashMap,
     fmt::{self, Debug},
 };
+use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
@@ -65,20 +65,15 @@ impl WeatherSync {
         let mut output = Vec::new();
 
         let results = self
-            .run_single_sync_weather_data(
-                "weather/history",
-                "updates",
-                "weather_data",
-                |results| {
-                    results
-                        .into_iter()
-                        .map(|event| {
-                            let key = format_sstr!("{event}");
-                            (key, event)
-                        })
-                        .collect()
-                },
-            )
+            .run_single_sync_weather_data("weather/history", "updates", "weather_data", |results| {
+                results
+                    .into_iter()
+                    .map(|event| {
+                        let key = format_sstr!("{event}");
+                        (key, event)
+                    })
+                    .collect()
+            })
             .await?;
         output.extend_from_slice(&results);
 

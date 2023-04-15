@@ -5899,7 +5899,6 @@ impl FilesService {
         } else {
             Err(Error::from(ApiError::RedirectError(format!(
                 "Resumable upload response didn't contain Location: {headers:?}"
-                
             )))
             .context(format!("{headers:?}")))?
         }

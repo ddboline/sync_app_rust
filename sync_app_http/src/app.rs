@@ -23,7 +23,7 @@ use super::{
     routes::{
         delete_cache_entry, garmin_scripts_js, list_sync_cache, proc_all, process_cache_entry,
         remove, sync_all, sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_name,
-        sync_podcasts, sync_security, user, sync_weather,
+        sync_podcasts, sync_security, sync_weather, user,
     },
 };
 
