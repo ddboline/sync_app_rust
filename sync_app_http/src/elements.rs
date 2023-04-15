@@ -123,6 +123,12 @@ fn index_element(
                     "Security Sync"
                 },
                 button {
+                    "type": "submit",
+                    name: "sync_weather",
+                    "onclick": "weatherSync();",
+                    "Weather Sync"
+                }
+                button {
                     name: "garminconnectoutput",
                     id: "garminconnectoutput",
                     "&nbsp;"
