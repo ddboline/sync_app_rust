@@ -291,6 +291,7 @@ impl From<&FileInfo> for FileInfoCache {
             servicesession: item.servicesession.0.clone(),
             created_at: DateTimeWrapper::now(),
             deleted_at: None,
+            modified_at: DateTimeWrapper::now(),
         }
     }
 }

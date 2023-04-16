@@ -26,6 +26,7 @@ pub struct FileInfoCache {
     pub servicesession: StackString,
     pub created_at: DateTimeWrapper,
     pub deleted_at: Option<DateTimeWrapper>,
+    pub modified_at: DateTimeWrapper,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -44,7 +45,7 @@ impl FileInfoKey {
         info!("delete_cache_entry");
         let query = query!(
             r#"
-                UPDATE file_info_cache SET deleted_at=now()
+                UPDATE file_info_cache SET deleted_at=now(),modified_at=now()
                 WHERE filename=$filename
                   AND filepath=$filepath
                   AND serviceid=$serviceid
@@ -154,11 +155,11 @@ impl FileInfoCache {
                  INSERT INTO file_info_cache (
                      filename, filepath, urlname, md5sum, sha1sum, filestat_st_mtime,
                      filestat_st_size, serviceid, servicetype, servicesession, created_at,
-                     deleted_at
+                     deleted_at, modified_at
                  ) VALUES (
                     $filename, $filepath, $urlname, $md5sum, $sha1sum, $filestat_st_mtime,
                     $filestat_st_size, $serviceid, $servicetype, $servicesession, now(),
-                    null
+                    null, now()
                  ) ON CONFLICT (
                      filename,filepath,urlname,serviceid,servicetype,servicesession
                 ) DO UPDATE SET 
@@ -166,7 +167,8 @@ impl FileInfoCache {
                     sha1sum=EXCLUDED.sha1sum,
                     filestat_st_mtime=EXCLUDED.filestat_st_mtime,
                     filestat_st_size=EXCLUDED.filestat_st_size,
-                    deleted_at=null
+                    deleted_at=null,
+                    modified_at=now()
             "#,
             filename = self.filename,
             filepath = self.filepath,
@@ -193,7 +195,7 @@ impl FileInfoCache {
     ) -> Result<usize, Error> {
         let query = query!(
             r#"
-                UPDATE file_info_cache SET deleted_at = now()
+                UPDATE file_info_cache SET deleted_at=now(),modified_at=now()
                 WHERE servicesession=$servicesession
                   AND servicetype=$servicetype
             "#,
@@ -215,7 +217,7 @@ impl FileInfoCache {
     ) -> Result<usize, Error> {
         let query = query!(
             r#"
-                UPDATE file_info_cache SET deleted_at = now()
+                UPDATE file_info_cache SET deleted_at=now(),modified_at=now()
                 WHERE servicesession=$servicesession
                   AND servicetype=$servicetype
                   AND serviceid=$gdriveid
