@@ -99,6 +99,14 @@ impl FileListTrait for FileListLocal {
         self.0.get_filemap()
     }
 
+    fn get_min_mtime(&self) -> Option<u32> {
+        self.0.get_min_mtime()
+    }
+
+    fn get_max_mtime(&self) -> Option<u32> {
+        self.0.get_max_mtime()
+    }
+
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
         self.0.with_list(filelist);
     }
@@ -106,7 +114,7 @@ impl FileListTrait for FileListLocal {
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         let servicesession = self.get_servicesession();
         let basedir = self.get_baseurl().path();
-        let file_list = self.load_file_list().await?;
+        let file_list = self.load_file_list(false).await?;
         let flist_dict = self.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
 
         let wdir = WalkDir::new(basedir).same_file_system(true);
@@ -328,7 +336,7 @@ mod tests {
 
         info!("{:?}", flist.get_servicesession());
 
-        let new_flist = flist.load_file_list().await?;
+        let new_flist = flist.load_file_list(false).await?;
 
         assert_eq!(new_flist.len(), flist.0.get_filemap().len());
 
@@ -344,7 +352,7 @@ mod tests {
 
         flist.clear_file_list().await?;
 
-        let new_flist = flist.load_file_list().await?;
+        let new_flist = flist.load_file_list(false).await?;
 
         assert_eq!(new_flist.len(), 0);
         Ok(())

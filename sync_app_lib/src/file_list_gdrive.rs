@@ -219,6 +219,14 @@ impl FileListTrait for FileListGDrive {
         self.flist.get_filemap()
     }
 
+    fn get_min_mtime(&self) -> Option<u32> {
+        self.flist.get_min_mtime()
+    }
+
+    fn get_max_mtime(&self) -> Option<u32> {
+        self.flist.get_max_mtime()
+    }
+
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
         self.flist.with_list(filelist);
     }
@@ -227,7 +235,7 @@ impl FileListTrait for FileListGDrive {
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
         self.set_directory_map(false).await?;
         let start_page_token = self.gdrive.get_start_page_token().await?;
-        let file_list = self.flist.load_file_list().await?;
+        let file_list = self.flist.load_file_list(false).await?;
 
         let (dlist, flist) = if self.gdrive.start_page_token.load().is_some() {
             self.get_all_changes().await?
@@ -484,7 +492,7 @@ mod tests {
         let result = flist.cache_file_list().await?;
         debug!("wrote {result}");
 
-        let new_flist = flist.load_file_list().await?;
+        let new_flist = flist.load_file_list(false).await?;
 
         assert_eq!(flist.flist.get_filemap().len(), new_flist.len());
 

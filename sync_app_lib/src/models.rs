@@ -71,19 +71,35 @@ impl FileInfoCache {
         servicesession: &str,
         servicetype: &str,
         pool: &PgPool,
+        get_deleted: bool,
     ) -> Result<impl Stream<Item = Result<Self, PqError>>, Error> {
-        let query = query!(
-            r#"
-                SELECT * FROM file_info_cache
-                WHERE servicesession=$servicesession
-                  AND servicetype=$servicetype
-                  AND deleted_at IS NULL
-            "#,
-            servicesession = servicesession,
-            servicetype = servicetype,
-        );
-        let conn = pool.get().await?;
-        query.fetch_streaming(&conn).await.map_err(Into::into)
+        if get_deleted {
+            let query = query!(
+                r#"
+                    SELECT * FROM file_info_cache
+                    WHERE servicesession=$servicesession
+                    AND servicetype=$servicetype
+                    AND deleted_at IS NOT NULL
+                "#,
+                servicesession = servicesession,
+                servicetype = servicetype,
+            );
+            let conn = pool.get().await?;
+            query.fetch_streaming(&conn).await.map_err(Into::into)
+        } else {
+            let query = query!(
+                r#"
+                    SELECT * FROM file_info_cache
+                    WHERE servicesession=$servicesession
+                    AND servicetype=$servicetype
+                    AND deleted_at IS NULL
+                "#,
+                servicesession = servicesession,
+                servicetype = servicetype,
+            );
+            let conn = pool.get().await?;
+            query.fetch_streaming(&conn).await.map_err(Into::into)
+        }
     }
 
     /// # Errors

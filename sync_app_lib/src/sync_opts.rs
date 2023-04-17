@@ -6,7 +6,7 @@ use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use refinery::embed_migrations;
 use stack_string::{format_sstr, StackString};
-use std::sync::Arc;
+use std::{convert::TryInto, fmt::Write, sync::Arc};
 use stdout_channel::StdoutChannel;
 use url::Url;
 use uuid::Uuid;
@@ -57,6 +57,8 @@ pub struct SyncOpts {
     pub expected: Vec<usize>,
     #[clap(short = 'n', long = "name")]
     pub name: Option<StackString>,
+    #[clap(short = 'd', long)]
+    pub show_deleted: bool,
 }
 
 impl Default for SyncOpts {
@@ -68,6 +70,7 @@ impl Default for SyncOpts {
             limit: None,
             expected: Vec::new(),
             name: None,
+            show_deleted: false,
         }
     }
 }
@@ -292,8 +295,20 @@ impl SyncOpts {
                             let pool = pool.clone();
                             let stdout = stdout.clone();
                             let mut flist = FileList::from_url(url, config, &pool).await?;
-                            flist.with_list(flist.fill_file_list().await?);
-                            let buf = format_sstr!("{}\t{}", url, flist.get_filemap().len());
+                            let list: Result<Vec<FileInfo>, Error> = flist
+                                .load_file_list(self.show_deleted)
+                                .await?
+                                .into_iter()
+                                .map(TryInto::try_into)
+                                .collect();
+                            flist.with_list(list?);
+                            let mut buf = format_sstr!("{}\t{}", url, flist.get_filemap().len());
+                            if let Some(min_mtime) = flist.get_min_mtime() {
+                                write!(&mut buf, "\t{min_mtime}")?;
+                            }
+                            if let Some(max_mtime) = flist.get_max_mtime() {
+                                write!(&mut buf, "\t{max_mtime}")?;
+                            }
                             stdout.send(buf);
                             Ok(())
                         })
@@ -315,7 +330,13 @@ impl SyncOpts {
                             let pool = pool.clone();
                             let stdout = stdout.clone();
                             let mut flist = FileList::from_url(url, config, &pool).await?;
-                            flist.with_list(flist.fill_file_list().await?);
+                            let list: Result<Vec<FileInfo>, Error> = flist
+                                .load_file_list(self.show_deleted)
+                                .await?
+                                .into_iter()
+                                .map(TryInto::try_into)
+                                .collect();
+                            flist.with_list(list?);
                             let filemap = flist.get_filemap();
 
                             let offset = self.offset.unwrap_or(0);

@@ -105,6 +105,14 @@ impl FileListTrait for FileListGcs {
         self.flist.get_filemap()
     }
 
+    fn get_min_mtime(&self) -> Option<u32> {
+        self.flist.get_min_mtime()
+    }
+
+    fn get_max_mtime(&self) -> Option<u32> {
+        self.flist.get_max_mtime()
+    }
+
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
         self.flist.with_list(filelist);
     }
@@ -289,7 +297,7 @@ mod tests {
 
         flist.cache_file_list().await?;
 
-        let new_flist = flist.load_file_list().await?;
+        let new_flist = flist.load_file_list(false).await?;
 
         assert_eq!(flist.flist.get_filemap().len(), new_flist.len());
 

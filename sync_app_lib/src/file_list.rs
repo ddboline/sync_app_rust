@@ -36,6 +36,8 @@ pub struct FileList {
     baseurl: Url,
     filemap: Arc<HashMap<StackString, FileInfo>>,
     inner: Arc<FileListInner>,
+    min_mtime: Option<u32>,
+    max_mtime: Option<u32>,
 }
 
 impl Deref for FileList {
@@ -66,6 +68,8 @@ impl FileList {
                 servicesession,
                 pool,
             }),
+            min_mtime: None,
+            max_mtime: None,
         }
     }
 
@@ -122,6 +126,8 @@ pub trait FileListTrait: Send + Sync + Debug {
 
     fn get_pool(&self) -> &PgPool;
     fn get_filemap(&self) -> &HashMap<StackString, FileInfo>;
+    fn get_min_mtime(&self) -> Option<u32>;
+    fn get_max_mtime(&self) -> Option<u32>;
 
     fn with_list(&mut self, filelist: Vec<FileInfo>);
 
@@ -191,7 +197,7 @@ pub trait FileListTrait: Send + Sync + Debug {
 
         // Load existing file_list, create hashmap
         let current_cache: HashMap<_, _> = self
-            .load_file_list()
+            .load_file_list(false)
             .await?
             .into_iter()
             .filter_map(|item| {
@@ -269,11 +275,11 @@ pub trait FileListTrait: Send + Sync + Debug {
         Ok(inserted)
     }
 
-    async fn load_file_list(&self) -> Result<Vec<FileInfoCache>, Error> {
+    async fn load_file_list(&self, get_deleted: bool) -> Result<Vec<FileInfoCache>, Error> {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
         let pool = self.get_pool();
-        FileInfoCache::get_all_cached(session.as_str(), stype.to_str(), pool)
+        FileInfoCache::get_all_cached(session.as_str(), stype.to_str(), pool, get_deleted)
             .await?
             .try_collect()
             .await
@@ -437,7 +443,17 @@ impl FileListTrait for FileList {
         &self.filemap
     }
 
+    fn get_min_mtime(&self) -> Option<u32> {
+        self.min_mtime
+    }
+
+    fn get_max_mtime(&self) -> Option<u32> {
+        self.max_mtime
+    }
+
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
+        let mut min_mtime: Option<u32> = None;
+        let mut max_mtime: Option<u32> = None;
         let filemap = filelist
             .into_iter()
             .map(|f| {
@@ -445,15 +461,23 @@ impl FileListTrait for FileList {
                 let key = remove_basepath(&path, &self.get_basepath().to_string_lossy());
                 let mut inner = f.inner().clone();
                 inner.servicesession = self.get_servicesession().clone();
+                if min_mtime.is_none() || min_mtime > Some(inner.filestat.st_mtime) {
+                    min_mtime.replace(inner.filestat.st_mtime);
+                }
+                if max_mtime.is_none() || max_mtime < Some(inner.filestat.st_mtime) {
+                    max_mtime.replace(inner.filestat.st_mtime);
+                }
                 let f = FileInfo::from_inner(inner);
                 (key, f)
             })
             .collect();
         self.filemap = Arc::new(filemap);
+        self.min_mtime = min_mtime;
+        self.max_mtime = max_mtime;
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        self.load_file_list()
+        self.load_file_list(false)
             .await?
             .into_iter()
             .map(TryInto::try_into)

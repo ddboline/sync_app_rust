@@ -357,9 +357,10 @@ impl FileSync {
 
         for urls in group_urls(&all_urls).values() {
             let flist = Arc::new(FileList::from_url(&urls[0], &self.config, pool).await?);
-            let fdict = Arc::new(
-                flist.get_file_list_dict(&flist.load_file_list().await?, FileInfoKeyType::UrlName),
-            );
+            let fdict = Arc::new(flist.get_file_list_dict(
+                &flist.load_file_list(false).await?,
+                FileInfoKeyType::UrlName,
+            ));
 
             let futures: FuturesUnordered<_> = urls
                 .iter()

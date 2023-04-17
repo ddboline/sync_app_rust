@@ -83,6 +83,14 @@ impl FileListTrait for FileListSSH {
         self.flist.get_filemap()
     }
 
+    fn get_min_mtime(&self) -> Option<u32> {
+        self.flist.get_min_mtime()
+    }
+
+    fn get_max_mtime(&self) -> Option<u32> {
+        self.flist.get_max_mtime()
+    }
+
     fn with_list(&mut self, filelist: Vec<FileInfo>) {
         self.flist.with_list(filelist);
     }
