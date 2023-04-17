@@ -4,6 +4,7 @@
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::derivable_impls)]
 
 pub mod date_time_wrapper;
 pub mod directory_info;
