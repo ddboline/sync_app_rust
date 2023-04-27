@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
 use clap::Parser;
-use futures::{future::try_join_all, stream::FuturesUnordered, TryStreamExt};
+use futures::{future::try_join_all, TryStreamExt};
 use itertools::Itertools;
 use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -133,28 +133,25 @@ impl SyncOpts {
                     &self.urls
                 };
                 info!("urls: {:?}", urls);
-                let futures: FuturesUnordered<_> = urls
-                    .iter()
-                    .map(|url| {
-                        let blacklist = Arc::clone(&blacklist);
-                        let pool = pool.clone();
-                        async move {
-                            let mut flist = FileList::from_url(url, config, &pool).await?;
-                            let list = flist.fill_file_list().await?;
-                            let list: Vec<_> = if blacklist.could_be_in_blacklist(url) {
-                                list.into_par_iter()
-                                    .filter(|entry| !blacklist.is_in_blacklist(&entry.urlname))
-                                    .collect()
-                            } else {
-                                list
-                            };
-                            flist.with_list(list);
-                            flist.cache_file_list().await?;
-                            Ok(())
-                        }
-                    })
-                    .collect();
-                let result: Result<(), Error> = futures.try_collect().await;
+                let futures = urls.iter().map(|url| {
+                    let blacklist = Arc::clone(&blacklist);
+                    let pool = pool.clone();
+                    async move {
+                        let mut flist = FileList::from_url(url, config, &pool).await?;
+                        let list = flist.fill_file_list().await?;
+                        let list: Vec<_> = if blacklist.could_be_in_blacklist(url) {
+                            list.into_par_iter()
+                                .filter(|entry| !blacklist.is_in_blacklist(&entry.urlname))
+                                .collect()
+                        } else {
+                            list
+                        };
+                        flist.with_list(list);
+                        flist.cache_file_list().await?;
+                        Ok(())
+                    }
+                });
+                let result: Result<Vec<()>, Error> = try_join_all(futures).await;
                 result?;
                 Ok(())
             }
@@ -204,16 +201,13 @@ impl SyncOpts {
                 let flists: Result<Vec<_>, Error> = try_join_all(futures).await;
                 let flists = flists?;
                 info!("Check 1");
-                let futures: FuturesUnordered<_> = flists
-                    .chunks(2)
-                    .map(|f| async move {
-                        if f.len() == 2 {
-                            FileSync::compare_lists(&(*f[0]), &(*f[1]), pool).await?;
-                        }
-                        Ok(())
-                    })
-                    .collect();
-                let results: Result<(), Error> = futures.try_collect().await;
+                let futures = flists.chunks(2).map(|f| async move {
+                    if f.len() == 2 {
+                        FileSync::compare_lists(&(*f[0]), &(*f[1]), pool).await?;
+                    }
+                    Ok(())
+                });
+                let results: Result<Vec<()>, Error> = try_join_all(futures).await;
                 results?;
                 info!("Check 2");
                 let mut stream = Box::pin(FileSyncCache::get_cache_list(pool).await?);
@@ -288,32 +282,28 @@ impl SyncOpts {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
-                    let futures: FuturesUnordered<_> = self
-                        .urls
-                        .iter()
-                        .map(|url| async move {
-                            let pool = pool.clone();
-                            let stdout = stdout.clone();
-                            let mut flist = FileList::from_url(url, config, &pool).await?;
-                            let list: Result<Vec<FileInfo>, Error> = flist
-                                .load_file_list(self.show_deleted)
-                                .await?
-                                .into_iter()
-                                .map(TryInto::try_into)
-                                .collect();
-                            flist.with_list(list?);
-                            let mut buf = format_sstr!("{}\t{}", url, flist.get_filemap().len());
-                            if let Some(min_mtime) = flist.get_min_mtime() {
-                                write!(&mut buf, "\t{min_mtime}")?;
-                            }
-                            if let Some(max_mtime) = flist.get_max_mtime() {
-                                write!(&mut buf, "\t{max_mtime}")?;
-                            }
-                            stdout.send(buf);
-                            Ok(())
-                        })
-                        .collect();
-                    let results: Result<(), Error> = futures.try_collect().await;
+                    let futures = self.urls.iter().map(|url| async move {
+                        let pool = pool.clone();
+                        let stdout = stdout.clone();
+                        let mut flist = FileList::from_url(url, config, &pool).await?;
+                        let list: Result<Vec<FileInfo>, Error> = flist
+                            .load_file_list(self.show_deleted)
+                            .await?
+                            .into_iter()
+                            .map(TryInto::try_into)
+                            .collect();
+                        flist.with_list(list?);
+                        let mut buf = format_sstr!("{}\t{}", url, flist.get_filemap().len());
+                        if let Some(min_mtime) = flist.get_min_mtime() {
+                            write!(&mut buf, "\t{min_mtime}")?;
+                        }
+                        if let Some(max_mtime) = flist.get_max_mtime() {
+                            write!(&mut buf, "\t{max_mtime}")?;
+                        }
+                        stdout.send(buf);
+                        Ok(())
+                    });
+                    let results: Result<Vec<()>, Error> = try_join_all(futures).await;
                     results?;
                     Ok(())
                 }
@@ -322,48 +312,40 @@ impl SyncOpts {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
-                    let futures: FuturesUnordered<_> = self
-                        .urls
-                        .iter()
-                        .enumerate()
-                        .map(|(idx, url)| async move {
-                            let pool = pool.clone();
-                            let stdout = stdout.clone();
-                            let mut flist = FileList::from_url(url, config, &pool).await?;
-                            let list: Result<Vec<FileInfo>, Error> = flist
-                                .load_file_list(self.show_deleted)
-                                .await?
-                                .into_iter()
-                                .map(TryInto::try_into)
-                                .collect();
-                            flist.with_list(list?);
-                            let filemap = flist.get_filemap();
+                    let futures = self.urls.iter().enumerate().map(|(idx, url)| async move {
+                        let pool = pool.clone();
+                        let stdout = stdout.clone();
+                        let mut flist = FileList::from_url(url, config, &pool).await?;
+                        let list: Result<Vec<FileInfo>, Error> = flist
+                            .load_file_list(self.show_deleted)
+                            .await?
+                            .into_iter()
+                            .map(TryInto::try_into)
+                            .collect();
+                        flist.with_list(list?);
+                        let filemap = flist.get_filemap();
 
-                            let offset = self.offset.unwrap_or(0);
-                            let limit = self.limit.unwrap_or(filemap.len());
-                            if let Some(expected) = self.expected.get(idx) {
-                                if *expected != filemap.len() {
-                                    return Err(format_err!(
-                                        "expected {expected} {}",
-                                        filemap.len()
-                                    ));
-                                }
+                        let offset = self.offset.unwrap_or(0);
+                        let limit = self.limit.unwrap_or(filemap.len());
+                        if let Some(expected) = self.expected.get(idx) {
+                            if *expected != filemap.len() {
+                                return Err(format_err!("expected {expected} {}", filemap.len()));
                             }
+                        }
 
-                            let results: Result<(), Error> = filemap
-                                .values()
-                                .sorted_by_key(|finfo| finfo.filepath.as_path())
-                                .skip(offset)
-                                .take(limit)
-                                .try_for_each(|finfo| {
-                                    let line = serde_json::to_string(finfo.inner())?;
-                                    stdout.send(line);
-                                    Ok(())
-                                });
-                            results
-                        })
-                        .collect();
-                    let results: Result<(), Error> = futures.try_collect().await;
+                        let results: Result<(), Error> = filemap
+                            .values()
+                            .sorted_by_key(|finfo| finfo.filepath.as_path())
+                            .skip(offset)
+                            .take(limit)
+                            .try_for_each(|finfo| {
+                                let line = serde_json::to_string(finfo.inner())?;
+                                stdout.send(line);
+                                Ok(())
+                            });
+                        results
+                    });
+                    let results: Result<Vec<()>, Error> = try_join_all(futures).await;
                     results?;
                     Ok(())
                 }
