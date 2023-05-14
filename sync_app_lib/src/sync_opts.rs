@@ -185,6 +185,7 @@ impl SyncOpts {
                     let pool = pool.clone();
                     async move {
                         let mut flist = FileList::from_url(&url, config, &pool).await?;
+                        info!("start {url}");
                         let list = flist.fill_file_list().await?;
                         let list: Vec<_> = if blacklist.could_be_in_blacklist(&url) {
                             list.into_iter()
@@ -195,6 +196,7 @@ impl SyncOpts {
                         };
                         flist.with_list(list);
                         flist.cache_file_list().await?;
+                        info!("cached {url}");
                         Ok(flist)
                     }
                 });
