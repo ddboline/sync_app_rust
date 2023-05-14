@@ -1,6 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
-use log::error;
+use log::{error, info};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use stack_string::StackString;
 use std::{collections::HashMap, path::Path, time::SystemTime};
@@ -112,7 +112,7 @@ impl FileListTrait for FileListLocal {
     }
 
     async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        let servicesession = self.get_servicesession();
+        let servicesession = self.get_servicesession().clone();
         let basedir = self.get_baseurl().path();
         let file_list = self.load_file_list(false).await?;
         let flist_dict = self.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
@@ -120,6 +120,7 @@ impl FileListTrait for FileListLocal {
         let wdir = WalkDir::new(basedir).same_file_system(true);
 
         let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
+        info!("local entries {}", entries.len());
 
         if !flist_dict.is_empty() && entries.is_empty() {
             return Err(format_err!(
@@ -127,34 +128,37 @@ impl FileListTrait for FileListLocal {
             ));
         }
 
-        entries
-            .into_iter()
-            .filter(|entry| !entry.file_type().is_dir())
-            .map(|entry| {
-                let filepath = entry.path().canonicalize().map_err(|e| {
-                    error!("entry {:?}", entry);
-                    e
-                })?;
-                let filepath_str = filepath.to_string_lossy();
-                let metadata = entry.metadata()?;
-                let modified = metadata
-                    .modified()?
-                    .duration_since(SystemTime::UNIX_EPOCH)?
-                    .as_secs() as u32;
-                let size = metadata.len() as u32;
-                if let Some(finfo) = flist_dict.get(filepath_str.as_ref()) {
-                    if finfo.filestat.st_mtime >= modified && finfo.filestat.st_size == size {
-                        return Ok(finfo.clone());
-                    }
-                };
-                FileInfoLocal::from_direntry(
-                    &entry,
-                    Some(servicesession.as_str().into()),
-                    Some(servicesession.clone()),
-                )
-                .map(|x| x.0)
-            })
-            .collect()
+        spawn_blocking(move || {
+            entries
+                .into_par_iter()
+                .filter(|entry| !entry.file_type().is_dir())
+                .map(|entry| {
+                    let filepath = entry.path().canonicalize().map_err(|e| {
+                        error!("entry {:?}", entry);
+                        e
+                    })?;
+                    let filepath_str = filepath.to_string_lossy();
+                    let metadata = entry.metadata()?;
+                    let modified = metadata
+                        .modified()?
+                        .duration_since(SystemTime::UNIX_EPOCH)?
+                        .as_secs() as u32;
+                    let size = metadata.len() as u32;
+                    if let Some(finfo) = flist_dict.get(filepath_str.as_ref()) {
+                        if finfo.filestat.st_mtime >= modified && finfo.filestat.st_size == size {
+                            return Ok(finfo.clone());
+                        }
+                    };
+                    FileInfoLocal::from_direntry(
+                        &entry,
+                        Some(servicesession.as_str().into()),
+                        Some(servicesession.clone()),
+                    )
+                    .map(|x| x.0)
+                })
+                .collect()
+        })
+        .await?
     }
 
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
