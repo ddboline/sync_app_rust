@@ -1,8 +1,11 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
+use log::error;
+use rand::{thread_rng, RngCore};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fs::create_dir_all, path::Path};
 use stdout_channel::StdoutChannel;
+use tokio::{fs::remove_file, process::Command};
 use url::Url;
 
 use crate::{
@@ -212,6 +215,8 @@ impl FileListTrait for FileListSSH {
             .iter()
             .last()
             .ok_or_else(|| format_err!("No hostname"))?;
+        let url_prefix = format_sstr!("ssh://{user_host}");
+        let baseurl = self.get_baseurl().clone();
         let command = format_sstr!(r#"sync-app-rust index -u file://{path}"#);
         self.ssh.run_command_stream_stdout(&command).await?;
         let command = format_sstr!(r#"sync-app-rust count -u file://{path}"#);
@@ -223,68 +228,63 @@ impl FileListTrait for FileListSSH {
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
 
-        if expected_count == 0 {
-            println!("path empty {path}");
-            Ok(Vec::new())
+        let randint = thread_rng().next_u32();
+        let tmp_file = format_sstr!("/tmp/{user_host}_{randint}.json.gz");
+        let command = format_sstr!(r#"sync-app-rust ser -u file://{path} | gzip > {tmp_file}"#);
+        self.ssh.run_command_stream_stdout(&command).await?;
+
+        self.ssh
+            .run_scp(&self.ssh.get_ssh_str(&tmp_file), &tmp_file)
+            .await?;
+        let command = format_sstr!("rm {tmp_file}");
+        self.ssh.run_command_stream_stdout(&command).await?;
+
+        let process = Command::new("gzip")
+            .args(&["-dc", &tmp_file])
+            .output()
+            .await?;
+        let output = if process.status.success() {
+            StackString::from_utf8_vec(process.stdout)?
         } else {
-            println!("expected_count {expected_count}");
-            let mut offset = 0;
-            let limit = 1000;
-
-            let mut items = Vec::new();
-
-            while items.len() != expected_count {
-                if items.len() > expected_count {
-                    let observed = items.len();
-                    return Err(format_err!("inconsistency {observed} {expected_count}"));
+            error!("{}", StackString::from_utf8_lossy(&process.stderr));
+            return Err(format_err!("Process failed"));
+        };
+        remove_file(&tmp_file).await?;
+        let result: Result<Vec<_>, Error> = output
+            .split('\n')
+            .map(|line| {
+                if line.is_empty() {
+                    Ok(None)
+                } else {
+                    let baseurl = baseurl.as_str();
+                    let mut finfo: FileInfoInner = serde_json::from_str(line)?;
+                    finfo.servicetype = FileService::SSH;
+                    finfo.urlname = finfo
+                        .urlname
+                        .as_str()
+                        .replace("file://", &url_prefix)
+                        .parse()?;
+                    finfo.serviceid = baseurl.into();
+                    finfo.servicesession = baseurl.parse()?;
+                    Ok(Some(FileInfo::from_inner(finfo)))
                 }
-                let command = format_sstr!(
-                    r#"sync-app-rust ser -u file://{path} --offset {offset} --limit {limit} --expected {expected_count}"#
-                );
-                let output = self.ssh.run_command_stream_stdout(&command).await?;
-                let output = output.trim();
+            })
+            .filter_map(Result::transpose)
+            .collect();
+        let items = result?;
 
-                let url_prefix = format_sstr!("ssh://{user_host}");
-                let baseurl = self.get_baseurl().clone();
+        println!("result {expected_count} {}", items.len());
 
-                let result: Result<Vec<_>, Error> = output
-                    .split('\n')
-                    .map(|line| {
-                        let baseurl = baseurl.as_str();
-                        let mut finfo: FileInfoInner = serde_json::from_str(line)?;
-                        finfo.servicetype = FileService::SSH;
-                        finfo.urlname = finfo
-                            .urlname
-                            .as_str()
-                            .replace("file://", &url_prefix)
-                            .parse()?;
-                        finfo.serviceid = baseurl.into();
-                        finfo.servicesession = baseurl.parse()?;
-                        Ok(FileInfo::from_inner(finfo))
-                    })
-                    .collect();
-                let result = result?;
-                items.extend_from_slice(&result);
-                if result.is_empty() {
-                    let observed = items.len();
-                    return Err(format_err!(
-                        "no results returned {observed} {expected_count}"
-                    ));
-                }
-                offset += result.len();
-            }
-
-            if items.len() == expected_count {
-                Ok(items)
-            } else {
-                Err(format_err!(
-                    "{} {} Expected {} doesn't match actual count {}",
-                    self.get_servicetype(),
-                    self.get_servicesession().as_str(),
-                    expected_count,
-                    items.len()
-                ))
-            }
+        if items.len() == expected_count {
+            Ok(items)
+        } else {
+            Err(format_err!(
+                "{} {} Expected {} doesn't match actual count {}",
+                self.get_servicetype(),
+                self.get_servicesession().as_str(),
+                expected_count,
+                items.len()
+            ))
         }
     }
 
