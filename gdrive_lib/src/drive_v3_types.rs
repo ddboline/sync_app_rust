@@ -4507,7 +4507,7 @@ impl AboutService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -4612,7 +4612,7 @@ impl ChangesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -4641,7 +4641,7 @@ impl ChangesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -4670,7 +4670,7 @@ impl ChangesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -4773,7 +4773,7 @@ impl ChannelsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -4879,7 +4879,7 @@ impl CommentsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -4916,7 +4916,7 @@ impl CommentsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -4952,7 +4952,7 @@ impl CommentsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -4984,7 +4984,7 @@ impl CommentsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5020,7 +5020,7 @@ impl CommentsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5123,7 +5123,7 @@ impl DrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5157,7 +5157,7 @@ impl DrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5189,7 +5189,7 @@ impl DrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5221,7 +5221,7 @@ impl DrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5250,7 +5250,7 @@ impl DrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5282,7 +5282,7 @@ impl DrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5314,7 +5314,7 @@ impl DrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5421,7 +5421,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5451,7 +5451,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5489,7 +5489,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?uploadType=multipart{params}");
@@ -5530,7 +5530,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?uploadType=resumable{params}");
@@ -5580,7 +5580,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5609,7 +5609,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5647,7 +5647,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5677,7 +5677,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5714,7 +5714,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5743,7 +5743,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5776,7 +5776,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -5818,7 +5818,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?uploadType=multipart{params}");
@@ -5874,7 +5874,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?uploadType=resumable{params}");
@@ -5928,7 +5928,7 @@ impl FilesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6038,7 +6038,7 @@ impl PermissionsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6075,7 +6075,7 @@ impl PermissionsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6111,7 +6111,7 @@ impl PermissionsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6143,7 +6143,7 @@ impl PermissionsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6183,7 +6183,7 @@ impl PermissionsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6293,7 +6293,7 @@ impl RepliesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6331,7 +6331,7 @@ impl RepliesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6368,7 +6368,7 @@ impl RepliesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6404,7 +6404,7 @@ impl RepliesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6441,7 +6441,7 @@ impl RepliesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6554,7 +6554,7 @@ impl RevisionsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6595,7 +6595,7 @@ impl RevisionsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6627,7 +6627,7 @@ impl RevisionsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6663,7 +6663,7 @@ impl RevisionsService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6770,7 +6770,7 @@ impl TeamdrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6806,7 +6806,7 @@ impl TeamdrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6841,7 +6841,7 @@ impl TeamdrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6870,7 +6870,7 @@ impl TeamdrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");
@@ -6909,7 +6909,7 @@ impl TeamdrivesService {
         }
         headers.push((
             hyper::header::AUTHORIZATION,
-            format!("Bearer {token}", token = tok.as_str()),
+            format!("Bearer {token}", token = tok.token().expect("no token")),
         ));
 
         let mut url_params = format!("?{params}");

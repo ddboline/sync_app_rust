@@ -240,7 +240,7 @@ impl FileListTrait for FileListSSH {
         self.ssh.run_command_stream_stdout(&command).await?;
 
         let process = Command::new("gzip")
-            .args(&["-dc", &tmp_file])
+            .args(["-dc", &tmp_file])
             .output()
             .await?;
         let output = if process.status.success() {
