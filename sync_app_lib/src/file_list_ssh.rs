@@ -228,62 +228,71 @@ impl FileListTrait for FileListSSH {
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
 
-        let randint = thread_rng().next_u32();
-        let tmp_file = format_sstr!("/tmp/{user_host}_{randint}.json.gz");
-        let command = format_sstr!(r#"sync-app-rust ser -u file://{path} | gzip > {tmp_file}"#);
-        self.ssh.run_command_stream_stdout(&command).await?;
+        let mut actual_length = 0;
 
-        self.ssh
-            .run_scp(&self.ssh.get_ssh_str(&tmp_file), &tmp_file)
-            .await?;
-        let command = format_sstr!("rm {tmp_file}");
-        self.ssh.run_command_stream_stdout(&command).await?;
-
-        let process = Command::new("gzip")
-            .args(["-dc", &tmp_file])
-            .output()
-            .await?;
-        let output = if process.status.success() {
-            StackString::from_utf8_vec(process.stdout)?
+        if expected_count == 0 {
+            println!("path empty {path}");
+            Ok(Vec::new())
         } else {
-            error!("{}", StackString::from_utf8_lossy(&process.stderr));
-            return Err(format_err!("Process failed"));
-        };
-        remove_file(&tmp_file).await?;
-        let result: Result<Vec<_>, Error> = output
-            .split('\n')
-            .map(|line| {
-                if line.is_empty() {
-                    Ok(None)
+            for _ in 0..5 {
+                let randint = thread_rng().next_u32();
+                let tmp_file = format_sstr!("/tmp/{user_host}_{randint}.json.gz");
+                let command =
+                    format_sstr!(r#"sync-app-rust ser -u file://{path} | gzip > {tmp_file}"#);
+                self.ssh.run_command_stream_stdout(&command).await?;
+
+                self.ssh
+                    .run_scp(&self.ssh.get_ssh_str(&tmp_file), &tmp_file)
+                    .await?;
+                let command = format_sstr!("rm {tmp_file}");
+                self.ssh.run_command_stream_stdout(&command).await?;
+
+                let process = Command::new("gzip")
+                    .args(["-dc", &tmp_file])
+                    .output()
+                    .await?;
+                let output = if process.status.success() {
+                    StackString::from_utf8_vec(process.stdout)?
                 } else {
-                    let baseurl = baseurl.as_str();
-                    let mut finfo: FileInfoInner = serde_json::from_str(line)?;
-                    finfo.servicetype = FileService::SSH;
-                    finfo.urlname = finfo
-                        .urlname
-                        .as_str()
-                        .replace("file://", &url_prefix)
-                        .parse()?;
-                    finfo.serviceid = baseurl.into();
-                    finfo.servicesession = baseurl.parse()?;
-                    Ok(Some(FileInfo::from_inner(finfo)))
+                    error!("{}", StackString::from_utf8_lossy(&process.stderr));
+                    return Err(format_err!("Process failed"));
+                };
+                remove_file(&tmp_file).await?;
+                let result: Result<Vec<_>, Error> = output
+                    .split('\n')
+                    .map(|line| {
+                        if line.is_empty() {
+                            Ok(None)
+                        } else {
+                            let baseurl = baseurl.as_str();
+                            let mut finfo: FileInfoInner = serde_json::from_str(line)?;
+                            finfo.servicetype = FileService::SSH;
+                            finfo.urlname = finfo
+                                .urlname
+                                .as_str()
+                                .replace("file://", &url_prefix)
+                                .parse()?;
+                            finfo.serviceid = baseurl.into();
+                            finfo.servicesession = baseurl.parse()?;
+                            Ok(Some(FileInfo::from_inner(finfo)))
+                        }
+                    })
+                    .filter_map(Result::transpose)
+                    .collect();
+                let items = result?;
+
+                println!("result {expected_count} {}", items.len());
+
+                if items.len() == expected_count {
+                    return Ok(items);
+                } else {
+                    actual_length = items.len();
                 }
-            })
-            .filter_map(Result::transpose)
-            .collect();
-        let items = result?;
-
-        println!("result {expected_count} {}", items.len());
-
-        if items.len() == expected_count {
-            Ok(items)
-        } else {
+            }
             Err(format_err!(
-                "{} {} Expected {} doesn't match actual count {}",
+                "{} {} Expected {expected_count} doesn't match actual count {actual_length}",
                 self.get_servicetype(),
                 self.get_servicesession().as_str(),
-                expected_count,
-                items.len()
             ))
         }
     }
