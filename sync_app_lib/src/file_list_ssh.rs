@@ -236,10 +236,12 @@ impl FileListTrait for FileListSSH {
         } else {
             for _ in 0..5 {
                 let randint = thread_rng().next_u32();
-                let tmp_file = format_sstr!("/tmp/{user_host}_{randint}.json.gz");
-                let command =
-                    format_sstr!(r#"sync-app-rust ser -u file://{path} | gzip > {tmp_file}"#);
+                let tmp_file = format_sstr!("/tmp/{user_host}_{randint}.json");
+                let command = format_sstr!(
+                    r#"sync-app-rust ser -u file://{path} -f {tmp_file} && gzip {tmp_file}"#
+                );
                 self.ssh.run_command_stream_stdout(&command).await?;
+                let tmp_file = format_sstr!("{tmp_file}.gz");
 
                 self.ssh
                     .run_scp(&self.ssh.get_ssh_str(&tmp_file), &tmp_file)
@@ -285,9 +287,8 @@ impl FileListTrait for FileListSSH {
 
                 if items.len() == expected_count {
                     return Ok(items);
-                } else {
-                    actual_length = items.len();
                 }
+                actual_length = items.len();
             }
             Err(format_err!(
                 "{} {} Expected {expected_count} doesn't match actual count {actual_length}",
