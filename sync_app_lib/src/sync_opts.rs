@@ -325,7 +325,7 @@ impl SyncOpts {
                             Box::new(tokio_stdout())
                         };
                     for url in &self.urls {
-                        let mut flist = FileList::from_url(url, config, &pool).await?;
+                        let mut flist = FileList::from_url(url, config, pool).await?;
                         let list: Result<Vec<FileInfo>, Error> = flist
                             .load_file_list(self.show_deleted)
                             .await?
