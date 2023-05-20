@@ -6,8 +6,12 @@ use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use refinery::embed_migrations;
 use stack_string::{format_sstr, StackString};
-use std::{convert::TryInto, fmt::Write, sync::Arc};
+use std::{convert::TryInto, fmt::Write, path::PathBuf, sync::Arc};
 use stdout_channel::StdoutChannel;
+use tokio::{
+    fs::File,
+    io::{stdout as tokio_stdout, AsyncWrite, AsyncWriteExt},
+};
 use url::Url;
 use uuid::Uuid;
 
@@ -53,12 +57,12 @@ pub struct SyncOpts {
     pub offset: Option<usize>,
     #[clap(short = 'l', long = "limit")]
     pub limit: Option<usize>,
-    #[clap(short = 'e', long = "expected")]
-    pub expected: Vec<usize>,
     #[clap(short = 'n', long = "name")]
     pub name: Option<StackString>,
     #[clap(short = 'd', long)]
     pub show_deleted: bool,
+    #[clap(short = 'f', long)]
+    pub filename: Option<PathBuf>,
 }
 
 impl Default for SyncOpts {
@@ -68,9 +72,9 @@ impl Default for SyncOpts {
             urls: Vec::new(),
             offset: None,
             limit: None,
-            expected: Vec::new(),
             name: None,
             show_deleted: false,
+            filename: None,
         }
     }
 }
@@ -314,9 +318,13 @@ impl SyncOpts {
                 if self.urls.is_empty() {
                     Err(format_err!("Need at least 1 Url"))
                 } else {
-                    let futures = self.urls.iter().enumerate().map(|(idx, url)| async move {
-                        let pool = pool.clone();
-                        let stdout = stdout.clone();
+                    let mut file: Box<dyn AsyncWrite + Unpin + Send> =
+                        if let Some(filename) = &self.filename {
+                            Box::new(File::create(&filename).await?)
+                        } else {
+                            Box::new(tokio_stdout())
+                        };
+                    for url in &self.urls {
                         let mut flist = FileList::from_url(url, config, &pool).await?;
                         let list: Result<Vec<FileInfo>, Error> = flist
                             .load_file_list(self.show_deleted)
@@ -329,26 +337,17 @@ impl SyncOpts {
 
                         let offset = self.offset.unwrap_or(0);
                         let limit = self.limit.unwrap_or(filemap.len());
-                        if let Some(expected) = self.expected.get(idx) {
-                            if *expected != filemap.len() {
-                                return Err(format_err!("expected {expected} {}", filemap.len()));
-                            }
-                        }
 
-                        let results: Result<(), Error> = filemap
+                        for finfo in filemap
                             .values()
                             .sorted_by_key(|finfo| finfo.filepath.as_path())
                             .skip(offset)
                             .take(limit)
-                            .try_for_each(|finfo| {
-                                let line = serde_json::to_string(finfo.inner())?;
-                                stdout.send(line);
-                                Ok(())
-                            });
-                        results
-                    });
-                    let results: Result<Vec<()>, Error> = try_join_all(futures).await;
-                    results?;
+                        {
+                            file.write_all(&serde_json::to_vec(finfo.inner())?).await?;
+                            file.write_all(b"\n").await?;
+                        }
+                    }
                     Ok(())
                 }
             }
