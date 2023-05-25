@@ -157,6 +157,6 @@ impl SSHInstance {
     /// # Errors
     /// Return error if db query fails
     pub async fn run_scp(&self, arg0: &str, arg1: &str) -> Result<(), Error> {
-        self.run_command("scp", &[arg0, arg1]).await
+        self.run_command("scp", &["-q", arg0, arg1]).await
     }
 }
