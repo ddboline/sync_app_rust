@@ -30,8 +30,8 @@ serde_yaml = "0.9"
 stdout-channel = "0.6"
 uuid = "1.0"
 deadqueue = "0.2"
-dioxus = "0.3"
-dioxus-ssr = "0.3"
+dioxus = "0.4"
+dioxus-ssr = "0.4"
 reqwest = {version="0.11", features=["cookies", "json", "rustls-tls"], default_features=false}
 rweb = {git = "https://github.com/ddboline/rweb.git", features=["openapi"], default-features=false, tag="0.15.1-1"}
 rweb-helper = { git = "https://github.com/ddboline/rweb_helper.git", tag="0.5.0-1" }
