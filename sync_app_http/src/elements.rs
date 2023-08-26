@@ -27,7 +27,7 @@ fn index_element(
                     name: "sync-{name}",
                     value: "{name}",
                     "onclick": "syncName( '{name}' )",
-                    "<br>",
+                    br {},
                 }
             }
         })
@@ -65,16 +65,15 @@ fn index_element(
                     "type": "button",
                     name: "Proc",
                     value: "Proc",
-                    "onclick": "procCacheEntry('{id}')"
+                    "onclick": "procCacheEntry('{id}')",
                 },
-                "<br>",
             }
         }
     });
     cx.render(rsx! {
         head {
             style {
-                include_str!("../../templates/style.css")
+                dangerous_inner_html: include_str!("../../templates/style.css")
             }
         },
         body {
@@ -131,7 +130,7 @@ fn index_element(
                 button {
                     name: "garminconnectoutput",
                     id: "garminconnectoutput",
-                    "&nbsp;"
+                    dangerous_inner_html: "&nbsp;"
                 },
             },
             nav {
