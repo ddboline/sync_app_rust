@@ -38,23 +38,18 @@ pub struct AccessLocks {
 }
 
 impl AccessLocks {
-    #[must_use]
-    pub fn new(config: &Config) -> Self {
-        Self {
+    /// # Errors
+    /// Returns error if creation of client fails
+    pub fn new(config: &Config) -> Result<Self, Error> {
+        Ok(Self {
             sync: Mutex::new(SyncOpts::default()),
-            garmin: Mutex::new(GarminSync::new(config.clone())),
-            movie: Mutex::new(MovieSync::new(config.clone())),
-            calendar: Mutex::new(CalendarSync::new(config.clone())),
+            garmin: Mutex::new(GarminSync::new(config.clone())?),
+            movie: Mutex::new(MovieSync::new(config.clone())?),
+            calendar: Mutex::new(CalendarSync::new(config.clone())?),
             podcast: Mutex::new(()),
-            security: Mutex::new(SecuritySync::new(config.clone())),
-            weather: Mutex::new(WeatherSync::new(config.clone())),
-        }
-    }
-}
-
-impl Default for AccessLocks {
-    fn default() -> Self {
-        Self::new(&Config::default())
+            security: Mutex::new(SecuritySync::new(config.clone())?),
+            weather: Mutex::new(WeatherSync::new(config.clone())?),
+        })
     }
 }
 
@@ -81,7 +76,7 @@ pub async fn start_app() -> Result<(), Error> {
     }
     TRIGGER_DB_UPDATE.set();
 
-    let config = Config::init_config().expect("Failed to load config");
+    let config = Config::init_config()?;
     get_secrets(&config.secret_path, &config.jwt_secret_path).await?;
     let pool = PgPool::new(&config.database_url);
 
@@ -147,7 +142,7 @@ async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
     }
 
     let port = config.port;
-    let locks = Arc::new(AccessLocks::new(&config));
+    let locks = Arc::new(AccessLocks::new(&config)?);
     let client = Arc::new(ClientBuilder::new().build()?);
     let queue = Arc::new(Queue::new());
 

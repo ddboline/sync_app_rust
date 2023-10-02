@@ -10,6 +10,7 @@ use std::{
 };
 use stdout_channel::StdoutChannel;
 use url::Url;
+use aws_types::region::Region;
 
 use crate::{
     config::Config,
@@ -30,7 +31,7 @@ pub struct FileListS3 {
 impl FileListS3 {
     /// # Errors
     /// Return error if init fails
-    pub fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+    pub async fn new(bucket: &str, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         let buf = format_sstr!("s3://{bucket}");
         let baseurl: Url = buf.parse()?;
         let basepath = Path::new("");
@@ -44,14 +45,17 @@ impl FileListS3 {
             HashMap::new(),
             pool.clone(),
         );
-        let s3 = S3Instance::new(&config.aws_region_name);
+        let region: String = config.aws_region_name.as_str().into();
+        let region = Region::new(region);
+        let sdk_config = aws_config::from_env().region(region).load().await;
+        let s3 = S3Instance::new(&sdk_config);
 
         Ok(Self { flist, s3 })
     }
 
     /// # Errors
     /// Return error if init fails
-    pub fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
+    pub async fn from_url(url: &Url, config: &Config, pool: &PgPool) -> Result<Self, Error> {
         if url.scheme() == "s3" {
             let basepath = Path::new(url.path());
             let bucket = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
@@ -64,8 +68,10 @@ impl FileListS3 {
                 HashMap::new(),
                 pool.clone(),
             );
-            let config = config.clone();
-            let s3 = S3Instance::new(&config.aws_region_name);
+            let region: String = config.aws_region_name.as_str().into();
+            let region = Region::new(region);
+            let sdk_config = aws_config::from_env().region(region).load().await;    
+            let s3 = S3Instance::new(&sdk_config);
 
             Ok(Self { flist, s3 })
         } else {
@@ -74,7 +80,7 @@ impl FileListS3 {
     }
 
     #[must_use]
-    pub fn max_keys(mut self, max_keys: usize) -> Self {
+    pub fn max_keys(mut self, max_keys: i32) -> Self {
         self.s3 = self.s3.max_keys(max_keys);
         self
     }
@@ -261,6 +267,7 @@ impl FileListTrait for FileListS3 {
 mod tests {
     use anyhow::Error;
     use log::info;
+    use aws_types::region::Region;
 
     use crate::{
         config::Config, file_list::FileListTrait, file_list_s3::FileListS3, pgpool::PgPool,
@@ -274,14 +281,17 @@ mod tests {
         let _guard = S3Instance::get_instance_lock();
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
-        let s3 = S3Instance::new(&config.aws_region_name);
+        let region: String = config.aws_region_name.as_str().into();
+        let region = Region::new(region);
+        let sdk_config = aws_config::from_env().region(region).load().await;
+        let s3 = S3Instance::new(&sdk_config);
         let blist = s3.get_list_of_buckets().await?;
         let bucket = blist
             .get(0)
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
 
-        let mut flist = FileListS3::new(&bucket, &config, &pool)?.max_keys(100);
+        let mut flist = FileListS3::new(&bucket, &config, &pool).await?.max_keys(100);
 
         let new_flist = flist.fill_file_list().await?;
 
@@ -305,7 +315,9 @@ mod tests {
     #[allow(clippy::similar_names)]
     async fn test_list_buckets() -> Result<(), Error> {
         let _guard = S3Instance::get_instance_lock();
-        let s3_instance = S3Instance::new("us-east-1").max_keys(100);
+        let region = Region::from_static("us-east-1");
+        let sdk_config = aws_config::from_env().region(region).load().await;
+        let s3_instance = S3Instance::new(&sdk_config).max_keys(100);
         let blist = s3_instance.get_list_of_buckets().await?;
         let bucket = blist
             .get(0)

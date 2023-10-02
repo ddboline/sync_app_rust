@@ -392,35 +392,35 @@ impl SyncOpts {
                 Ok(())
             }
             FileSyncAction::SyncGarmin => {
-                let sync = GarminSync::new(config.clone());
+                let sync = GarminSync::new(config.clone())?;
                 for line in sync.run_sync().await? {
                     stdout.send(line);
                 }
                 Ok(())
             }
             FileSyncAction::SyncMovie => {
-                let sync = MovieSync::new(config.clone());
+                let sync = MovieSync::new(config.clone())?;
                 for line in sync.run_sync().await? {
                     stdout.send(line);
                 }
                 Ok(())
             }
             FileSyncAction::SyncCalendar => {
-                let sync = CalendarSync::new(config.clone());
+                let sync = CalendarSync::new(config.clone())?;
                 for line in sync.run_sync().await? {
                     stdout.send(line);
                 }
                 Ok(())
             }
             FileSyncAction::SyncSecurity => {
-                let sync = SecuritySync::new(config.clone());
+                let sync = SecuritySync::new(config.clone())?;
                 for line in sync.run_sync().await? {
                     stdout.send(line);
                 }
                 Ok(())
             }
             FileSyncAction::SyncWeather => {
-                let sync = WeatherSync::new(config.clone());
+                let sync = WeatherSync::new(config.clone())?;
                 for line in sync.run_sync().await? {
                     stdout.send(line);
                 }

@@ -22,12 +22,14 @@ pub struct SyncClient {
 }
 
 impl SyncClient {
-    pub fn new<T: AsRef<Path>>(config: Config, exe_path: T) -> Self {
-        Self {
-            remote_session: ReqwestSession::new(true),
+    /// # Errors
+    /// Returns error if creation of client fails
+    pub fn new<T: AsRef<Path>>(config: Config, exe_path: T) -> Result<Self, Error> {
+        Ok(Self {
+            remote_session: ReqwestSession::new(true)?,
             local_session: LocalSession::new(exe_path),
             config,
-        }
+        })
     }
 
     /// # Errors

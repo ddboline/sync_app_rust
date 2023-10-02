@@ -50,11 +50,12 @@ pub struct WeatherSync {
 }
 
 impl WeatherSync {
-    #[must_use]
-    pub fn new(config: Config) -> Self {
-        Self {
-            client: SyncClient::new(config, "/usr/bin/weather-api-rust"),
-        }
+    /// # Errors
+    /// Returns error if creation of client fails
+    pub fn new(config: Config) -> Result<Self, Error> {
+        Ok(Self {
+            client: SyncClient::new(config, "/usr/bin/weather-api-rust")?,
+        })
     }
 
     /// # Errors

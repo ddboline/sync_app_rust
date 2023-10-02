@@ -151,7 +151,7 @@ impl FileListTrait for FileListSSH {
                 .parent()
                 .ok_or_else(|| format_err!("No parent directory"))?
                 .to_string_lossy()
-                .replace(' ', r#"\ "#);
+                .replace(' ', r"\ ");
             let command = format_sstr!("mkdir -p {parent_dir}");
             self.ssh.run_command_ssh(&command).await?;
 
@@ -187,13 +187,12 @@ impl FileListTrait for FileListSSH {
         if url0.username() != url1.username() || url0.host_str() != url1.host_str() {
             return Ok(());
         }
-
         let path0 = Path::new(url0.path())
             .to_string_lossy()
-            .replace(' ', r#"\ "#);
+            .replace(' ', r"\ ");
         let path1 = Path::new(url1.path())
             .to_string_lossy()
-            .replace(' ', r#"\ "#);
+            .replace(' ', r"\ ");
         let command = format_sstr!("mv {path0} {path1}");
         self.ssh.run_command_ssh(&command).await
     }
@@ -203,7 +202,7 @@ impl FileListTrait for FileListSSH {
         let url = &finfo.get_finfo().urlname;
         let path = Path::new(url.path())
             .to_string_lossy()
-            .replace(' ', r#"\ "#);
+            .replace(' ', r"\ ");
         let command = format_sstr!("rm {path}");
         self.ssh.run_command_ssh(&command).await
     }
@@ -341,15 +340,15 @@ mod tests {
     async fn test_file_list_ssh_copy_from() -> Result<(), Error> {
         let config = Config::init_config()?;
         let pool = PgPool::new(&config.database_url);
-        let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/temp0.txt".parse()?;
+        let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/pkgs.txt".parse()?;
         let finfo0 = FileInfoSSH::from_url(&url)?;
-        let url: Url = "file:///tmp/temp0.txt".parse()?;
+        let url: Url = "file:///tmp/pkgs.txt".parse()?;
         let finfo1 = FileInfoLocal::from_url(&url)?;
 
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
         let flist = FileListSSH::from_url(&url, &config, &pool).await?;
         flist.copy_from(&finfo0, &finfo1).await?;
-        let p = Path::new("/tmp/temp0.txt");
+        let p = Path::new("/tmp/pkgs.txt");
         if p.exists() {
             remove_file(p)?;
         }

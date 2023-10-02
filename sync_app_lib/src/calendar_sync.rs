@@ -52,11 +52,12 @@ pub struct CalendarSync {
 }
 
 impl CalendarSync {
-    #[must_use]
-    pub fn new(config: Config) -> Self {
-        Self {
-            client: SyncClient::new(config, "/usr/bin/calendar-app-rust"),
-        }
+    /// # Errors
+    /// Returns error if creation of client fails
+    pub fn new(config: Config) -> Result<Self, Error> {
+        Ok(Self {
+            client: SyncClient::new(config, "/usr/bin/calendar-app-rust")?,
+        })
     }
 
     /// # Errors

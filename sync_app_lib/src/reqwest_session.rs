@@ -12,27 +12,21 @@ pub struct ReqwestSession {
     client: Client,
 }
 
-impl Default for ReqwestSession {
-    fn default() -> Self {
-        Self::new(true)
-    }
-}
-
 impl ReqwestSession {
-    #[must_use]
-    pub fn new(allow_redirects: bool) -> Self {
+    /// # Errors
+    /// Returns error if creation of client fails
+    pub fn new(allow_redirects: bool) -> Result<Self, Error> {
         let redirect_policy = if allow_redirects {
             Policy::default()
         } else {
             Policy::none()
         };
-        Self {
+        Ok(Self {
             client: Client::builder()
                 .cookie_store(true)
                 .redirect(redirect_policy)
-                .build()
-                .expect("Failed to build client"),
-        }
+                .build()?,
+        })
     }
 
     async fn exponential_retry<T, U, V>(f: T) -> Result<U, Error>

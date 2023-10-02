@@ -122,11 +122,12 @@ pub struct MovieSync {
 }
 
 impl MovieSync {
-    #[must_use]
-    pub fn new(config: Config) -> Self {
-        Self {
-            client: SyncClient::new(config, "/usr/bin/movie-queue-cli"),
-        }
+    /// # Errors
+    /// Returns error if creation of client fails
+    pub fn new(config: Config) -> Result<Self, Error> {
+        Ok(Self {
+            client: SyncClient::new(config, "/usr/bin/movie-queue-cli")?,
+        })
     }
 
     /// # Errors
@@ -269,7 +270,7 @@ mod tests {
     #[ignore]
     async fn test_movie_sync() {
         let config = Config::init_config().unwrap();
-        let s = MovieSync::new(config);
+        let s = MovieSync::new(config).unwrap();
         let result = s.run_sync().await.unwrap();
         debug!("{:?}", result);
         assert!(result.len() > 0);

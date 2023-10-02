@@ -94,7 +94,7 @@ impl FileList {
                 Ok(Box::new(flist))
             }
             "s3" => {
-                let flist = FileListS3::from_url(url, config, pool)?;
+                let flist = FileListS3::from_url(url, config, pool).await?;
                 Ok(Box::new(flist))
             }
             "ssh" => {

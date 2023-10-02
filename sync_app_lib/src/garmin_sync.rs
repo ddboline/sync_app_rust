@@ -96,11 +96,12 @@ pub struct GarminSync {
 }
 
 impl GarminSync {
-    #[must_use]
-    pub fn new(config: Config) -> Self {
-        Self {
-            client: SyncClient::new(config, "/usr/bin/garmin-rust-cli"),
-        }
+    /// # Errors
+    /// Returns error if creation of client fails
+    pub fn new(config: Config) -> Result<Self, Error> {
+        Ok(Self {
+            client: SyncClient::new(config, "/usr/bin/garmin-rust-cli")?,
+        })
     }
 
     /// # Errors

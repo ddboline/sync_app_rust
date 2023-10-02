@@ -405,9 +405,11 @@ mod tests {
     use anyhow::Error;
     use futures::{future, TryStreamExt};
     use log::debug;
-    use rusoto_s3::{Object, Owner};
+    use aws_sdk_s3::types::{Object, Owner, ObjectStorageClass};
+    use aws_sdk_s3::primitives::DateTime;
     use stack_string::format_sstr;
     use std::{collections::HashMap, env::current_dir, path::Path};
+    use time::macros::datetime;
 
     use crate::{
         config::Config,
@@ -437,18 +439,15 @@ mod tests {
         debug!("{:?}", finfo1);
         assert!(FileSync::compare_objects(&finfo0, &finfo1));
 
-        let test_owner = Owner {
-            display_name: Some("me".to_string()),
-            id: Some("8675309".to_string()),
-        };
-        let test_object = Object {
-            e_tag: Some(r#""6f90ebdaabef92a9f76be131037f593b""#.to_string()),
-            key: Some("src/file_sync.rs".to_string()),
-            last_modified: Some("2019-05-01T00:00:00+00:00".to_string()),
-            owner: Some(test_owner),
-            size: Some(100),
-            storage_class: Some("Standard".to_string()),
-        };
+        let test_owner = Owner::builder().display_name("me").id("8675309").build();
+        let last_modified = datetime!(2019-05-01 00:00:00 +00:00);
+        let test_object = Object::builder().e_tag(r#""6f90ebdaabef92a9f76be131037f593b""#)
+            .key("src/file_sync.rs")
+            .last_modified(DateTime::from_secs(last_modified.unix_timestamp()))
+            .owner(test_owner)
+            .size(100)
+            .storage_class(ObjectStorageClass::Standard)
+            .build();
 
         let finfo2 = FileInfoS3::from_object("test_bucket", test_object)?;
         debug!("{:?}", finfo2);
@@ -470,7 +469,7 @@ mod tests {
         let mut flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
         flist0.with_list(vec![finfo0.0]);
 
-        let flist1 = FileListS3::new("test_bucket", &config, &pool)?;
+        let flist1 = FileListS3::new("test_bucket", &config, &pool).await?;
 
         FileSync::compare_lists(&flist0, &flist1, &pool).await?;
 
@@ -511,22 +510,20 @@ mod tests {
 
         let flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
 
-        let test_owner = Owner {
-            display_name: Some("me".to_string()),
-            id: Some("8675309".to_string()),
-        };
-        let test_object = Object {
-            e_tag: Some(r#""6f90ebdaabef92a9f76be131037f593b""#.to_string()),
-            key: Some("src/file_sync.rs".to_string()),
-            last_modified: Some("2019-05-01T00:00:00+00:00".to_string()),
-            owner: Some(test_owner),
-            size: Some(100),
-            storage_class: Some("Standard".to_string()),
-        };
+        let test_owner = Owner::builder().display_name("me").id("8675309").build();
+        let last_modified = datetime!(2019-05-01 00:00:00 +00:00);
+        let test_object = Object::builder()
+            .e_tag(r#""6f90ebdaabef92a9f76be131037f593b""#)
+            .key("src/file_sync.rs")
+            .last_modified(DateTime::from_secs(last_modified.unix_timestamp()))
+            .owner(test_owner)
+            .size(100)
+            .storage_class(ObjectStorageClass::Standard)
+            .build();
 
         let finfo1 = FileInfoS3::from_object("test_bucket", test_object)?;
 
-        let mut flist1 = FileListS3::new("test_bucket", &config, &pool)?;
+        let mut flist1 = FileListS3::new("test_bucket", &config, &pool).await?;
         flist1.with_list(vec![finfo1.into_finfo()]);
 
         FileSync::compare_lists(&flist0, &flist1, &pool).await?;

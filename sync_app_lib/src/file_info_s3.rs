@@ -1,8 +1,7 @@
 use anyhow::{format_err, Error};
-use rusoto_s3::Object;
+use aws_sdk_s3::types::Object;
 use stack_string::{format_sstr, StackString};
 use std::path::Path;
-use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use url::Url;
 
 use crate::{
@@ -92,8 +91,8 @@ impl FileInfoS3 {
             .last_modified
             .as_ref()
             .ok_or_else(|| format_err!("No last modified"))?;
-        let st_mtime = OffsetDateTime::parse(last_modified, &Rfc3339)?.unix_timestamp();
-        let size = item.size.ok_or_else(|| format_err!("No file size"))?;
+        let st_mtime = last_modified.as_secs_f64() as i64;
+        let size = item.size as u32;
         let fileurl = format_sstr!("s3://{bucket}/{key}");
         let fileurl: Url = fileurl.parse()?;
         let id_str: StackString = bucket.into();
@@ -108,7 +107,7 @@ impl FileInfoS3 {
             None,
             FileStat {
                 st_mtime: st_mtime as u32,
-                st_size: size as u32,
+                st_size: size,
             },
             serviceid,
             FileService::S3,
@@ -121,24 +120,25 @@ impl FileInfoS3 {
 
 #[cfg(test)]
 mod tests {
-    use rusoto_s3::{Object, Owner};
+    use aws_sdk_s3::{
+        primitives::DateTime,
+        types::{Object, Owner},
+    };
+    use time::macros::datetime;
 
     use crate::{file_info::FileInfoTrait, file_info_s3::FileInfoS3};
 
     #[test]
     fn test_file_info_s3() {
-        let test_owner = Owner {
-            display_name: Some("me".to_string()),
-            id: Some("8675309".to_string()),
-        };
-        let test_object = Object {
-            e_tag: Some(r#""6f90ebdaabef92a9f76be131037f593b""#.to_string()),
-            key: Some("test_key".to_string()),
-            last_modified: Some("2019-05-01T00:00:00+00:00".to_string()),
-            owner: Some(test_owner),
-            size: Some(100),
-            storage_class: Some("Standard".to_string()),
-        };
+        let test_owner = Owner::builder().display_name("me").id("8675309").build();
+        let last_modified = datetime!(2019-05-01 00:00:00 +00:00);
+        let test_object = Object::builder()
+            .e_tag(r#""6f90ebdaabef92a9f76be131037f593b""#)
+            .key("test_key")
+            .last_modified(DateTime::from_secs(last_modified.unix_timestamp()))
+            .owner(test_owner)
+            .size(100)
+            .build();
 
         let finfo = FileInfoS3::from_object("test_bucket", test_object).unwrap();
 
