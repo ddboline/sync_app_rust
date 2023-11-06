@@ -31,13 +31,14 @@ impl FileListSSH {
             let basepath = Path::new(url.path()).to_path_buf();
             let host = url.host_str().ok_or_else(|| format_err!("Parse error"))?;
             let port = url.port().unwrap_or(22);
-            let session = format_sstr!(
-                "ssh://{}@{}:{}{}",
-                url.username(),
-                host,
-                port,
-                basepath.to_string_lossy()
-            );
+            let host = if port == 22 {
+                host.into()
+            } else {
+                format_sstr!("{host}:{port}")
+            };
+            let username = url.username();
+
+            let session = format_sstr!("ssh://{username}@{host}{}", basepath.to_string_lossy());
             let flist = FileList::new(
                 url.clone(),
                 basepath,
@@ -187,12 +188,8 @@ impl FileListTrait for FileListSSH {
         if url0.username() != url1.username() || url0.host_str() != url1.host_str() {
             return Ok(());
         }
-        let path0 = Path::new(url0.path())
-            .to_string_lossy()
-            .replace(' ', r"\ ");
-        let path1 = Path::new(url1.path())
-            .to_string_lossy()
-            .replace(' ', r"\ ");
+        let path0 = Path::new(url0.path()).to_string_lossy().replace(' ', r"\ ");
+        let path1 = Path::new(url1.path()).to_string_lossy().replace(' ', r"\ ");
         let command = format_sstr!("mv {path0} {path1}");
         self.ssh.run_command_ssh(&command).await
     }
@@ -200,9 +197,7 @@ impl FileListTrait for FileListSSH {
     async fn delete(&self, finfo: &dyn FileInfoTrait) -> Result<(), Error> {
         let finfo = finfo.get_finfo();
         let url = &finfo.get_finfo().urlname;
-        let path = Path::new(url.path())
-            .to_string_lossy()
-            .replace(' ', r"\ ");
+        let path = Path::new(url.path()).to_string_lossy().replace(' ', r"\ ");
         let command = format_sstr!("rm {path}");
         self.ssh.run_command_ssh(&command).await
     }
