@@ -1,12 +1,15 @@
 use anyhow::{format_err, Error};
 use aws_config::SdkConfig;
-use aws_sdk_s3::{types::{Bucket, Object}, Client as S3Client};
+use aws_sdk_s3::{
+    operation::list_objects::ListObjectsOutput,
+    primitives::ByteStream,
+    types::{Bucket, Object},
+    Client as S3Client,
+};
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, MutexGuard};
 use std::{fmt, path::Path};
 use url::Url;
-use aws_sdk_s3::primitives::ByteStream;
-use aws_sdk_s3::operation::list_objects::ListObjectsOutput;
 
 lazy_static! {
     static ref S3INSTANCE_TEST_MUTEX: Mutex<()> = Mutex::new(());
@@ -25,16 +28,6 @@ pub struct S3Instance {
 impl fmt::Debug for S3Instance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str("S3Instance")
-    }
-}
-
-impl Default for S3Instance {
-    fn default() -> Self {
-        let sdk_config = SdkConfig::builder().build();
-        Self {
-            s3_client: S3Client::from_conf((&sdk_config).into()),
-            max_keys: None,
-        }
     }
 }
 
@@ -91,10 +84,14 @@ impl S3Instance {
     /// # Errors
     /// Return error if db query fails
     pub async fn delete_bucket(&self, bucket_name: &str) -> Result<(), Error> {
-        exponential_retry(|| {
-            async move {
-                self.s3_client.delete_bucket().bucket(bucket_name).send().await.map(|_| ()).map_err(Into::into)
-            }
+        exponential_retry(|| async move {
+            self.s3_client
+                .delete_bucket()
+                .bucket(bucket_name)
+                .send()
+                .await
+                .map(|_| ())
+                .map_err(Into::into)
         })
         .await
     }
@@ -102,10 +99,15 @@ impl S3Instance {
     /// # Errors
     /// Return error if db query fails
     pub async fn delete_key(&self, bucket_name: &str, key_name: &str) -> Result<(), Error> {
-        exponential_retry(|| {
-            async move {
-                self.s3_client.delete_object().bucket(bucket_name).key(key_name).send().await.map(|_| ()).map_err(Into::into)
-            }
+        exponential_retry(|| async move {
+            self.s3_client
+                .delete_object()
+                .bucket(bucket_name)
+                .key(key_name)
+                .send()
+                .await
+                .map(|_| ())
+                .map_err(Into::into)
         })
         .await
     }
@@ -121,7 +123,14 @@ impl S3Instance {
         exponential_retry(|| {
             let copy_source = source.to_string();
             async move {
-                self.s3_client.copy_object().copy_source(copy_source).bucket(bucket_to).key(key_to).send().await.map_err(Into::into)
+                self.s3_client
+                    .copy_object()
+                    .copy_source(copy_source)
+                    .bucket(bucket_to)
+                    .key(key_to)
+                    .send()
+                    .await
+                    .map_err(Into::into)
             }
         })
         .await
@@ -140,11 +149,17 @@ impl S3Instance {
         if !fname.exists() {
             return Err(format_err!("File doesn't exist {fname:?}"));
         }
-        exponential_retry(|| {
-            async move {
-                let body = ByteStream::read_from().path(fname).build().await?;
-                self.s3_client.put_object().bucket(bucket_name).key(key_name).body(body).send().await.map(|_| ()).map_err(Into::into)
-            }
+        exponential_retry(|| async move {
+            let body = ByteStream::read_from().path(fname).build().await?;
+            self.s3_client
+                .put_object()
+                .bucket(bucket_name)
+                .key(key_name)
+                .body(body)
+                .send()
+                .await
+                .map(|_| ())
+                .map_err(Into::into)
         })
         .await
     }
@@ -158,13 +173,25 @@ impl S3Instance {
         fname: &str,
     ) -> Result<StackString, Error> {
         let fname = Path::new(fname);
-        exponential_retry(|| {
-            async move {
-                let resp = self.s3_client.get_object().bucket(bucket_name).key(key_name).send().await?;
-                let etag = resp.e_tag.ok_or_else(|| format_err!("No etag"))?.trim_matches('"').into();
-                tokio::io::copy(&mut resp.body.into_async_read(), &mut tokio::fs::File::create(fname).await?).await?;
-                Ok(etag)
-            }
+        exponential_retry(|| async move {
+            let resp = self
+                .s3_client
+                .get_object()
+                .bucket(bucket_name)
+                .key(key_name)
+                .send()
+                .await?;
+            let etag = resp
+                .e_tag
+                .ok_or_else(|| format_err!("No etag"))?
+                .trim_matches('"')
+                .into();
+            tokio::io::copy(
+                &mut resp.body.into_async_read(),
+                &mut tokio::fs::File::create(fname).await?,
+            )
+            .await?;
+            Ok(etag)
         })
         .await
     }

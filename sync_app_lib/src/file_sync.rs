@@ -206,7 +206,7 @@ impl FileSync {
             .collect();
         debug!("ab {} ba {}", list_a_not_b.len(), list_b_not_a.len());
         if list_a_not_b.is_empty() && list_b_not_a.is_empty() {
-            flist0.cleanup().and_then(|_| flist1.cleanup())
+            flist0.cleanup().and_then(|()| flist1.cleanup())
         } else {
             let futures = list_a_not_b
                 .into_iter()
@@ -279,11 +279,11 @@ impl FileSync {
         let proc_map: Result<HashMap<_, _>, Error> = FileSyncCache::get_cache_list(pool)
             .await?
             .map_err(Into::into)
-            .try_fold(HashMap::new(), |mut h, v| async move {
+            .try_fold(HashMap::new(), |mut h: HashMap<_, Vec<_>>, v| async move {
                 let u0: Url = v.src_url.parse()?;
                 let u1: Url = v.dst_url.parse()?;
                 v.delete_cache_entry(pool).await?;
-                h.entry(u0).or_insert_with(Vec::new).push(u1);
+                h.entry(u0).or_default().push(u1);
                 Ok(h)
             })
             .await;
@@ -403,10 +403,12 @@ impl FileSync {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
+    use aws_sdk_s3::{
+        primitives::DateTime,
+        types::{Object, ObjectStorageClass, Owner},
+    };
     use futures::{future, TryStreamExt};
     use log::debug;
-    use aws_sdk_s3::types::{Object, Owner, ObjectStorageClass};
-    use aws_sdk_s3::primitives::DateTime;
     use stack_string::format_sstr;
     use std::{collections::HashMap, env::current_dir, path::Path};
     use time::macros::datetime;
@@ -441,7 +443,8 @@ mod tests {
 
         let test_owner = Owner::builder().display_name("me").id("8675309").build();
         let last_modified = datetime!(2019-05-01 00:00:00 +00:00);
-        let test_object = Object::builder().e_tag(r#""6f90ebdaabef92a9f76be131037f593b""#)
+        let test_object = Object::builder()
+            .e_tag(r#""6f90ebdaabef92a9f76be131037f593b""#)
             .key("src/file_sync.rs")
             .last_modified(DateTime::from_secs(last_modified.unix_timestamp()))
             .owner(test_owner)
