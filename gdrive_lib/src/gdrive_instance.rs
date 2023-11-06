@@ -668,7 +668,7 @@ impl GDriveInstance {
         directory_map.values().fold(HashMap::new(), |mut h, m| {
             let key = m.directory_name.clone();
             let val = m.clone();
-            h.entry(key).or_insert_with(Vec::new).push(val);
+            h.entry(key).or_default().push(val);
             h
         })
     }
