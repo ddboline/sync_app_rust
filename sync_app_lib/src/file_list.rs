@@ -521,7 +521,7 @@ pub fn replace_basepath(basename: &Path, basepath0: &Path, basepath1: &Path) -> 
 pub fn group_urls(url_list: &[Url]) -> HashMap<StackString, Vec<Url>> {
     url_list.iter().fold(HashMap::new(), |mut h, m| {
         let key = m.scheme();
-        h.entry(key.into()).or_insert_with(Vec::new).push(m.clone());
+        h.entry(key.into()).or_default().push(m.clone());
         h
     })
 }

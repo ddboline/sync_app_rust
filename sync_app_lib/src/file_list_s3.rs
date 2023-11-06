@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
+use aws_types::region::Region;
 use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use stack_string::{format_sstr, StackString};
@@ -10,7 +11,6 @@ use std::{
 };
 use stdout_channel::StdoutChannel;
 use url::Url;
-use aws_types::region::Region;
 
 use crate::{
     config::Config,
@@ -70,7 +70,7 @@ impl FileListS3 {
             );
             let region: String = config.aws_region_name.as_str().into();
             let region = Region::new(region);
-            let sdk_config = aws_config::from_env().region(region).load().await;    
+            let sdk_config = aws_config::from_env().region(region).load().await;
             let s3 = S3Instance::new(&sdk_config);
 
             Ok(Self { flist, s3 })
@@ -266,8 +266,8 @@ impl FileListTrait for FileListS3 {
 #[cfg(test)]
 mod tests {
     use anyhow::Error;
-    use log::info;
     use aws_types::region::Region;
+    use log::info;
 
     use crate::{
         config::Config, file_list::FileListTrait, file_list_s3::FileListS3, pgpool::PgPool,
@@ -291,7 +291,9 @@ mod tests {
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
 
-        let mut flist = FileListS3::new(&bucket, &config, &pool).await?.max_keys(100);
+        let mut flist = FileListS3::new(&bucket, &config, &pool)
+            .await?
+            .max_keys(100);
 
         let new_flist = flist.fill_file_list().await?;
 
