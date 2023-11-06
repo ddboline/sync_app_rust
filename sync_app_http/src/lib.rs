@@ -5,6 +5,7 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::unused_async)]
+#![allow(clippy::ignored_unit_patterns)]
 
 pub mod app;
 pub mod elements;
