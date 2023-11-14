@@ -124,13 +124,6 @@ impl Default for FileInfoInner {
 #[derive(Clone, Debug, PartialEq, Eq, Default, Deref)]
 pub struct FileInfo(Arc<FileInfoInner>);
 
-// impl Deref for FileInfo {
-//     type Target = FileInfoInner;
-//     fn deref(&self) -> &Self::Target {
-//         &self.0
-//     }
-// }
-
 pub enum FileInfoKeyType {
     FileName,
     FilePath,
@@ -267,8 +260,12 @@ impl TryFrom<FileInfoCache> for FileInfo {
 impl FileInfo {
     /// # Errors
     /// Return error if db query fails
-    pub async fn from_database(pool: &PgPool, url: &Url) -> Result<Option<Self>, Error> {
-        FileInfoCache::get_by_urlname(url, pool)
+    pub async fn from_database(
+        pool: &PgPool,
+        url: &Url,
+        servicesession: &str,
+    ) -> Result<Option<Self>, Error> {
+        FileInfoCache::get_by_urlname(url, servicesession, pool)
             .await?
             .map(TryInto::try_into)
             .transpose()
