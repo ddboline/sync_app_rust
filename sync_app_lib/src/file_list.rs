@@ -34,10 +34,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct FileList {
     baseurl: Url,
-    filemap: Arc<HashMap<StackString, FileInfo>>,
     inner: Arc<FileListInner>,
-    min_mtime: Option<u32>,
-    max_mtime: Option<u32>,
 }
 
 impl Deref for FileList {
@@ -55,12 +52,10 @@ impl FileList {
         config: Config,
         servicetype: FileService,
         servicesession: ServiceSession,
-        filemap: HashMap<StackString, FileInfo>,
         pool: PgPool,
     ) -> Self {
         Self {
             baseurl,
-            filemap: Arc::new(filemap),
             inner: Arc::new(FileListInner {
                 basepath,
                 config,
@@ -68,8 +63,6 @@ impl FileList {
                 servicesession,
                 pool,
             }),
-            min_mtime: None,
-            max_mtime: None,
         }
     }
 
@@ -125,11 +118,6 @@ pub trait FileListTrait: Send + Sync + Debug {
     fn get_config(&self) -> &Config;
 
     fn get_pool(&self) -> &PgPool;
-    fn get_filemap(&self) -> &HashMap<StackString, FileInfo>;
-    fn get_min_mtime(&self) -> Option<u32>;
-    fn get_max_mtime(&self) -> Option<u32>;
-
-    fn with_list(&mut self, filelist: Vec<FileInfo>);
 
     // Copy operation where the origin (finfo0) has the same servicetype as self
     async fn copy_from(
@@ -162,7 +150,8 @@ pub trait FileListTrait: Send + Sync + Debug {
         panic!("not implemented for {:?}", finfo);
     }
 
-    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error>;
+    /// Return updated FileInfo entries
+    async fn update_file_cache(&self) -> Result<usize, Error>;
 
     async fn print_list(&self, _: &StdoutChannel<StackString>) -> Result<(), Error> {
         unimplemented!()
@@ -190,89 +179,6 @@ pub trait FileListTrait: Send + Sync + Debug {
         } else {
             Ok(())
         }
-    }
-
-    async fn cache_file_list(&self) -> Result<usize, Error> {
-        let pool = self.get_pool();
-
-        // Load existing file_list, create hashmap
-        let current_cache: HashMap<_, _> = self
-            .load_file_list(false)
-            .await?
-            .into_iter()
-            .filter_map(|item| {
-                let key = item.get_key();
-                key.map(|k| (k, item))
-            })
-            .collect();
-
-        // Load and convert current filemap
-        let flist_cache_map: HashMap<_, _> = self
-            .get_filemap()
-            .iter()
-            .filter_map(|(_, f)| {
-                let item: FileInfoCache = f.into();
-
-                let key = item.get_key();
-                key.map(|k| (k, item))
-            })
-            .collect();
-
-        // Delete entries from current_cache not in filemap
-        let mut deleted_entries = 0;
-        for k in current_cache.keys() {
-            if flist_cache_map.contains_key(k) {
-                continue;
-            }
-            info!("remove {:?}", k);
-            k.delete_cache_entry(pool).await?;
-            deleted_entries += 1;
-        }
-
-        info!(
-            "flist_cache_map {} {} {} {} {}",
-            self.get_servicesession().as_str(),
-            self.get_servicetype(),
-            flist_cache_map.len(),
-            current_cache.len(),
-            deleted_entries
-        );
-
-        for (k, v) in &flist_cache_map {
-            if let Some(item) = current_cache.get(k) {
-                if v.md5sum != item.md5sum
-                    || v.sha1sum != item.sha1sum
-                    || v.filestat_st_mtime != item.filestat_st_mtime
-                    || v.filestat_st_size != item.filestat_st_size
-                {
-                    let mut cache = v
-                        .get_cache(pool)
-                        .await?
-                        .ok_or_else(|| format_err!("Cache doesn't exist"))?;
-                    if let Some(md5sum) = &v.md5sum {
-                        cache.md5sum = Some(md5sum.clone());
-                    }
-                    if let Some(sha1sum) = &v.sha1sum {
-                        cache.sha1sum = Some(sha1sum.clone());
-                    }
-                    cache.filestat_st_mtime = v.filestat_st_mtime;
-                    cache.filestat_st_size = v.filestat_st_size;
-
-                    info!("GOT HERE {:?}", cache);
-                    cache.insert(pool).await?;
-                }
-            }
-        }
-
-        let mut inserted = 0;
-        for (k, v) in flist_cache_map {
-            if current_cache.contains_key(&k) {
-                continue;
-            }
-            v.insert(pool).await?;
-            inserted += 1;
-        }
-        Ok(inserted)
     }
 
     async fn load_file_list(&self, get_deleted: bool) -> Result<Vec<FileInfoCache>, Error> {
@@ -439,49 +345,8 @@ impl FileListTrait for FileList {
         &self.pool
     }
 
-    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
-        &self.filemap
-    }
-
-    fn get_min_mtime(&self) -> Option<u32> {
-        self.min_mtime
-    }
-
-    fn get_max_mtime(&self) -> Option<u32> {
-        self.max_mtime
-    }
-
-    fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        let mut min_mtime: Option<u32> = None;
-        let mut max_mtime: Option<u32> = None;
-        let filemap = filelist
-            .into_iter()
-            .map(|f| {
-                let path = f.filepath.to_string_lossy();
-                let key = remove_basepath(&path, &self.get_basepath().to_string_lossy());
-                let mut inner = f.inner().clone();
-                inner.servicesession = self.get_servicesession().clone();
-                if min_mtime.is_none() || min_mtime > Some(inner.filestat.st_mtime) {
-                    min_mtime.replace(inner.filestat.st_mtime);
-                }
-                if max_mtime.is_none() || max_mtime < Some(inner.filestat.st_mtime) {
-                    max_mtime.replace(inner.filestat.st_mtime);
-                }
-                let f = FileInfo::from_inner(inner);
-                (key, f)
-            })
-            .collect();
-        self.filemap = Arc::new(filemap);
-        self.min_mtime = min_mtime;
-        self.max_mtime = max_mtime;
-    }
-
-    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
-        self.load_file_list(false)
-            .await?
-            .into_iter()
-            .map(TryInto::try_into)
-            .collect()
+    async fn update_file_cache(&self) -> Result<usize, Error> {
+        Ok(0)
     }
 }
 
