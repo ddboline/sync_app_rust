@@ -4,7 +4,6 @@ use checksums::{hash_file, Algorithm};
 use log::info;
 use stack_string::{format_sstr, StackString};
 use std::{
-    collections::HashMap,
     fs::{create_dir_all, remove_file},
     path::Path,
 };
@@ -15,10 +14,11 @@ use gdrive_lib::gcs_instance::GcsInstance;
 
 use crate::{
     config::Config,
-    file_info::{FileInfo, FileInfoTrait, ServiceSession},
+    file_info::{FileInfoTrait, ServiceSession},
     file_info_gcs::FileInfoGcs,
     file_list::{FileList, FileListTrait},
     file_service::FileService,
+    models::FileInfoCache,
     pgpool::PgPool,
 };
 
@@ -42,7 +42,6 @@ impl FileListGcs {
             config.clone(),
             FileService::GCS,
             bucket.parse()?,
-            HashMap::new(),
             pool.clone(),
         );
         let gcs = GcsInstance::new(&config.gcs_token_path, &config.gcs_secret_file, bucket).await?;
@@ -62,7 +61,6 @@ impl FileListGcs {
                 config.clone(),
                 FileService::GCS,
                 bucket.parse()?,
-                HashMap::new(),
                 pool.clone(),
             );
             let config = config.clone();
@@ -101,35 +99,23 @@ impl FileListTrait for FileListGcs {
         &self.flist.pool
     }
 
-    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
-        self.flist.get_filemap()
-    }
-
-    fn get_min_mtime(&self) -> Option<u32> {
-        self.flist.get_min_mtime()
-    }
-
-    fn get_max_mtime(&self) -> Option<u32> {
-        self.flist.get_max_mtime()
-    }
-
-    fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.flist.with_list(filelist);
-    }
-
-    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+    async fn update_file_cache(&self) -> Result<usize, Error> {
         let bucket = self
             .get_baseurl()
             .host_str()
             .ok_or_else(|| format_err!("Parse error"))?;
         let prefix = self.get_baseurl().path().trim_start_matches('/');
+        let mut number_updated = 0;
 
-        self.gcs
-            .get_list_of_keys(bucket, Some(prefix))
-            .await?
-            .into_iter()
-            .map(|f| FileInfoGcs::from_object(bucket, f).map(FileInfoTrait::into_finfo))
-            .collect()
+        let pool = self.get_pool();
+        for object in self.gcs.get_list_of_keys(bucket, Some(prefix)).await? {
+            let info: FileInfoCache = FileInfoGcs::from_object(bucket, object)?
+                .into_finfo()
+                .into();
+
+            number_updated += info.upsert(pool).await?;
+        }
+        Ok(number_updated)
     }
 
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
@@ -286,20 +272,18 @@ mod tests {
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
 
-        let mut flist = FileListGcs::new(&bucket, &config, &pool).await?;
+        let flist = FileListGcs::new(&bucket, &config, &pool).await?;
 
-        let new_flist = flist.fill_file_list().await?;
+        flist.clear_file_list().await?;
 
-        info!("{} {:?}", bucket, new_flist.get(0));
-        assert!(new_flist.len() > 0);
+        let number_updated = flist.update_file_cache().await?;
 
-        flist.with_list(new_flist);
-
-        flist.cache_file_list().await?;
+        info!("{} {}", bucket, number_updated);
+        assert!(number_updated > 0);
 
         let new_flist = flist.load_file_list(false).await?;
 
-        assert_eq!(flist.flist.get_filemap().len(), new_flist.len());
+        assert_eq!(number_updated, new_flist.len());
 
         flist.clear_file_list().await?;
         Ok(())
