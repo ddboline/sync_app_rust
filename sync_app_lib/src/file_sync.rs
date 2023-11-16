@@ -5,7 +5,7 @@ use log::debug;
 use smallvec::{smallvec, SmallVec};
 use std::{
     collections::HashMap,
-    convert::From,
+    convert::{From, TryInto},
     fmt,
     path::{Path, PathBuf},
     str::FromStr,
@@ -18,7 +18,7 @@ use crate::{
     file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, FileStat},
     file_list::{group_urls, replace_basepath, replace_baseurl, FileList, FileListTrait},
     file_service::FileService,
-    models::FileSyncCache,
+    models::{CandidateIds, FileInfoCache, FileSyncCache},
     pgpool::PgPool,
 };
 
@@ -123,104 +123,123 @@ impl FileSync {
         flist1: &dyn FileListTrait,
         pool: &PgPool,
     ) -> Result<(), Error> {
-        if flist0.get_filemap().len() != flist1.get_filemap().len() {
-            println!(
-                "f0 {} {} f1 {} {}",
-                flist0.get_baseurl(),
-                flist0.get_filemap().len(),
-                flist1.get_baseurl(),
-                flist1.get_filemap().len()
+        let count0 = FileInfoCache::count_cached(
+            flist0.get_servicesession().as_str(),
+            flist0.get_servicetype().to_str(),
+            pool,
+            false,
+        )
+        .await?;
+        let count1 = FileInfoCache::count_cached(
+            flist1.get_servicesession().as_str(),
+            flist1.get_servicetype().to_str(),
+            pool,
+            false,
+        )
+        .await?;
+        debug!(
+            "f0 {} {count0} f1 {} {count1}",
+            flist0.get_baseurl(),
+            flist1.get_baseurl(),
+        );
+        let mut list_a_not_b: Vec<(FileInfo, FileInfo)> = Vec::new();
+        let mut list_b_not_a: Vec<(FileInfo, FileInfo)> = Vec::new();
+
+        for finfo0 in FileInfoCache::get_new_entries(
+            flist0.get_baseurl().as_str(),
+            flist1.get_baseurl().as_str(),
+            flist0.get_servicesession().as_str(),
+            pool,
+        )
+        .await?
+        {
+            let path0 = Path::new(&finfo0.filepath);
+            let url0 = &finfo0.urlname.parse()?;
+            let baseurl0 = flist0.get_baseurl();
+            let baseurl1 = flist1.get_baseurl();
+            let url1 = replace_baseurl(url0, baseurl0, baseurl1)?;
+            let path1 = replace_basepath(path0, flist0.get_basepath(), flist1.get_basepath());
+            if !url1.as_str().contains(baseurl1.as_str()) {
+                return Err(format_err!("{baseurl1} not in {url1}"));
+            }
+            let finfo0: FileInfo = finfo0.try_into()?;
+            let finfo1: FileInfo = FileInfo::new(
+                finfo0.filename.clone(),
+                path1.into(),
+                url1.into(),
+                None,
+                None,
+                FileStat::default(),
+                flist1.get_servicesession().clone().into(),
+                flist1.get_servicetype(),
+                flist1.get_servicesession().clone(),
             );
+            debug!("ab {} {}", finfo0.urlname, finfo1.urlname);
+            list_a_not_b.push((finfo0, finfo1));
         }
-        let list_a_not_b: Vec<_> = flist0
-            .get_filemap()
-            .iter()
-            .filter_map(|(k, finfo0)| {
-                if let Some(finfo1) = flist1.get_filemap().get(k) {
-                    if Self::compare_objects(finfo0, finfo1) {
-                        Some((finfo0.clone(), finfo1.clone()))
-                    } else {
-                        None
-                    }
-                } else {
-                    let path0 = &finfo0.filepath;
-                    let url0 = &finfo0.urlname;
-                    let baseurl0 = flist0.get_baseurl();
-                    let baseurl1 = flist1.get_baseurl();
-                    let url1 = replace_baseurl(url0, baseurl0, baseurl1).ok()?;
-                    let path1 =
-                        replace_basepath(path0, flist0.get_basepath(), flist1.get_basepath());
-                    if url1.as_str().contains(baseurl1.as_str()) {
-                        let finfo1 = FileInfo::new(
-                            k.clone(),
-                            path1.into(),
-                            url1.into(),
-                            None,
-                            None,
-                            FileStat::default(),
-                            flist1.get_servicesession().clone().into(),
-                            flist1.get_servicetype(),
-                            flist1.get_servicesession().clone(),
-                        );
-                        debug!("ab {:?} {:?}", finfo0, finfo1);
-                        Some((finfo0.clone(), finfo1))
-                    } else {
-                        None
+
+        let candidates: Vec<_> = FileInfoCache::get_copy_candidates(
+            flist0.get_baseurl().as_str(),
+            flist1.get_baseurl().as_str(),
+            flist0.get_servicesession().as_str(),
+            flist1.get_servicesession().as_str(),
+            pool,
+        )
+        .await?
+        .try_collect()
+        .await?;
+
+        for CandidateIds { f0id, f1id } in candidates {
+            if let Some(finfo0) = FileInfoCache::get_by_id(f0id, pool).await? {
+                if let Some(finfo1) = FileInfoCache::get_by_id(f1id, pool).await? {
+                    let finfo0: FileInfo = finfo0.try_into()?;
+                    let finfo1: FileInfo = finfo1.try_into()?;
+                    if Self::compare_objects(&finfo0, &finfo1) {
+                        list_a_not_b.push((finfo0, finfo1));
                     }
                 }
-            })
-            .collect();
-        let list_b_not_a: Vec<_> = flist1
-            .get_filemap()
-            .iter()
-            .filter_map(|(k, finfo1)| {
-                if flist0.get_filemap().contains_key(k) {
-                    None
-                } else {
-                    let path1 = &finfo1.filepath;
-                    let url1 = &finfo1.urlname;
-                    let baseurl0 = flist0.get_baseurl();
-                    let baseurl1 = flist1.get_baseurl();
-                    let url0 = replace_baseurl(url1, baseurl1, baseurl0).ok()?;
-                    let path0 =
-                        replace_basepath(path1, flist1.get_basepath(), flist0.get_basepath());
-                    if url0.as_str().contains(baseurl0.as_str()) {
-                        let finfo0 = FileInfo::new(
-                            k.clone(),
-                            path0.into(),
-                            url0.into(),
-                            None,
-                            None,
-                            FileStat::default(),
-                            flist0.get_servicesession().clone().into(),
-                            flist0.get_servicetype(),
-                            flist0.get_servicesession().clone(),
-                        );
-                        debug!("ba {:?} {:?}", finfo0, finfo1);
-                        Some((finfo1.clone(), finfo0))
-                    } else {
-                        None
-                    }
-                }
-            })
-            .collect();
+            }
+        }
+
+        for finfo1 in FileInfoCache::get_new_entries(
+            flist1.get_baseurl().as_str(),
+            flist0.get_baseurl().as_str(),
+            flist0.get_servicesession().as_str(),
+            pool,
+        )
+        .await?
+        {
+            let path1 = Path::new(&finfo1.filepath);
+            let url1 = &finfo1.urlname.parse()?;
+            let baseurl0 = flist0.get_baseurl();
+            let baseurl1 = flist1.get_baseurl();
+            let url0 = replace_baseurl(url1, baseurl1, baseurl0)?;
+            let path0 = replace_basepath(path1, flist1.get_basepath(), flist0.get_basepath());
+            if !url0.as_str().contains(baseurl0.as_str()) {
+                return Err(format_err!("{baseurl0} not in {url1}"));
+            }
+            let finfo0 = FileInfo::new(
+                finfo1.filename.clone(),
+                path0.into(),
+                url0.into(),
+                None,
+                None,
+                FileStat::default(),
+                flist0.get_servicesession().clone().into(),
+                flist0.get_servicetype(),
+                flist0.get_servicesession().clone(),
+            );
+            let finfo1: FileInfo = finfo1.try_into()?;
+            debug!("ba {:?} {:?}", finfo0, finfo1);
+            list_b_not_a.push((finfo1, finfo0));
+        }
         debug!("ab {} ba {}", list_a_not_b.len(), list_b_not_a.len());
         if list_a_not_b.is_empty() && list_b_not_a.is_empty() {
             flist0.cleanup().and_then(|()| flist1.cleanup())
         } else {
-            let futures = list_a_not_b
-                .into_iter()
-                .chain(list_b_not_a.into_iter())
-                .map(|(f0, f1)| {
-                    let pool = pool.clone();
-                    async move {
-                        FileSyncCache::cache_sync(&pool, f0.urlname.as_str(), f1.urlname.as_str())
-                            .await?;
-                        Ok(())
-                    }
-                });
-            let results: Result<Vec<()>, Error> = try_join_all(futures).await;
-            results?;
+            for (f0, f1) in list_a_not_b.into_iter().chain(list_b_not_a.into_iter()) {
+                FileSyncCache::cache_sync(&pool, f0.urlname.as_str(), f1.urlname.as_str()).await?;
+            }
             Ok(())
         }
     }
@@ -253,6 +272,9 @@ impl FileSync {
         }
         if finfo0.filestat.st_size != finfo1.filestat.st_size && !is_export {
             do_update = true;
+        }
+        if finfo0.filestat.st_size == finfo1.filestat.st_size && !is_export {
+            do_update = false;
         }
         if use_sha1 {
             if let Some(sha0) = finfo0.sha1sum.as_ref() {
@@ -301,11 +323,24 @@ impl FileSync {
                         if let Some(vals) = proc_map.get(&key) {
                             let flist0 = FileList::from_url(&u0, &self.config, pool).await?;
                             for val in vals {
-                                let finfo0 = match FileInfo::from_database(pool, &key).await? {
+                                let flist1 = FileList::from_url(val, &self.config, pool).await?;
+                                let finfo0 = match FileInfo::from_database(
+                                    pool,
+                                    &key,
+                                    flist0.get_servicesession().as_str(),
+                                )
+                                .await?
+                                {
                                     Some(f) => f,
                                     None => FileInfo::from_url(&key)?,
                                 };
-                                let finfo1 = match FileInfo::from_database(pool, val).await? {
+                                let finfo1 = match FileInfo::from_database(
+                                    pool,
+                                    val,
+                                    flist1.get_servicesession().as_str(),
+                                )
+                                .await?
+                                {
                                     Some(f) => f,
                                     None => FileInfo::from_url(val)?,
                                 };
@@ -314,8 +349,6 @@ impl FileSync {
                                     Self::copy_object(&(*flist0), &finfo0, &finfo1).await?;
                                     flist0.cleanup()?;
                                 } else {
-                                    let flist1 =
-                                        FileList::from_url(val, &self.config, pool).await?;
                                     Self::copy_object(&(*flist1), &finfo0, &finfo1).await?;
                                     flist1.cleanup()?;
                                 }
@@ -410,7 +443,7 @@ mod tests {
     use futures::{future, TryStreamExt};
     use log::debug;
     use stack_string::format_sstr;
-    use std::{collections::HashMap, env::current_dir, path::Path};
+    use std::{collections::HashMap, convert::TryInto, env::current_dir, path::Path};
     use time::macros::datetime;
 
     use crate::{
@@ -422,7 +455,7 @@ mod tests {
         file_list_local::FileListLocal,
         file_list_s3::FileListS3,
         file_sync::FileSync,
-        models::FileSyncCache,
+        models::{FileInfoCache, FileSyncCache},
         pgpool::PgPool,
     };
 
@@ -466,13 +499,17 @@ mod tests {
         let filepath = Path::new("src/file_sync.rs").canonicalize()?;
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
         let servicesession: ServiceSession = filepath.to_string_lossy().parse()?;
+
+        let flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
+        flist0.clear_file_list().await?;
+
         let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession))?;
         debug!("{:?}", finfo0);
-
-        let mut flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
-        flist0.with_list(vec![finfo0.0]);
+        let finfo0: FileInfoCache = finfo0.get_finfo().try_into()?;
+        finfo0.insert(&pool).await?;
 
         let flist1 = FileListS3::new("test_bucket", &config, &pool).await?;
+        flist1.clear_file_list().await?;
 
         FileSync::compare_lists(&flist0, &flist1, &pool).await?;
 
@@ -493,9 +530,14 @@ mod tests {
         );
         assert!(cache_list.contains_key(test_key.as_str()));
 
-        for val in cache_list.values() {
+        let cache_list: Vec<_> = FileSyncCache::get_cache_list(&pool)
+            .await?
+            .try_collect()
+            .await?;
+        for val in cache_list {
             val.delete_cache_entry(&pool).await?;
         }
+        finfo0.delete(&pool).await?;
         Ok(())
     }
 
@@ -509,7 +551,9 @@ mod tests {
         let servicesession: ServiceSession = filepath.to_string_lossy().parse()?;
 
         let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession))?;
+        let finfo0: FileInfoCache = finfo0.get_finfo().try_into()?;
         debug!("{:?}", finfo0);
+        finfo0.insert(&pool).await?;
 
         let flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
 
@@ -525,16 +569,17 @@ mod tests {
             .build();
 
         let finfo1 = FileInfoS3::from_object("test_bucket", test_object)?;
+        let finfo1: FileInfoCache = finfo1.get_finfo().try_into()?;
+        finfo1.insert(&pool).await?;
 
-        let mut flist1 = FileListS3::new("test_bucket", &config, &pool).await?;
-        flist1.with_list(vec![finfo1.into_finfo()]);
+        let flist1 = FileListS3::new("test_bucket", &config, &pool).await?;
 
         FileSync::compare_lists(&flist0, &flist1, &pool).await?;
 
         let cache_list: HashMap<_, _> = FileSyncCache::get_cache_list(&pool)
             .await?
-            .try_filter(|v| future::ready(v.src_url.starts_with("s3://")))
-            .map_ok(|v| (v.src_url.clone(), v))
+            .try_filter(|v| future::ready(v.dst_url.starts_with("s3://")))
+            .map_ok(|v| (v.dst_url.clone(), v))
             .try_collect()
             .await?;
 
@@ -545,9 +590,16 @@ mod tests {
         let test_key = "s3://test_bucket/src/file_sync.rs".to_string();
         assert!(cache_list.contains_key(test_key.as_str()));
 
-        for val in cache_list.values() {
+        let cache_list: Vec<_> = FileSyncCache::get_cache_list(&pool)
+            .await?
+            .try_collect()
+            .await?;
+        for val in cache_list {
             val.delete_cache_entry(&pool).await?;
         }
+        finfo0.delete(&pool).await?;
+        finfo1.delete(&pool).await?;
+
         Ok(())
     }
 }
