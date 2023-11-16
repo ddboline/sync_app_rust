@@ -530,11 +530,7 @@ mod tests {
         );
         assert!(cache_list.contains_key(test_key.as_str()));
 
-        let cache_list: Vec<_> = FileSyncCache::get_cache_list(&pool)
-            .await?
-            .try_collect()
-            .await?;
-        for val in cache_list {
+        for val in cache_list.values() {
             val.delete_cache_entry(&pool).await?;
         }
         finfo0.delete(&pool).await?;
@@ -590,11 +586,7 @@ mod tests {
         let test_key = "s3://test_bucket/src/file_sync.rs".to_string();
         assert!(cache_list.contains_key(test_key.as_str()));
 
-        let cache_list: Vec<_> = FileSyncCache::get_cache_list(&pool)
-            .await?
-            .try_collect()
-            .await?;
-        for val in cache_list {
+        for val in cache_list.values() {
             val.delete_cache_entry(&pool).await?;
         }
         finfo0.delete(&pool).await?;
