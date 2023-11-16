@@ -371,6 +371,7 @@ impl FileInfoCache {
     pub async fn get_new_entries(
         baseurl0: &str,
         baseurl1: &str,
+        servicesession0: &str,
         pool: &PgPool,
     ) -> Result<Vec<Self>, Error> {
         let query = query!(
@@ -382,9 +383,11 @@ impl FileInfoCache {
                 WHERE f1.id IS NULL
                   AND position($baseurl0 in f0.urlname) = 1
                   AND f0.deleted_at IS NULL
+                  AND f0.servicesession = $servicesession0
             "#,
             baseurl0 = baseurl0,
             baseurl1 = baseurl1,
+            servicesession0 = servicesession0,
         );
         let conn = pool.get().await?;
         query.fetch(&conn).await.map_err(Into::into)
@@ -395,6 +398,8 @@ impl FileInfoCache {
     pub async fn get_copy_candidates(
         baseurl0: &str,
         baseurl1: &str,
+        servicesession0: &str,
+        servicesession1: &str,
         pool: &PgPool,
     ) -> Result<impl Stream<Item = Result<CandidateIds, PqError>>, Error> {
         let query = query!(
@@ -411,10 +416,14 @@ impl FileInfoCache {
                     AND position($baseurl1 in f1.urlname) = 1
                     AND f0.deleted_at IS NULL
                     AND f1.deleted_at IS NULL
+                    AND f0.servicesession = $servicesession0
+                    AND f1.servicesession = $servicesession1
                 )
             "#,
             baseurl0 = baseurl0,
             baseurl1 = baseurl1,
+            servicesession0 = servicesession0,
+            servicesession1 = servicesession1,
         );
         let conn = pool.get().await?;
         query.fetch_streaming(&conn).await.map_err(Into::into)
