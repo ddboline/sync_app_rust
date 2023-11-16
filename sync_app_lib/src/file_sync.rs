@@ -498,13 +498,12 @@ mod tests {
         let pool = PgPool::new(&config.database_url);
         let filepath = Path::new("src/file_sync.rs").canonicalize()?;
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
-        let servicesession: ServiceSession = filepath.to_string_lossy().parse()?;
 
         let flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
         flist0.clear_file_list().await?;
 
-        let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession))?;
-        debug!("{:?}", finfo0);
+        let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(flist0.get_servicesession().clone()))?;
+        debug!("{} {}", finfo0.get_finfo().servicesession.as_str(), flist0.get_servicesession().as_str());
         let finfo0: FileInfoCache = finfo0.get_finfo().try_into()?;
         finfo0.insert(&pool).await?;
 
@@ -544,14 +543,14 @@ mod tests {
         let pool = PgPool::new(&config.database_url);
         let filepath = Path::new("src/file_sync.rs").canonicalize()?;
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
-        let servicesession: ServiceSession = filepath.to_string_lossy().parse()?;
 
-        let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(servicesession))?;
+        let flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
+        flist0.clear_file_list().await?;
+
+        let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(flist0.get_servicesession().clone()))?;
         let finfo0: FileInfoCache = finfo0.get_finfo().try_into()?;
         debug!("{:?}", finfo0);
         finfo0.insert(&pool).await?;
-
-        let flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
 
         let test_owner = Owner::builder().display_name("me").id("8675309").build();
         let last_modified = datetime!(2019-05-01 00:00:00 +00:00);
