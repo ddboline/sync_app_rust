@@ -309,7 +309,7 @@ impl FileInfoCache {
     ) -> Result<usize, Error> {
         let query = query!(
             r#"
-                UPDATE file_info_cache SET deleted_at=now(),modified_at=now()
+                DELETE FROM file_info_cache
                 WHERE servicesession=$servicesession
                   AND servicetype=$servicetype
             "#,
