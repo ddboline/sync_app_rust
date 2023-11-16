@@ -238,7 +238,7 @@ impl FileSync {
             flist0.cleanup().and_then(|()| flist1.cleanup())
         } else {
             for (f0, f1) in list_a_not_b.into_iter().chain(list_b_not_a.into_iter()) {
-                FileSyncCache::cache_sync(&pool, f0.urlname.as_str(), f1.urlname.as_str()).await?;
+                FileSyncCache::cache_sync(pool, f0.urlname.as_str(), f1.urlname.as_str()).await?;
             }
             Ok(())
         }

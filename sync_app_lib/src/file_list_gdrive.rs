@@ -246,7 +246,7 @@ impl FileListTrait for FileListGDrive {
         let cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
             self.get_servicesession().as_str(),
             self.get_servicetype().to_str(),
-            &pool,
+            pool,
             false,
         )
         .await?
