@@ -911,8 +911,8 @@ impl GDriveInfo {
         let urlname = format_sstr!("gdrive://{}/", gdrive.session_name);
         let urlname = Url::parse(&urlname)?;
         let urlname = export_path.iter().try_fold(urlname, |u, e| {
-            if e.contains('#') {
-                u.join(&e.replace('#', "%35"))
+            if e.contains('#') || e.contains('?') {
+                u.join(&e.replace('#', "%23").replace('?', "%3F"))
             } else {
                 u.join(e)
             }

@@ -64,7 +64,65 @@ impl FileInfoKey {
     }
 }
 
+#[derive(FromSqlRow, Debug, Clone, Copy)]
+pub struct CandidateIds {
+    pub f0id: Uuid,
+    pub f1id: Uuid,
+}
+
 impl FileInfoCache {
+    /// # Errors
+    /// Return error if db query fails
+    pub async fn get_by_id(id: Uuid, pool: &PgPool) -> Result<Option<Self>, Error> {
+        let query = query!(
+            r#"
+                SELECT * FROM file_info_cache
+                WHERE id = $id
+            "#,
+            id = id,
+        );
+        let conn = pool.get().await?;
+        query.fetch_opt(&conn).await.map_err(Into::into)
+    }
+
+    /// # Errors
+    /// Return error if db query fails
+    pub async fn count_cached(
+        servicesession: &str,
+        servicetype: &str,
+        pool: &PgPool,
+        get_deleted: bool,
+    ) -> Result<i64, Error> {
+        let (count,) = if get_deleted {
+            let query = query!(
+                r#"
+                    SELECT count(*) FROM file_info_cache
+                    WHERE servicesession=$servicesession
+                    AND servicetype=$servicetype
+                    AND deleted_at IS NOT NULL
+                "#,
+                servicesession = servicesession,
+                servicetype = servicetype,
+            );
+            let conn = pool.get().await?;
+            query.fetch_one(&conn).await?
+        } else {
+            let query = query!(
+                r#"
+                    SELECT count(*) FROM file_info_cache
+                    WHERE servicesession=$servicesession
+                    AND servicetype=$servicetype
+                    AND deleted_at IS NULL
+                "#,
+                servicesession = servicesession,
+                servicetype = servicetype,
+            );
+            let conn = pool.get().await?;
+            query.fetch_one(&conn).await?
+        };
+        Ok(count)
+    }
+
     /// # Errors
     /// Return error if db query fails
     pub async fn get_all_cached(
@@ -104,17 +162,23 @@ impl FileInfoCache {
 
     /// # Errors
     /// Return error if db query fails
-    pub async fn get_by_urlname(url: &Url, pool: &PgPool) -> Result<Option<Self>, Error> {
+    pub async fn get_by_urlname(
+        url: &Url,
+        servicesession: &str,
+        pool: &PgPool,
+    ) -> Result<Option<Self>, Error> {
         let urlname = url.as_str();
         let query = query!(
             r#"
                 SELECT * FROM file_info_cache
                 WHERE urlname=$urlname
+                  AND servicesession=$servicesession
                   AND deleted_at IS NULL
                 ORDER BY created_at DESC
                 LIMIT 1
             "#,
             urlname = urlname,
+            servicesession = servicesession,
         );
         let conn = pool.get().await?;
         query.fetch_opt(&conn).await.map_err(Into::into)
@@ -203,6 +267,40 @@ impl FileInfoCache {
     }
 
     /// # Errors
+    /// Return error if db queries fail
+    pub async fn upsert(&self, pool: &PgPool) -> Result<usize, Error> {
+        if let Some(existing) = self.get_cache(pool).await? {
+            if existing.deleted_at.is_some()
+                || existing.md5sum != self.md5sum
+                || existing.sha1sum != self.md5sum
+                || existing.filestat_st_size != self.filestat_st_size
+            {
+                self.insert(pool).await?;
+                return Ok(1);
+            }
+        } else {
+            self.insert(pool).await?;
+            return Ok(1);
+        }
+        Ok(0)
+    }
+
+    /// # Errors
+    /// Return error if db query fails
+    pub async fn delete(&self, pool: &PgPool) -> Result<usize, Error> {
+        let query = query!(
+            r#"
+                DELETE FROM file_info_cache
+                WHERE id = $id
+            "#,
+            id = self.id,
+        );
+        let conn = pool.get().await?;
+        let n = query.execute(&conn).await?;
+        Ok(n as usize)
+    }
+
+    /// # Errors
     /// Return error if db query fails
     pub async fn delete_all(
         servicesession: &str,
@@ -211,7 +309,7 @@ impl FileInfoCache {
     ) -> Result<usize, Error> {
         let query = query!(
             r#"
-                UPDATE file_info_cache SET deleted_at=now(),modified_at=now()
+                DELETE FROM file_info_cache
                 WHERE servicesession=$servicesession
                   AND servicetype=$servicetype
             "#,
@@ -266,6 +364,69 @@ impl FileInfoCache {
         let conn = pool.get().await?;
         let n = query.execute(&conn).await?;
         Ok(n as usize)
+    }
+
+    /// # Errors
+    /// Return error if db query fails
+    pub async fn get_new_entries(
+        baseurl0: &str,
+        baseurl1: &str,
+        servicesession0: &str,
+        pool: &PgPool,
+    ) -> Result<Vec<Self>, Error> {
+        let query = query!(
+            r#"
+                SELECT f0.*
+                FROM file_info_cache f0
+                LEFT JOIN file_info_cache f1
+                ON replace(f0.urlname, $baseurl0, '') = replace(f1.urlname, $baseurl1, '')
+                WHERE f1.id IS NULL
+                  AND position($baseurl0 in f0.urlname) = 1
+                  AND f0.deleted_at IS NULL
+                  AND f0.servicesession = $servicesession0
+            "#,
+            baseurl0 = baseurl0,
+            baseurl1 = baseurl1,
+            servicesession0 = servicesession0,
+        );
+        let conn = pool.get().await?;
+        query.fetch(&conn).await.map_err(Into::into)
+    }
+
+    /// # Errors
+    /// Return error if db query fails
+    pub async fn get_copy_candidates(
+        baseurl0: &str,
+        baseurl1: &str,
+        servicesession0: &str,
+        servicesession1: &str,
+        pool: &PgPool,
+    ) -> Result<impl Stream<Item = Result<CandidateIds, PqError>>, Error> {
+        let query = query!(
+            r#"
+                SELECT f0.id as f0id, f1.id as f1id
+                FROM file_info_cache f0
+                LEFT JOIN file_info_cache f1
+                ON replace(f0.urlname, $baseurl0, '') = replace(f1.urlname, $baseurl1, '')
+                WHERE (
+                    f0.filestat_st_size != f1.filestat_st_size
+                    AND f0.filestat_st_size != 0
+                    AND f1.filestat_st_size != 0
+                    AND position($baseurl0 in f0.urlname) = 1
+                    AND position($baseurl1 in f1.urlname) = 1
+                    AND f0.deleted_at IS NULL
+                    AND f1.deleted_at IS NULL
+                    AND f0.servicesession = $servicesession0
+                    AND f1.servicesession = $servicesession1
+                )
+            "#,
+            baseurl0 = baseurl0,
+            baseurl1 = baseurl1,
+            servicesession0 = servicesession0,
+            servicesession1 = servicesession1,
+        );
+        let conn = pool.get().await?;
+        query.fetch_streaming(&conn).await.map_err(Into::into)
     }
 }
 
@@ -532,52 +693,5 @@ impl AuthorizedUsers {
         let query = query!("SELECT * FROM authorized_users");
         let conn = pool.get().await?;
         query.fetch_streaming(&conn).await.map_err(Into::into)
-    }
-}
-
-#[derive(FromSqlRow, Clone, Debug)]
-pub struct FileSyncBlacklist {
-    pub id: Uuid,
-    pub blacklist_url: StackString,
-}
-
-impl FileSyncBlacklist {
-    async fn get_blacklist(
-        pool: &PgPool,
-    ) -> Result<impl Stream<Item = Result<Self, PqError>>, Error> {
-        let query = query!("SELECT * FROM file_sync_blacklist");
-        let conn = pool.get().await?;
-        query.fetch_streaming(&conn).await.map_err(Into::into)
-    }
-}
-
-#[derive(Default)]
-pub struct BlackList {
-    blacklist: Vec<FileSyncBlacklist>,
-}
-
-impl BlackList {
-    /// # Errors
-    /// Return error if db query fails
-    pub async fn new(pool: &PgPool) -> Result<Self, Error> {
-        let blacklist: Vec<_> = FileSyncBlacklist::get_blacklist(pool)
-            .await?
-            .try_collect()
-            .await?;
-        Ok(Self { blacklist })
-    }
-
-    #[must_use]
-    pub fn is_in_blacklist(&self, url: &Url) -> bool {
-        self.blacklist
-            .iter()
-            .any(|item| url.as_str().contains(item.blacklist_url.as_str()))
-    }
-
-    #[must_use]
-    pub fn could_be_in_blacklist(&self, url: &Url) -> bool {
-        self.blacklist
-            .iter()
-            .any(|item| item.blacklist_url.contains(url.as_str()))
     }
 }

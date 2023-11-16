@@ -1,6 +1,7 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
-use log::error;
+use futures::TryStreamExt;
+use log::{debug, error};
 use rand::{thread_rng, RngCore};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fs::create_dir_all, path::Path};
@@ -13,6 +14,7 @@ use crate::{
     file_info::{FileInfo, FileInfoInner, FileInfoTrait, ServiceSession},
     file_list::{FileList, FileListTrait},
     file_service::FileService,
+    models::FileInfoCache,
     pgpool::PgPool,
     ssh_instance::SSHInstance,
 };
@@ -45,7 +47,6 @@ impl FileListSSH {
                 config.clone(),
                 FileService::SSH,
                 session.parse()?,
-                HashMap::new(),
                 pool.clone(),
             );
             let url = url.clone();
@@ -81,22 +82,6 @@ impl FileListTrait for FileListSSH {
 
     fn get_pool(&self) -> &PgPool {
         &self.flist.pool
-    }
-
-    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
-        self.flist.get_filemap()
-    }
-
-    fn get_min_mtime(&self) -> Option<u32> {
-        self.flist.get_min_mtime()
-    }
-
-    fn get_max_mtime(&self) -> Option<u32> {
-        self.flist.get_max_mtime()
-    }
-
-    fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.flist.with_list(filelist);
     }
 
     // Copy operation where the origin (finfo0) has the same servicetype as self
@@ -202,7 +187,7 @@ impl FileListTrait for FileListSSH {
         self.ssh.run_command_ssh(&command).await
     }
 
-    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+    async fn update_file_cache(&self) -> Result<usize, Error> {
         let path = self.get_basepath().to_string_lossy();
         let user_host = self.ssh.get_ssh_username_host();
         let user_host = user_host
@@ -222,11 +207,24 @@ impl FileListTrait for FileListSSH {
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
 
+        let pool = self.get_pool();
+        let cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
+            self.get_servicesession().as_str(),
+            self.get_servicetype().to_str(),
+            pool,
+            false,
+        )
+        .await?
+        .map_ok(|f| (f.urlname.clone(), f))
+        .try_collect()
+        .await?;
+        debug!("expected {}", cached_urls.len());
+
         let mut actual_length = 0;
 
         if expected_count == 0 {
             println!("path empty {path}");
-            Ok(Vec::new())
+            Ok(0)
         } else {
             for _ in 0..5 {
                 let randint = thread_rng().next_u32();
@@ -280,7 +278,19 @@ impl FileListTrait for FileListSSH {
                 println!("result {expected_count} {}", items.len());
 
                 if items.len() == expected_count {
-                    return Ok(items);
+                    let mut updated = 0;
+                    for item in items {
+                        let info: FileInfoCache = item.into();
+                        if let Some(existing) = cached_urls.get(&info.urlname) {
+                            if existing.deleted_at.is_none()
+                                && existing.filestat_st_size == info.filestat_st_size
+                            {
+                                continue;
+                            }
+                        }
+                        updated += info.upsert(pool).await?;
+                    }
+                    return Ok(updated);
                 }
                 actual_length = items.len();
             }
