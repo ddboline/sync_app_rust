@@ -1,9 +1,11 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use checksums::{hash_file, Algorithm};
-use log::info;
+use futures::TryStreamExt;
+use log::{debug, info};
 use stack_string::{format_sstr, StackString};
 use std::{
+    collections::HashMap,
     fs::{create_dir_all, remove_file},
     path::Path,
 };
@@ -108,11 +110,29 @@ impl FileListTrait for FileListGcs {
         let mut number_updated = 0;
 
         let pool = self.get_pool();
+        let cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
+            self.get_servicesession().as_str(),
+            self.get_servicetype().to_str(),
+            &pool,
+            false,
+        )
+        .await?
+        .map_ok(|f| (f.urlname.clone(), f))
+        .try_collect()
+        .await?;
+        debug!("expected {}", cached_urls.len());
+
         for object in self.gcs.get_list_of_keys(bucket, Some(prefix)).await? {
             let info: FileInfoCache = FileInfoGcs::from_object(bucket, object)?
                 .into_finfo()
                 .into();
-
+            if let Some(existing) = cached_urls.get(&info.urlname) {
+                if existing.deleted_at.is_none()
+                    && existing.filestat_st_size == info.filestat_st_size
+                {
+                    continue;
+                }
+            }
             number_updated += info.upsert(pool).await?;
         }
         Ok(number_updated)

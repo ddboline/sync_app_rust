@@ -1,5 +1,6 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
+use futures::TryStreamExt;
 use log::debug;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use stack_string::{format_sstr, StackString};
@@ -15,10 +16,11 @@ use gdrive_lib::{
 
 use crate::{
     config::Config,
-    file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession},
+    file_info::{FileInfo, FileInfoTrait, ServiceSession},
     file_info_gdrive::FileInfoGDrive,
     file_list::{FileList, FileListTrait},
     file_service::FileService,
+    models::FileInfoCache,
     pgpool::PgPool,
 };
 
@@ -48,7 +50,6 @@ impl FileListGDrive {
             config.clone(),
             FileService::GDrive,
             servicesession.parse()?,
-            HashMap::new(),
             pool.clone(),
         );
 
@@ -88,7 +89,6 @@ impl FileListGDrive {
                 config.clone(),
                 FileService::GDrive,
                 servicesession.parse()?,
-                HashMap::new(),
                 pool.clone(),
             );
 
@@ -215,27 +215,10 @@ impl FileListTrait for FileListGDrive {
         &self.flist.pool
     }
 
-    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
-        self.flist.get_filemap()
-    }
-
-    fn get_min_mtime(&self) -> Option<u32> {
-        self.flist.get_min_mtime()
-    }
-
-    fn get_max_mtime(&self) -> Option<u32> {
-        self.flist.get_max_mtime()
-    }
-
-    fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.flist.with_list(filelist);
-    }
-
-    #[allow(clippy::similar_names)]
-    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+    async fn update_file_cache(&self) -> Result<usize, Error> {
+        let mut number_updated = 0;
         self.set_directory_map(false).await?;
         let start_page_token = self.gdrive.get_start_page_token().await?;
-        let file_list = self.flist.load_file_list(false).await?;
 
         let (dlist, flist) = if self.gdrive.start_page_token.load().is_some() {
             self.get_all_changes().await?
@@ -248,17 +231,41 @@ impl FileListTrait for FileListGDrive {
 
         debug!("delete {} insert {}", dlist.len(), flist.len());
 
-        let mut flist_dict = self.get_file_list_dict(&file_list, FileInfoKeyType::ServiceId);
+        let pool = self.get_pool();
 
         for dfid in &dlist {
-            flist_dict.remove(dfid);
+            FileInfoCache::delete_by_id(
+                dfid,
+                self.get_servicesession().as_str(),
+                self.get_servicetype().to_str(),
+                pool,
+            )
+            .await?;
         }
+
+        let cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
+            self.get_servicesession().as_str(),
+            self.get_servicetype().to_str(),
+            &pool,
+            false,
+        )
+        .await?
+        .map_ok(|f| (f.urlname.clone(), f))
+        .try_collect()
+        .await?;
+        debug!("expected {}", cached_urls.len());
 
         for f in flist {
-            flist_dict.insert(f.serviceid.clone().into(), f);
+            let info: FileInfoCache = f.into();
+            if let Some(existing) = cached_urls.get(&info.urlname) {
+                if existing.deleted_at.is_none()
+                    && existing.filestat_st_size == info.filestat_st_size
+                {
+                    continue;
+                }
+            }
+            number_updated += info.upsert(pool).await?;
         }
-
-        let flist = flist_dict.into_values().collect();
 
         self.gdrive.start_page_token.store(Some(start_page_token));
 
@@ -275,7 +282,7 @@ impl FileListTrait for FileListGDrive {
 
         self.gdrive.store_start_page_token(&start_page_path).await?;
 
-        Ok(flist)
+        Ok(number_updated)
     }
 
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
@@ -426,6 +433,7 @@ mod tests {
     use stack_string::format_sstr;
     use std::{
         collections::HashMap,
+        convert::TryInto,
         path::{Path, PathBuf},
     };
     use tokio::fs::remove_file;
@@ -433,7 +441,8 @@ mod tests {
     use gdrive_lib::gdrive_instance::GDriveInstance;
 
     use crate::{
-        config::Config, file_list::FileListTrait, file_list_gdrive::FileListGDrive, pgpool::PgPool,
+        config::Config, file_info::FileInfo, file_list::FileListTrait,
+        file_list_gdrive::FileListGDrive, pgpool::PgPool,
     };
 
     struct TempStartPageToken {
@@ -476,32 +485,30 @@ mod tests {
 
         let pool = PgPool::new(&config.database_url);
 
-        let mut flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool)
+        let flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool)
             .await?
             .max_keys(100);
-        flist.set_directory_map(false).await?;
-
-        let new_flist = flist.fill_file_list().await?;
-
-        assert!(new_flist.len() > 0);
-
         flist.clear_file_list().await?;
 
-        flist.with_list(new_flist);
+        flist.set_directory_map(false).await?;
 
-        let result = flist.cache_file_list().await?;
-        debug!("wrote {result}");
+        let number_updated = flist.update_file_cache().await?;
 
-        let new_flist = flist.load_file_list(false).await?;
+        assert!(number_updated > 0);
 
-        assert_eq!(flist.flist.get_filemap().len(), new_flist.len());
+        debug!("wrote {number_updated}");
+
+        let list = flist.load_file_list(false).await?;
+
+        assert_eq!(number_updated, list.len());
 
         flist.clear_file_list().await?;
 
         debug!("dmap {}", flist.directory_map.read().await.len());
         let directory_map = flist.directory_map.read().await;
         let dnamemap = GDriveInstance::get_directory_name_map(&directory_map);
-        for f in flist.get_filemap().values() {
+        for f in list {
+            let f: FileInfo = f.try_into()?;
             let parent_id = GDriveInstance::get_parent_id(&f.urlname, &dnamemap)?;
             assert!(!parent_id.is_none());
             debug!("{} {:?}", f.urlname, parent_id);
@@ -517,15 +524,12 @@ mod tests {
 
         tmp.cleanup().await?;
 
-        let mut flist =
-            FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool).await?;
+        let flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool).await?;
         flist.set_directory_map(false).await?;
 
-        let new_flist = flist.fill_file_list().await?;
-        assert!(new_flist.len() > 0);
-        flist.with_list(new_flist);
-        let result = flist.cache_file_list().await?;
-        debug!("wrote {result}");
+        let number_updated = flist.update_file_cache().await?;
+        assert!(number_updated > 0);
+        debug!("wrote {number_updated}");
         flist.cleanup()?;
         debug!("{}", flist.get_baseurl().as_str());
         Ok(())

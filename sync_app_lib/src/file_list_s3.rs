@@ -1,8 +1,8 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use aws_types::region::Region;
-use log::info;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use futures::TryStreamExt;
+use log::{debug, info};
 use stack_string::{format_sstr, StackString};
 use std::{
     collections::HashMap,
@@ -14,10 +14,11 @@ use url::Url;
 
 use crate::{
     config::Config,
-    file_info::{FileInfo, FileInfoTrait, ServiceSession},
+    file_info::{FileInfoTrait, ServiceSession},
     file_info_s3::FileInfoS3,
     file_list::{FileList, FileListTrait},
     file_service::FileService,
+    models::FileInfoCache,
     pgpool::PgPool,
     s3_instance::S3Instance,
 };
@@ -42,7 +43,6 @@ impl FileListS3 {
             config.clone(),
             FileService::S3,
             bucket.parse()?,
-            HashMap::new(),
             pool.clone(),
         );
         let region: String = config.aws_region_name.as_str().into();
@@ -65,7 +65,6 @@ impl FileListS3 {
                 config.clone(),
                 FileService::S3,
                 bucket.parse()?,
-                HashMap::new(),
                 pool.clone(),
             );
             let region: String = config.aws_region_name.as_str().into();
@@ -111,35 +110,38 @@ impl FileListTrait for FileListS3 {
         &self.flist.pool
     }
 
-    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
-        self.flist.get_filemap()
-    }
-
-    fn get_min_mtime(&self) -> Option<u32> {
-        self.flist.get_min_mtime()
-    }
-
-    fn get_max_mtime(&self) -> Option<u32> {
-        self.flist.get_max_mtime()
-    }
-
-    fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.flist.with_list(filelist);
-    }
-
-    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+    async fn update_file_cache(&self) -> Result<usize, Error> {
         let bucket = self
             .get_baseurl()
             .host_str()
             .ok_or_else(|| format_err!("Parse error"))?;
         let prefix = self.get_baseurl().path().trim_start_matches('/');
+        let mut number_updated = 0;
+        let pool = self.get_pool();
+        let cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
+            self.get_servicesession().as_str(),
+            self.get_servicetype().to_str(),
+            &pool,
+            false,
+        )
+        .await?
+        .map_ok(|f| (f.urlname.clone(), f))
+        .try_collect()
+        .await?;
+        debug!("expected {}", cached_urls.len());
 
-        self.s3
-            .get_list_of_keys(bucket, Some(prefix))
-            .await?
-            .into_par_iter()
-            .map(|f| FileInfoS3::from_object(bucket, f).map(FileInfoTrait::into_finfo))
-            .collect()
+        for object in self.s3.get_list_of_keys(bucket, Some(prefix)).await? {
+            let info: FileInfoCache = FileInfoS3::from_object(bucket, object)?.into_finfo().into();
+            if let Some(existing) = cached_urls.get(&info.urlname) {
+                if existing.deleted_at.is_none()
+                    && existing.filestat_st_size == info.filestat_st_size
+                {
+                    continue;
+                }
+            }
+            number_updated += info.upsert(pool).await?;
+        }
+        Ok(number_updated)
     }
 
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
@@ -291,22 +293,19 @@ mod tests {
             .and_then(|b| b.name.clone())
             .unwrap_or_else(|| "".to_string());
 
-        let mut flist = FileListS3::new(&bucket, &config, &pool)
+        let flist = FileListS3::new(&bucket, &config, &pool)
             .await?
             .max_keys(100);
+        flist.clear_file_list().await?;
 
-        let new_flist = flist.fill_file_list().await?;
+        let updated = flist.update_file_cache().await?;
 
-        info!("{} {:?}", bucket, new_flist.get(0));
-        assert!(new_flist.len() > 0);
-
-        flist.with_list(new_flist);
-
-        flist.cache_file_list().await?;
+        info!("{bucket} {updated}");
+        assert!(updated > 0);
 
         let new_flist = flist.load_file_list(false).await?;
 
-        assert_eq!(flist.flist.get_filemap().len(), new_flist.len());
+        assert_eq!(updated, new_flist.len());
 
         flist.clear_file_list().await?;
         Ok(())

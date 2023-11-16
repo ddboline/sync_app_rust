@@ -1,23 +1,25 @@
 use anyhow::{format_err, Error};
 use async_trait::async_trait;
-use log::{error, info};
+use futures::TryStreamExt;
+use log::{debug, error};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use stack_string::StackString;
-use std::{collections::HashMap, path::Path, time::SystemTime};
+use std::{collections::HashMap, path::Path};
 use stdout_channel::StdoutChannel;
 use tokio::{
     fs::{copy, create_dir_all, remove_file, rename},
-    task::spawn_blocking,
+    task::{spawn, spawn_blocking, JoinHandle},
 };
 use url::Url;
 use walkdir::WalkDir;
 
 use crate::{
     config::Config,
-    file_info::{FileInfo, FileInfoKeyType, FileInfoTrait, ServiceSession},
+    file_info::{FileInfoTrait, ServiceSession},
     file_info_local::FileInfoLocal,
     file_list::{FileList, FileListTrait},
     file_service::FileService,
+    models::FileInfoCache,
     pgpool::PgPool,
 };
 
@@ -39,7 +41,6 @@ impl FileListLocal {
             config.clone(),
             FileService::Local,
             session,
-            HashMap::new(),
             pool.clone(),
         );
         Ok(Self(flist))
@@ -60,7 +61,6 @@ impl FileListLocal {
                 config.clone(),
                 FileService::Local,
                 session,
-                HashMap::new(),
                 pool.clone(),
             );
             Ok(Self(flist))
@@ -95,70 +95,66 @@ impl FileListTrait for FileListLocal {
         &self.0.pool
     }
 
-    fn get_filemap(&self) -> &HashMap<StackString, FileInfo> {
-        self.0.get_filemap()
-    }
-
-    fn get_min_mtime(&self) -> Option<u32> {
-        self.0.get_min_mtime()
-    }
-
-    fn get_max_mtime(&self) -> Option<u32> {
-        self.0.get_max_mtime()
-    }
-
-    fn with_list(&mut self, filelist: Vec<FileInfo>) {
-        self.0.with_list(filelist);
-    }
-
-    async fn fill_file_list(&self) -> Result<Vec<FileInfo>, Error> {
+    async fn update_file_cache(&self) -> Result<usize, Error> {
         let servicesession = self.get_servicesession().clone();
         let basedir = self.get_baseurl().path();
-        let file_list = self.load_file_list(false).await?;
-        let flist_dict = self.get_file_list_dict(&file_list, FileInfoKeyType::FilePath);
 
         let wdir = WalkDir::new(basedir).same_file_system(true);
-
-        let entries: Vec<_> = wdir.into_iter().filter_map(Result::ok).collect();
-        info!("local entries {}", entries.len());
-
-        if !flist_dict.is_empty() && entries.is_empty() {
-            return Err(format_err!(
-                "No local files found, check that disk is mounted"
-            ));
-        }
-
-        spawn_blocking(move || {
-            entries
-                .into_par_iter()
-                .filter(|entry| !entry.file_type().is_dir())
-                .map(|entry| {
-                    let filepath = entry.path().canonicalize().map_err(|e| {
-                        error!("entry {:?}", entry);
-                        e
-                    })?;
-                    let filepath_str = filepath.to_string_lossy();
-                    let metadata = entry.metadata()?;
-                    let modified = metadata
-                        .modified()?
-                        .duration_since(SystemTime::UNIX_EPOCH)?
-                        .as_secs() as u32;
-                    let size = metadata.len() as u32;
-                    if let Some(finfo) = flist_dict.get(filepath_str.as_ref()) {
-                        if finfo.filestat.st_mtime >= modified && finfo.filestat.st_size == size {
-                            return Ok(finfo.clone());
-                        }
-                    };
+        let mut tasks = Vec::new();
+        let pool = self.get_pool();
+        let cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
+            self.get_servicesession().as_str(),
+            self.get_servicetype().to_str(),
+            &pool,
+            false,
+        )
+        .await?
+        .map_ok(|f| (f.urlname.clone(), f))
+        .try_collect()
+        .await?;
+        debug!("expected {}", cached_urls.len());
+        for entry in wdir {
+            let entry = entry?;
+            let filepath = entry.path().canonicalize().map_err(|e| {
+                error!("entry {:?}", entry);
+                e
+            })?;
+            if filepath.is_dir() {
+                continue;
+            }
+            let fileurl = Url::from_file_path(filepath.clone())
+                .map_err(|e| format_err!("Failed to parse url {e:?}"))?;
+            let metadata = entry.metadata()?;
+            let size = metadata.len() as i32;
+            if let Some(existing) = cached_urls.get(fileurl.as_str()) {
+                if existing.deleted_at.is_none() && existing.filestat_st_size == size {
+                    continue;
+                }
+            }
+            debug!("not in db {fileurl}");
+            let pool = pool.clone();
+            let servicesession = servicesession.clone();
+            let task: JoinHandle<Result<usize, Error>> = spawn(async move {
+                let info = spawn_blocking(move || {
                     FileInfoLocal::from_direntry(
                         &entry,
                         Some(servicesession.as_str().into()),
-                        Some(servicesession.clone()),
+                        Some(servicesession),
                     )
-                    .map(|x| x.0)
                 })
-                .collect()
-        })
-        .await?
+                .await??;
+
+                let info: FileInfoCache = info.into_finfo().into();
+                info.upsert(&pool).await
+            });
+            tasks.push(task);
+        }
+        debug!("tasks {}", tasks.len());
+        let mut number_updated = 0;
+        for task in tasks {
+            number_updated += task.await??;
+        }
+        Ok(number_updated)
     }
 
     async fn print_list(&self, stdout: &StdoutChannel<StackString>) -> Result<(), Error> {
@@ -259,15 +255,13 @@ mod tests {
     use anyhow::Error;
     use log::{debug, info};
     use stack_string::format_sstr;
-    use std::{collections::HashMap, convert::TryInto, path::PathBuf};
+    use std::{collections::HashMap, path::PathBuf};
     use url::Url;
 
     use crate::{
         config::Config,
-        file_info::FileInfo,
         file_list_local::{FileListLocal, FileListTrait},
         file_service::FileService,
-        models::FileInfoCache,
         pgpool::PgPool,
     };
 
@@ -297,59 +291,40 @@ mod tests {
         let pool = PgPool::new(&config.database_url);
         let flist = FileListLocal::new(&basepath, &config, &pool)?;
 
-        let new_flist = flist.fill_file_list().await?;
+        flist.clear_file_list().await?;
 
-        info!("0 {}", new_flist.len());
+        let updated = flist.update_file_cache().await?;
 
-        let fset: HashMap<_, _> = new_flist
-            .iter()
-            .map(|f| (f.filename.clone(), f.clone()))
+        info!("0 {updated}");
+
+        let fset: HashMap<_, _> = flist
+            .load_file_list(false)
+            .await?
+            .into_iter()
+            .map(|f| (f.filename.clone(), f))
             .collect();
 
         assert_eq!(fset.contains_key("file_list_local.rs"), true);
 
-        let result = fset.get("file_list_local.rs").unwrap();
+        let cache_info = fset.get("file_list_local.rs").unwrap();
 
-        info!("{:?}", result);
-
-        assert!(result.filepath.ends_with("file_list_local.rs"));
-        assert!(result.urlname.as_str().ends_with("file_list_local.rs"));
-
-        let cache_info: FileInfoCache = result.into();
         info!("{:?}", cache_info);
-        assert_eq!(
-            result.md5sum.as_ref().map(|s| s.as_str()),
-            cache_info.md5sum.as_ref().map(|s| s.as_str())
-        );
 
-        let test_result: FileInfo = cache_info.try_into()?;
-        assert_eq!(*result, test_result);
-
-        let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
-
-        info!("1 {}", new_flist.len());
-
-        let mut flist = FileListLocal::new(&basepath, &config, &pool)?;
-        flist.with_list(new_flist);
-
-        info!("2 {}", flist.get_filemap().len());
-
-        let result = flist.cache_file_list().await?;
-        info!("wrote {}", result);
+        assert!(cache_info.filepath.ends_with("file_list_local.rs"));
+        assert!(cache_info.urlname.as_str().ends_with("file_list_local.rs"));
 
         info!("{:?}", flist.get_servicesession());
 
         let new_flist = flist.load_file_list(false).await?;
 
-        assert_eq!(new_flist.len(), flist.0.get_filemap().len());
+        assert_eq!(new_flist.len(), updated);
 
         info!("{}", new_flist.len());
         assert!(new_flist.len() != 0);
 
-        let new_flist = flist.fill_file_list().await?;
+        let updated = flist.update_file_cache().await?;
 
-        assert_eq!(new_flist.len(), flist.0.get_filemap().len());
+        assert_eq!(updated, 0);
 
         info!("{}", new_flist.len());
         assert!(new_flist.len() != 0);
