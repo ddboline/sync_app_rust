@@ -102,7 +102,7 @@ impl FileListTrait for FileListLocal {
         let wdir = WalkDir::new(basedir).same_file_system(true);
         let mut tasks = Vec::new();
         let pool = self.get_pool();
-        let cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
+        let mut cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
             self.get_servicesession().as_str(),
             self.get_servicetype().to_str(),
             pool,
@@ -126,7 +126,7 @@ impl FileListTrait for FileListLocal {
                 .map_err(|e| format_err!("Failed to parse url {e:?}"))?;
             let metadata = entry.metadata()?;
             let size = metadata.len() as i32;
-            if let Some(existing) = cached_urls.get(fileurl.as_str()) {
+            if let Some(existing) = cached_urls.remove(fileurl.as_str()) {
                 if existing.deleted_at.is_none() && existing.filestat_st_size == size {
                     continue;
                 }
@@ -148,6 +148,12 @@ impl FileListTrait for FileListLocal {
                 info.upsert(&pool).await
             });
             tasks.push(task);
+        }
+        for (_, missing) in cached_urls {
+            if missing.deleted_at.is_some() || Path::new(&missing.filepath).exists() {
+                continue;
+            }
+            missing.delete(pool).await?;
         }
         debug!("tasks {}", tasks.len());
         let mut number_updated = 0;

@@ -208,18 +208,6 @@ impl FileListTrait for FileListSSH {
             .unwrap_or(0);
 
         let pool = self.get_pool();
-        let cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
-            self.get_servicesession().as_str(),
-            self.get_servicetype().to_str(),
-            pool,
-            false,
-        )
-        .await?
-        .map_ok(|f| (f.urlname.clone(), f))
-        .try_collect()
-        .await?;
-        debug!("expected {}", cached_urls.len());
-
         let mut actual_length = 0;
 
         if expected_count == 0 {
@@ -227,6 +215,18 @@ impl FileListTrait for FileListSSH {
             Ok(0)
         } else {
             for _ in 0..5 {
+                let mut cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
+                    self.get_servicesession().as_str(),
+                    self.get_servicetype().to_str(),
+                    pool,
+                    false,
+                )
+                .await?
+                .map_ok(|f| (f.urlname.clone(), f))
+                .try_collect()
+                .await?;
+                debug!("expected {}", cached_urls.len());
+
                 let randint = thread_rng().next_u32();
                 let tmp_file = format_sstr!("/tmp/{user_host}_{randint}.json");
                 let command = format_sstr!(
@@ -281,7 +281,7 @@ impl FileListTrait for FileListSSH {
                     let mut updated = 0;
                     for item in items {
                         let info: FileInfoCache = item.into();
-                        if let Some(existing) = cached_urls.get(&info.urlname) {
+                        if let Some(existing) = cached_urls.remove(&info.urlname) {
                             if existing.deleted_at.is_none()
                                 && existing.filestat_st_size == info.filestat_st_size
                             {
@@ -289,6 +289,12 @@ impl FileListTrait for FileListSSH {
                             }
                         }
                         updated += info.upsert(pool).await?;
+                    }
+                    for (_, missing) in cached_urls {
+                        if missing.deleted_at.is_some() {
+                            continue;
+                        }
+                        missing.delete(pool).await?;
                     }
                     return Ok(updated);
                 }

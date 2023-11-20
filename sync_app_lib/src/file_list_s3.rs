@@ -118,7 +118,7 @@ impl FileListTrait for FileListS3 {
         let prefix = self.get_baseurl().path().trim_start_matches('/');
         let mut number_updated = 0;
         let pool = self.get_pool();
-        let cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
+        let mut cached_urls: HashMap<StackString, _> = FileInfoCache::get_all_cached(
             self.get_servicesession().as_str(),
             self.get_servicetype().to_str(),
             pool,
@@ -132,7 +132,7 @@ impl FileListTrait for FileListS3 {
 
         for object in self.s3.get_list_of_keys(bucket, Some(prefix)).await? {
             let info: FileInfoCache = FileInfoS3::from_object(bucket, object)?.into_finfo().into();
-            if let Some(existing) = cached_urls.get(&info.urlname) {
+            if let Some(existing) = cached_urls.remove(&info.urlname) {
                 if existing.deleted_at.is_none()
                     && existing.filestat_st_size == info.filestat_st_size
                 {
@@ -140,6 +140,12 @@ impl FileListTrait for FileListS3 {
                 }
             }
             number_updated += info.upsert(pool).await?;
+        }
+        for (_, missing) in cached_urls {
+            if missing.deleted_at.is_some() {
+                continue;
+            }
+            missing.delete(pool).await?;
         }
         Ok(number_updated)
     }

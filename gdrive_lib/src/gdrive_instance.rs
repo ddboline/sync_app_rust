@@ -207,9 +207,9 @@ impl GDriveInstance {
         };
         let mut query_chain: Vec<StackString> = Vec::new();
         if get_folders {
-            query_chain.push(r#"mimeType = 'application/vnd.google-apps.folder'"#.into());
+            query_chain.push(r"mimeType = 'application/vnd.google-apps.folder'".into());
         } else {
-            query_chain.push(r#"mimeType != 'application/vnd.google-apps.folder'"#.into());
+            query_chain.push(r"mimeType != 'application/vnd.google-apps.folder'".into());
         }
         if let Some(ref p) = parents {
             let q = p

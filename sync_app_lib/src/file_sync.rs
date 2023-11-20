@@ -502,8 +502,16 @@ mod tests {
         let flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
         flist0.clear_file_list().await?;
 
-        let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(flist0.get_servicesession().clone()))?;
-        debug!("{} {}", finfo0.get_finfo().servicesession.as_str(), flist0.get_servicesession().as_str());
+        let finfo0 = FileInfoLocal::from_path(
+            &filepath,
+            Some(serviceid),
+            Some(flist0.get_servicesession().clone()),
+        )?;
+        debug!(
+            "{} {}",
+            finfo0.get_finfo().servicesession.as_str(),
+            flist0.get_servicesession().as_str()
+        );
         let finfo0: FileInfoCache = finfo0.get_finfo().try_into()?;
         finfo0.insert(&pool).await?;
 
@@ -547,7 +555,11 @@ mod tests {
         let flist0 = FileListLocal::new(&current_dir()?, &config, &pool)?;
         flist0.clear_file_list().await?;
 
-        let finfo0 = FileInfoLocal::from_path(&filepath, Some(serviceid), Some(flist0.get_servicesession().clone()))?;
+        let finfo0 = FileInfoLocal::from_path(
+            &filepath,
+            Some(serviceid),
+            Some(flist0.get_servicesession().clone()),
+        )?;
         let finfo0: FileInfoCache = finfo0.get_finfo().try_into()?;
         debug!("{:?}", finfo0);
         finfo0.insert(&pool).await?;
