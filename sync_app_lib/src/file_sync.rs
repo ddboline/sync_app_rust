@@ -204,7 +204,7 @@ impl FileSync {
         for finfo1 in FileInfoCache::get_new_entries(
             flist1.get_baseurl().as_str(),
             flist0.get_baseurl().as_str(),
-            flist0.get_servicesession().as_str(),
+            flist1.get_servicesession().as_str(),
             pool,
         )
         .await?
