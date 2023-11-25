@@ -1,7 +1,7 @@
 use anyhow::{format_err, Error};
 use async_google_apis_common as common;
 use common::{
-    yup_oauth2::{self, ServiceAccountAuthenticator},
+    yup_oauth2::{self, hyper, ServiceAccountAuthenticator},
     DownloadResult, TlsClient,
 };
 use lazy_static::lazy_static;

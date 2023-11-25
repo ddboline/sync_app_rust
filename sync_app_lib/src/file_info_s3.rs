@@ -1,7 +1,7 @@
 use anyhow::{format_err, Error};
 use aws_sdk_s3::types::Object;
 use stack_string::{format_sstr, StackString};
-use std::path::Path;
+use std::{convert::TryInto, path::Path};
 use url::Url;
 
 use crate::{
@@ -92,7 +92,10 @@ impl FileInfoS3 {
             .as_ref()
             .ok_or_else(|| format_err!("No last modified"))?;
         let st_mtime = last_modified.as_secs_f64() as i64;
-        let size = item.size as u32;
+        let size: u32 = item
+            .size
+            .ok_or_else(|| format_err!("No size"))?
+            .try_into()?;
         let fileurl = format_sstr!("s3://{bucket}/{key}");
         let fileurl: Url = fileurl.parse()?;
         let id_str: StackString = bucket.into();

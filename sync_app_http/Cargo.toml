@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.11.4"
+version = "0.11.5"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -9,14 +9,13 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.11.0"}
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.11.3"}
 deadqueue = "0.2"
 dioxus = "0.4"
 dioxus-ssr = "0.4"
 dirs = "5.0"
 futures = "0.3"
-http = "0.2"
-itertools = "0.11"
+itertools = "0.12"
 lazy_static = "1.4"
 log = "0.4"
 maplit = "1.0"
