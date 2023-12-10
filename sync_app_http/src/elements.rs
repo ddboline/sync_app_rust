@@ -1,5 +1,6 @@
 use dioxus::prelude::{
-    dioxus_elements, inline_props, rsx, Element, GlobalAttributes, Props, Scope, VirtualDom,
+    component, dioxus_elements, rsx, Element, GlobalAttributes, IntoDynNode, Props, Scope,
+    VirtualDom,
 };
 
 use stack_string::StackString;
@@ -12,7 +13,7 @@ pub fn index_body(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -
     dioxus_ssr::render(&app)
 }
 
-#[inline_props]
+#[component(no_case_check)]
 fn index_element(
     cx: Scope,
     conf_list: Vec<FileSyncConfig>,
@@ -152,7 +153,7 @@ pub fn text_body(text: StackString) -> String {
     dioxus_ssr::render(&app)
 }
 
-#[inline_props]
+#[component(no_case_check)]
 fn text_element(cx: Scope, text: StackString) -> Element {
     cx.render(rsx! {
         textarea {
