@@ -8,17 +8,13 @@ use sync_app_lib::models::{FileSyncCache, FileSyncConfig};
 
 pub fn index_body(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> String {
     let mut app =
-        VirtualDom::new_with_props(index_element, index_elementProps { conf_list, entries });
+        VirtualDom::new_with_props(IndexElement, IndexElementProps { conf_list, entries });
     drop(app.rebuild());
     dioxus_ssr::render(&app)
 }
 
-#[component(no_case_check)]
-fn index_element(
-    cx: Scope,
-    conf_list: Vec<FileSyncConfig>,
-    entries: Vec<FileSyncCache>,
-) -> Element {
+#[component]
+fn IndexElement(cx: Scope, conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> Element {
     let conf_element = conf_list.iter().enumerate().filter_map(|(idx, v)| {
         v.name.as_ref().map(|name| {
             rsx! {
@@ -148,13 +144,13 @@ fn index_element(
 }
 
 pub fn text_body(text: StackString) -> String {
-    let mut app = VirtualDom::new_with_props(text_element, text_elementProps { text });
+    let mut app = VirtualDom::new_with_props(TextElement, TextElementProps { text });
     drop(app.rebuild());
     dioxus_ssr::render(&app)
 }
 
-#[component(no_case_check)]
-fn text_element(cx: Scope, text: StackString) -> Element {
+#[component]
+fn TextElement(cx: Scope, text: StackString) -> Element {
     cx.render(rsx! {
         textarea {
             autofocus: "true",
