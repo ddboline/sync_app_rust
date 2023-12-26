@@ -1,6 +1,6 @@
 [package]
 name = "gdrive_lib"
-version = "0.11.8"
+version = "0.11.9"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -16,10 +16,10 @@ derive_more = "0.99"
 futures = "0.3"
 hyper-rustls = "0.24"
 itertools = "0.12"
-lazy_static = "1.4"
 log = "0.4"
 maplit = "1.0"
 mime = "0.3"
+once_cell = "1.0"
 parking_lot = "0.12"
 percent-encoding = "2.1"
 postgres-types = {version = "0.2", features = ["with-time-0_3", "with-uuid-1", "with-serde_json-1", "derive"]}

@@ -7,10 +7,10 @@ use common::{
 use crossbeam::atomic::AtomicCell;
 use futures::future::try_join_all;
 use itertools::Itertools;
-use lazy_static::lazy_static;
 use log::debug;
 use maplit::{hashmap, hashset};
 use mime::Mime;
+use once_cell::sync::Lazy;
 use percent_encoding::percent_decode;
 use stack_string::{format_sstr, StackString};
 
@@ -49,34 +49,22 @@ fn https_client() -> TlsClient {
     hyper::Client::builder().build(conn)
 }
 
-lazy_static! {
-    static ref MIME_TYPES: HashMap<&'static str, &'static str> = hashmap! {
+static MIME_TYPES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+    hashmap! {
         "application/vnd.google-apps.document" => "application/vnd.oasis.opendocument.text",
         "application/vnd.google-apps.presentation" => "application/pdf",
         "application/vnd.google-apps.spreadsheet" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.google-apps.drawing" => "image/png",
         "application/vnd.google-apps.site" => "text/plain",
-    };
-}
-
-lazy_static! {
-    static ref UNEXPORTABLE_MIME_TYPES: HashSet<&'static str> = hashset! {
+    }
+});
+static UNEXPORTABLE_MIME_TYPES: Lazy<HashSet<&'static str>> = Lazy::new(|| {
+    hashset! {
         "application/vnd.google-apps.form",
         "application/vnd.google-apps.map",
         "application/vnd.google-apps.folder",
-    };
-}
-
-lazy_static! {
-    static ref EXTENSIONS: HashMap<&'static str, &'static str> = hashmap! {
-        "application/vnd.oasis.opendocument.text" => "odt",
-        "image/png" => "png",
-        "application/pdf" => "pdf",
-        "image/jpeg" => "jpg",
-        "text/x-csrc" => "C",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "xlsx",
-    };
-}
+    }
+});
 
 #[derive(Clone)]
 pub struct GDriveInstance {

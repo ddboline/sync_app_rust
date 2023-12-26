@@ -20,7 +20,7 @@ use url::ParseError;
 
 use stack_string::StackString;
 
-use crate::logged_user::{TRIGGER_DB_UPDATE, LOGIN_HTML};
+use crate::logged_user::{LOGIN_HTML, TRIGGER_DB_UPDATE};
 
 #[derive(Error, Debug)]
 pub enum ServiceError {

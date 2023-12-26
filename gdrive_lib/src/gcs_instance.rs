@@ -4,8 +4,8 @@ use common::{
     yup_oauth2::{self, hyper, ServiceAccountAuthenticator},
     DownloadResult, TlsClient,
 };
-use lazy_static::lazy_static;
 use log::debug;
+use once_cell::sync::Lazy;
 use parking_lot::{Mutex, MutexGuard};
 use stack_string::format_sstr;
 use std::{
@@ -26,9 +26,7 @@ use crate::{
 };
 use url::Url;
 
-lazy_static! {
-    static ref GCSINSTANCE_TEST_MUTEX: Mutex<()> = Mutex::new(());
-}
+static GCSINSTANCE_TEST_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
 fn https_client() -> TlsClient {
     let conn = hyper_rustls::HttpsConnectorBuilder::new()

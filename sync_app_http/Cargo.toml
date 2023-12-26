@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.11.8"
+version = "0.11.9"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -16,7 +16,6 @@ dioxus-ssr = "0.4"
 dirs = "5.0"
 futures = "0.3"
 itertools = "0.12"
-lazy_static = "1.4"
 log = "0.4"
 maplit = "1.0"
 parking_lot = "0.12"

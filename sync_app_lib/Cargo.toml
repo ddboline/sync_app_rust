@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_lib"
-version = "0.11.8"
+version = "0.11.9"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -25,10 +25,10 @@ envy = "0.4"
 futures = "0.3"
 gdrive_lib = {path="../gdrive_lib"}
 itertools = "0.12"
-lazy_static = "1.4"
 log = "0.4"
 maplit = "1.0"
 mime = "0.3"
+once_cell = "1.0"
 parking_lot = "0.12"
 percent-encoding = "2.1"
 postgres_query = {git = "https://github.com/ddboline/rust-postgres-query", tag = "0.3.6", features=["deadpool"]}
