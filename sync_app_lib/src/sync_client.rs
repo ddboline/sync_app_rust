@@ -150,7 +150,7 @@ impl SyncClient {
     pub async fn post_empty<T: DeserializeOwned>(&self, url: &Url) -> Result<Vec<T>, Error> {
         let resp = self
             .remote_session
-            .post(url, &HeaderMap::new())
+            .post_empty(url, &HeaderMap::new())
             .await?
             .error_for_status()?;
         resp.json().await.map_err(Into::into)
