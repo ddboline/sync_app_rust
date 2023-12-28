@@ -87,7 +87,7 @@ impl SecuritySync {
 
         let url = self.client.get_url()?;
         let url = url.join("security_log/cleanup")?;
-        let remote_hosts: Vec<HostCountry> = match self.client.get_remote(&url).await {
+        let remote_hosts: Vec<HostCountry> = match self.client.post_empty(&url).await {
             Ok(x) => x,
             Err(e) => {
                 error!("Recieved error, shutting down");
