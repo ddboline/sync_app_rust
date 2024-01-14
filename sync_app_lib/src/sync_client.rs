@@ -14,6 +14,19 @@ use uuid::Uuid;
 
 use crate::{config::Config, local_session::LocalSession, reqwest_session::ReqwestSession};
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct Pagination {
+    pub limit: usize,
+    pub offset: usize,
+    pub total: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Paginated<T> {
+    pub pagination: Pagination,
+    pub data: Vec<T>,
+}
+
 #[derive(Clone)]
 pub struct SyncClient {
     remote_session: ReqwestSession,
@@ -143,6 +156,37 @@ impl SyncClient {
             .await?
             .error_for_status()?;
         resp.json().await.map_err(Into::into)
+    }
+
+    async fn _get_remote_paginated<T: DeserializeOwned>(&self, url: &Url, offset: usize, limit: usize) -> Result<Paginated<T>, Error> {
+        let offset = format_sstr!("{offset}");
+        let limit = format_sstr!("{limit}");
+        let options = [("offset", &offset), ("limit", &limit)];
+        let url = Url::parse_with_params(url.as_str(), &options)?;
+        let resp = self
+            .remote_session
+            .get(&url, &HeaderMap::new())
+            .await?
+            .error_for_status()?;
+        resp.json().await.map_err(Into::into)
+    }
+
+    pub async fn get_remote_paginated<T: DeserializeOwned>(&self, url: &Url) -> Result<Vec<T>, Error> {
+        let mut result = Vec::new();
+        let mut offset = 0;
+        let limit = 10;
+        let mut total = None;
+        loop {
+            let mut response = self._get_remote_paginated(url, offset, limit).await?;
+            if total.is_none() {
+                total.replace(response.pagination.total);
+            }
+            if response.data.len() == 0 {
+                return Ok(result);
+            }
+            offset += response.data.len();
+            result.append(&mut response.data);
+        }
     }
 
     /// # Errors
