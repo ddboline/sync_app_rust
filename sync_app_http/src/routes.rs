@@ -1,5 +1,5 @@
 use futures::TryStreamExt;
-use rweb::{get, Query, Rejection};
+use rweb::{get, Query, Rejection, post, delete};
 use rweb_helper::{
     html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase, RwebResponse,
 };
@@ -60,7 +60,7 @@ pub async fn garmin_scripts_js() -> WarpResult<JsResponse> {
 #[response(description = "Sync")]
 struct SyncResponse(HtmlBase<String, Error>);
 
-#[get("/sync/sync")]
+#[post("/sync/sync")]
 pub async fn sync_all(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
@@ -73,7 +73,7 @@ pub async fn sync_all(
     Ok(HtmlBase::new(result.join("\n")).into())
 }
 
-#[get("/sync/sync/{name}")]
+#[post("/sync/sync/{name}")]
 pub async fn sync_name(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
@@ -91,7 +91,7 @@ pub async fn sync_name(
 #[response(description = "Process All")]
 struct ProcAllResponse(HtmlBase<String, Error>);
 
-#[get("/sync/proc_all")]
+#[post("/sync/proc_all")]
 pub async fn proc_all(
     #[filter = "LoggedUser::filter"] _: LoggedUser,
     #[data] data: AppState,
@@ -128,7 +128,7 @@ pub async fn list_sync_cache(
 #[response(description = "Process Entry")]
 struct ProcessEntryResponse(HtmlBase<&'static str, Error>);
 
-#[get("/sync/proc")]
+#[post("/sync/proc")]
 pub async fn process_cache_entry(
     query: Query<SyncEntryProcessRequest>,
     #[filter = "LoggedUser::filter"] _: LoggedUser,
@@ -145,7 +145,7 @@ pub async fn process_cache_entry(
 #[response(description = "Delete Cache Entry")]
 struct DeleteEntryResponse(HtmlBase<&'static str, Error>);
 
-#[get("/sync/delete_cache_entry")]
+#[delete("/sync/delete_cache_entry")]
 pub async fn delete_cache_entry(
     query: Query<SyncEntryDeleteRequest>,
     #[filter = "LoggedUser::filter"] _: LoggedUser,
@@ -162,7 +162,7 @@ pub async fn delete_cache_entry(
 #[response(description = "Sync Garmin DB")]
 struct SyncGarminResponse(HtmlBase<String, Error>);
 
-#[get("/sync/sync_garmin")]
+#[post("/sync/sync_garmin")]
 pub async fn sync_garmin(
     #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
@@ -177,7 +177,7 @@ pub async fn sync_garmin(
 #[response(description = "Sync Movie DB")]
 struct SyncMovieResponse(HtmlBase<String, Error>);
 
-#[get("/sync/sync_movie")]
+#[post("/sync/sync_movie")]
 pub async fn sync_movie(
     #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
@@ -192,7 +192,7 @@ pub async fn sync_movie(
 #[response(description = "Sync Calendar DB")]
 struct SyncCalendarResponse(HtmlBase<String, Error>);
 
-#[get("/sync/sync_calendar")]
+#[post("/sync/sync_calendar")]
 pub async fn sync_calendar(
     #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
@@ -207,7 +207,7 @@ pub async fn sync_calendar(
 #[response(description = "Remove Sync Entry")]
 struct SyncRemoveResponse(HtmlBase<String, Error>);
 
-#[get("/sync/remove")]
+#[delete("/sync/remove")]
 pub async fn remove(
     query: Query<SyncRemoveRequest>,
     #[filter = "LoggedUser::filter"] _: LoggedUser,
@@ -224,7 +224,7 @@ pub async fn remove(
 #[response(description = "Sync Podcasts")]
 struct SyncPodcastsResponse(HtmlBase<StackString, Error>);
 
-#[get("/sync/sync_podcasts")]
+#[post("/sync/sync_podcasts")]
 pub async fn sync_podcasts(
     #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
@@ -251,7 +251,7 @@ pub async fn user(#[filter = "LoggedUser::filter"] user: LoggedUser) -> WarpResu
 #[response(description = "Sync Security Logs")]
 struct SyncSecurityLogsResponse(HtmlBase<StackString, Error>);
 
-#[get("/sync/sync_security")]
+#[post("/sync/sync_security")]
 pub async fn sync_security(
     #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
@@ -269,7 +269,7 @@ pub async fn sync_security(
 #[response(description = "Sync Weather Data")]
 struct SyncWeatherDataResponse(HtmlBase<StackString, Error>);
 
-#[get("/sync/sync_weather")]
+#[post("/sync/sync_weather")]
 pub async fn sync_weather(
     #[filter = "LoggedUser::filter"] user: LoggedUser,
     #[data] data: AppState,
