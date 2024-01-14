@@ -126,7 +126,7 @@ impl WeatherSync {
         let from_url = self.client.get_url()?;
 
         let url = from_url.join(path)?;
-        let events0 = transform(self.client.get_remote(&url).await?);
+        let events0 = transform(self.client.get_remote_paginated(&url).await?);
         let start_timestamp = OffsetDateTime::now_utc() - Duration::days(7);
         let events1 = transform(self.client.get_local(table, Some(start_timestamp)).await?);
 

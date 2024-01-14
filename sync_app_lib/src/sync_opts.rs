@@ -48,7 +48,7 @@ pub struct SyncOpts {
     /// "list" or "ls", "delete" or "rm", "move" or "mv", "ser" or
     /// "serialize", "add" or "add_config", "show", "show_cache"
     /// "sync_garmin", "sync_movie", "sync_calendar", "show_config",
-    /// "sync_all", "run-migrations"
+    /// "sync_all", "run-migrations", "sync_weather"
     pub action: FileSyncAction,
     #[clap(short = 'u', long = "urls", value_parser = url_from_str)]
     pub urls: Vec<Url>,
