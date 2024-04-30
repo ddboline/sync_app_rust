@@ -72,8 +72,10 @@ impl ReqwestSession {
     /// # Errors
     /// Return error if db query fails
     pub async fn post_empty(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
-        Self::exponential_retry(|| async move { self._post_empty(url.clone(), headers.clone()).await })
-            .await
+        Self::exponential_retry(
+            || async move { self._post_empty(url.clone(), headers.clone()).await },
+        )
+        .await
     }
 
     /// # Errors

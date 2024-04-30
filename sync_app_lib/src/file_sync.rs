@@ -314,7 +314,7 @@ impl FileSync {
         let key_list: Vec<_> = proc_map.keys().cloned().collect();
 
         for urls in group_urls(&key_list).values() {
-            if let Some(u0) = urls.get(0) {
+            if let Some(u0) = urls.first() {
                 let futures = urls.iter().map(|key| {
                     let key = key.clone();
                     let proc_map = proc_map.clone();

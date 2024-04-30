@@ -11,7 +11,11 @@ use rweb::{
 };
 use serde::Serialize;
 use std::{
-    borrow::Cow, convert::Infallible, fmt::Debug, io::Error as IoError, str::Utf8Error,
+    borrow::Cow,
+    convert::Infallible,
+    fmt::{Debug, Error as FmtError},
+    io::Error as IoError,
+    str::Utf8Error,
     string::FromUtf8Error,
 };
 use stdout_channel::StdoutChannelError;
@@ -44,6 +48,8 @@ pub enum ServiceError {
     StdoutChannelError(#[from] StdoutChannelError),
     #[error("PqError {0}")]
     PqError(#[from] PqError),
+    #[error("FmtError {0}")]
+    FmtError(#[from] FmtError),
 }
 
 impl Reject for ServiceError {}

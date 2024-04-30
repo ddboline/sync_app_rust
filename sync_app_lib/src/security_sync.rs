@@ -58,7 +58,7 @@ impl SecuritySync {
 
         let mut output = Vec::new();
 
-        let results = match self
+        let results = self
             .run_single_sync(
                 "security_log/intrusion_log",
                 "updates",
@@ -74,8 +74,9 @@ impl SecuritySync {
                         .collect()
                 },
             )
-            .await
-        {
+            .await;
+
+        let results = match results {
             Ok(x) => x,
             Err(e) => {
                 error!("Recieved error, shutting down");

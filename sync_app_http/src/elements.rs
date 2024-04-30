@@ -1,20 +1,29 @@
 use dioxus::prelude::{
-    component, dioxus_elements, rsx, Element, GlobalAttributes, IntoDynNode, Props, Scope,
-    VirtualDom,
+    component, dioxus_elements, rsx, Element, GlobalAttributes, IntoDynNode, Props, VirtualDom,
 };
 
 use stack_string::StackString;
 use sync_app_lib::models::{FileSyncCache, FileSyncConfig};
 
-pub fn index_body(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> String {
+use crate::errors::ServiceError as Error;
+
+/// # Errors
+/// Returns error if formatting fails
+pub fn index_body(
+    conf_list: Vec<FileSyncConfig>,
+    entries: Vec<FileSyncCache>,
+) -> Result<String, Error> {
     let mut app =
         VirtualDom::new_with_props(IndexElement, IndexElementProps { conf_list, entries });
-    drop(app.rebuild());
-    dioxus_ssr::render(&app)
+    app.rebuild_in_place();
+    let mut renderer = dioxus_ssr::Renderer::default();
+    let mut buffer = String::new();
+    renderer.render_to(&mut buffer, &app)?;
+    Ok(buffer)
 }
 
 #[component]
-fn IndexElement(cx: Scope, conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> Element {
+fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> Element {
     let conf_element = conf_list.iter().enumerate().filter_map(|(idx, v)| {
         v.name.as_ref().map(|name| {
             rsx! {
@@ -67,7 +76,7 @@ fn IndexElement(cx: Scope, conf_list: Vec<FileSyncConfig>, entries: Vec<FileSync
             }
         }
     });
-    cx.render(rsx! {
+    rsx! {
         head {
             style {
                 dangerous_inner_html: include_str!("../../templates/style.css")
@@ -133,25 +142,30 @@ fn IndexElement(cx: Scope, conf_list: Vec<FileSyncConfig>, entries: Vec<FileSync
             nav {
                 id: "navigation",
                 "start": "0",
-                conf_element,
+                {conf_element},
             },
             article {
                 id: "main_article",
-                entries,
+                {entries},
             },
         }
-    })
+    }
 }
 
-pub fn text_body(text: StackString) -> String {
+/// # Errors
+/// Returns error if formatting fails
+pub fn text_body(text: StackString) -> Result<String, Error> {
     let mut app = VirtualDom::new_with_props(TextElement, TextElementProps { text });
-    drop(app.rebuild());
-    dioxus_ssr::render(&app)
+    app.rebuild_in_place();
+    let mut renderer = dioxus_ssr::Renderer::default();
+    let mut buffer = String::new();
+    renderer.render_to(&mut buffer, &app)?;
+    Ok(buffer)
 }
 
 #[component]
-fn TextElement(cx: Scope, text: StackString) -> Element {
-    cx.render(rsx! {
+fn TextElement(text: StackString) -> Element {
+    rsx! {
         textarea {
             autofocus: "true",
             readonly: "readonly",
@@ -159,5 +173,5 @@ fn TextElement(cx: Scope, text: StackString) -> Element {
             cols: "100",
             "{text}",
         }
-    })
+    }
 }

@@ -629,7 +629,7 @@ impl GDriveInstance {
                     let parents = d
                         .parents
                         .as_ref()
-                        .and_then(|p| p.get(0).map(ToString::to_string));
+                        .and_then(|p| p.first().map(ToString::to_string));
                     if parents.is_none()
                         && root_id.is_none()
                         && d.name != Some("Chrome Syncable FileSystem".to_string())
@@ -675,7 +675,7 @@ impl GDriveInstance {
         let mut pid: Option<StackString> = finfo
             .parents
             .as_ref()
-            .and_then(|parents| parents.get(0).map(|p| p.to_string().into()));
+            .and_then(|parents| parents.first().map(|p| p.to_string().into()));
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
                 if let Some(dinfo) = dirmap.get(pid_) {

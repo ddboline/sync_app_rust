@@ -158,7 +158,12 @@ impl SyncClient {
         resp.json().await.map_err(Into::into)
     }
 
-    async fn _get_remote_paginated<T: DeserializeOwned>(&self, url: &Url, offset: usize, limit: usize) -> Result<Paginated<T>, Error> {
+    async fn _get_remote_paginated<T: DeserializeOwned>(
+        &self,
+        url: &Url,
+        offset: usize,
+        limit: usize,
+    ) -> Result<Paginated<T>, Error> {
         let offset = format_sstr!("{offset}");
         let limit = format_sstr!("{limit}");
         let options = [("offset", &offset), ("limit", &limit)];
@@ -171,7 +176,12 @@ impl SyncClient {
         resp.json().await.map_err(Into::into)
     }
 
-    pub async fn get_remote_paginated<T: DeserializeOwned>(&self, url: &Url) -> Result<Vec<T>, Error> {
+    /// # Errors
+    /// Returns error if api call fails
+    pub async fn get_remote_paginated<T: DeserializeOwned>(
+        &self,
+        url: &Url,
+    ) -> Result<Vec<T>, Error> {
         let mut result = Vec::new();
         let mut offset = 0;
         let limit = 10;
@@ -181,7 +191,7 @@ impl SyncClient {
             if total.is_none() {
                 total.replace(response.pagination.total);
             }
-            if response.data.len() == 0 {
+            if response.data.is_empty() {
                 return Ok(result);
             }
             offset += response.data.len();
