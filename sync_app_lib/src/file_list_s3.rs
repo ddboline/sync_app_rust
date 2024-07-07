@@ -288,7 +288,7 @@ mod tests {
     async fn test_fill_file_list() -> Result<(), Error> {
         let _guard = S3Instance::get_instance_lock();
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
         let region: String = config.aws_region_name.as_str().into();
         let region = Region::new(region);
         let sdk_config = aws_config::from_env().region(region).load().await;

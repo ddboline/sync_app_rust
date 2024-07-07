@@ -495,7 +495,7 @@ mod tests {
     #[ignore]
     async fn test_compare_lists_0() -> Result<(), Error> {
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
         let filepath = Path::new("src/file_sync.rs").canonicalize()?;
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
 
@@ -548,7 +548,7 @@ mod tests {
     #[ignore]
     async fn test_compare_lists_1() -> Result<(), Error> {
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
         let filepath = Path::new("src/file_sync.rs").canonicalize()?;
         let serviceid: ServiceId = filepath.to_string_lossy().to_string().into();
 

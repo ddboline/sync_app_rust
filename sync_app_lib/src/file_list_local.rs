@@ -278,7 +278,7 @@ mod tests {
         let baseurl: Url =
             format_sstr!("file://{}", basepath.canonicalize()?.to_string_lossy()).parse()?;
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
         let conf = FileListLocal::new(&basepath, &config, &pool);
         debug!("{:?}", conf);
         assert_eq!(conf.is_ok(), true);
@@ -294,7 +294,7 @@ mod tests {
     async fn test_fill_file_list() -> Result<(), Error> {
         let basepath: PathBuf = "src".parse()?;
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
         let flist = FileListLocal::new(&basepath, &config, &pool)?;
 
         flist.clear_file_list().await?;

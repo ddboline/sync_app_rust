@@ -78,7 +78,7 @@ pub async fn start_app() -> Result<(), Error> {
 
     let config = Config::init_config()?;
     get_secrets(&config.secret_path, &config.jwt_secret_path).await?;
-    let pool = PgPool::new(&config.database_url);
+    let pool = PgPool::new(&config.database_url)?;
 
     tokio::task::spawn(_update_db(pool.clone()));
 

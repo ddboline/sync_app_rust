@@ -337,7 +337,7 @@ mod tests {
     #[ignore]
     async fn test_file_list_ssh_conf_from_url() -> Result<(), Error> {
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/".parse()?;
         let conf = FileListSSH::from_url(&url, &config, &pool).await?;
         debug!("{:?}", conf);
@@ -350,7 +350,7 @@ mod tests {
     #[ignore]
     async fn test_file_list_ssh_copy_from() -> Result<(), Error> {
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
         let url: Url = "ssh://ubuntu@cloud.ddboline.net/home/ubuntu/pkgs.txt".parse()?;
         let finfo0 = FileInfoSSH::from_url(&url)?;
         let url: Url = "file:///tmp/pkgs.txt".parse()?;
@@ -370,7 +370,7 @@ mod tests {
     #[ignore]
     async fn test_file_list_ssh_copy_to() -> Result<(), Error> {
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
 
         let path: PathBuf = "src/file_list_ssh.rs".parse()?;
         let url: Url = format_sstr!("file://{}", path.canonicalize()?.to_string_lossy()).parse()?;

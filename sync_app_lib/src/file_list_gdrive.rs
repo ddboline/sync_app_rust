@@ -483,7 +483,7 @@ mod tests {
             .join(format_sstr!("ddboline@gmail.com_start_page_token"));
         let tmp = TempStartPageToken::new(&fname).await?;
 
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
 
         let flist = FileListGDrive::new("ddboline@gmail.com", "My Drive", &config, &pool)
             .await?

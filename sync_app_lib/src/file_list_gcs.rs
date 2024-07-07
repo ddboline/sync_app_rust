@@ -285,11 +285,11 @@ mod tests {
     async fn test_fill_file_list() -> Result<(), Error> {
         let _guard = GcsInstance::get_instance_lock();
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
         let gcs = GcsInstance::new(
             &config.gcs_token_path,
             &config.gcs_secret_file,
-            "diary-backup-ddboline",
+            "diary-backup-ddboline-2024-06-30",
         )
         .await?;
         let blist = gcs.get_list_of_buckets(&config.gcs_project).await?;
@@ -325,7 +325,7 @@ mod tests {
         let gcs_instance = GcsInstance::new(
             &config.gcs_token_path,
             &config.gcs_secret_file,
-            "diary-backup-ddboline",
+            "diary-backup-ddboline-2024-06-30",
         )
         .await?;
         let blist = gcs_instance

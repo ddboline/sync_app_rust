@@ -94,7 +94,7 @@ impl SyncOpts {
         let stdout = StdoutChannel::new();
         let opts = Self::parse();
         let config = Config::init_config()?;
-        let pool = PgPool::new(&config.database_url);
+        let pool = PgPool::new(&config.database_url)?;
 
         if opts.action == FileSyncAction::SyncAll {
             for action in &[
