@@ -79,7 +79,7 @@ impl LoggedUser {
         .await?;
         debug!("Got session {:?}", session);
         if let Some(session) = session {
-            if session.created_at > (OffsetDateTime::now_utc() - Duration::minutes(10)) {
+            if session.created_at > (OffsetDateTime::now_utc() - Duration::minutes(60)) {
                 return Ok(Some(session));
             }
         }
