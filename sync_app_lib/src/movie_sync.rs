@@ -249,10 +249,14 @@ impl MovieSync {
             .client
             .get_local(table, Some(last_modified_remote.into()))
             .await?;
-        self.client.put_local(table, &remote_data, None).await?;
+        if !remote_data.is_empty() {
+            self.client.put_local(table, &remote_data, None).await?;
+        }
         let path = format_sstr!("list/{table}");
         let url = endpoint.join(&path)?;
-        self.client.put_remote(&url, &local_data, js_prefix).await?;
+        if !local_data.is_empty() {
+            self.client.put_remote(&url, &local_data, js_prefix).await?;
+        }
         let buf = format_sstr!("{} {}", table, local_data.len());
         output.push(buf);
 
