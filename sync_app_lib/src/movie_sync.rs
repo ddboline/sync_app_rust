@@ -31,6 +31,7 @@ pub struct ImdbEpisodes {
     pub rating: Option<Decimal>,
     pub eptitle: StackString,
     pub epurl: StackString,
+    pub id: Uuid,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -244,19 +245,16 @@ impl MovieSync {
         let url = endpoint.join(&path)?;
         debug!("{}", url);
         output.push(url.as_str().into());
+        debug!("get_remote {url}");
         let remote_data: Vec<T> = self.client.get_remote(&url).await?;
         let local_data: Vec<T> = self
             .client
             .get_local(table, Some(last_modified_remote.into()))
             .await?;
-        if !remote_data.is_empty() {
-            self.client.put_local(table, &remote_data, None).await?;
-        }
+        self.client.put_local(table, &remote_data, None).await?;
         let path = format_sstr!("list/{table}");
         let url = endpoint.join(&path)?;
-        if !local_data.is_empty() {
-            self.client.put_remote(&url, &local_data, js_prefix).await?;
-        }
+        self.client.put_remote(&url, &local_data, js_prefix).await?;
         let buf = format_sstr!("{} {}", table, local_data.len());
         output.push(buf);
 
