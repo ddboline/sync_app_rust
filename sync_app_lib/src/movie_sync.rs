@@ -83,6 +83,8 @@ pub struct PlexEvent {
 pub struct PlexFilename {
     pub metadata_key: StackString,
     pub filename: StackString,
+    pub collection_id: Option<Uuid>,
+    pub music_collection_id: Option<Uuid>,
 }
 
 #[derive(FromSqlRow, Default, Debug, Serialize, Deserialize)]
