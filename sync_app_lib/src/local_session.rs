@@ -81,6 +81,7 @@ impl LocalSession {
             args.push("-s");
             args.push(start_timestamp);
         }
+        debug!("run_command_import args {args:?} input {}", input.len());
         let mut child = Command::new(&self.exe_path)
             .env_remove("DATABASE_URL")
             .env_remove("PGURL")
