@@ -30,7 +30,7 @@ impl SyncRequest {
         let mut sync = locks.sync.lock().await;
         sync.action = self.action;
         sync.urls = Vec::new();
-        sync.name = self.name.clone();
+        sync.name.clone_from(&self.name);
         let mock_stdout = MockStdout::new();
         let stdout = StdoutChannel::with_mock_stdout(mock_stdout.clone(), mock_stdout.clone());
         sync.process_sync_opts(config, pool, &stdout).await?;

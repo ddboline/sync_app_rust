@@ -44,11 +44,11 @@ fn url_from_str(s: &str) -> Result<Url, String> {
 #[derive(Parser, Debug)]
 pub struct SyncOpts {
     #[clap(value_parser = action_from_str)]
-    /// Available commands are: "index", "sync", "proc(ess)", "copy" or "cp",
-    /// "list" or "ls", "delete" or "rm", "move" or "mv", "ser" or
-    /// "serialize", "add" or "add_config", "show", "show_cache"
-    /// "sync_garmin", "sync_movie", "sync_calendar", "show_config",
-    /// "sync_all", "run-migrations", "sync_weather"
+    /// Available commands are: `index`, `sync`, `proc(ess)`, `copy` or `cp`,
+    /// `list` or `ls`, `delete` or `rm`, `move` or `mv`, `ser` or
+    /// `serialize`, `add` or `add_config`, `show`, `show_cache`
+    /// `sync_garmin`, `sync_movie`, `sync_calendar`, `show_config`,
+    /// `sync_all`, `run-migrations`, `sync_weather`
     pub action: FileSyncAction,
     #[clap(short = 'u', long = "urls", value_parser = url_from_str)]
     pub urls: Vec<Url>,

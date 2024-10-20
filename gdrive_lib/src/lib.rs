@@ -6,6 +6,9 @@
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::derivable_impls)]
 #![allow(clippy::missing_panics_doc)]
+#![allow(clippy::empty_docs)]
+#![allow(clippy::doc_lazy_continuation)]
+#![allow(clippy::assigning_clones)]
 
 pub mod date_time_wrapper;
 pub mod directory_info;

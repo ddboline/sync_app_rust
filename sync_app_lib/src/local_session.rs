@@ -33,7 +33,7 @@ impl LocalSession {
     ) -> Result<Vec<u8>, Error> {
         let mut args = vec!["export", "-t", table];
         let start_timestamp = start_timestamp.and_then(|t| t.format(&Rfc3339).ok());
-        let start_date = start_date.map(|d| StackString::from_display(d));
+        let start_date = start_date.map(StackString::from_display);
         if let Some(start_timestamp) = start_timestamp.as_ref() {
             args.push("-s");
             args.push(start_timestamp);

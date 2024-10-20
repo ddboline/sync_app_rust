@@ -131,7 +131,7 @@ impl WeatherSync {
         let start_date = start_timestamp.date();
         let timetamp_str = StackString::from_display(start_date);
         debug!("timestamp_str {timetamp_str}");
-        let params = [("start_time".into(), timetamp_str.into())];
+        let params = [("start_time".into(), timetamp_str)];
         let events0 = transform(self.client.get_remote_paginated(&url, &params).await?);
         let events1 = transform(self.client.get_local(table, None, Some(start_date)).await?);
 
