@@ -120,7 +120,7 @@ impl CalendarSync {
         let from_url = self.client.get_url()?;
 
         let url = from_url.join(path)?;
-        let measurements0 = transform(self.client.get_remote(&url).await?);
+        let measurements0 = transform(self.client.get_remote_paginated(&url, &[]).await?);
         let measurements1 = transform(self.client.get_local(table, None).await?);
 
         let measurements2 = Self::combine_maps(&measurements0, &measurements1);
@@ -181,7 +181,7 @@ impl CalendarSync {
         let from_url = self.client.get_url()?;
 
         let url = from_url.join(path)?;
-        let events0 = transform(self.client.get_remote(&url).await?);
+        let events0 = transform(self.client.get_remote_paginated(&url, &[]).await?);
         let events1 = transform(self.client.get_local(table, None).await?);
 
         let events2 = Self::combine_maps(&events0, &events1);
