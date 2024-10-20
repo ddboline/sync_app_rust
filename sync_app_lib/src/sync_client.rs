@@ -161,12 +161,15 @@ impl SyncClient {
     async fn _get_remote_paginated<T: DeserializeOwned>(
         &self,
         url: &Url,
+        params: &[(StackString, StackString)],
         offset: usize,
         limit: usize,
     ) -> Result<Paginated<T>, Error> {
         let offset = format_sstr!("{offset}");
         let limit = format_sstr!("{limit}");
-        let options = [("offset", &offset), ("limit", &limit)];
+        let mut options: Vec<_> = params.iter().map(|(key, value)| (key.as_str(), value)).collect();
+        options.push(("offset", &offset));
+        options.push(("limit", &limit));
         let url = Url::parse_with_params(url.as_str(), &options)?;
         let resp = self
             .remote_session
@@ -181,13 +184,14 @@ impl SyncClient {
     pub async fn get_remote_paginated<T: DeserializeOwned>(
         &self,
         url: &Url,
+        params: &[(StackString, StackString)],
     ) -> Result<Vec<T>, Error> {
         let mut result = Vec::new();
         let mut offset = 0;
         let limit = 10;
         let mut total = None;
         loop {
-            let mut response = self._get_remote_paginated(url, offset, limit).await?;
+            let mut response = self._get_remote_paginated(url, params, offset, limit).await?;
             if total.is_none() {
                 total.replace(response.pagination.total);
             }

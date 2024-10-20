@@ -6,7 +6,7 @@ use std::{
     collections::HashMap,
     fmt::{self, Debug},
 };
-use time::{Duration, OffsetDateTime};
+use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
 use uuid::Uuid;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
@@ -126,8 +126,10 @@ impl WeatherSync {
         let from_url = self.client.get_url()?;
 
         let url = from_url.join(path)?;
-        let events0 = transform(self.client.get_remote_paginated(&url).await?);
         let start_timestamp = OffsetDateTime::now_utc() - Duration::days(7);
+        let timetamp_str = start_timestamp.format(&Rfc3339).unwrap_or(String::new());
+        let params = [("start_time".into(), timetamp_str.into())];
+        let events0 = transform(self.client.get_remote_paginated(&url, &params).await?);
         let events1 = transform(self.client.get_local(table, Some(start_timestamp)).await?);
 
         let events2 = Self::combine_maps(&events0, &events1);

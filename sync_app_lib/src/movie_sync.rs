@@ -235,20 +235,15 @@ impl MovieSync {
         T: Debug + Serialize + DeserializeOwned + Send + 'static,
     {
         let mut output = Vec::new();
-        let path = format_sstr!(
-            "list/{}?start_timestamp={}",
-            table,
-            last_modified_local
-                .format(format_description!(
-                    "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond]Z"
-                ))
-                .unwrap_or_default(),
-        );
-        let url = endpoint.join(&path)?;
+        let url = endpoint.join(&format_sstr!("list/{table}"))?;
+        let last_modified_str = last_modified_local.format(format_description!(
+            "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond]Z"
+        )).unwrap_or_default();
+        let params = &[("start_timestamp".into(), last_modified_str.into())];
         debug!("{}", url);
         output.push(url.as_str().into());
-        debug!("get_remote {url}");
-        let remote_data: Vec<T> = self.client.get_remote(&url).await?;
+        debug!("get_remote {url} {params:?}");
+        let remote_data: Vec<T> = self.client.get_remote_paginated(&url, params).await?;
         let local_data: Vec<T> = self
             .client
             .get_local(table, Some(last_modified_remote.into()))
