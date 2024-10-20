@@ -143,8 +143,9 @@ impl MovieSync {
         let url = from_url.join("list/last_modified")?;
         debug!("{}", url);
         let last_modified0 = self.get_last_modified(&url).await?;
-        let last_modified1 =
-            Self::transform_last_modified(self.client.get_local("last_modified", None).await?);
+        let last_modified1 = Self::transform_last_modified(
+            self.client.get_local("last_modified", None, None).await?,
+        );
 
         debug!("{:?} {:?}", last_modified0, last_modified1);
 
@@ -236,9 +237,11 @@ impl MovieSync {
     {
         let mut output = Vec::new();
         let url = endpoint.join(&format_sstr!("list/{table}"))?;
-        let last_modified_str = last_modified_local.format(format_description!(
-            "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond]Z"
-        )).unwrap_or_default();
+        let last_modified_str = last_modified_local
+            .format(format_description!(
+                "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond]Z"
+            ))
+            .unwrap_or_default();
         let params = &[("start_timestamp".into(), last_modified_str.into())];
         debug!("{}", url);
         output.push(url.as_str().into());
@@ -246,7 +249,7 @@ impl MovieSync {
         let remote_data: Vec<T> = self.client.get_remote_paginated(&url, params).await?;
         let local_data: Vec<T> = self
             .client
-            .get_local(table, Some(last_modified_remote.into()))
+            .get_local(table, Some(last_modified_remote.into()), None)
             .await?;
         self.client.put_local(table, &remote_data, None).await?;
         let path = format_sstr!("list/{table}");

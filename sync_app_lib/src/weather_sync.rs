@@ -1,4 +1,5 @@
 use anyhow::Error;
+use log::debug;
 use postgres_query::FromSqlRow;
 use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
@@ -6,7 +7,7 @@ use std::{
     collections::HashMap,
     fmt::{self, Debug},
 };
-use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
+use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
 use gdrive_lib::date_time_wrapper::DateTimeWrapper;
@@ -127,13 +128,17 @@ impl WeatherSync {
 
         let url = from_url.join(path)?;
         let start_timestamp = OffsetDateTime::now_utc() - Duration::days(7);
-        let timetamp_str = start_timestamp.format(&Rfc3339).unwrap_or(String::new());
+        let start_date = start_timestamp.date();
+        let timetamp_str = StackString::from_display(start_date);
+        debug!("timestamp_str {timetamp_str}");
         let params = [("start_time".into(), timetamp_str.into())];
         let events0 = transform(self.client.get_remote_paginated(&url, &params).await?);
-        let events1 = transform(self.client.get_local(table, Some(start_timestamp)).await?);
+        let events1 = transform(self.client.get_local(table, None, Some(start_date)).await?);
 
         let events2 = Self::combine_maps(&events0, &events1);
         let events3 = Self::combine_maps(&events1, &events0);
+
+        debug!("events2 {} events3 {}", events2.len(), events3.len());
 
         output.extend(Self::get_debug(table, &events2));
         output.extend(Self::get_debug(table, &events3));

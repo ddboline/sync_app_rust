@@ -1,9 +1,11 @@
 use anyhow::{format_err, Error};
+use log::debug;
+use stack_string::StackString;
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
 };
-use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+use time::{format_description::well_known::Rfc3339, Date, OffsetDateTime};
 use tokio::{io::AsyncWriteExt, process::Command};
 
 #[derive(Clone)]
@@ -27,13 +29,20 @@ impl LocalSession {
         &self,
         table: &str,
         start_timestamp: Option<OffsetDateTime>,
+        start_date: Option<Date>,
     ) -> Result<Vec<u8>, Error> {
         let mut args = vec!["export", "-t", table];
         let start_timestamp = start_timestamp.and_then(|t| t.format(&Rfc3339).ok());
+        let start_date = start_date.map(|d| StackString::from_display(d));
         if let Some(start_timestamp) = start_timestamp.as_ref() {
             args.push("-s");
             args.push(start_timestamp);
         }
+        if let Some(start_date) = start_date.as_ref() {
+            args.push("-s");
+            args.push(start_date);
+        }
+        debug!("args {args:?}");
         self.run_command(&args).await
     }
 

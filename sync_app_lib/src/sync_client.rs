@@ -8,7 +8,7 @@ use reqwest::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{path::Path, time::Duration};
-use time::OffsetDateTime;
+use time::{Date, OffsetDateTime};
 use tokio::{task::spawn_blocking, time::timeout};
 use uuid::Uuid;
 
@@ -167,7 +167,10 @@ impl SyncClient {
     ) -> Result<Paginated<T>, Error> {
         let offset = format_sstr!("{offset}");
         let limit = format_sstr!("{limit}");
-        let mut options: Vec<_> = params.iter().map(|(key, value)| (key.as_str(), value)).collect();
+        let mut options: Vec<_> = params
+            .iter()
+            .map(|(key, value)| (key.as_str(), value))
+            .collect();
         options.push(("offset", &offset));
         options.push(("limit", &limit));
         let url = Url::parse_with_params(url.as_str(), &options)?;
@@ -188,10 +191,17 @@ impl SyncClient {
     ) -> Result<Vec<T>, Error> {
         let mut result = Vec::new();
         let mut offset = 0;
-        let limit = 10;
+        let limit = 1000;
         let mut total = None;
         loop {
-            let mut response = self._get_remote_paginated(url, params, offset, limit).await?;
+            let mut response = self
+                ._get_remote_paginated(url, params, offset, limit)
+                .await?;
+            debug!(
+                "url {url} params {params:?} pagination {:?} entries {}",
+                response.pagination,
+                response.data.len()
+            );
             if total.is_none() {
                 total.replace(response.pagination.total);
             }
@@ -242,10 +252,11 @@ impl SyncClient {
         &self,
         table: &str,
         start_timestamp: Option<OffsetDateTime>,
+        start_date: Option<Date>,
     ) -> Result<Vec<T>, Error> {
         let data = self
             .local_session
-            .run_command_export(table, start_timestamp)
+            .run_command_export(table, start_timestamp, start_date)
             .await?;
         if data.is_empty() {
             Ok(Vec::new())

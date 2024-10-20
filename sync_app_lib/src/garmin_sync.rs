@@ -214,7 +214,7 @@ impl GarminSync {
 
         let url = from_url.join(path)?;
         let measurements0 = transform(self.client.get_remote_paginated(&url, &[]).await?);
-        let measurements1 = transform(self.client.get_local(table, None).await?);
+        let measurements1 = transform(self.client.get_local(table, None, None).await?);
 
         let measurements2 = Self::combine_measurements(&measurements0, &measurements1);
         let measurements3 = Self::combine_measurements(&measurements1, &measurements0);
@@ -275,7 +275,7 @@ impl GarminSync {
 
         let url = from_url.join(path)?;
         let activities0 = transform(self.client.get_remote_paginated(&url, &[]).await?);
-        let activities1 = transform(self.client.get_local(table, None).await?);
+        let activities1 = transform(self.client.get_local(table, None, None).await?);
 
         let activities2 = Self::combine_activities(&activities0, &activities1);
         let activities3 = Self::combine_activities(&activities1, &activities0);
@@ -354,7 +354,7 @@ impl GarminSync {
 
         let url = from_url.join(path)?;
         let activities0: Vec<RaceResults> = self.client.get_remote(&url).await?;
-        let activities1: Vec<RaceResults> = self.client.get_local(table, None).await?;
+        let activities1: Vec<RaceResults> = self.client.get_local(table, None, None).await?;
 
         {
             let activities0 = transform_personal(&activities0);

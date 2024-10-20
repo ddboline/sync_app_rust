@@ -1,9 +1,6 @@
 use derive_more::{AsRef, Deref, DerefMut, From, Into};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{
-    convert::AsRef,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, From, Into, PartialEq, Eq, Deref, DerefMut, AsRef)]
 pub struct PathBufWrapper(pub PathBuf);

@@ -3,7 +3,7 @@ use derive_more::{Deref, From, Into};
 use serde::{Deserialize, Serialize};
 use stack_string::StackString;
 use std::{
-    convert::{Into, TryFrom, TryInto},
+    convert::{TryFrom, TryInto},
     fmt::Debug,
     str::FromStr,
     sync::Arc,
