@@ -33,6 +33,6 @@ stdout-channel = "0.6"
 sync_app_lib = {path = "../sync_app_lib"}
 thiserror = "1.0"
 time = {version="0.3", features=["serde-human-readable", "macros", "formatting"]}
-tokio = {version="1.38", features=["time"]}
+tokio = {version="1.40", features=["time"]}
 url = "2.3"
 uuid = "1.0"
