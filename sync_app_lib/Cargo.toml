@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_lib"
-version = "0.11.21"
+version = "0.12.0"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -41,11 +41,11 @@ rust_decimal = "1.26"
 serde = {version="1.0", features=["derive"]}
 serde_json = "1.0"
 smallvec = "1.6"
-stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", features=["postgres_types"], tag="0.9.3" }
+stack-string = { git = "https://github.com/ddboline/stack-string-rs.git", features=["postgres_types"], tag="1.0.2" }
 stdout-channel = "0.6"
-thiserror = "1.0"
+thiserror = "2.0"
 time = {version="0.3", features=["serde-human-readable", "macros", "formatting"]}
-tokio = {version="1.40", features=["rt", "macros", "rt-multi-thread"]}
+tokio = {version="1.41", features=["rt", "macros", "rt-multi-thread"]}
 tokio-postgres = {version = "0.7", features = ["with-time-0_3", "with-uuid-1", "with-serde_json-1"]}
 url = "2.3"
 uuid = "1.1"

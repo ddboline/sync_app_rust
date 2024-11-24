@@ -1,5 +1,4 @@
 FROM rust_stable:xenial_latest
-MAINTAINER Daniel Boline
 
 WORKDIR /sync_app_rust
 
