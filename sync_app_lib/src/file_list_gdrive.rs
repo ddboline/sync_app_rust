@@ -304,7 +304,7 @@ impl FileListTrait for FileListGDrive {
             let directory_map = directory_map.clone();
 
             self.gdrive
-                .process_list_of_keys(&parents, |i| {
+                .process_list_of_keys(parents.as_ref().map(AsRef::as_ref), |i| {
                     let gdrive = gdrive.clone();
                     let directory_map = directory_map.clone();
                     async move {

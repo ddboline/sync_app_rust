@@ -60,37 +60,37 @@ impl FileInfoTrait for FileInfoLocal {
     }
 
     fn get_md5(&self) -> Option<Md5Sum> {
-        _get_md5sum(&self.0.filepath)
+        get_md5sum_impl(&self.0.filepath)
             .ok()
             .and_then(|s| s.parse().ok())
     }
 
     fn get_sha1(&self) -> Option<Sha1Sum> {
-        _get_sha1sum(&self.0.filepath)
+        get_sha1sum_impl(&self.0.filepath)
             .ok()
             .and_then(|s| s.parse().ok())
     }
 
     fn get_stat(&self) -> FileStat {
-        _get_stat(&self.0.filepath).unwrap_or_default()
+        get_stat_impl(&self.0.filepath).unwrap_or_default()
     }
 }
 
-fn _get_md5sum(path: &Path) -> Result<String, Error> {
+fn get_md5sum_impl(path: &Path) -> Result<String, Error> {
     {
         File::open(path)?;
     }
     Ok(hash_file(path, Algorithm::MD5).to_lowercase())
 }
 
-fn _get_sha1sum(path: &Path) -> Result<String, Error> {
+fn get_sha1sum_impl(path: &Path) -> Result<String, Error> {
     {
         File::open(path)?;
     }
     Ok(hash_file(path, Algorithm::SHA1).to_lowercase())
 }
 
-fn _get_stat(p: &Path) -> Result<FileStat, Error> {
+fn get_stat_impl(p: &Path) -> Result<FileStat, Error> {
     let metadata = fs::metadata(p)?;
 
     let modified = metadata
@@ -141,8 +141,8 @@ impl FileInfoLocal {
         let filepath = path.canonicalize()?;
         let fileurl = Url::from_file_path(filepath.clone())
             .map_err(|e| format_err!("Failed to parse url {e:?}"))?;
-        let md5sum = _get_md5sum(&filepath).ok().and_then(|s| s.parse().ok());
-        let sha1sum = _get_sha1sum(&filepath).ok().and_then(|s| s.parse().ok());
+        let md5sum = get_md5sum_impl(&filepath).ok().and_then(|s| s.parse().ok());
+        let sha1sum = get_sha1sum_impl(&filepath).ok().and_then(|s| s.parse().ok());
 
         let finfo = FileInfo::new(
             filename,

@@ -158,7 +158,7 @@ impl SyncClient {
         resp.json().await.map_err(Into::into)
     }
 
-    async fn _get_remote_paginated<T: DeserializeOwned>(
+    async fn get_remote_paginated_impl<T: DeserializeOwned>(
         &self,
         url: &Url,
         params: &[(StackString, StackString)],
@@ -195,7 +195,7 @@ impl SyncClient {
         let mut total = None;
         loop {
             let mut response = self
-                ._get_remote_paginated(url, params, offset, limit)
+                .get_remote_paginated_impl(url, params, offset, limit)
                 .await?;
             debug!(
                 "url {url} params {params:?} pagination {:?} entries {}",

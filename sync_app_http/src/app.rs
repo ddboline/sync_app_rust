@@ -19,7 +19,7 @@ use sync_app_lib::{
 
 use super::{
     errors::error_response,
-    logged_user::{fill_from_db, get_secrets, SyncMesg, TRIGGER_DB_UPDATE},
+    logged_user::{fill_from_db, get_secrets, SyncMesg},
     routes::{
         delete_cache_entry, garmin_scripts_js, list_sync_cache, proc_all, process_cache_entry,
         remove, sync_all, sync_calendar, sync_frontpage, sync_garmin, sync_movie, sync_name,
@@ -67,20 +67,19 @@ pub struct AppState {
 /// # Errors
 /// Return error if app init fails
 pub async fn start_app() -> Result<(), Error> {
-    async fn _update_db(pool: PgPool) {
+    async fn update_db(pool: PgPool) {
         let mut i = interval(time::Duration::from_secs(60));
         loop {
             fill_from_db(&pool).await.unwrap_or(());
             i.tick().await;
         }
     }
-    TRIGGER_DB_UPDATE.set();
 
     let config = Config::init_config()?;
     get_secrets(&config.secret_path, &config.jwt_secret_path).await?;
     let pool = PgPool::new(&config.database_url)?;
 
-    tokio::task::spawn(_update_db(pool.clone()));
+    tokio::task::spawn(update_db(pool.clone()));
 
     run_app(config, pool).await
 }
@@ -122,7 +121,7 @@ fn get_sync_path(app: &AppState) -> BoxedFilter<(impl Reply,)> {
 }
 
 async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
-    async fn _run_queue(app: AppState) {
+    async fn run_queue(app: AppState) {
         loop {
             let (SyncMesg { user, key }, task) = app.queue.pop().await;
             match task.await {
@@ -154,7 +153,7 @@ async fn run_app(config: Config, pool: PgPool) -> Result<(), Error> {
         queue,
     };
 
-    tokio::task::spawn(_run_queue(app.clone()));
+    tokio::task::spawn(run_queue(app.clone()));
 
     let (spec, sync_path) = openapi::spec()
         .info(Info {

@@ -1,13 +1,13 @@
 pub use authorized_users::{
     get_random_key, get_secrets, token::Token, AuthorizedUser as ExternalUser, AUTHORIZED_USERS,
-    JWT_SECRET, KEY_LENGTH, LOGIN_HTML, SECRET_KEY, TRIGGER_DB_UPDATE,
+    JWT_SECRET, KEY_LENGTH, LOGIN_HTML, SECRET_KEY,
 };
 use futures::TryStreamExt;
 use log::debug;
 use maplit::hashmap;
 use reqwest::Client;
 use rweb::{filters::cookie::cookie, Filter, Rejection, Schema};
-use rweb_helper::{UuidWrapper, DateTimeType};
+use rweb_helper::{DateTimeType, UuidWrapper};
 use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{

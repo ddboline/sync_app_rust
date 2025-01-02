@@ -54,13 +54,13 @@ impl ReqwestSession {
     /// # Errors
     /// Return error if db query fails
     pub async fn get(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
-        Self::exponential_retry(|| async move { self._get(url.clone(), headers.clone()).await })
+        Self::exponential_retry(|| async move { self.get_impl(url.clone(), headers.clone()).await })
             .await
     }
 
     /// # Errors
     /// Return error if db query fails
-    async fn _get(&self, url: Url, headers: HeaderMap) -> Result<Response, Error> {
+    async fn get_impl(&self, url: Url, headers: HeaderMap) -> Result<Response, Error> {
         self.client
             .get(url)
             .headers(headers)
@@ -73,14 +73,14 @@ impl ReqwestSession {
     /// Return error if db query fails
     pub async fn post_empty(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
         Self::exponential_retry(
-            || async move { self._post_empty(url.clone(), headers.clone()).await },
+            || async move { self.post_empty_impl(url.clone(), headers.clone()).await },
         )
         .await
     }
 
     /// # Errors
     /// Return error if db query fails
-    async fn _post_empty(&self, url: Url, headers: HeaderMap) -> Result<Response, Error> {
+    async fn post_empty_impl(&self, url: Url, headers: HeaderMap) -> Result<Response, Error> {
         self.client
             .post(url)
             .headers(headers)
@@ -101,12 +101,12 @@ impl ReqwestSession {
         T: Serialize,
     {
         Self::exponential_retry(
-            || async move { self._post(url.clone(), headers.clone(), form).await },
+            || async move { self.post_impl(url.clone(), headers.clone(), form).await },
         )
         .await
     }
 
-    async fn _post<T>(
+    async fn post_impl<T>(
         &self,
         url: Url,
         headers: HeaderMap,
@@ -127,11 +127,11 @@ impl ReqwestSession {
     /// # Errors
     /// Return error if db query fails
     pub async fn delete(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
-        Self::exponential_retry(|| async move { self._delete(url.clone(), headers.clone()).await })
+        Self::exponential_retry(|| async move { self.delete_impl(url.clone(), headers.clone()).await })
             .await
     }
 
-    async fn _delete(&self, url: Url, headers: HeaderMap) -> Result<Response, Error> {
+    async fn delete_impl(&self, url: Url, headers: HeaderMap) -> Result<Response, Error> {
         self.client
             .delete(url)
             .headers(headers)

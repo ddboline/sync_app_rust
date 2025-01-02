@@ -160,9 +160,9 @@ impl GDriveInstance {
 
     async fn get_filelist(
         &self,
-        page_token: &Option<StackString>,
+        page_token: Option<&StackString>,
         get_folders: bool,
-        parents: &Option<Vec<StackString>>,
+        parents: Option<&[StackString]>,
     ) -> Result<FileList, Error> {
         let fields = vec![
             "name",
@@ -190,7 +190,7 @@ impl GDriveInstance {
             corpora: Some("user".into()),
             spaces: Some("drive".into()),
             page_size: Some(self.page_size),
-            page_token: page_token.clone().map(Into::into),
+            page_token: page_token.map(Into::into),
             ..FilesListParams::default()
         };
         let mut query_chain: Vec<StackString> = Vec::new();
@@ -199,7 +199,7 @@ impl GDriveInstance {
         } else {
             query_chain.push(r"mimeType != 'application/vnd.google-apps.folder'".into());
         }
-        if let Some(ref p) = parents {
+        if let Some(p) = parents {
             let q = p
                 .iter()
                 .map(|id| format_sstr!("'{id}' in parents"))
@@ -225,7 +225,7 @@ impl GDriveInstance {
         let mut all_files = Vec::new();
         let mut page_token: Option<StackString> = None;
         loop {
-            let filelist = self.get_filelist(&page_token, get_folders, &None).await?;
+            let filelist = self.get_filelist(page_token.as_ref(), get_folders, None).await?;
 
             if let Some(files) = filelist.files {
                 debug!("got files {}", files.len());
@@ -294,7 +294,7 @@ impl GDriveInstance {
     /// Return error if `get_filelist` fails
     pub async fn process_list_of_keys<T, U>(
         &self,
-        parents: &Option<Vec<StackString>>,
+        parents: Option<&[StackString]>,
         callback: T,
     ) -> Result<(), Error>
     where
@@ -304,7 +304,7 @@ impl GDriveInstance {
         let mut n_processed = 0;
         let mut page_token: Option<StackString> = None;
         loop {
-            let mut filelist = self.get_filelist(&page_token, false, parents).await?;
+            let mut filelist = self.get_filelist(page_token.as_ref(), false, parents).await?;
 
             if let Some(files) = filelist.files.take() {
                 for f in files {
