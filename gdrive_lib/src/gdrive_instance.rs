@@ -225,7 +225,9 @@ impl GDriveInstance {
         let mut all_files = Vec::new();
         let mut page_token: Option<StackString> = None;
         loop {
-            let filelist = self.get_filelist(page_token.as_ref(), get_folders, None).await?;
+            let filelist = self
+                .get_filelist(page_token.as_ref(), get_folders, None)
+                .await?;
 
             if let Some(files) = filelist.files {
                 debug!("got files {}", files.len());
@@ -304,7 +306,9 @@ impl GDriveInstance {
         let mut n_processed = 0;
         let mut page_token: Option<StackString> = None;
         loop {
-            let mut filelist = self.get_filelist(page_token.as_ref(), false, parents).await?;
+            let mut filelist = self
+                .get_filelist(page_token.as_ref(), false, parents)
+                .await?;
 
             if let Some(files) = filelist.files.take() {
                 for f in files {

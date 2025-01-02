@@ -72,9 +72,9 @@ impl ReqwestSession {
     /// # Errors
     /// Return error if db query fails
     pub async fn post_empty(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
-        Self::exponential_retry(
-            || async move { self.post_empty_impl(url.clone(), headers.clone()).await },
-        )
+        Self::exponential_retry(|| async move {
+            self.post_empty_impl(url.clone(), headers.clone()).await
+        })
         .await
     }
 
@@ -100,9 +100,9 @@ impl ReqwestSession {
     where
         T: Serialize,
     {
-        Self::exponential_retry(
-            || async move { self.post_impl(url.clone(), headers.clone(), form).await },
-        )
+        Self::exponential_retry(|| async move {
+            self.post_impl(url.clone(), headers.clone(), form).await
+        })
         .await
     }
 
@@ -127,8 +127,10 @@ impl ReqwestSession {
     /// # Errors
     /// Return error if db query fails
     pub async fn delete(&self, url: &Url, headers: &HeaderMap) -> Result<Response, Error> {
-        Self::exponential_retry(|| async move { self.delete_impl(url.clone(), headers.clone()).await })
-            .await
+        Self::exponential_retry(
+            || async move { self.delete_impl(url.clone(), headers.clone()).await },
+        )
+        .await
     }
 
     async fn delete_impl(&self, url: Url, headers: HeaderMap) -> Result<Response, Error> {

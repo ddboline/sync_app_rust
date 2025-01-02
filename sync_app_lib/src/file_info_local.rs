@@ -142,7 +142,9 @@ impl FileInfoLocal {
         let fileurl = Url::from_file_path(filepath.clone())
             .map_err(|e| format_err!("Failed to parse url {e:?}"))?;
         let md5sum = get_md5sum_impl(&filepath).ok().and_then(|s| s.parse().ok());
-        let sha1sum = get_sha1sum_impl(&filepath).ok().and_then(|s| s.parse().ok());
+        let sha1sum = get_sha1sum_impl(&filepath)
+            .ok()
+            .and_then(|s| s.parse().ok());
 
         let finfo = FileInfo::new(
             filename,
