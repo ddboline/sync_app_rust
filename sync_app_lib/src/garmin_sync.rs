@@ -20,6 +20,7 @@ struct ScaleMeasurement {
     pub water_pct: f64,
     pub muscle_pct: f64,
     pub bone_pct: f64,
+    pub connect_primary_key: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, FromSqlRow, Debug, Clone)]
