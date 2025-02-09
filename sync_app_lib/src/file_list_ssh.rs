@@ -196,9 +196,9 @@ impl FileListTrait for FileListSSH {
             .ok_or_else(|| format_err!("No hostname"))?;
         let url_prefix = format_sstr!("ssh://{user_host}");
         let baseurl = self.get_baseurl().clone();
-        let command = format_sstr!(r#"sync-app-rust index -u file://{path}"#);
+        let command = format_sstr!(r"sync-app-rust index -u file://{path}");
         self.ssh.run_command_stream_stdout(&command).await?;
-        let command = format_sstr!(r#"sync-app-rust count -u file://{path}"#);
+        let command = format_sstr!(r"sync-app-rust count -u file://{path}");
         let output = self.ssh.run_command_stream_stdout(&command).await?;
         let output = output.trim();
         let expected_count: usize = output
@@ -230,7 +230,7 @@ impl FileListTrait for FileListSSH {
                 let randint = thread_rng().next_u32();
                 let tmp_file = format_sstr!("/tmp/{user_host}_{randint}.json");
                 let command = format_sstr!(
-                    r#"sync-app-rust ser -u file://{path} -f {tmp_file} && gzip {tmp_file}"#
+                    r"sync-app-rust ser -u file://{path} -f {tmp_file} && gzip {tmp_file}"
                 );
                 self.ssh.run_command_stream_stdout(&command).await?;
                 let tmp_file = format_sstr!("{tmp_file}.gz");

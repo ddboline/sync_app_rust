@@ -414,7 +414,7 @@ impl GDriveInstance {
     }
 
     pub fn is_unexportable<T: AsRef<str>>(mime_type: &Option<T>) -> bool {
-        mime_type.as_ref().map_or(false, |mime| {
+        mime_type.as_ref().is_some_and(|mime| {
             UNEXPORTABLE_MIME_TYPES.contains::<str>(mime.as_ref())
         })
     }

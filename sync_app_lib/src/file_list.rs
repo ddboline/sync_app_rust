@@ -270,7 +270,7 @@ pub trait FileListTrait: Send + Sync + Debug {
 
         let mut inserted = 0;
         for d in directory_map.values() {
-            let is_root = root_id.as_ref().map_or(false, |rid| rid == &d.directory_id);
+            let is_root = root_id.as_ref() == Some(&d.directory_id);
             let servicetype = StackString::from_display(self.get_servicetype());
             let cache = DirectoryInfoCache {
                 id: Uuid::new_v4(),
