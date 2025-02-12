@@ -97,11 +97,13 @@ pub struct GarminSync {
 }
 
 impl GarminSync {
+    pub const EXE_PATH: &'static str = "/usr/bin/garmin-rust-cli";
+
     /// # Errors
     /// Returns error if creation of client fails
     pub fn new(config: Config) -> Result<Self, Error> {
         Ok(Self {
-            client: SyncClient::new(config, "/usr/bin/garmin-rust-cli")?,
+            client: SyncClient::new(config, Self::EXE_PATH)?,
         })
     }
 

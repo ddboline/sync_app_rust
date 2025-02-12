@@ -52,11 +52,13 @@ pub struct CalendarSync {
 }
 
 impl CalendarSync {
+    pub const EXE_PATH: &'static str = "/usr/bin/calendar-app-rust";
+
     /// # Errors
     /// Returns error if creation of client fails
     pub fn new(config: Config) -> Result<Self, Error> {
         Ok(Self {
-            client: SyncClient::new(config, "/usr/bin/calendar-app-rust")?,
+            client: SyncClient::new(config, Self::EXE_PATH)?,
         })
     }
 

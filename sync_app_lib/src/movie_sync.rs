@@ -120,11 +120,13 @@ pub struct MovieSync {
 }
 
 impl MovieSync {
+    pub const EXE_PATH: &'static str = "/usr/bin/movie-queue-cli";
+
     /// # Errors
     /// Returns error if creation of client fails
     pub fn new(config: Config) -> Result<Self, Error> {
         Ok(Self {
-            client: SyncClient::new(config, "/usr/bin/movie-queue-cli")?,
+            client: SyncClient::new(config, Self::EXE_PATH)?,
         })
     }
 

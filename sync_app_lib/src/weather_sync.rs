@@ -51,11 +51,13 @@ pub struct WeatherSync {
 }
 
 impl WeatherSync {
+    pub const EXE_PATH: &'static str = "/usr/bin/weather-api-rust";
+
     /// # Errors
     /// Returns error if creation of client fails
     pub fn new(config: Config) -> Result<Self, Error> {
         Ok(Self {
-            client: SyncClient::new(config, "/usr/bin/weather-api-rust")?,
+            client: SyncClient::new(config, Self::EXE_PATH)?,
         })
     }
 

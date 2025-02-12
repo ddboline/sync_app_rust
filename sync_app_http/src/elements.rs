@@ -2,9 +2,16 @@ use dioxus::prelude::{
     component, dioxus_elements, rsx, Element, GlobalSignal, IntoDynNode, Props, Readable,
     VirtualDom,
 };
-
 use stack_string::StackString;
-use sync_app_lib::models::{FileSyncCache, FileSyncConfig};
+use std::path::Path;
+use sync_app_lib::{
+    calendar_sync::CalendarSync,
+    garmin_sync::GarminSync,
+    models::{FileSyncCache, FileSyncConfig},
+    movie_sync::MovieSync,
+    security_sync::SecuritySync,
+    weather_sync::WeatherSync,
+};
 
 use crate::errors::ServiceError as Error;
 
@@ -77,6 +84,78 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
             }
         }
     });
+    let garmin_button = if Path::new(GarminSync::EXE_PATH).exists() {
+        Some(rsx! {
+            button {
+                "type": "submit",
+                name: "sync_garmin",
+                "onclick": "heartrateSync();",
+                "Scale Sync"
+            },
+        })
+    } else {
+        None
+    };
+    let movie_button = if Path::new(MovieSync::EXE_PATH).exists() {
+        Some(rsx! {
+            button {
+                "type": "submit",
+                name: "sync_movie",
+                "onclick": "movieSync();",
+                "Movie Sync"
+            }
+        })
+    } else {
+        None
+    };
+    let calendar_button = if Path::new(CalendarSync::EXE_PATH).exists() {
+        Some(rsx! {
+            button {
+                "type": "submit",
+                name: "sync_calendar",
+                "onclick": "calendarSync();",
+                "Calendar Sync"
+            },
+        })
+    } else {
+        None
+    };
+    let podcatch_button = if Path::new("/usr/bin/podcatch-rust").exists() {
+        Some(rsx! {
+            button {
+                "type": "submit",
+                name: "sync_podcasts",
+                "onclick": "podcastSync();",
+                "Podcast Sync"
+            },
+        })
+    } else {
+        None
+    };
+    let security_button = if Path::new(SecuritySync::EXE_PATH).exists() {
+        Some(rsx! {
+            button {
+                "type": "submit",
+                name: "sync_security",
+                "onclick": "securitySync();",
+                "Security Sync"
+            },
+        })
+    } else {
+        None
+    };
+    let weather_button = if Path::new(WeatherSync::EXE_PATH).exists() {
+        Some(rsx! {
+            button {
+                "type": "submit",
+                name: "sync_weather",
+                "onclick": "weatherSync();",
+                "Weather Sync"
+            }
+        })
+    } else {
+        None
+    };
     rsx! {
         head {
             style {
@@ -98,42 +177,12 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
                     "onclick": "processAll();",
                     "Process"
                 },
-                button {
-                    "type": "submit",
-                    name: "sync_garmin",
-                    "onclick": "heartrateSync();",
-                    "Scale Sync"
-                },
-                button {
-                    "type": "submit",
-                    name: "sync_movie",
-                    "onclick": "movieSync();",
-                    "Movie Sync"
-                },
-                button {
-                    "type": "submit",
-                    name: "sync_calendar",
-                    "onclick": "calendarSync();",
-                    "Calendar Sync"
-                },
-                button {
-                    "type": "submit",
-                    name: "sync_podcasts",
-                    "onclick": "podcastSync();",
-                    "Podcast Sync"
-                },
-                button {
-                    "type": "submit",
-                    name: "sync_security",
-                    "onclick": "securitySync();",
-                    "Security Sync"
-                },
-                button {
-                    "type": "submit",
-                    name: "sync_weather",
-                    "onclick": "weatherSync();",
-                    "Weather Sync"
-                }
+                {garmin_button},
+                {movie_button},
+                {calendar_button},
+                {podcatch_button},
+                {security_button},
+                {weather_button},
                 button {
                     name: "garminconnectoutput",
                     id: "garminconnectoutput",

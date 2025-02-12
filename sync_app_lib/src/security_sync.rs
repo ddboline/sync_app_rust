@@ -43,11 +43,13 @@ pub struct SecuritySync {
 }
 
 impl SecuritySync {
+    pub const EXE_PATH: &'static str = "/usr/bin/security-log-parse-rust";
+
     /// # Errors
     /// Returns error if creation of client fails
     pub fn new(config: Config) -> Result<Self, Error> {
         Ok(Self {
-            client: SyncClient::new(config, "/usr/bin/security-log-parse-rust")?,
+            client: SyncClient::new(config, Self::EXE_PATH)?,
         })
     }
 
