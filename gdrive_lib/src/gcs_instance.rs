@@ -1,7 +1,7 @@
 use anyhow::{format_err, Error};
 use async_google_apis_common as common;
 use common::{
-    yup_oauth2::{self, hyper, ServiceAccountAuthenticator},
+    yup_oauth2::{self, hyper, hyper_rustls, ServiceAccountAuthenticator},
     DownloadResult, TlsClient,
 };
 use log::debug;
@@ -58,7 +58,7 @@ impl GcsInstance {
         gcs_secret_file: &Path,
         session_name: &str,
     ) -> Result<Self, Error> {
-        debug!("{:?}", gcs_secret_file);
+        debug!("{gcs_secret_file:?}",);
         let https = https_client();
         let sec = yup_oauth2::read_service_account_key(gcs_secret_file).await?;
 
@@ -70,7 +70,7 @@ impl GcsInstance {
             create_dir_all(parent).await?;
         }
 
-        debug!("{:?}", token_file);
+        debug!("{token_file:?}",);
         let auth = ServiceAccountAuthenticator::builder(sec)
             .persist_tokens_to_disk(token_file)
             .hyper_client(https.clone())
@@ -272,7 +272,7 @@ impl GcsInstance {
         };
         exponential_retry(|| async {
             self.rate_limit.acquire().await;
-            self.objects.delete(&params).await.map_err(Into::into)
+            self.objects.delete(&params).await
         })
         .await
     }

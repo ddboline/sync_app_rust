@@ -1,10 +1,13 @@
+use axum::extract::{Path, Query, State};
 use futures::TryStreamExt;
-use rweb::{delete, get, post, Query, Rejection};
-use rweb_helper::{
-    html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase, RwebResponse,
-};
 use stack_string::{format_sstr, StackString};
-use std::convert::Infallible;
+use std::sync::Arc;
+use utoipa::{OpenApi, PartialSchema};
+use utoipa_axum::{router::OpenApiRouter, routes};
+use utoipa_helper::{
+    html_response::HtmlResponse as HtmlBase, json_response::JsonResponse as JsonBase,
+    UtoipaResponse,
+};
 
 use sync_app_lib::{
     file_sync::FileSyncAction,
@@ -19,18 +22,15 @@ use super::{
     requests::{SyncEntryDeleteRequest, SyncEntryProcessRequest, SyncRemoveRequest, SyncRequest},
 };
 
-pub type WarpResult<T> = Result<T, Rejection>;
-pub type HttpResult<T> = Result<T, Error>;
+type WarpResult<T> = Result<T, Error>;
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Main Page")]
-struct IndexResponse(HtmlBase<String, Error>);
+#[rustfmt::skip]
+struct IndexResponse(HtmlBase::<String>);
 
-#[get("/sync/index.html")]
-pub async fn sync_frontpage(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
-    #[data] data: AppState,
-) -> WarpResult<IndexResponse> {
+#[utoipa::path(get, path = "/sync/index.html", responses(IndexResponse, Error))]
+async fn sync_frontpage(_: LoggedUser, data: State<Arc<AppState>>) -> WarpResult<IndexResponse> {
     let conf_list: Vec<FileSyncConfig> = FileSyncConfig::get_config_list(&data.db)
         .await
         .map_err(Into::<Error>::into)?
@@ -47,24 +47,23 @@ pub async fn sync_frontpage(
     Ok(HtmlBase::new(body).into())
 }
 
-#[derive(RwebResponse)]
-#[response(description = "Javascript", content = "js")]
-struct JsResponse(HtmlBase<&'static str, Infallible>);
+#[derive(UtoipaResponse)]
+#[response(description = "Javascript", content = "text/javascript")]
+#[rustfmt::skip]
+struct JsResponse(HtmlBase::<&'static str>);
 
-#[get("/sync/scripts.js")]
-pub async fn garmin_scripts_js() -> WarpResult<JsResponse> {
-    Ok(HtmlBase::new(include_str!("../../templates/scripts.js")).into())
+#[utoipa::path(get, path = "/sync/scripts.js", responses(JsResponse))]
+async fn garmin_scripts_js() -> JsResponse {
+    HtmlBase::new(include_str!("../../templates/scripts.js")).into()
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Sync")]
-struct SyncResponse(HtmlBase<String, Error>);
+#[rustfmt::skip]
+struct SyncResponse(HtmlBase::<String>);
 
-#[post("/sync/sync")]
-pub async fn sync_all(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
-    #[data] data: AppState,
-) -> WarpResult<SyncResponse> {
+#[utoipa::path(post, path = "/sync/sync", responses(SyncResponse, Error))]
+async fn sync_all(_: LoggedUser, data: State<Arc<AppState>>) -> WarpResult<SyncResponse> {
     let req = SyncRequest {
         action: FileSyncAction::Sync,
         name: None,
@@ -73,12 +72,13 @@ pub async fn sync_all(
     Ok(HtmlBase::new(result.join("\n")).into())
 }
 
-#[post("/sync/sync/{name}")]
-pub async fn sync_name(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
-    #[data] data: AppState,
-    name: StackString,
+#[utoipa::path(post, path = "/sync/sync/{name}", responses(SyncResponse, Error))]
+async fn sync_name(
+    _: LoggedUser,
+    data: State<Arc<AppState>>,
+    name: Path<StackString>,
 ) -> WarpResult<SyncResponse> {
+    let Path(name) = name;
     let req = SyncRequest {
         action: FileSyncAction::Sync,
         name: Some(name),
@@ -87,15 +87,13 @@ pub async fn sync_name(
     Ok(HtmlBase::new(result.join("\n")).into())
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Process All")]
-struct ProcAllResponse(HtmlBase<String, Error>);
+#[rustfmt::skip]
+struct ProcAllResponse(HtmlBase::<String>);
 
-#[post("/sync/proc_all")]
-pub async fn proc_all(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
-    #[data] data: AppState,
-) -> WarpResult<ProcAllResponse> {
+#[utoipa::path(post, path = "/sync/proc_all", responses(ProcAllResponse, Error))]
+async fn proc_all(_: LoggedUser, data: State<Arc<AppState>>) -> WarpResult<ProcAllResponse> {
     let req = SyncRequest {
         action: FileSyncAction::Process,
         name: None,
@@ -104,14 +102,19 @@ pub async fn proc_all(
     Ok(HtmlBase::new(lines.join("\n")).into())
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "List Sync Cache")]
-struct ListSyncCacheResponse(HtmlBase<String, Error>);
+#[rustfmt::skip]
+struct ListSyncCacheResponse(HtmlBase::<String>);
 
-#[get("/sync/list_sync_cache")]
-pub async fn list_sync_cache(
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
-    #[data] data: AppState,
+#[utoipa::path(
+    get,
+    path = "/sync/list_sync_cache",
+    responses(ListSyncCacheResponse, Error)
+)]
+async fn list_sync_cache(
+    _: LoggedUser,
+    data: State<Arc<AppState>>,
 ) -> WarpResult<ListSyncCacheResponse> {
     let entries: Vec<_> = FileSyncCache::get_cache_list(&data.db)
         .await
@@ -124,112 +127,124 @@ pub async fn list_sync_cache(
     Ok(HtmlBase::new(body).into())
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Process Entry")]
-struct ProcessEntryResponse(HtmlBase<&'static str, Error>);
+#[rustfmt::skip]
+struct ProcessEntryResponse(HtmlBase::<&'static str>);
 
-#[post("/sync/proc")]
-pub async fn process_cache_entry(
+#[utoipa::path(post, path = "/sync/proc", responses(ProcessEntryResponse, Error))]
+async fn process_cache_entry(
     query: Query<SyncEntryProcessRequest>,
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
-    #[data] data: AppState,
+    _: LoggedUser,
+    data: State<Arc<AppState>>,
 ) -> WarpResult<ProcessEntryResponse> {
-    query
-        .into_inner()
-        .process(&data.locks, &data.db, &data.config)
-        .await?;
+    let Query(query) = query;
+    query.process(&data.locks, &data.db, &data.config).await?;
     Ok(HtmlBase::new("Finished").into())
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Delete Cache Entry")]
-struct DeleteEntryResponse(HtmlBase<&'static str, Error>);
+#[rustfmt::skip]
+struct DeleteEntryResponse(HtmlBase::<&'static str>);
 
-#[delete("/sync/delete_cache_entry")]
-pub async fn delete_cache_entry(
+#[utoipa::path(
+    delete,
+    path = "/sync/delete_cache_entry",
+    responses(DeleteEntryResponse, Error)
+)]
+async fn delete_cache_entry(
     query: Query<SyncEntryDeleteRequest>,
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
-    #[data] data: AppState,
+    _: LoggedUser,
+    data: State<Arc<AppState>>,
 ) -> WarpResult<DeleteEntryResponse> {
-    let query = query.into_inner();
-    FileSyncCache::delete_by_id(&data.db, query.id.into())
+    let Query(query) = query;
+    FileSyncCache::delete_by_id(&data.db, query.id)
         .await
         .map_err(Into::<Error>::into)?;
     Ok(HtmlBase::new("Finished").into())
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Sync Garmin DB")]
-struct SyncGarminResponse(HtmlBase<String, Error>);
+#[rustfmt::skip]
+struct SyncGarminResponse(HtmlBase::<String>);
 
-#[post("/sync/sync_garmin")]
-pub async fn sync_garmin(
-    #[filter = "LoggedUser::filter"] user: LoggedUser,
-    #[data] data: AppState,
+#[utoipa::path(post, path = "/sync/sync_garmin", responses(SyncGarminResponse, Error))]
+async fn sync_garmin(
+    user: LoggedUser,
+    data: State<Arc<AppState>>,
 ) -> WarpResult<SyncGarminResponse> {
-    match user.push_session(SyncKey::SyncGarmin, data).await? {
+    match user.push_session(SyncKey::SyncGarmin, &data).await? {
         Some(result) => Ok(HtmlBase::new(result.join("<br>")).into()),
         None => Ok(HtmlBase::new("running".into()).into()),
     }
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Sync Movie DB")]
-struct SyncMovieResponse(HtmlBase<String, Error>);
+#[rustfmt::skip]
+struct SyncMovieResponse(HtmlBase::<String>);
 
-#[post("/sync/sync_movie")]
-pub async fn sync_movie(
-    #[filter = "LoggedUser::filter"] user: LoggedUser,
-    #[data] data: AppState,
-) -> WarpResult<SyncMovieResponse> {
-    match user.push_session(SyncKey::SyncMovie, data).await? {
+#[utoipa::path(post, path = "/sync/sync_movie", responses(SyncMovieResponse, Error))]
+async fn sync_movie(user: LoggedUser, data: State<Arc<AppState>>) -> WarpResult<SyncMovieResponse> {
+    match user.push_session(SyncKey::SyncMovie, &data).await? {
         Some(result) => Ok(HtmlBase::new(result.join("<br>")).into()),
         None => Ok(HtmlBase::new("running".into()).into()),
     }
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Sync Calendar DB")]
-struct SyncCalendarResponse(HtmlBase<String, Error>);
+#[rustfmt::skip]
+struct SyncCalendarResponse(HtmlBase::<String>);
 
-#[post("/sync/sync_calendar")]
-pub async fn sync_calendar(
-    #[filter = "LoggedUser::filter"] user: LoggedUser,
-    #[data] data: AppState,
+#[utoipa::path(
+    post,
+    path = "/sync/sync_calendar",
+    responses(SyncCalendarResponse, Error)
+)]
+async fn sync_calendar(
+    user: LoggedUser,
+    data: State<Arc<AppState>>,
 ) -> WarpResult<SyncCalendarResponse> {
-    match user.push_session(SyncKey::SyncCalendar, data).await? {
+    match user.push_session(SyncKey::SyncCalendar, &data).await? {
         Some(result) => Ok(HtmlBase::new(result.join("<br>")).into()),
         None => Ok(HtmlBase::new("running".into()).into()),
     }
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Remove Sync Entry")]
-struct SyncRemoveResponse(HtmlBase<String, Error>);
+#[rustfmt::skip]
+struct SyncRemoveResponse(HtmlBase::<String>);
 
-#[delete("/sync/remove")]
-pub async fn remove(
+#[utoipa::path(delete, path = "/sync/remove", responses(SyncRemoveResponse, Error))]
+async fn remove(
     query: Query<SyncRemoveRequest>,
-    #[filter = "LoggedUser::filter"] _: LoggedUser,
-    #[data] data: AppState,
+    _: LoggedUser,
+    data: State<Arc<AppState>>,
 ) -> WarpResult<SyncRemoveResponse> {
-    let lines = query
-        .into_inner()
-        .process(&data.locks, &data.config, &data.db)
-        .await?;
+    let Query(query) = query;
+    let lines = query.process(&data.locks, &data.config, &data.db).await?;
     Ok(HtmlBase::new(lines.join("\n")).into())
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Sync Podcasts")]
-struct SyncPodcastsResponse(HtmlBase<StackString, Error>);
+#[rustfmt::skip]
+struct SyncPodcastsResponse(HtmlBase::<StackString>);
 
-#[post("/sync/sync_podcasts")]
-pub async fn sync_podcasts(
-    #[filter = "LoggedUser::filter"] user: LoggedUser,
-    #[data] data: AppState,
+#[utoipa::path(
+    post,
+    path = "/sync/sync_podcasts",
+    responses(SyncPodcastsResponse, Error)
+)]
+async fn sync_podcasts(
+    user: LoggedUser,
+    data: State<Arc<AppState>>,
 ) -> WarpResult<SyncPodcastsResponse> {
-    match user.push_session(SyncKey::SyncPodcast, data).await? {
+    match user.push_session(SyncKey::SyncPodcast, &data).await? {
         Some(result) => {
             let body = text_body(result.join("\n").into())?.into();
             Ok(HtmlBase::new(body).into())
@@ -238,25 +253,31 @@ pub async fn sync_podcasts(
     }
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Logged in User")]
-struct UserResponse(JsonBase<LoggedUser, Error>);
+#[rustfmt::skip]
+struct UserResponse(JsonBase::<LoggedUser>);
 
-#[get("/sync/user")]
-pub async fn user(#[filter = "LoggedUser::filter"] user: LoggedUser) -> WarpResult<UserResponse> {
-    Ok(JsonBase::new(user).into())
+#[utoipa::path(get, path = "/sync/user", responses(UserResponse))]
+async fn user(user: LoggedUser) -> UserResponse {
+    JsonBase::new(user).into()
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Sync Security Logs")]
-struct SyncSecurityLogsResponse(HtmlBase<StackString, Error>);
+#[rustfmt::skip]
+struct SyncSecurityLogsResponse(HtmlBase::<StackString>);
 
-#[post("/sync/sync_security")]
-pub async fn sync_security(
-    #[filter = "LoggedUser::filter"] user: LoggedUser,
-    #[data] data: AppState,
+#[utoipa::path(
+    post,
+    path = "/sync/sync_security",
+    responses(SyncSecurityLogsResponse, Error)
+)]
+async fn sync_security(
+    user: LoggedUser,
+    data: State<Arc<AppState>>,
 ) -> WarpResult<SyncSecurityLogsResponse> {
-    match user.push_session(SyncKey::SyncSecurity, data).await? {
+    match user.push_session(SyncKey::SyncSecurity, &data).await? {
         Some(result) => {
             let body = text_body(result.join("\n").into())?.into();
             Ok(HtmlBase::new(body).into())
@@ -265,16 +286,21 @@ pub async fn sync_security(
     }
 }
 
-#[derive(RwebResponse)]
+#[derive(UtoipaResponse)]
 #[response(description = "Sync Weather Data")]
-struct SyncWeatherDataResponse(HtmlBase<StackString, Error>);
+#[rustfmt::skip]
+struct SyncWeatherDataResponse(HtmlBase::<StackString>);
 
-#[post("/sync/sync_weather")]
-pub async fn sync_weather(
-    #[filter = "LoggedUser::filter"] user: LoggedUser,
-    #[data] data: AppState,
+#[utoipa::path(
+    post,
+    path = "/sync/sync_weather",
+    responses(SyncWeatherDataResponse, Error)
+)]
+async fn sync_weather(
+    user: LoggedUser,
+    data: State<Arc<AppState>>,
 ) -> WarpResult<SyncWeatherDataResponse> {
-    match user.push_session(SyncKey::SyncWeather, data).await? {
+    match user.push_session(SyncKey::SyncWeather, &data).await? {
         Some(result) => {
             let body = text_body(result.join("\n").into())?.into();
             Ok(HtmlBase::new(body).into())
@@ -282,3 +308,36 @@ pub async fn sync_weather(
         None => Ok(HtmlBase::new("running".into()).into()),
     }
 }
+
+pub fn get_sync_path(app: &AppState) -> OpenApiRouter {
+    let app = Arc::new(app.clone());
+
+    OpenApiRouter::new()
+        .routes(routes!(sync_frontpage))
+        .routes(routes!(garmin_scripts_js))
+        .routes(routes!(sync_all))
+        .routes(routes!(sync_name))
+        .routes(routes!(proc_all))
+        .routes(routes!(process_cache_entry))
+        .routes(routes!(remove))
+        .routes(routes!(list_sync_cache))
+        .routes(routes!(delete_cache_entry))
+        .routes(routes!(sync_garmin))
+        .routes(routes!(sync_movie))
+        .routes(routes!(sync_calendar))
+        .routes(routes!(sync_podcasts))
+        .routes(routes!(sync_security))
+        .routes(routes!(sync_weather))
+        .routes(routes!(user))
+        .with_state(app)
+}
+
+#[derive(OpenApi)]
+#[openapi(
+    info(
+        title = "File Sync WebApp",
+        description = "Web Frontend for File Sync Service",
+    ),
+    components(schemas(LoggedUser))
+)]
+pub struct ApiDoc;

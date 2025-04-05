@@ -116,7 +116,7 @@ impl FileListTrait for FileListLocal {
         for entry in wdir {
             let entry = entry?;
             let filepath = entry.path().canonicalize().inspect_err(|e| {
-                error!("error {e} entry {:?}", entry);
+                error!("error {e} entry {entry:?}",);
             })?;
             if filepath.is_dir() {
                 continue;

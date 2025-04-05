@@ -1,11 +1,11 @@
 use log::debug;
-use rweb::Schema;
-use rweb_helper::UuidWrapper;
 use serde::{Deserialize, Serialize};
 use stack_string::StackString;
 use std::path::Path;
 use stdout_channel::{MockStdout, StdoutChannel};
 use tokio::process::Command;
+use utoipa::ToSchema;
+use uuid::Uuid;
 
 use sync_app_lib::{
     config::Config, file_sync::FileSyncAction, models::FileSyncCache, pgpool::PgPool,
@@ -44,16 +44,16 @@ impl SyncRequest {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Schema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct SyncEntryDeleteRequest {
-    pub id: UuidWrapper,
+    pub id: Uuid,
 }
 
 impl SyncEntryDeleteRequest {
     /// # Errors
     /// Return error if db query fails
     pub async fn handle(&self, pool: &PgPool) -> Result<(), Error> {
-        FileSyncCache::delete_by_id(pool, self.id.into())
+        FileSyncCache::delete_by_id(pool, self.id)
             .await
             .map_err(Into::into)
     }
@@ -106,7 +106,7 @@ impl CalendarSyncRequest {
     }
 }
 
-#[derive(Serialize, Deserialize, Schema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SyncRemoveRequest {
     pub url: StackString,
 }
@@ -137,9 +137,9 @@ impl SyncRemoveRequest {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Schema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct SyncEntryProcessRequest {
-    pub id: UuidWrapper,
+    pub id: Uuid,
 }
 
 impl SyncEntryProcessRequest {
@@ -152,7 +152,7 @@ impl SyncEntryProcessRequest {
         config: &Config,
     ) -> Result<(), Error> {
         let mut sync = locks.sync.lock().await;
-        let entry = FileSyncCache::get_by_id(pool, self.id.into())
+        let entry = FileSyncCache::get_by_id(pool, self.id)
             .await?
             .ok_or_else(|| Error::BadRequest("No entry".into()))?;
         let src_url = entry.src_url.parse()?;

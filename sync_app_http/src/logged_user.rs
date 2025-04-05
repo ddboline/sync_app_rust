@@ -2,12 +2,12 @@ pub use authorized_users::{
     get_random_key, get_secrets, token::Token, AuthorizedUser as ExternalUser, AUTHORIZED_USERS,
     JWT_SECRET, KEY_LENGTH, LOGIN_HTML, SECRET_KEY,
 };
+use axum::{extract::FromRequestParts, http::request::Parts};
+use axum_extra::extract::CookieJar;
 use futures::TryStreamExt;
 use log::debug;
 use maplit::hashmap;
 use reqwest::Client;
-use rweb::{filters::cookie::cookie, Filter, Rejection, Schema};
-use rweb_helper::{DateTimeType, UuidWrapper};
 use serde::{Deserialize, Serialize};
 use stack_string::{format_sstr, StackString};
 use std::{
@@ -19,6 +19,7 @@ use std::{
 use time::{Duration, OffsetDateTime};
 use tokio::task::spawn;
 use url::Url;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use sync_app_lib::{config::Config, models::AuthorizedUsers, pgpool::PgPool};
@@ -32,37 +33,26 @@ use crate::{
     },
 };
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Schema)]
-#[schema(component = "LoggedUser")]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, ToSchema)]
+// LoggedUser
 pub struct LoggedUser {
-    #[schema(description = "Email Address")]
+    // Email Address
     pub email: StackString,
-    #[schema(description = "Session UUID")]
-    pub session: UuidWrapper,
-    #[schema(description = "Secret Key")]
+    // Session UUID
+    pub session: Uuid,
+    // Secret Key
     pub secret_key: StackString,
-    #[schema(description = "User Created At")]
-    pub created_at: DateTimeType,
+    // User Created At
+    pub created_at: OffsetDateTime,
 }
 
 impl LoggedUser {
-    fn verify_session_id(&self, session_id: Uuid) -> Result<(), Error> {
+    fn verify_session_id(self, session_id: Uuid) -> Result<Self, Error> {
         if self.session == session_id {
-            Ok(())
+            Ok(self)
         } else {
             Err(Error::Unauthorized)
         }
-    }
-
-    #[must_use]
-    pub fn filter() -> impl Filter<Extract = (Self,), Error = Rejection> + Copy {
-        cookie("session-id")
-            .and(cookie("jwt"))
-            .and_then(|id: Uuid, user: Self| async move {
-                user.verify_session_id(id)
-                    .map(|()| user)
-                    .map_err(rweb::reject::custom)
-            })
     }
 
     async fn get_session(
@@ -74,13 +64,13 @@ impl LoggedUser {
         let base_url: Url = format_sstr!("https://{}", config.domain).parse()?;
         let session: Option<SyncSession> = ExternalUser::get_session_data(
             &base_url,
-            self.session.into(),
+            self.session,
             &self.secret_key,
             client,
             session_key,
         )
         .await?;
-        debug!("Got session {:?}", session);
+        debug!("Got session {session:?}",);
         if let Some(session) = session {
             if session.created_at > (OffsetDateTime::now_utc() - Duration::minutes(60)) {
                 return Ok(Some(session));
@@ -99,7 +89,7 @@ impl LoggedUser {
         let base_url: Url = format_sstr!("https://{}", config.domain).parse()?;
         ExternalUser::set_session_data(
             &base_url,
-            self.session.into(),
+            self.session,
             &self.secret_key,
             client,
             session_key,
@@ -120,7 +110,7 @@ impl LoggedUser {
         let base_url: Url = format_sstr!("https://{}", config.domain).parse()?;
         ExternalUser::rm_session_data(
             &base_url,
-            self.session.into(),
+            self.session,
             &self.secret_key,
             client,
             session_key,
@@ -134,7 +124,7 @@ impl LoggedUser {
     pub async fn push_session(
         self,
         key: SyncKey,
-        data: AppState,
+        data: &AppState,
     ) -> Result<Option<Vec<StackString>>, Error> {
         if let Some(session) = self
             .get_session(&data.client, &data.config, key.to_str())
@@ -146,7 +136,7 @@ impl LoggedUser {
                     .await?;
                 return Ok(Some(result));
             }
-            debug!("session exists and is presumably running {:?}", session);
+            debug!("session exists and is presumably running {session:?}",);
         } else {
             debug!("push job to queue {}", key.to_str());
             self.set_session(
@@ -161,11 +151,42 @@ impl LoggedUser {
                 mesg.clone(),
                 spawn({
                     let data = data.clone();
-                    async move { mesg.process_mesg(data).await.map_err(Into::into) }
+                    async move { mesg.process_mesg(data).await }
                 }),
             ));
         }
         Ok(None)
+    }
+
+    fn extract_user_from_cookies(cookie_jar: &CookieJar) -> Option<LoggedUser> {
+        let session_id: Uuid = StackString::from_display(cookie_jar.get("session-id")?.encoded())
+            .strip_prefix("session-id=")?
+            .parse()
+            .ok()?;
+        debug!("session_id {session_id:?}");
+        let user: LoggedUser = StackString::from_display(cookie_jar.get("jwt")?.encoded())
+            .strip_prefix("jwt=")?
+            .parse()
+            .ok()?;
+        debug!("user {user:?}");
+        user.verify_session_id(session_id).ok()
+    }
+}
+
+impl<S> FromRequestParts<S> for LoggedUser
+where
+    S: Send + Sync,
+{
+    type Rejection = Error;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let cookie_jar = CookieJar::from_request_parts(parts, state)
+            .await
+            .expect("extract failed");
+        debug!("cookie_jar {cookie_jar:?}");
+        let user = LoggedUser::extract_user_from_cookies(&cookie_jar)
+            .ok_or_else(|| Error::Unauthorized)?;
+        Ok(user)
     }
 }
 
@@ -173,9 +194,9 @@ impl From<ExternalUser> for LoggedUser {
     fn from(user: ExternalUser) -> Self {
         Self {
             email: user.email,
-            session: user.session.into(),
+            session: user.session,
             secret_key: user.secret_key,
-            created_at: user.created_at.into(),
+            created_at: user.created_at,
         }
     }
 }
@@ -187,7 +208,7 @@ impl TryFrom<Token> for LoggedUser {
             if AUTHORIZED_USERS.is_authorized(&user) {
                 return Ok(user.into());
             }
-            debug!("NOT AUTHORIZED {:?}", user);
+            debug!("NOT AUTHORIZED {user:?}",);
         }
         Err(Error::Unauthorized)
     }

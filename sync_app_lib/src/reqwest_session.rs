@@ -1,11 +1,11 @@
 use anyhow::{format_err, Error};
 use rand::{
-    distributions::{Distribution, Uniform},
-    thread_rng,
+    distr::{Distribution, Uniform},
+    rng as thread_rng,
 };
 use reqwest::{header::HeaderMap, redirect::Policy, Client, Response, Url};
 use serde::Serialize;
-use std::{collections::HashMap, future::Future, thread::sleep, time::Duration};
+use std::{collections::HashMap, convert::TryFrom, future::Future, thread::sleep, time::Duration};
 
 #[derive(Debug, Clone)]
 pub struct ReqwestSession {
@@ -35,7 +35,7 @@ impl ReqwestSession {
         V: Future<Output = Result<U, Error>>,
     {
         let mut timeout: f64 = 1.0;
-        let range = Uniform::from(0..1000);
+        let range = Uniform::try_from(0..1000)?;
         loop {
             let resp = f().await;
             match resp {

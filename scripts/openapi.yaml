@@ -1,284 +1,601 @@
-openapi: 3.0.1
+openapi: '3.1.0'
 info:
   title: File Sync WebApp
   description: Web Frontend for File Sync Service
-  version: 0.9.18
+  contact:
+    name: Daniel Boline
+    email: ddboline@gmail.com
+  license:
+    name: ''
+  version: '0.12.4'
 paths:
-  /sync/index.html:
-    get:
-      responses:
-        '200':
-          description: Main Page
-          content:
-            text/plain:
-              schema:
-                type: string
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
-        '500':
-          description: Internal Server Error
-  /sync/sync:
-    get:
-      responses:
-        '200':
-          description: Sync
-          content:
-            text/plain:
-              schema:
-                type: string
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
-        '500':
-          description: Internal Server Error
-  /sync/sync/{name}:
-    get:
-      parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Sync
-          content:
-            text/plain:
-              schema:
-                type: string
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
-        '500':
-          description: Internal Server Error
-  /sync/proc_all:
-    get:
-      responses:
-        '200':
-          description: Process All
-          content:
-            text/plain:
-              schema:
-                type: string
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
-        '500':
-          description: Internal Server Error
-  /sync/proc:
-    get:
-      parameters:
-      - name: id
-        in: query
-        required: true
-        schema:
-          type: integer
-      responses:
-        '200':
-          description: Process Entry
-          content:
-            text/plain:
-              schema:
-                type: string
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
-        '500':
-          description: Internal Server Error
-  /sync/remove:
-    get:
-      parameters:
-      - name: url
-        in: query
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Remove Sync Entry
-          content:
-            text/plain:
-              schema:
-                type: string
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
-        '500':
-          description: Internal Server Error
-  /sync/list_sync_cache:
-    get:
-      responses:
-        '200':
-          description: List Sync Cache
-          content:
-            text/plain:
-              schema:
-                type: string
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
-        '500':
-          description: Internal Server Error
   /sync/delete_cache_entry:
-    get:
-      parameters:
-      - name: id
-        in: query
-        required: true
-        schema:
-          type: integer
+    delete:
+      operationId: delete_cache_entry
       responses:
         '200':
           description: Delete Cache Entry
           content:
-            text/plain:
+            text/html:
               schema:
                 type: string
         '400':
           description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
         '500':
           description: Internal Server Error
-  /sync/sync_garmin:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/index.html:
     get:
+      operationId: sync_frontpage
       responses:
         '200':
-          description: Sync Garmin DB
+          description: Main Page
           content:
-            text/plain:
+            text/html:
               schema:
                 type: string
         '400':
           description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
         '500':
           description: Internal Server Error
-  /sync/sync_movie:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/list_sync_cache:
     get:
+      operationId: list_sync_cache
       responses:
         '200':
-          description: Sync Movie DB
+          description: List Sync Cache
           content:
-            text/plain:
+            text/html:
               schema:
                 type: string
         '400':
           description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/proc:
+    post:
+      operationId: process_cache_entry
+      responses:
+        '200':
+          description: Process Entry
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/proc_all:
+    post:
+      operationId: proc_all
+      responses:
+        '200':
+          description: Process All
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/remove:
+    delete:
+      operationId: remove
+      responses:
+        '200':
+          description: Remove Sync Entry
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/scripts.js:
+    get:
+      operationId: garmin_scripts_js
+      responses:
+        '200':
+          description: Javascript
+          content:
+            text/javascript:
+              schema:
+                type: string
+  /sync/sync:
+    post:
+      operationId: sync_all
+      responses:
+        '200':
+          description: Sync
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/sync/{name}:
+    post:
+      operationId: sync_name
+      responses:
+        '200':
+          description: Sync
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
   /sync/sync_calendar:
-    get:
+    post:
+      operationId: sync_calendar
       responses:
         '200':
           description: Sync Calendar DB
           content:
-            text/plain:
+            text/html:
               schema:
                 type: string
         '400':
           description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/sync_garmin:
+    post:
+      operationId: sync_garmin
+      responses:
+        '200':
+          description: Sync Garmin DB
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/sync_movie:
+    post:
+      operationId: sync_movie
+      responses:
+        '200':
+          description: Sync Movie DB
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
   /sync/sync_podcasts:
-    get:
+    post:
+      operationId: sync_podcasts
       responses:
         '200':
           description: Sync Podcasts
           content:
-            text/plain:
+            text/html:
               schema:
                 type: string
         '400':
           description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
   /sync/sync_security:
-    get:
+    post:
+      operationId: sync_security
       responses:
         '200':
           description: Sync Security Logs
           content:
-            text/plain:
+            text/html:
               schema:
                 type: string
         '400':
           description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+  /sync/sync_weather:
+    post:
+      operationId: sync_weather
+      responses:
+        '200':
+          description: Sync Weather Data
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
+        '401':
+          description: Not Authorized
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - message
+                properties:
+                  message:
+                    $ref: '#/components/schemas/str'
   /sync/user:
     get:
+      operationId: user
       responses:
         '200':
           description: Logged in User
           content:
-            application/json:
+            text/html:
               schema:
-                properties:
-                  email:
-                    description: Email Address
-                    type: string
-                  session:
-                    description: Session UUID
-                    format: uuid
-                    type: string
-                  secret_key:
-                    description: Secret Key
-                    type: string
                 type: object
                 required:
                 - email
                 - session
                 - secret_key
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
-        '405':
-          description: Method not allowed
-        '500':
-          description: Internal Server Error
-components: {}
+                - created_at
+                properties:
+                  created_at:
+                    type: string
+                    format: date-time
+                  email:
+                    $ref: '#/components/schemas/str'
+                  secret_key:
+                    $ref: '#/components/schemas/str'
+                  session:
+                    type: string
+                    format: uuid
+components:
+  schemas:
+    LoggedUser:
+      type: object
+      required:
+      - email
+      - session
+      - secret_key
+      - created_at
+      properties:
+        created_at:
+          type: string
+          format: date-time
+        email:
+          $ref: '#/components/schemas/str'
+        secret_key:
+          $ref: '#/components/schemas/str'
+        session:
+          type: string
+          format: uuid
+    str:
+      type: string

@@ -2,7 +2,7 @@ use anyhow::{format_err, Error};
 use async_trait::async_trait;
 use futures::TryStreamExt;
 use log::{debug, error};
-use rand::{thread_rng, RngCore};
+use rand::{rng as thread_rng, RngCore};
 use stack_string::{format_sstr, StackString};
 use std::{collections::HashMap, fs::create_dir_all, path::Path};
 use stdout_channel::StdoutChannel;

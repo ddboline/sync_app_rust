@@ -448,7 +448,7 @@ impl DirectoryInfoCache {
         DirectoryInfo {
             directory_id: self.directory_id,
             directory_name: self.directory_name,
-            parentid: self.parent_id.map(Into::into),
+            parentid: self.parent_id,
         }
     }
 

@@ -230,7 +230,7 @@ impl FileSync {
                 flist0.get_servicesession().clone(),
             );
             let finfo1: FileInfo = finfo1.try_into()?;
-            debug!("ba {:?} {:?}", finfo0, finfo1);
+            debug!("ba {finfo0:?} {finfo1:?}",);
             list_b_not_a.push((finfo1, finfo0));
         }
         debug!("ab {} ba {}", list_a_not_b.len(), list_b_not_a.len());
@@ -344,7 +344,7 @@ impl FileSync {
                                     Some(f) => f,
                                     None => FileInfo::from_url(val)?,
                                 };
-                                debug!("copy {} {}", key, val);
+                                debug!("copy {key} {val}",);
                                 if finfo1.servicetype == FileService::Local {
                                     Self::copy_object(&(*flist0), &finfo0, &finfo1).await?;
                                     flist0.cleanup()?;
@@ -401,7 +401,7 @@ impl FileSync {
                         FileInfo::from_url(url)?
                     };
 
-                    debug!("delete {:?}", finfo);
+                    debug!("delete {finfo:?}",);
                     flist.delete(&finfo).await
                 }
             });
@@ -421,7 +421,7 @@ impl FileSync {
         let t0 = finfo0.get_finfo().servicetype;
         let t1 = finfo1.get_finfo().servicetype;
 
-        debug!("copy from {:?} to {:?} using {:?}", t0, t1, flist);
+        debug!("copy from {t0:?} to {t1:?} using {flist:?}",);
 
         if t1 == FileService::Local {
             flist.copy_from(finfo0, finfo1).await

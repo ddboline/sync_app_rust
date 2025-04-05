@@ -134,7 +134,7 @@ impl SyncOpts {
                 } else {
                     &self.urls
                 };
-                info!("urls: {:?}", urls);
+                info!("urls: {urls:?}",);
                 let futures = urls.iter().map(|url| {
                     let pool = pool.clone();
                     async move {

@@ -170,7 +170,7 @@ pub trait FileListTrait: Send + Sync + Debug {
                 .to_string_lossy();
             let ext_str = format_sstr!("{ext}.new");
             let start_page_path = fname.with_extension(ext_str);
-            info!("{:?} {:?}", start_page_path, fname);
+            info!("{start_page_path:?} {fname:?}",);
             if start_page_path.exists() {
                 rename(&start_page_path, &fname).map_err(Into::into)
             } else {
@@ -294,9 +294,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        FileInfoCache::delete_all(session.as_str(), stype.to_str(), pool)
-            .await
-            .map_err(Into::into)
+        FileInfoCache::delete_all(session.as_str(), stype.to_str(), pool).await
     }
 
     async fn remove_by_id(&self, gdriveid: &str) -> Result<usize, Error> {
@@ -304,9 +302,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        FileInfoCache::delete_by_id(gdriveid, session.as_str(), stype.to_str(), pool)
-            .await
-            .map_err(Into::into)
+        FileInfoCache::delete_by_id(gdriveid, session.as_str(), stype.to_str(), pool).await
     }
 
     async fn clear_directory_list(&self) -> Result<usize, Error> {
@@ -314,9 +310,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         let session = self.get_servicesession();
         let stype = self.get_servicetype();
 
-        DirectoryInfoCache::delete_all(session.as_str(), stype.to_str(), pool)
-            .await
-            .map_err(Into::into)
+        DirectoryInfoCache::delete_all(session.as_str(), stype.to_str(), pool).await
     }
 }
 

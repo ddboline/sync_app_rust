@@ -1,7 +1,7 @@
 use anyhow::{format_err, Error};
 use async_google_apis_common as common;
 use common::{
-    yup_oauth2::{self, hyper, InstalledFlowAuthenticator},
+    yup_oauth2::{self, hyper, hyper_rustls, InstalledFlowAuthenticator},
     DownloadResult, TlsClient,
 };
 use crossbeam::atomic::AtomicCell;
@@ -93,7 +93,7 @@ impl GDriveInstance {
         session_name: &str,
     ) -> Result<Self, Error> {
         let fname = gdrive_token_path.join(format_sstr!("{session_name}_start_page_token"));
-        debug!("{:?}", gdrive_secret_file);
+        debug!("{gdrive_secret_file:?}",);
         let https = https_client();
         let sec = yup_oauth2::read_application_secret(gdrive_secret_file).await?;
 
@@ -105,7 +105,7 @@ impl GDriveInstance {
             create_dir_all(parent).await?;
         }
 
-        debug!("{:?}", token_file);
+        debug!("{token_file:?}",);
         let auth = InstalledFlowAuthenticator::builder(
             sec,
             common::yup_oauth2::InstalledFlowReturnMethod::HTTPRedirect,
@@ -209,7 +209,7 @@ impl GDriveInstance {
         }
         query_chain.push("trashed = false".into());
         let query = query_chain.join(" and ");
-        debug!("query {}", query);
+        debug!("query {query}",);
         params.q = Some(query);
 
         exponential_retry(|| async {
@@ -235,7 +235,7 @@ impl GDriveInstance {
             }
 
             page_token = filelist.next_page_token.map(Into::into);
-            debug!("page_token {} {:?}", get_folders, page_token);
+            debug!("page_token {get_folders} {page_token:?}",);
             if page_token.is_none() {
                 break;
             }
@@ -921,7 +921,7 @@ impl GDriveInfo {
             servicesession,
         };
         if item.id == Some("1t4plcsKgXK_NB025K01yFLKwljaTeM3i".to_string()) {
-            debug!("{:?}, {:?}", item, finfo);
+            debug!("{item:?}, {finfo:?}",);
         }
 
         Ok(finfo)
