@@ -3,7 +3,7 @@ use deadqueue::unlimited::Queue;
 use log::{debug, error};
 use reqwest::{Client, ClientBuilder};
 use stack_string::format_sstr;
-use std::{convert::TryInto, net::SocketAddr, sync::Arc, time};
+use std::{net::SocketAddr, sync::Arc, time};
 use tokio::{net::TcpListener, sync::Mutex, task::JoinHandle, time::interval};
 use tower_http::cors::{Any, CorsLayer};
 use utoipa::OpenApi;
@@ -114,7 +114,7 @@ async fn run_app(config: Config, port: u32, pool: PgPool) -> Result<(), Error> {
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
-        .allow_headers([CONTENT_TYPE, "jwt".try_into()?])
+        .allow_headers([CONTENT_TYPE])
         .allow_origin(Any);
 
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
@@ -131,7 +131,7 @@ async fn run_app(config: Config, port: u32, pool: PgPool) -> Result<(), Error> {
             axum::routing::get(|| async move {
                 (
                     StatusCode::OK,
-                    [(CONTENT_TYPE, "application/json")],
+                    [(CONTENT_TYPE, mime::APPLICATION_JSON.essence_str())],
                     spec_json,
                 )
             }),

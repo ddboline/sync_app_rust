@@ -1,7 +1,4 @@
-use dioxus::prelude::{
-    component, dioxus_elements, rsx, Element, GlobalSignal, IntoDynNode, Props, Readable,
-    VirtualDom,
-};
+use dioxus::prelude::{component, dioxus_elements, rsx, Element, IntoDynNode, Props, VirtualDom};
 use stack_string::StackString;
 use std::path::Path;
 use sync_app_lib::{
@@ -12,6 +9,9 @@ use sync_app_lib::{
     security_sync::SecuritySync,
     weather_sync::WeatherSync,
 };
+
+#[cfg(debug_assertions)]
+use dioxus::prelude::{GlobalSignal, Readable};
 
 use crate::errors::ServiceError as Error;
 
