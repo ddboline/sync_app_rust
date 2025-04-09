@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.13.0"
+version = "0.13.1"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.13.0"}
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.13.1"}
 axum = { version = "0.8", features = ["multipart"] }
 axum-extra = {version="0.10", features=["cookie"]}
 deadqueue = "0.2"
