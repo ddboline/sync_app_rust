@@ -132,7 +132,12 @@ async fn list_sync_cache(
 #[rustfmt::skip]
 struct ProcessEntryResponse(HtmlBase::<&'static str>);
 
-#[utoipa::path(post, path = "/sync/proc", params(SyncEntryProcessRequest), responses(ProcessEntryResponse, Error))]
+#[utoipa::path(
+    post,
+    path = "/sync/proc",
+    params(SyncEntryProcessRequest),
+    responses(ProcessEntryResponse, Error)
+)]
 async fn process_cache_entry(
     query: Query<SyncEntryProcessRequest>,
     _: LoggedUser,
@@ -220,7 +225,12 @@ async fn sync_calendar(
 #[rustfmt::skip]
 struct SyncRemoveResponse(HtmlBase::<String>);
 
-#[utoipa::path(delete, path = "/sync/remove", params(SyncRemoveRequest), responses(SyncRemoveResponse, Error))]
+#[utoipa::path(
+    delete,
+    path = "/sync/remove",
+    params(SyncRemoveRequest),
+    responses(SyncRemoveResponse, Error)
+)]
 async fn remove(
     query: Query<SyncRemoveRequest>,
     _: LoggedUser,
