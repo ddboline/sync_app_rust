@@ -7,7 +7,7 @@ info:
     email: ddboline@gmail.com
   license:
     name: ''
-  version: '0.13.1'
+  version: '0.13.2'
 paths:
   /sync/delete_cache_entry:
     delete:
