@@ -4,7 +4,7 @@ use stack_string::StackString;
 use std::path::Path;
 use stdout_channel::{MockStdout, StdoutChannel};
 use tokio::process::Command;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
 use sync_app_lib::{
@@ -44,7 +44,7 @@ impl SyncRequest {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, IntoParams)]
 pub struct SyncEntryDeleteRequest {
     pub id: Uuid,
 }
@@ -106,8 +106,10 @@ impl CalendarSyncRequest {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, IntoParams)]
 pub struct SyncRemoveRequest {
+    #[schema(inline)]
+    #[param(inline)]
     pub url: StackString,
 }
 
@@ -137,7 +139,7 @@ impl SyncRemoveRequest {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, IntoParams)]
 pub struct SyncEntryProcessRequest {
     pub id: Uuid,
 }

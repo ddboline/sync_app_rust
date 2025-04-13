@@ -72,7 +72,7 @@ async fn sync_all(_: LoggedUser, data: State<Arc<AppState>>) -> WarpResult<SyncR
     Ok(HtmlBase::new(result.join("\n")).into())
 }
 
-#[utoipa::path(post, path = "/sync/sync/{name}", responses(SyncResponse, Error))]
+#[utoipa::path(post, path = "/sync/sync/{name}", params(("name" = inline(StackString), description = "Name")), responses(SyncResponse, Error))]
 async fn sync_name(
     _: LoggedUser,
     data: State<Arc<AppState>>,
@@ -132,7 +132,7 @@ async fn list_sync_cache(
 #[rustfmt::skip]
 struct ProcessEntryResponse(HtmlBase::<&'static str>);
 
-#[utoipa::path(post, path = "/sync/proc", responses(ProcessEntryResponse, Error))]
+#[utoipa::path(post, path = "/sync/proc", params(SyncEntryProcessRequest), responses(ProcessEntryResponse, Error))]
 async fn process_cache_entry(
     query: Query<SyncEntryProcessRequest>,
     _: LoggedUser,
@@ -151,6 +151,7 @@ struct DeleteEntryResponse(HtmlBase::<&'static str>);
 #[utoipa::path(
     delete,
     path = "/sync/delete_cache_entry",
+    params(SyncEntryDeleteRequest),
     responses(DeleteEntryResponse, Error)
 )]
 async fn delete_cache_entry(
@@ -219,7 +220,7 @@ async fn sync_calendar(
 #[rustfmt::skip]
 struct SyncRemoveResponse(HtmlBase::<String>);
 
-#[utoipa::path(delete, path = "/sync/remove", responses(SyncRemoveResponse, Error))]
+#[utoipa::path(delete, path = "/sync/remove", params(SyncRemoveRequest), responses(SyncRemoveResponse, Error))]
 async fn remove(
     query: Query<SyncRemoveRequest>,
     _: LoggedUser,

@@ -12,6 +12,13 @@ paths:
   /sync/delete_cache_entry:
     delete:
       operationId: delete_cache_entry
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         '200':
           description: Delete Cache Entry
@@ -29,7 +36,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -46,7 +53,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/index.html:
     get:
       operationId: sync_frontpage
@@ -67,7 +74,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -84,7 +91,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/list_sync_cache:
     get:
       operationId: list_sync_cache
@@ -105,7 +112,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -122,10 +129,17 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/proc:
     post:
       operationId: process_cache_entry
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         '200':
           description: Process Entry
@@ -143,7 +157,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -160,7 +174,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/proc_all:
     post:
       operationId: proc_all
@@ -181,7 +195,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -198,10 +212,16 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/remove:
     delete:
       operationId: remove
+      parameters:
+      - name: url
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: Remove Sync Entry
@@ -219,7 +239,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -236,7 +256,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/scripts.js:
     get:
       operationId: garmin_scripts_js
@@ -267,7 +287,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -284,10 +304,17 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/sync/{name}:
     post:
       operationId: sync_name
+      parameters:
+      - name: name
+        in: path
+        description: Name
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: Sync
@@ -305,7 +332,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -322,7 +349,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/sync_calendar:
     post:
       operationId: sync_calendar
@@ -343,7 +370,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -360,7 +387,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/sync_garmin:
     post:
       operationId: sync_garmin
@@ -381,7 +408,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -398,7 +425,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/sync_movie:
     post:
       operationId: sync_movie
@@ -419,7 +446,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -436,7 +463,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/sync_podcasts:
     post:
       operationId: sync_podcasts
@@ -457,7 +484,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -474,7 +501,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/sync_security:
     post:
       operationId: sync_security
@@ -495,7 +522,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -512,7 +539,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/sync_weather:
     post:
       operationId: sync_weather
@@ -533,7 +560,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
         '401':
           description: Not Authorized
           content:
@@ -550,7 +577,7 @@ paths:
                 - message
                 properties:
                   message:
-                    $ref: '#/components/schemas/str'
+                    type: string
   /sync/user:
     get:
       operationId: user
@@ -571,9 +598,9 @@ paths:
                     type: string
                     format: date-time
                   email:
-                    $ref: '#/components/schemas/str'
+                    type: string
                   secret_key:
-                    $ref: '#/components/schemas/str'
+                    type: string
                   session:
                     type: string
                     format: uuid
@@ -591,11 +618,9 @@ components:
           type: string
           format: date-time
         email:
-          $ref: '#/components/schemas/str'
+          type: string
         secret_key:
-          $ref: '#/components/schemas/str'
+          type: string
         session:
           type: string
           format: uuid
-    str:
-      type: string
