@@ -10,10 +10,8 @@ use itertools::Itertools;
 use log::debug;
 use maplit::{hashmap, hashset};
 use mime::Mime;
-use once_cell::sync::Lazy;
 use percent_encoding::percent_decode;
 use stack_string::{format_sstr, StackString};
-
 use std::{
     collections::{HashMap, HashSet},
     ffi::OsStr,
@@ -21,7 +19,7 @@ use std::{
     future::Future,
     path::{Path, PathBuf},
     string::ToString,
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 use stdout_channel::rate_limiter::RateLimiter;
 use tokio::{
@@ -49,7 +47,7 @@ fn https_client() -> TlsClient {
     hyper::Client::builder().build(conn)
 }
 
-static MIME_TYPES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+static MIME_TYPES: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
     hashmap! {
         "application/vnd.google-apps.document" => "application/vnd.oasis.opendocument.text",
         "application/vnd.google-apps.presentation" => "application/pdf",
@@ -58,7 +56,7 @@ static MIME_TYPES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
         "application/vnd.google-apps.site" => "text/plain",
     }
 });
-static UNEXPORTABLE_MIME_TYPES: Lazy<HashSet<&'static str>> = Lazy::new(|| {
+static UNEXPORTABLE_MIME_TYPES: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
     hashset! {
         "application/vnd.google-apps.form",
         "application/vnd.google-apps.map",
@@ -93,7 +91,7 @@ impl GDriveInstance {
         session_name: &str,
     ) -> Result<Self, Error> {
         let fname = gdrive_token_path.join(format_sstr!("{session_name}_start_page_token"));
-        debug!("{gdrive_secret_file:?}",);
+        debug!("{}", gdrive_secret_file.display());
         let https = https_client();
         let sec = yup_oauth2::read_application_secret(gdrive_secret_file).await?;
 
@@ -105,7 +103,7 @@ impl GDriveInstance {
             create_dir_all(parent).await?;
         }
 
-        debug!("{token_file:?}",);
+        debug!("{}", token_file.display());
         let auth = InstalledFlowAuthenticator::builder(
             sec,
             common::yup_oauth2::InstalledFlowReturnMethod::HTTPRedirect,
@@ -851,7 +849,7 @@ impl GDriveInstance {
                 match changelist.next_page_token {
                     Some(token) => start_page_token = token,
                     None => break,
-                };
+                }
             }
 
             Ok(all_changes)

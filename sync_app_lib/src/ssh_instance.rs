@@ -1,9 +1,8 @@
 use anyhow::{format_err, Error};
 use log::{debug, error, info};
-use once_cell::sync::Lazy;
 use smallvec::{smallvec, SmallVec};
 use stack_string::{format_sstr, StackString};
-use std::{collections::HashMap, process::Stdio};
+use std::{collections::HashMap, process::Stdio, sync::LazyLock};
 use tokio::{
     io::{stdout, AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::Command,
@@ -11,8 +10,8 @@ use tokio::{
 };
 use url::Url;
 
-static LOCK_CACHE: Lazy<RwLock<HashMap<StackString, Mutex<()>>>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
+static LOCK_CACHE: LazyLock<RwLock<HashMap<StackString, Mutex<()>>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[derive(Debug, Clone)]
 pub struct SSHInstance {

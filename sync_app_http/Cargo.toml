@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.13.2"
+version = "0.13.3"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.13.1"}
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.13.3"}
 axum = { version = "0.8", features = ["multipart"] }
 axum-extra = {version="0.10", features=["cookie"]}
 deadqueue = "0.2"
@@ -34,13 +34,13 @@ stdout-channel = "0.6"
 sync_app_lib = {path = "../sync_app_lib"}
 thiserror = "2.0"
 time = {version="0.3", features=["serde-human-readable", "macros", "formatting"]}
-tokio = {version="1.44", features=["time"]}
+tokio = {version="1.47", features=["time"]}
 tower-http = {version="0.6", features=["cors"]}
-utoipa = { version = "5.3", features = ["axum_extras", "yaml", "time", "uuid", "smallvec", "url", "openapi_extensions", "decimal"] }
+utoipa = { version = "5.4", features = ["axum_extras", "yaml", "time", "uuid", "smallvec", "url", "openapi_extensions", "decimal"] }
 utoipa-helper = "0.1"
 utoipa-axum = { version = "0.2" }
-url = "2.3"
-uuid = "1.0"
+url = "2.5"
+uuid = "1.18"
 
 [dev-dependencies]
 env_logger = "0.11"

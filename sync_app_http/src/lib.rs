@@ -7,6 +7,7 @@
 #![allow(clippy::unused_async)]
 #![allow(clippy::ignored_unit_patterns)]
 #![allow(clippy::similar_names)]
+#![allow(clippy::needless_for_each)]
 
 pub mod app;
 pub mod elements;

@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_rust"
-version = "0.13.2"
+version = "0.13.3"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -23,8 +23,8 @@ gdrive_lib = {path="gdrive_lib"}
 log = "0.4"
 stack-string = { version="1.1", features=["postgres_types"] }
 time = {version="0.3", features=["serde-human-readable", "macros", "formatting"]}
-tokio = {version="1.44", features=["rt", "macros", "rt-multi-thread"]}
-walkdir = "2.3"
+tokio = {version="1.47", features=["rt", "macros", "rt-multi-thread"]}
+walkdir = "2.5"
 
 [workspace]
 members = [

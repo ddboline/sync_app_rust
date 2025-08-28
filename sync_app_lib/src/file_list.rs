@@ -150,7 +150,7 @@ pub trait FileListTrait: Send + Sync + Debug {
         panic!("not implemented for {:?}", finfo);
     }
 
-    /// Return updated FileInfo entries
+    /// Return updated `FileInfo` entries
     async fn update_file_cache(&self) -> Result<usize, Error>;
 
     async fn print_list(&self, _: &StdoutChannel<StackString>) -> Result<(), Error> {
@@ -170,7 +170,7 @@ pub trait FileListTrait: Send + Sync + Debug {
                 .to_string_lossy();
             let ext_str = format_sstr!("{ext}.new");
             let start_page_path = fname.with_extension(ext_str);
-            info!("{start_page_path:?} {fname:?}",);
+            info!("{} {}", start_page_path.display(), fname.display());
             if start_page_path.exists() {
                 rename(&start_page_path, &fname).map_err(Into::into)
             } else {

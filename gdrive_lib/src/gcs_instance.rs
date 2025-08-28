@@ -5,13 +5,12 @@ use common::{
     DownloadResult, TlsClient,
 };
 use log::debug;
-use once_cell::sync::Lazy;
 use parking_lot::{Mutex, MutexGuard};
 use stack_string::format_sstr;
 use std::{
     fmt::{self, Debug},
     path::Path,
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 use stdout_channel::rate_limiter::RateLimiter;
 use tokio::fs::{self, create_dir_all};
@@ -26,7 +25,7 @@ use crate::{
 };
 use url::Url;
 
-static GCSINSTANCE_TEST_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+static GCSINSTANCE_TEST_MUTEX: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 fn https_client() -> TlsClient {
     let conn = hyper_rustls::HttpsConnectorBuilder::new()
@@ -58,7 +57,7 @@ impl GcsInstance {
         gcs_secret_file: &Path,
         session_name: &str,
     ) -> Result<Self, Error> {
-        debug!("{gcs_secret_file:?}",);
+        debug!("{}", gcs_secret_file.display());
         let https = https_client();
         let sec = yup_oauth2::read_service_account_key(gcs_secret_file).await?;
 
@@ -70,7 +69,7 @@ impl GcsInstance {
             create_dir_all(parent).await?;
         }
 
-        debug!("{token_file:?}",);
+        debug!("{}", token_file.display());
         let auth = ServiceAccountAuthenticator::builder(sec)
             .persist_tokens_to_disk(token_file)
             .hyper_client(https.clone())
