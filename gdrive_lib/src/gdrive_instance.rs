@@ -677,7 +677,7 @@ impl GDriveInstance {
         let mut pid: Option<StackString> = finfo
             .parents
             .as_ref()
-            .and_then(|parents| parents.first().map(|p| p.to_string().into()));
+            .and_then(|parents| parents.first().map(|p| p.clone().into()));
         loop {
             pid = if let Some(pid_) = pid.as_ref() {
                 if let Some(dinfo) = dirmap.get(pid_) {
@@ -693,7 +693,7 @@ impl GDriveInstance {
                             if v.is_empty() {
                                 None
                             } else {
-                                Some(v[0].to_string().into())
+                                Some(v[0].clone().into())
                             }
                         })
                 }

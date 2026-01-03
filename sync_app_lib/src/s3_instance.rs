@@ -144,7 +144,7 @@ impl S3Instance {
     ) -> Result<(), Error> {
         let fname = Path::new(fname);
         if !fname.exists() {
-            return Err(format_err!("File doesn't exist {fname:?}"));
+            return Err(format_err!("File doesn't exist {}", fname.display()));
         }
         exponential_retry(|| async move {
             let body = ByteStream::read_from().path(fname).build().await?;

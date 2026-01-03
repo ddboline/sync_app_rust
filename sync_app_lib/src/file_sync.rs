@@ -74,16 +74,11 @@ impl FromStr for FileSyncAction {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub enum FileSyncMode {
     OutputFile(PathBuf),
+    #[default]
     Full,
-}
-
-impl Default for FileSyncMode {
-    fn default() -> Self {
-        Self::Full
-    }
 }
 
 impl fmt::Display for FileSyncMode {

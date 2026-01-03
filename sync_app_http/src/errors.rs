@@ -7,12 +7,11 @@ use axum::{
     },
     response::{IntoResponse, Response},
 };
-use log::error;
 use postgres_query::Error as PqError;
 use reqwest::Error as ReqwestError;
 use serde::Serialize;
 use serde_json::Error as SerdeJsonError;
-use serde_yml::Error as YamlError;
+use serde_yaml_ng::Error as YamlError;
 use stack_string::{format_sstr, StackString};
 use std::{
     fmt::{Debug, Error as FmtError},
@@ -174,7 +173,7 @@ mod test {
     use postgres_query::Error as PqError;
     use reqwest::Error as ReqwestError;
     use serde_json::Error as SerdeJsonError;
-    use serde_yml::Error as YamlError;
+    use serde_yaml_ng::Error as YamlError;
     use std::{
         fmt::Error as FmtError, io::Error as IoError, net::AddrParseError, str::Utf8Error,
         string::FromUtf8Error,

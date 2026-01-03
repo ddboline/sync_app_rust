@@ -1,6 +1,6 @@
 [package]
 name = "sync_app_http"
-version = "0.13.3"
+version = "0.13.4"
 authors = ["Daniel Boline <ddboline@gmail.com>"]
 edition = "2018"
 
@@ -9,13 +9,14 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.13.3"}
+authorized_users = { git = "https://github.com/ddboline/auth_server_rust.git", tag="0.13.5"}
 axum = { version = "0.8", features = ["multipart"] }
-axum-extra = {version="0.10", features=["cookie"]}
+axum-extra = {version="0.12", features=["cookie"]}
 deadqueue = "0.2"
-dioxus = "0.6"
-dioxus-core = "0.6"
-dioxus-ssr = "0.6"
+dioxus = "0.7"
+dioxus-core = "0.7"
+dioxus-signals = "0.7"
+dioxus-ssr = "0.7"
 dirs = "6.0"
 futures = "0.3"
 itertools = "0.14"
@@ -24,23 +25,23 @@ maplit = "1.0"
 mime = "0.3"
 parking_lot = "0.12"
 postgres_query = {git = "https://github.com/ddboline/rust-postgres-query", tag = "0.3.8", features=["deadpool"]}
-reqwest = {version="0.12", features=["cookies", "json", "rustls-tls"], default-features=false}
+reqwest = {version="0.13", features=["cookies", "json", "gzip"]}
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-serde_yml = "0.0.12"
+serde_yaml_ng = "0.10"
 stack-string = { version="1.1", features=["postgres_types", "utoipa_types", "axum_types"] }
 stdout-channel = "0.6"
 sync_app_lib = {path = "../sync_app_lib"}
 thiserror = "2.0"
 time = {version="0.3", features=["serde-human-readable", "macros", "formatting"]}
-tokio = {version="1.47", features=["time"]}
+tokio = {version="1.49", features=["time"]}
 tower-http = {version="0.6", features=["cors"]}
 utoipa = { version = "5.4", features = ["axum_extras", "yaml", "time", "uuid", "smallvec", "url", "openapi_extensions", "decimal"] }
 utoipa-helper = "0.1"
 utoipa-axum = { version = "0.2" }
 url = "2.5"
-uuid = "1.18"
+uuid = "1.19"
 
 [dev-dependencies]
 env_logger = "0.11"

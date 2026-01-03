@@ -2,20 +2,15 @@ use anyhow::{format_err, Error};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Default)]
 pub enum FileService {
+    #[default]
     Local,
     GCS,
     GDrive,
     OneDrive,
     S3,
     SSH,
-}
-
-impl Default for FileService {
-    fn default() -> Self {
-        Self::Local
-    }
 }
 
 impl FromStr for FileService {
