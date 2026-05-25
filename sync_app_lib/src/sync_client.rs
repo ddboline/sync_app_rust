@@ -73,7 +73,7 @@ impl SyncClient {
         let url = from_url.join("api/status")?;
         // If status endpoint doesn't return after 60 seconds we should exit.
         timeout(
-            Duration::from_secs(60),
+            Duration::from_mins(1),
             self.remote_session.get(&url, &HeaderMap::new()),
         )
         .await??
