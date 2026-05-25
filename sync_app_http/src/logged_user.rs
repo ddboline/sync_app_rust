@@ -73,7 +73,7 @@ impl LoggedUser {
             session_key,
         )
         .await?;
-        debug!("Got session {session:?}",);
+        debug!("Got session {session:?}");
         if let Some(session) = session {
             if session.created_at > (OffsetDateTime::now_utc() - Duration::minutes(60)) {
                 return Ok(Some(session));
@@ -139,7 +139,7 @@ impl LoggedUser {
                     .await?;
                 return Ok(Some(result));
             }
-            debug!("session exists and is presumably running {session:?}",);
+            debug!("session exists and is presumably running {session:?}");
         } else {
             debug!("push job to queue {}", key.to_str());
             self.set_session(
@@ -211,7 +211,7 @@ impl TryFrom<Token> for LoggedUser {
             if AUTHORIZED_USERS.is_authorized(&user) {
                 return Ok(user.into());
             }
-            debug!("NOT AUTHORIZED {user:?}",);
+            debug!("NOT AUTHORIZED {user:?}");
         }
         Err(Error::Unauthorized)
     }

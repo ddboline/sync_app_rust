@@ -61,7 +61,7 @@ pub struct AppState {
 /// Return error if app init fails
 pub async fn start_app() -> Result<(), Error> {
     async fn update_db(pool: PgPool) {
-        let mut i = interval(time::Duration::from_secs(60));
+        let mut i = interval(time::Duration::from_mins(1));
         loop {
             fill_from_db(&pool).await.unwrap_or(());
             i.tick().await;
@@ -84,15 +84,15 @@ async fn run_app(config: Config, port: u32, pool: PgPool) -> Result<(), Error> {
             let (SyncMesg { user, key }, task) = app.queue.pop().await;
             match task.await {
                 Ok(Err(e)) => {
-                    error!("Failure running job {e}",);
+                    error!("Failure running job {e}");
                     if let Err(e) = user
                         .rm_session(&app.client, &app.config, key.to_str())
                         .await
                     {
-                        error!("Failed to delete session {e}",);
+                        error!("Failed to delete session {e}");
                     }
                 }
-                Err(e) => error!("join error {e}",),
+                Err(e) => error!("join error {e}"),
                 _ => {}
             }
         }
