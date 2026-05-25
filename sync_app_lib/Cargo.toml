@@ -16,7 +16,7 @@ bytes = "1.11"
 checksums = "0.9"
 clap = {version="4.6", features=["derive"]}
 crossbeam-utils = "0.8"
-deadpool = { version = "0.13", features=["serde", "rt_tokio_1"] }
+deadpool = { version = "0.12", features=["serde", "rt_tokio_1"] }
 deadpool-postgres = { version = "0.14", features=["serde"] }
 derive_more = {version="2.1", features = ["full"]}
 dirs = "6.0"
@@ -30,7 +30,7 @@ maplit = "1.0"
 mime = "0.3"
 parking_lot = "0.12"
 percent-encoding = "2.3"
-postgres_query = {git = "https://github.com/ddboline/rust-postgres-query", tag = "0.3.8", features=["deadpool"]}
+postgres_query = {git = "https://github.com/ddboline/rust-postgres-query", tag = "0.3.9", features=["deadpool"]}
 postgres-types = {version = "0.2", features = ["with-time-0_3", "with-uuid-1", "with-serde_json-1", "derive"]}
 rand = "0.10"
 rayon = "1.12"
