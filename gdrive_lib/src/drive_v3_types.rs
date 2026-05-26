@@ -4494,7 +4494,7 @@ impl AboutService {
     /// Gets information about the user, the user's Drive, and system
     /// capabilities.
     pub async fn get(&self, params: &AboutGetParams) -> Result<About> {
-        let rel_path = format!("about",);
+        let rel_path = format!("about");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -4599,7 +4599,7 @@ impl ChangesService {
         &self,
         params: &ChangesGetStartPageTokenParams,
     ) -> Result<StartPageToken> {
-        let rel_path = format!("changes/startPageToken",);
+        let rel_path = format!("changes/startPageToken");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -4628,7 +4628,7 @@ impl ChangesService {
 
     /// Lists the changes for a user or shared drive.
     pub async fn list(&self, params: &ChangesListParams) -> Result<ChangeList> {
-        let rel_path = format!("changes",);
+        let rel_path = format!("changes");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -4657,7 +4657,7 @@ impl ChangesService {
 
     /// Subscribes to changes for a user.
     pub async fn watch(&self, params: &ChangesWatchParams, req: &Channel) -> Result<Channel> {
-        let rel_path = format!("changes/watch",);
+        let rel_path = format!("changes/watch");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -4760,7 +4760,7 @@ impl ChannelsService {
 
     /// Stop watching resources through this channel
     pub async fn stop(&self, params: &ChannelsStopParams, req: &Channel) -> Result<()> {
-        let rel_path = format!("channels/stop",);
+        let rel_path = format!("channels/stop");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -5110,7 +5110,7 @@ impl DrivesService {
 
     /// Creates a new shared drive.
     pub async fn create(&self, params: &DrivesCreateParams, req: &Drive) -> Result<Drive> {
-        let rel_path = format!("drives",);
+        let rel_path = format!("drives");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -5237,7 +5237,7 @@ impl DrivesService {
 
     /// Lists the user's shared drives.
     pub async fn list(&self, params: &DrivesListParams) -> Result<DriveList> {
-        let rel_path = format!("drives",);
+        let rel_path = format!("drives");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -5438,7 +5438,7 @@ impl FilesService {
 
     /// Creates a new file.
     pub async fn create(&self, params: &FilesCreateParams, req: &File) -> Result<File> {
-        let rel_path = format!("files",);
+        let rel_path = format!("files");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -5476,7 +5476,7 @@ impl FilesService {
         req: &File,
         data: hyper::body::Bytes,
     ) -> Result<File> {
-        let rel_path = format!("/upload/drive/v3/files",);
+        let rel_path = format!("/upload/drive/v3/files");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -5517,7 +5517,7 @@ impl FilesService {
         params: &FilesCreateParams,
         req: &File,
     ) -> Result<ResumableUpload<'client, File>> {
-        let rel_path = format!("/resumable/upload/drive/v3/files",);
+        let rel_path = format!("/resumable/upload/drive/v3/files");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -5596,7 +5596,7 @@ impl FilesService {
 
     /// Permanently deletes all of the user's trashed files.
     pub async fn empty_trash(&self, params: &FilesEmptyTrashParams) -> Result<()> {
-        let rel_path = format!("files/trash",);
+        let rel_path = format!("files/trash");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -5664,7 +5664,7 @@ impl FilesService {
     /// Generates a set of file IDs which can be provided in create or copy
     /// requests.
     pub async fn generate_ids(&self, params: &FilesGenerateIdsParams) -> Result<GeneratedIds> {
-        let rel_path = format!("files/generateIds",);
+        let rel_path = format!("files/generateIds");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -5730,7 +5730,7 @@ impl FilesService {
 
     /// Lists or searches files.
     pub async fn list(&self, params: &FilesListParams) -> Result<FileList> {
-        let rel_path = format!("files",);
+        let rel_path = format!("files");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -6757,7 +6757,7 @@ impl TeamdrivesService {
         params: &TeamdrivesCreateParams,
         req: &TeamDrive,
     ) -> Result<TeamDrive> {
-        let rel_path = format!("teamdrives",);
+        let rel_path = format!("teamdrives");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -6857,7 +6857,7 @@ impl TeamdrivesService {
 
     /// Deprecated use drives.list instead.
     pub async fn list(&self, params: &TeamdrivesListParams) -> Result<TeamDriveList> {
-        let rel_path = format!("teamdrives",);
+        let rel_path = format!("teamdrives");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];

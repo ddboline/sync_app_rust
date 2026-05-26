@@ -6415,7 +6415,7 @@ impl BucketsService {
 
     /// Creates a new bucket.
     pub async fn insert(&self, params: &BucketsInsertParams, req: &Bucket) -> Result<Bucket> {
-        let rel_path = format!("b",);
+        let rel_path = format!("b");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -6445,7 +6445,7 @@ impl BucketsService {
 
     /// Retrieves a list of buckets for a given project.
     pub async fn list(&self, params: &BucketsListParams) -> Result<Buckets> {
-        let rel_path = format!("b",);
+        let rel_path = format!("b");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];
@@ -6723,7 +6723,7 @@ impl ChannelsService {
 
     /// Stop watching resources through this channel
     pub async fn stop(&self, params: &ChannelsStopParams, req: &Channel) -> Result<()> {
-        let rel_path = format!("channels/stop",);
+        let rel_path = format!("channels/stop");
         let path = self.format_path(rel_path.as_str());
 
         let mut headers = vec![];

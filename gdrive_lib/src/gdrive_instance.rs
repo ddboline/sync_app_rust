@@ -207,7 +207,7 @@ impl GDriveInstance {
         }
         query_chain.push("trashed = false".into());
         let query = query_chain.join(" and ");
-        debug!("query {query}",);
+        debug!("query {query}");
         params.q = Some(query);
 
         exponential_retry(|| async {
@@ -233,7 +233,7 @@ impl GDriveInstance {
             }
 
             page_token = filelist.next_page_token.map(Into::into);
-            debug!("page_token {get_folders} {page_token:?}",);
+            debug!("page_token {get_folders} {page_token:?}");
             if page_token.is_none() {
                 break;
             }
@@ -919,7 +919,7 @@ impl GDriveInfo {
             servicesession,
         };
         if item.id == Some("1t4plcsKgXK_NB025K01yFLKwljaTeM3i".to_string()) {
-            debug!("{item:?}, {finfo:?}",);
+            debug!("{item:?}, {finfo:?}");
         }
 
         Ok(finfo)
