@@ -298,9 +298,7 @@ impl FileSync {
             .map_err(Into::into)
             .try_fold(HashMap::new(), |mut h: HashMap<_, Vec<_>>, v| async move {
                 let u0: Url = v.src_url.parse()?;
-                let u1: Url = v.dst_url.parse()?;
-                v.delete_cache_entry(pool).await?;
-                h.entry(u0).or_default().push(u1);
+                h.entry(u0).or_default().push(v.id);
                 Ok(h)
             })
             .await;
@@ -310,15 +308,18 @@ impl FileSync {
 
         for urls in group_urls(&key_list).values() {
             if let Some(u0) = urls.first() {
-                let futures = urls.iter().map(|key| {
-                    let key = key.clone();
-                    let proc_map = proc_map.clone();
-                    let u0 = u0.clone();
-                    async move {
-                        if let Some(vals) = proc_map.get(&key) {
-                            let flist0 = FileList::from_url(&u0, &self.config, pool).await?;
-                            for val in vals {
-                                let flist1 = FileList::from_url(val, &self.config, pool).await?;
+                for key in urls.iter() {
+                    if let Some(vals) = proc_map.get(&key) {
+                        let flist0 = FileList::from_url(&u0, &self.config, pool).await?;
+                        for vid in vals {
+                            if let Some(v) = FileSyncCache::get_by_id(pool, *vid).await? {
+                                let u0: Url = v.src_url.parse()?;
+                                let val: Url = v.dst_url.parse()?;
+                                println!("delete cache entry {} {} {}", u0, val, v.id);
+                                v.delete_cache_entry(pool).await?;
+
+                            
+                                let flist1 = FileList::from_url(&val, &self.config, pool).await?;
                                 let finfo0 = match FileInfo::from_database(
                                     pool,
                                     &key,
@@ -331,15 +332,15 @@ impl FileSync {
                                 };
                                 let finfo1 = match FileInfo::from_database(
                                     pool,
-                                    val,
+                                    &val,
                                     flist1.get_servicesession().as_str(),
                                 )
                                 .await?
                                 {
                                     Some(f) => f,
-                                    None => FileInfo::from_url(val)?,
+                                    None => FileInfo::from_url(&val)?,
                                 };
-                                debug!("copy {key} {val}");
+                                println!("copy {key} {val}");
                                 if finfo1.servicetype == FileService::Local {
                                     Self::copy_object(&(*flist0), &finfo0, &finfo1).await?;
                                     flist0.cleanup()?;
@@ -349,11 +350,8 @@ impl FileSync {
                                 }
                             }
                         }
-                        Ok(())
                     }
-                });
-                let result: Result<Vec<()>, Error> = try_join_all(futures).await;
-                result?;
+                }
             }
         }
         Ok(())
