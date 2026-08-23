@@ -81,7 +81,9 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
             }
         }
     });
+    let mut sync_all_scripts = StackString::new();
     let garmin_button = if Path::new(GarminSync::EXE_PATH).exists() {
+        sync_all_scripts.push_str("heartrateSync();");
         Some(rsx! {
             button {
                 "type": "submit",
@@ -94,6 +96,7 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
         None
     };
     let movie_button = if Path::new(MovieSync::EXE_PATH).exists() {
+        sync_all_scripts.push_str("movieSync();");
         Some(rsx! {
             button {
                 "type": "submit",
@@ -106,6 +109,7 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
         None
     };
     let calendar_button = if Path::new(CalendarSync::EXE_PATH).exists() {
+        sync_all_scripts.push_str("calendarSync();");
         Some(rsx! {
             button {
                 "type": "submit",
@@ -118,6 +122,7 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
         None
     };
     let podcatch_button = if Path::new("/usr/bin/podcatch-rust").exists() {
+        sync_all_scripts.push_str("podcastSync();");
         Some(rsx! {
             button {
                 "type": "submit",
@@ -130,6 +135,7 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
         None
     };
     let security_button = if Path::new(SecuritySync::EXE_PATH).exists() {
+        sync_all_scripts.push_str("securitySync();");
         Some(rsx! {
             button {
                 "type": "submit",
@@ -142,12 +148,25 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
         None
     };
     let weather_button = if Path::new(WeatherSync::EXE_PATH).exists() {
+        sync_all_scripts.push_str("weatherSync();");
         Some(rsx! {
             button {
                 "type": "submit",
                 name: "sync_weather",
                 "onclick": "weatherSync();",
                 "Weather Sync"
+            }
+        })
+    } else {
+        None
+    };
+    let sync_all_button = if !sync_all_scripts.is_empty() {
+        Some(rsx! {
+            button {
+                "type": "submit",
+                name: "sync_all",
+                "onclick": "{sync_all_scripts}",
+                "Sync All"
             }
         })
     } else {
@@ -180,6 +199,7 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
                 {podcatch_button},
                 {security_button},
                 {weather_button},
+                {sync_all_button},
                 button {
                     name: "garminconnectoutput",
                     id: "garminconnectoutput",
