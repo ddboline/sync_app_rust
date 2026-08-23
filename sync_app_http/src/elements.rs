@@ -160,7 +160,9 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
     } else {
         None
     };
-    let sync_all_button = if !sync_all_scripts.is_empty() {
+    let sync_all_button = if sync_all_scripts.is_empty() {
+        None
+    } else {
         Some(rsx! {
             button {
                 "type": "submit",
@@ -169,8 +171,6 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
                 "Sync All"
             }
         })
-    } else {
-        None
     };
     rsx! {
         head {
