@@ -193,13 +193,13 @@ fn IndexElement(conf_list: Vec<FileSyncConfig>, entries: Vec<FileSyncCache>) -> 
                     "onclick": "processAll();",
                     "Process"
                 },
+                {sync_all_button},
                 {garmin_button},
                 {movie_button},
                 {calendar_button},
                 {podcatch_button},
                 {security_button},
                 {weather_button},
-                {sync_all_button},
                 button {
                     name: "garminconnectoutput",
                     id: "garminconnectoutput",
